@@ -1,0 +1,172 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\base.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\callstacktracer.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\configuration.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\dependencies.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\exceptions.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\logger.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\preprocessing.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\runtime.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\multilayerctnr.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\stdafx.h">
+      <Filter>VS</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\targetver.h">
+      <Filter>VS</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\sqlite3.h">
+      <Filter>SQLite\SQLite3</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\sqlite.h">
+      <Filter>SQLite</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MSBuildThisFileDirectory)utils_winrt.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\utils.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\gc.h">
+      <Filter>GC</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\gc_addresseshashtable.h">
+      <Filter>GC</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\gc_common.h">
+      <Filter>GC</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\gc_mastertable.h">
+      <Filter>GC</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\gc_memaddress.h">
+      <Filter>GC</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\gc_memblock.h">
+      <Filter>GC</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\gc_memorydigraph.h">
+      <Filter>GC</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\gc_messages.h">
+      <Filter>GC</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\sptr.h">
+      <Filter>GC</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="$(MSBuildThisFileDirectory)..\..\3FD\callstacktracer.cpp">
+      <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MSBuildThisFileDirectory)..\..\3FD\configuration.cpp">
+      <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MSBuildThisFileDirectory)..\..\3FD\dependencies.cpp">
+      <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MSBuildThisFileDirectory)..\..\3FD\exceptions.cpp">
+      <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MSBuildThisFileDirectory)..\..\3FD\logger.cpp">
+      <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MSBuildThisFileDirectory)..\..\3FD\runtime.cpp">
+      <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MSBuildThisFileDirectory)..\..\3FD\stdafx.cpp">
+      <Filter>VS</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MSBuildThisFileDirectory)..\..\3FD\sqlite3.c">
+      <Filter>SQLite\SQLite3</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MSBuildThisFileDirectory)logger_winrt.cpp">
+      <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MSBuildThisFileDirectory)..\..\3FD\sqlite_databaseconn.cpp">
+      <Filter>SQLite</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MSBuildThisFileDirectory)..\..\3FD\sqlite_dbconnpool.cpp">
+      <Filter>SQLite</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MSBuildThisFileDirectory)..\..\3FD\sqlite_prepstatement.cpp">
+      <Filter>SQLite</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MSBuildThisFileDirectory)..\..\3FD\sqlite_transaction.cpp">
+      <Filter>SQLite</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MSBuildThisFileDirectory)..\..\3FD\utils_asynchronous.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MSBuildThisFileDirectory)..\..\3FD\utils_dynmempool.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MSBuildThisFileDirectory)..\..\3FD\utils_event.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MSBuildThisFileDirectory)..\..\3FD\utils_memorypool.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MSBuildThisFileDirectory)utils_winrt.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MSBuildThisFileDirectory)..\..\3FD\gc_garbagecollector.cpp">
+      <Filter>GC</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MSBuildThisFileDirectory)..\..\3FD\gc_addresseshashtable.cpp">
+      <Filter>GC</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MSBuildThisFileDirectory)..\..\3FD\gc_mastertable.cpp">
+      <Filter>GC</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MSBuildThisFileDirectory)..\..\3FD\gc_memblock.cpp">
+      <Filter>GC</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MSBuildThisFileDirectory)..\..\3FD\gc_memorydigraph.cpp">
+      <Filter>GC</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MSBuildThisFileDirectory)..\..\3FD\gc_messages.cpp">
+      <Filter>GC</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MSBuildThisFileDirectory)..\..\3FD\gc_vertex.cpp">
+      <Filter>GC</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="core">
+      <UniqueIdentifier>{cb4543ca-3686-4f43-af80-4deaa88f416d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="VS">
+      <UniqueIdentifier>{0f1f3f48-c08f-4417-84fa-201f33b43f1f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="SQLite">
+      <UniqueIdentifier>{1315d311-f876-447e-bc69-6e1df5fc46b5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="SQLite\SQLite3">
+      <UniqueIdentifier>{94de4c02-75f7-44e1-9044-dbc76e30785d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Utils">
+      <UniqueIdentifier>{8f047188-10f4-423f-915b-5cfffa8e3dda}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GC">
+      <UniqueIdentifier>{856acd8a-ade3-4325-b172-1fa27b608c83}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
