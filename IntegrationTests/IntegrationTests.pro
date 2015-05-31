@@ -14,7 +14,7 @@ DEFINES += \
     TESTING
 
 SOURCES += \
-    tests.cpp \
+    IntegrationTests.cpp \
     tests_core.cpp \
     tests_gc.cpp \
     tests_opencl.cpp \
@@ -27,6 +27,7 @@ OTHER_FILES += \
     application.config
 
 INCLUDEPATH += \
+    ../btree \
     ../OpenCL
 
 #========================

@@ -14,10 +14,21 @@ DEFINES += \
     TESTING
 
 SOURCES += \
-    UnitTests.cpp
+    UnitTests.cpp \
+    tests_gc_hashtable.cpp \
+    tests_gc_memblock.cpp \
+    tests_gc_memdigraph.cpp \
+    tests_gc_vertex.cpp \
+    tests_utils_pool.cpp
 
 HEADERS += \
     stdafx.h
+
+OTHER_FILES += \
+    application.config
+
+INCLUDEPATH += \
+    ../btree
 
 #========================
 # 3FD Project Dependency
