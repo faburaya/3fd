@@ -28,6 +28,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "IntegrationTestsApp.WinRT.W
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{6FE4019E-19FF-4D78-80F1-F44C0BF271BB}"
 	ProjectSection(SolutionItems) = preProject
+		LICENSE.txt = LICENSE.txt
 		Performance1.psess = Performance1.psess
 	EndProjectSection
 EndProject
