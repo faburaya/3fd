@@ -1,7 +1,7 @@
 #ifndef GC_COMMON_H
 #define GC_COMMON_H
 
-#include <cstdint>
+#include <cstdlib>
 
 namespace _3fd
 {

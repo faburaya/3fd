@@ -20,7 +20,9 @@ SOURCES += \
     gc_garbagecollector.cpp \
     gc_mastertable.cpp \
     gc_memblock.cpp \
+    gc_memorydigraph.cpp \
     gc_messages.cpp \
+    gc_vertex.cpp \
     logger.cpp \
     logger_poco.cpp \
     opencl_impl.cpp \
@@ -31,12 +33,15 @@ SOURCES += \
     opencl_impl_program.cpp \
     opencl_impl_programmanifest.cpp \
     runtime.cpp \
+    sqlite3.c \
     sqlite_databaseconn.cpp \
     sqlite_dbconnpool.cpp \
     sqlite_prepstatement.cpp \
     sqlite_transaction.cpp \
-    utils.cpp \
-    sqlite3.c
+    utils_asynchronous.cpp \
+    utils_dynmempool.cpp \
+    utils_event.cpp \
+    utils_memorypool.cpp
 
 HEADERS += \
     base.h \
@@ -45,7 +50,11 @@ HEADERS += \
     dependencies.h \
     exceptions.h \
     gc.h \
+    gc_common.h \
+    gc_mastertable.h \
+    gc_memaddress.h \
     gc_memblock.h \
+    gc_memorydigraph.h \
     gc_messages.h \
     logger.h \
     multilayerctnr.h \
@@ -69,6 +78,7 @@ OTHER_FILES += \
     config3fd-template.xml
 
 INCLUDEPATH += \
+    ../btree \
     ../OpenCL \
     /opt/Poco-1.4.7/include \
     /opt/boost-1.55/include
