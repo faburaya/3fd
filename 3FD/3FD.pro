@@ -1,11 +1,10 @@
-TARGET = 3FD
+unix:CONFIG(release, debug|release): TARGET = 3FD
+else:unix:CONFIG(debug, debug|release): TARGET = 3FDd
+
 TEMPLATE = lib
 CONFIG += staticlib
 CONFIG -= qt
 CONFIG += c++11
-
-win32:CONFIG(release, debug|release): DEFINES += NDEBUG
-else:unix:!macx:CONFIG(release, debug|release): DEFINES += NDEBUG
 
 DEFINES += \
     ENABLE_3FD_CST \
@@ -75,7 +74,8 @@ unix {
 
 OTHER_FILES += \
     ReadMe.txt \
-    config3fd-template.xml
+    config3fd-template.xml \
+    CMakeLists.txt
 
 INCLUDEPATH += \
     ../btree \
