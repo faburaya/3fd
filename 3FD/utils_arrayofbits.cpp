@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "utils.h"
+#include "utils_arrayofbits.h"
 #include "exceptions.h"
 
 #include <cstdlib>

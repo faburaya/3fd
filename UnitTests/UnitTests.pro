@@ -5,7 +5,8 @@ CONFIG -= app_bundle
 CONFIG -= qt
 CONFIG += c++11
 
-CONFIG(release, debug|release): DEFINES += NDEBUG
+win32:CONFIG(release, debug|release): DEFINES += NDEBUG
+else:unix:!macx:CONFIG(release, debug|release): DEFINES += NDEBUG
 
 DEFINES += \
     ENABLE_3FD_CST \
@@ -24,8 +25,7 @@ HEADERS += \
     stdafx.h
 
 OTHER_FILES += \
-    application.config \
-    CMakeLists.txt
+    application.config
 
 INCLUDEPATH += \
     ../btree
@@ -34,39 +34,35 @@ INCLUDEPATH += \
 # 3FD Project Dependency
 #========================
 
-win32-g++:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../3FD/ -l3FD
-else:win32-g++:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/3FD/ -l3FDd
-else:win32:!win32-g++: LIBS += -L$$OUT_PWD/ -l3FD
-else:unix:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../3FD/ -l3FD
-else:unix:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../3FD/ -l3FDd
+win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../3FD/release/ -l3FD
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../3FD/debug/ -l3FD
+else:unix:!macx: LIBS += -L$$OUT_PWD/../3FD/ -l3FD
 
 INCLUDEPATH += $$PWD/../3FD
 DEPENDPATH += $$PWD/../3FD
 
-win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../3FD/lib3FD.a
-else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../3FD/lib3FDd.a
-else:win32:!win32-g++: PRE_TARGETDEPS += $$OUT_PWD/3FD.lib
-else:unix:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../3FD/lib3FD.a
-else:unix:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../3FD/lib3FDd.a
+win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../3FD/release/lib3FD.a
+else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../3FD/debug/lib3FD.a
+else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../3FD/release/3FD.lib
+else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../3FD/debug/3FD.lib
+else:unix:!macx: PRE_TARGETDEPS += $$OUT_PWD/../3FD/lib3FD.a
 
 #========================
 # googletest framework
 #========================
 
-win32-g++:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../gtest/ -lgtest
-else:win32-g++:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../gtest/ -lgtestd
-else:win32:!win32-g++: LIBS += -L$$OUT_PWD/ -lgtest
-else:unix:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../gtest -lgtest -lpthread
-else:unix:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../gtest -lgtestd -lpthread
+win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../x64/ -lgtest
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../x64/ -lgtestd
+else:unix:!macx: LIBS += -L$$PWD/../x64/ -lgtest -lpthread
 
 INCLUDEPATH += $$PWD/../gtest/include
 DEPENDPATH += $$PWD/../gtest/include
 
-win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../gtest/libgtest.a
-else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../gtest/libgtestd.a
-else:win32:!win32-g++: PRE_TARGETDEPS += $$OUT_PWD/gtest.lib
-else:unix:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../gtest/libgtest.a
-else:unix:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../gtest/libgtestd.a
+win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$PWD/../x64/libgtest.a
+else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$PWD/../x64/libgtestd.a
+else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$PWD/../x64/gtest.lib
+else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$PWD/../x64/gtestd.lib
+else:unix:!macx: PRE_TARGETDEPS += $$PWD/../x64/libgtest.a
 
 #=======================
 # POCO C++ Libraries
@@ -79,15 +75,15 @@ DEPENDPATH += /opt/Poco-1.4.7/include
 
 win32:CONFIG(release, debug|release): LIBS += -L/opt/Poco-1.4.7/lib/ -lPocoUtil
 else:win32:CONFIG(debug, debug|release): LIBS += -L/opt/Poco-1.4.7/lib/ -lPocoUtild
-else:unix:CONFIG(release, debug|release): LIBS += -L/opt/Poco-1.4.7/lib/ -lPocoUtil
-else:unix:CONFIG(debug, debug|release): LIBS += -L/opt/Poco-1.4.7/lib/ -lPocoUtild
+else:unix:!macx:CONFIG(release, debug|release): LIBS += -L/opt/Poco-1.4.7/lib/ -lPocoUtil
+else:unix:!macx:CONFIG(debug, debug|release): LIBS += -L/opt/Poco-1.4.7/lib/ -lPocoUtild
 
 win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += /opt/Poco-1.4.7/lib/libPocoUtil.a
 else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += /opt/Poco-1.4.7/lib/libPocoUtild.a
 else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += /opt/Poco-1.4.7/lib/PocoUtil.lib
 else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += /opt/Poco-1.4.7/lib/PocoUtild.lib
-else:unix:CONFIG(release, debug|release): PRE_TARGETDEPS += /opt/Poco-1.4.7/lib/libPocoUtil.a
-else:unix:CONFIG(debug, debug|release): PRE_TARGETDEPS += /opt/Poco-1.4.7/lib/libPocoUtild.a
+else:unix:!macx:CONFIG(release, debug|release): PRE_TARGETDEPS += /opt/Poco-1.4.7/lib/libPocoUtil.a
+else:unix:!macx:CONFIG(debug, debug|release): PRE_TARGETDEPS += /opt/Poco-1.4.7/lib/libPocoUtild.a
 
 # PocoXML (static library):
 
@@ -100,22 +96,22 @@ win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += /opt/Poco-1.4.7/lib/
 else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += /opt/Poco-1.4.7/lib/libPocoXMLd.a
 else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += /opt/Poco-1.4.7/lib/PocoXML.lib
 else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += /opt/Poco-1.4.7/lib/PocoXMLd.lib
-else:unix:CONFIG(release, debug|release): PRE_TARGETDEPS += /opt/Poco-1.4.7/lib/libPocoXML.a
-else:unix:CONFIG(debug, debug|release): PRE_TARGETDEPS += /opt/Poco-1.4.7/lib/libPocoXMLd.a
+else:unix:!macx:CONFIG(release, debug|release): PRE_TARGETDEPS += /opt/Poco-1.4.7/lib/libPocoXML.a
+else:unix:!macx:CONFIG(debug, debug|release): PRE_TARGETDEPS += /opt/Poco-1.4.7/lib/libPocoXMLd.a
 
 # PocoFoundation (static library):
 
 win32:CONFIG(release, debug|release): LIBS += -L/opt/Poco-1.4.7/lib/ -lPocoFoundation
 else:win32:CONFIG(debug, debug|release): LIBS += -L/opt/Poco-1.4.7/lib/ -lPocoFoundationd
-else:unix:CONFIG(release, debug|release): LIBS += -L/opt/Poco-1.4.7/lib/ -lPocoFoundation
-else:unix:CONFIG(debug, debug|release): LIBS += -L/opt/Poco-1.4.7/lib/ -lPocoFoundationd
+else:unix:!macx:CONFIG(release, debug|release): LIBS += -L/opt/Poco-1.4.7/lib/ -lPocoFoundation
+else:unix:!macx:CONFIG(debug, debug|release): LIBS += -L/opt/Poco-1.4.7/lib/ -lPocoFoundationd
 
 win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += /opt/Poco-1.4.7/lib/libPocoFoundation.a
 else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += /opt/Poco-1.4.7/lib/libPocoFoundationd.a
 else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += /opt/Poco-1.4.7/lib/PocoFoundation.lib
 else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += /opt/Poco-1.4.7/lib/PocoFoundationd.lib
-else:unix:CONFIG(release, debug|release): PRE_TARGETDEPS += /opt/Poco-1.4.7/lib/libPocoFoundation.a
-else:unix:CONFIG(debug, debug|release): PRE_TARGETDEPS += /opt/Poco-1.4.7/lib/libPocoFoundationd.a
+else:unix:!macx:CONFIG(release, debug|release): PRE_TARGETDEPS += /opt/Poco-1.4.7/lib/libPocoFoundation.a
+else:unix:!macx:CONFIG(debug, debug|release): PRE_TARGETDEPS += /opt/Poco-1.4.7/lib/libPocoFoundationd.a
 
 #=======================
 # Boost C++ Libraries
