@@ -174,7 +174,7 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="arrayofbits.h">
+    <ClInclude Include="utils_arrayofbits.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -198,6 +198,7 @@
     <ClInclude Include="gc_messages.h" />
     <ClInclude Include="isam.h" />
     <ClInclude Include="isam_impl.h" />
+    <ClInclude Include="utils_lockfreequeue.h" />
     <ClInclude Include="logger.h" />
     <ClInclude Include="opencl.h" />
     <ClInclude Include="opencl_impl.h" />
@@ -268,6 +269,7 @@
     <ClCompile Include="utils_dynmempool.cpp" />
     <ClCompile Include="utils_event.cpp" />
     <ClCompile Include="gc_vertex.cpp" />
+    <ClCompile Include="utils_lockfreequeue.cpp" />
     <ClCompile Include="utils_memorypool.cpp" />
   </ItemGroup>
   <ItemGroup>

@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.31101.0
+VisualStudioVersion = 12.0.40629.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "3FD", "3FD\3FD.vcxproj", "{CCC4A0A2-15FD-4A6E-AC6C-094AAAAEC80B}"
 EndProject
@@ -28,7 +28,12 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "IntegrationTestsApp.WinRT.W
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{6FE4019E-19FF-4D78-80F1-F44C0BF271BB}"
 	ProjectSection(SolutionItems) = preProject
-		LICENSE.txt = LICENSE.txt
+		LICENSE = LICENSE
+		README = README
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Profiler", "Profiler", "{7D7F1E3F-755A-461F-8DA7-164F27517B1F}"
+	ProjectSection(SolutionItems) = preProject
 		Performance1.psess = Performance1.psess
 	EndProjectSection
 EndProject
@@ -171,6 +176,7 @@ Global
 		{ED6B839D-3EE6-46DE-80DC-DE2090A059C3} = {C6537317-4B66-427D-BFC6-2FC4FC6937E7}
 		{D4D1D2D5-7594-49BB-9427-FF7D770F5AE8} = {C6537317-4B66-427D-BFC6-2FC4FC6937E7}
 		{55B15FE0-D788-4101-80D1-2FADB87CA16B} = {C6537317-4B66-427D-BFC6-2FC4FC6937E7}
+		{7D7F1E3F-755A-461F-8DA7-164F27517B1F} = {6FE4019E-19FF-4D78-80F1-F44C0BF271BB}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		VisualSVNWorkingCopyRoot = .
