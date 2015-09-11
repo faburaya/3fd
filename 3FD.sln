@@ -6,6 +6,10 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "3FD", "3FD\3FD.vcxproj", "{CCC4A0A2-15FD-4A6E-AC6C-094AAAAEC80B}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UnitTests", "UnitTests\UnitTests.vcxproj", "{A657480D-D083-4C31-B499-42FF50481AC1}"
+	ProjectSection(ProjectDependencies) = postProject
+		{C8F6C172-56F2-4E76-B5FA-C3B423B31BE8} = {C8F6C172-56F2-4E76-B5FA-C3B423B31BE8}
+		{CCC4A0A2-15FD-4A6E-AC6C-094AAAAEC80B} = {CCC4A0A2-15FD-4A6E-AC6C-094AAAAEC80B}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "IntegrationTests", "IntegrationTests\IntegrationTests.vcxproj", "{B288E7DC-4F10-4432-8CB9-2061400F4E0C}"
 	ProjectSection(ProjectDependencies) = postProject

@@ -29,7 +29,7 @@ namespace _3fd
 
 			/// <summary>
 			/// Initializes a new instance of the <see cref="LockFreeQueue{Type}"/> class.
-			/// The initialization of this instance IS NOT THREAD-SAFE.
+			/// The initialization of this instance is NOT THREAD-SAFE.
 			/// </summary>
 			LockFreeQueue()
             {
@@ -40,11 +40,23 @@ namespace _3fd
 
 			/// <summary>
 			/// Finalizes an instance of the <see cref="LockFreeQueue{Type}"/> class.
-			/// The destruction of this instance IS NOT THREAD-SAFE.
+			/// The destruction of this instance is NOT THREADSAFE.
 			/// </summary>
 			~LockFreeQueue()
             {
-				Clear();
+				// Clears all the elements from the queue:
+				auto tail = m_tail.load(std::memory_order_acquire);
+
+				do
+				{
+					auto value = tail->value.load(std::memory_order_relaxed);
+					delete value;
+
+					auto next = tail->next.load(std::memory_order_acquire);
+					delete tail;
+					tail = next;
+				}
+				while (tail != nullptr);
             }
 
 			/// <summary>
@@ -54,9 +66,8 @@ namespace _3fd
 			void Add(const Type *entry)
             {
                 // Create a new element:
-                auto newElem = new Element;
+				auto newElem = new Element{ 0 };
                 newElem->value.store(entry, std::memory_order_relaxed);
-                newElem->next.store(nullptr, std::memory_order_relaxed);
 
                 // Without locks, replace the head of the queue:
                 auto headBefore = m_head.exchange(newElem, std::memory_order_acq_rel);
@@ -97,12 +108,12 @@ namespace _3fd
 			/// </returns>
 			bool IsEmpty() const
 			{
+				// Get the head and its value:
+				auto head = m_head.load(std::memory_order_consume);
+				auto value = tail->value.load(std::memory_order_relaxed);
 
-			}
-
-			void Clear()
-			{
-
+				// The only scenario where the head has no value is when the queue is empty:
+				return value == nullptr;
 			}
         };
 
