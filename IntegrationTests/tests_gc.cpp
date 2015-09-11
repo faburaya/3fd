@@ -101,12 +101,12 @@ namespace _3fd
 		/// </summary>
 		struct Foo
 		{
-			int dummyMember1,
-				dummyMember2;
+			int m_dummyMember1,
+				m_dummyMember2;
 
-			long long dummyMember3;
+			long long m_dummyMember3;
 
-			sptr<Foo> any;
+			sptr<Foo> m_any;
 		};
 
 		/// <summary>
@@ -229,9 +229,8 @@ namespace _3fd
 			{
 				// Create N (> 3) layers of garbage collectable objects:
 
-				const unsigned int numLayers(7);
-				unsigned int divisor(1);
-				std::vector<std::vector<sptr<Foo>>> objectsLayers(numLayers);
+				int divisor(1);
+				std::vector<std::vector<sptr<Foo>>> objectsLayers(7);
 
 				generate(objectsLayers.begin(), objectsLayers.end(), [qtObjects, &divisor]()
 				{
@@ -260,7 +259,7 @@ namespace _3fd
 						auto &object = layer[objIdx];
 						auto randomIdx = static_cast<int> (uniformDistribution(randomEngine) * nextLayerSize - 0.5);
 
-						object->any = nextLayer[randomIdx];
+						object->m_any = nextLayer[randomIdx];
 					}
 
 					uniformDistribution.reset();
@@ -275,7 +274,7 @@ namespace _3fd
 				{
 					auto randomIdx = static_cast<int> (uniformDistribution(randomEngine) * secondLayer.size() - 0.5);
 
-					object->any = secondLayer[randomIdx];
+					object->m_any = secondLayer[randomIdx];
 				}
 
 				// Keep only the first layer of pointers
@@ -286,20 +285,7 @@ namespace _3fd
 				auto &firstLayer = objectsLayers[0];
 
 				while (firstLayer.empty() == false)
-				{
-					auto fooPtr = firstLayer.back();
 					firstLayer.pop_back();
-
-					/* Before destroying this 'root reference', test the access to other layers. This 
-					should issue memory access violation if unproper deallocation has taken place: */
-					int count(1);
-					do fooPtr = fooPtr->any;
-					while (count++ < 7);
-
-					fooPtr->dummyMember1 = 6;
-					fooPtr->dummyMember1 = 9;
-					fooPtr->dummyMember1 = 6;
-				}
 			}
 			catch (...)
 			{
