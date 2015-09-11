@@ -155,10 +155,7 @@
     <ClInclude Include="utils.h">
       <Filter>Header Files\utilities</Filter>
     </ClInclude>
-    <ClInclude Include="utils_arrayofbits.h">
-      <Filter>Header Files\utilities</Filter>
-    </ClInclude>
-    <ClInclude Include="utils_lockfreequeue.h">
+    <ClInclude Include="arrayofbits.h">
       <Filter>Header Files\utilities</Filter>
     </ClInclude>
   </ItemGroup>
@@ -290,9 +287,6 @@
       <Filter>Source Files\GC</Filter>
     </ClCompile>
     <ClCompile Include="utils_arrayofbits.cpp">
-      <Filter>Source Files\utilities</Filter>
-    </ClCompile>
-    <ClCompile Include="utils_lockfreequeue.cpp">
       <Filter>Source Files\utilities</Filter>
     </ClCompile>
   </ItemGroup>

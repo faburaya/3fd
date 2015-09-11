@@ -193,7 +193,7 @@ namespace _3fd
 			/// <param name="ob">The object whose resources will be stolen.</param>
 			Context(Context &&ob) : 
 				m_context(ob.m_context), 
-				m_devices(std::move(m_devices)) 
+                m_devices(std::move(ob.m_devices))
 			{
 				ob.m_context = nullptr;
 			}
