@@ -1,9 +1,16 @@
 #include "stdafx.h"
 #include "runtime.h"
 #include "gc_memorydigraph.h"
+#include "gc_memblock.h"
 #include "sptr.h"
 
 #include <vector>
+
+#ifdef _WIN32
+#	define ALIGNED_NEW(TYPE, INITIALIZER) new (_aligned_malloc(sizeof TYPE, 2)) TYPE INITIALIZER
+#else
+#	define ALIGNED_NEW(TYPE, INITIALIZER) new (aligned_alloc(2, sizeof TYPE)) TYPE INITIALIZER
+#endif
 
 namespace _3fd
 {
@@ -32,7 +39,7 @@ namespace _3fd
 			// Add some vertices:
 			for (int count = 0; count < n; ++count)
 			{
-				auto ptr = new Stuffed;
+				auto ptr = ALIGNED_NEW(Stuffed, ());
 				addrs.push_back(ptr);
 				auto vtx = graph.AddVertex(ptr, sizeof *ptr, &memory::FreeMemAddr<Stuffed>);
 				graph.AddEdge(&fakeRootVtsx[count], vtx);
@@ -42,14 +49,14 @@ namespace _3fd
 			for (auto ptr : addrs)
 			{
 				auto vtx = graph.GetVertex(ptr);
-				EXPECT_EQ(ptr, vtx->memoryAddress().Get());
+				EXPECT_EQ(ptr, vtx->GetMemoryAddress().Get());
 			}
 
 			// Try retrieving container vertices:
 			for (auto ptr : addrs)
 			{
 				auto vtx = graph.GetContainerVertex(&(ptr->low));
-				EXPECT_EQ(ptr, vtx->memoryAddress().Get());
+				EXPECT_EQ(ptr, vtx->GetMemoryAddress().Get());
 			}
 
 			// Remove all edges from the graph, and the vertices will be gone too:

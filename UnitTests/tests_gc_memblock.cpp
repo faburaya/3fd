@@ -71,11 +71,8 @@ namespace _3fd
 			using namespace memory;
 
 			// Sets the memory pool:
-
 			const size_t poolSize(16);
-
 			utils::DynamicMemPool myPool(poolSize, sizeof(MemBlock), 1.0F);
-
 			MemBlock::SetMemoryPool(myPool);
 
 			// Creates a 'graph' which is a chain of memory blocks:
@@ -86,7 +83,9 @@ namespace _3fd
 
 			std::generate(begin(memBlocks), end(memBlocks), [&index]()
 			{
-				return new MemBlock(reinterpret_cast<void *> (index++), 42, nullptr);
+				auto memBlock = new MemBlock(reinterpret_cast<void *> (index), 42, nullptr);
+				index += sizeof (void *);
+				return memBlock;
 			});
 
 			for (index = 0; index < memBlocks.size() - 1; ++index)

@@ -37,7 +37,9 @@ namespace _3fd
 
 			void *m_sptrObjectAddr,
 				 *m_pointedAddr;
-			size_t	m_blockSize;
+
+			size_t m_blockSize;
+
 			FreeMemProc	m_freeMemCallback;
 
 		public:

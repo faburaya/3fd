@@ -40,31 +40,57 @@ namespace _3fd
 			}
 
 			/// <summary>
-			/// Sets a bit flag to mark the memory address.
+			/// Gets the stored memory address.
 			/// </summary>
-			/// <param name="on">if set to <c>true</c>, activates the less significant bit in the address.</param>
-			void Mark(bool on) const
+			/// <returns>The memory address, WITH the encoded flag.</returns>
+			void *GetEncoded() const
 			{
-				if (on)
-					m_address = reinterpret_cast <void *> (reinterpret_cast<uintptr_t> (m_address) | 1);
-				else
-					m_address = reinterpret_cast <void *> (reinterpret_cast<uintptr_t> (m_address) & mask);
+				return reinterpret_cast <void *> (reinterpret_cast<uintptr_t> (m_address));
 			}
 
 			/// <summary>
-			/// Determines whether the memory address is marked.
+			/// Sets a bit flag to mark the less significant bit in the memory address.
+			/// In x86 architecture, such bit is not used.
 			/// </summary>
-			/// <returns>Whether a bit flag was activated to mark the memory address.</returns>
-			bool isMarked() const
+			/// <param name="on">
+			/// if set to <c>true</c>, activates the less significant bit in the address.
+			/// </param>
+			void SetBit0(bool on) const
 			{
-				return static_cast<bool> (reinterpret_cast<uintptr_t> (m_address)& 1);
+				if (on)
+				{
+					m_address = reinterpret_cast <void *> (
+						reinterpret_cast<uintptr_t> (m_address) | uintptr_t(1)
+					);
+				}
+				else
+				{
+					m_address = reinterpret_cast <void *> (
+						reinterpret_cast<uintptr_t> (m_address) & mask
+					);
+				}
+			}
+
+			/// <summary>
+			/// Determines whether the memory address has the less significant bit marked.
+			/// </summary>
+			/// <returns>
+			/// Whether the less significant bit was activated to mark the memory address.
+			/// </returns>
+			bool GetBit0() const
+			{
+				return (reinterpret_cast<uintptr_t> (m_address) & uintptr_t(1)) != 0;
 			}
 
 			/// <summary>
 			/// Equality operator.
 			/// </summary>
 			/// <param name="ob">The object to compare with.</param>
-			/// <returns><c>true</c> if both object are equivalent, which means they have same address and mark, otherwise, <c>false</c>.</returns>
+			/// <returns>
+			/// <c>true</c> if both object are equivalent,
+			/// which means they have same address and mark,
+			/// otherwise, <c>false</c>.
+			/// </returns>
 			bool operator ==(const MemAddress &ob)
 			{
 				return m_address == ob.m_address;
@@ -90,9 +116,9 @@ namespace _3fd
 			MemAddrContainer(void *memAddress)
 				: m_memAddr(memAddress) {}
 
-			MemAddress &memoryAddress() { return m_memAddr; }
+			MemAddress &GetMemoryAddress() { return m_memAddr; }
 
-			const MemAddress &memoryAddress() const { return m_memAddr; }
+			const MemAddress &GetMemoryAddress() const { return m_memAddr; }
 		};
 
 		/// <summary>
@@ -104,8 +130,8 @@ namespace _3fd
 		{
 			bool operator()(MemAddrContainer *left, MemAddrContainer *right) const
 			{
-				return left->memoryAddress().Get()
-					< right->memoryAddress().Get();
+				return left->GetMemoryAddress().Get()
+					< right->GetMemoryAddress().Get();
 			}
 		};
 

@@ -4,12 +4,6 @@
 #include <algorithm>
 #include <cassert>
 
-/*
-	Regular vertices are kept in the second partition whereas root vertices stay in the first. That is 
-	because the handling of regular vertices is expected to happen more often, hence their insertion must 
-	be simple (faster). They happen more often when the graph has long and complex paths, which is the 
-	scenario where garbage collection makes sense.
-*/
 namespace _3fd
 {
 	namespace memory
@@ -27,7 +21,7 @@ namespace _3fd
 			while (begin < --right)
 			{
 				auto left = right - 1;
-				if (left->Get() > right->Get())
+				if (left->GetEncoded() > right->GetEncoded())
 				{
 					auto temp = *right;
 					*right = *left;
@@ -57,9 +51,9 @@ namespace _3fd
 			{
 				auto middle = left + size / 2;
 
-				if (what.Get() < middle->Get())
+				if (what.GetEncoded() < middle->GetEncoded())
 					right = middle;
-				else if (what.Get() > middle->Get())
+				else if (what.GetEncoded() > middle->GetEncoded())
 					left = middle + 1;
 				else
 					return middle;
@@ -93,7 +87,9 @@ namespace _3fd
 		/// <summary>
 		/// Implementation for receiving a new edge.
 		/// </summary>
-		/// <param name="vtx">The address of the vertex object. Root vertices must be marked.</param>
+		/// <param name="vtx">
+		/// The address of the vertex object. Root vertices must be marked.
+		/// </param>
 		void Vertex::ReceiveEdgeImpl(MemAddress vtx)
 		{
 			if (m_arrayCapacity > m_arraySize) // there is room in the array
@@ -130,7 +126,7 @@ namespace _3fd
 		}
 
 		/// <summary>
-		/// Adds a receiving an edge from a regultar vertex.
+		/// Adds a receiving an edge from a regular vertex.
 		/// </summary>
 		/// <param name="vtxRegular">The regular vertex.</param>
 		void Vertex::ReceiveEdge(Vertex *vtxRegular)
@@ -145,7 +141,7 @@ namespace _3fd
 		void Vertex::ReceiveEdge(void *vtxRoot)
 		{
 			MemAddress vtx(vtxRoot);
-			vtx.Mark(true);
+			vtx.SetBit0(true); // bit position 0 set means root vertex
 			ReceiveEdgeImpl(vtx);
 			++m_rootCount;
 		}
@@ -158,7 +154,7 @@ namespace _3fd
 			if (m_arraySize < m_arrayCapacity / 4)
 			{
 				m_arrayCapacity /= 2;
-				auto temp = (MemAddress *)realloc(m_arrayEdges, m_arrayCapacity * sizeof(MemAddress));
+				auto temp = (MemAddress *)realloc(m_arrayEdges, m_arrayCapacity * sizeof (MemAddress));
 
 				if (temp != nullptr)
 					m_arrayEdges = temp;
@@ -198,7 +194,7 @@ namespace _3fd
 		void Vertex::RemoveEdge(void *vtxRoot)
 		{
 			MemAddress vtx(vtxRoot);
-			vtx.Mark(true);
+			vtx.SetBit0(true); // bit position 0 marked means root vertex
 			RemoveEdgeImpl(vtx);
 			--m_rootCount;
 		}
@@ -213,36 +209,42 @@ namespace _3fd
 		}
 
 		/// <summary>
-		/// Determines whether this vertex has any receiving edge from a root vertex.
+		/// Determines whether this instance is connected to a root vertex.
 		/// </summary>
-		/// <returns>Whether it has a receiving edge from a root vertex.</returns>
-		bool Vertex::HasRootEdge() const
+		/// <returns>
+		/// <c>true</c> if connected (directly or not), otherwise, <c>false</c>.
+		/// </returns>
+		bool Vertex::IsReachable() const
 		{
-			return m_rootCount > 0;
-		}
-
-		/// <summary>
-		/// Iterates over regular edges while the callback keeps asking for continuation.
-		/// </summary>
-		/// <param name="callback">The callback that receives the vertices as parameter. Iteration continues while it returns 'true'.</param>
-		/// <returns><c>false</c> if the callback has returned <c>false</c> for any edge from regular vertex.</returns>
-		bool Vertex::ForEachRegularEdgeWhile(const std::function<bool(const Vertex &)> &callback) const
-		{
-			if (m_arraySize > 0)
+			if (m_rootCount > 0)
+				return true;
+			else if (m_arraySize > 0)
 			{
+				// Mark this vertex as visited
+				const_cast<Vertex *> (this)->Mark(true);
+
+				// Depth-first search:
 				uint32_t idx(0);
-				bool goAhead(true);
-				while (idx < m_arraySize && goAhead)
+				while (idx < m_arraySize)
 				{
 					auto edge = m_arrayEdges[idx++];
-					if (!edge.isMarked())
-						goAhead = callback(*static_cast<Vertex *> (edge.Get()));
+					_ASSERTE(!edge.GetBit0()); // bit 0 activated means "root vertex" and the cast below is invalid
+
+					auto vertex = static_cast<Vertex *> (edge.Get());
+
+					if (!vertex->IsMarked() && vertex->IsReachable())
+					{
+						// Unmark this vertex before leaving
+						const_cast<Vertex *> (this)->Mark(false);
+						return true;
+					}
 				}
 
-				return idx == m_arraySize && goAhead;
+				// Unmark this vertex before leaving
+				const_cast<Vertex *> (this)->Mark(false);
 			}
-			else
-				return true;
+			
+			return false;
 		}
 
 	}// end of namespace memory

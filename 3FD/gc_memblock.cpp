@@ -58,44 +58,34 @@ namespace _3fd
 		}
 
 		/// <summary>
+		/// Marks or unmarks the instance.
+		/// </summary>
+		/// <param name="on">
+		/// if set to <c>true</c>, marks the instance, otherwise, unmark it.
+		/// </param>
+		void MemBlock::Mark(bool on)
+		{
+			GetMemoryAddress().SetBit0(on);
+		}
+
+		/// <summary>
+		/// Determines whether this instance is marked.
+		/// </summary>
+		/// <returns><c>true</c> whether marked, otherwise, <c>false</c>.</returns>
+		bool MemBlock::IsMarked() const
+		{
+			return GetMemoryAddress().GetBit0();
+		}
+
+		/// <summary>
 		/// Determines whether this memory block contains the specified memory address.
 		/// </summary>
 		/// <param name="someAddr">The memory address to test.</param>
 		/// <returns>Whether this memory block contains the specified memory address</returns>
 		bool MemBlock::Contains(void *someAddr) const
 		{
-			return someAddr >= memoryAddress().Get()
-				&& someAddr < (void *)((uintptr_t)memoryAddress().Get() + m_blockSize);
-		}
-
-		/// <summary>
-		/// Determines whether this instance is reachable.
-		/// </summary>
-		/// <returns></returns>
-		bool MemBlock::IsReachable() const
-		{
-			if (HasRootEdge())
-				return true;
-			
-			// Avoid cyclic paths by marking vertices
-			memoryAddress().Mark(true);
-
-			// Check if any receiving edge is a path coming from a reaching root vertex:
-			bool isUnreachableViaReceivingEdges = 
-				ForEachRegularEdgeWhile([this](const Vertex &vtx)
-				{
-					auto &memBlock = static_cast<const MemBlock &> (vtx);
-
-					if (!memBlock.memoryAddress().isMarked())
-						return !memBlock.IsReachable();
-					else
-						return true;
-				});
-
-			// unmark this vertex so as to leave the graph inaltered at the end of the algorithm
-			memoryAddress().Mark(false);
-
-			return !isUnreachableViaReceivingEdges;
+			return someAddr >= GetMemoryAddress().Get()
+				&& someAddr < (void *)((uintptr_t)GetMemoryAddress().Get() + m_blockSize);
 		}
 
 		/// <summary>
@@ -104,7 +94,7 @@ namespace _3fd
 		/// <param name="destroy">if set to <c>true</c> [destroy].</param>
 		void MemBlock::Free(bool destroy)
 		{
-			(*m_freeMemCallback)(memoryAddress().Get(), destroy);
+			(*m_freeMemCallback)(GetMemoryAddress().Get(), destroy);
 		}
 
 	}// end of namespace memory

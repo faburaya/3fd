@@ -57,7 +57,7 @@ namespace _3fd
 
 				auto &movedMemPool = m_memPools.insert(
 					std::make_pair(addr, std::move(memPool))
-					).first->second;
+				).first->second;
 
 				m_availableMemPools.push(&movedMemPool); // make the new memory pool available
 

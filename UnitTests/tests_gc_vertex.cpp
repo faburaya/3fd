@@ -14,15 +14,20 @@ namespace _3fd
 		{
 			auto ptr = new int(696);
 			memory::MemAddress memAddress(ptr);
-			EXPECT_EQ(ptr, memAddress.Get());
-			EXPECT_FALSE(memAddress.isMarked());
 
-			memAddress.Mark(true);
-			EXPECT_TRUE(memAddress.isMarked());
+			EXPECT_EQ(ptr, memAddress.Get());
+			EXPECT_FALSE(memAddress.GetBit0());
+
+			memAddress.SetBit0(true);
+			EXPECT_TRUE(memAddress.GetBit0());
 			EXPECT_EQ(ptr, memAddress.Get());
 
-			memAddress.Mark(false);
-			EXPECT_FALSE(memAddress.isMarked());
+			memAddress.SetBit0(false);
+			EXPECT_FALSE(memAddress.GetBit0());
+			EXPECT_EQ(ptr, memAddress.Get());
+
+			memAddress.SetBit0(true);
+			EXPECT_TRUE(memAddress.GetBit0());
 			EXPECT_EQ(ptr, memAddress.Get());
 
 			delete ptr;
@@ -34,31 +39,32 @@ namespace _3fd
 		TEST(Framework_MemoryGC_TestCase, Vertex_Test)
 		{
 			using memory::Vertex;
+			using memory::MemBlock;
 
-			Vertex obj;
+			MemBlock derivedObj(this, sizeof *this, nullptr);
+			Vertex &obj = derivedObj;
 
-			ASSERT_FALSE(obj.HasRootEdge());
+			ASSERT_FALSE(obj.IsReachable());
 
-			const int n = 32;
+			const int n = 1024;
 			std::vector<int> someVars(n, 696);
 			std::vector<void *> fakePtrs(n);
-			std::vector<Vertex> otherVertices(n);
+			std::vector<MemBlock *> otherVertices(n);
+
+			// Memory pool for MemBlock's:
+			const size_t poolSize(512);
+			utils::DynamicMemPool myPool(poolSize, sizeof(MemBlock), 1.0F);
+			MemBlock::SetMemoryPool(myPool);
+
+			// Generate some fake MemBlock's:
+			for (int idx = 0; idx < n; ++idx)
+				otherVertices[idx] = new MemBlock(this, sizeof *this, nullptr);
 
 			// Add edges from regular vertices:
-			for (auto &vtx : otherVertices)
-				obj.ReceiveEdge(&vtx);
+			for (auto vtx : otherVertices)
+				obj.ReceiveEdge(vtx);
 
-			ASSERT_FALSE(obj.HasRootEdge());
-
-			// Count edges from regular vertices:
-			int count(0);
-			obj.ForEachRegularEdgeWhile([&count](const Vertex &vtx)
-			{
-				++count;
-				return true;
-			});
-
-			ASSERT_EQ(n, count);
+			ASSERT_FALSE(obj.IsReachable());
 
 			// Add edges from root vertices:
 			for (int idx = 0; idx < n; ++idx)
@@ -67,95 +73,39 @@ namespace _3fd
 				obj.ReceiveEdge(fakePtrs[idx]);
 			}
 
-			ASSERT_TRUE(obj.HasRootEdge());
-
-			// Count regular edges:
-			count = 0;
-			obj.ForEachRegularEdgeWhile([&count](const Vertex &vtx)
-			{
-				++count;
-				return true;
-			});
-
-			ASSERT_EQ(n, count);
+			ASSERT_TRUE(obj.IsReachable());
 
 			// Remove all edges:
 			obj.RemoveAllEdges();
-			ASSERT_FALSE(obj.HasRootEdge());
-
-			// Count regular edges:
-			count = 0;
-			obj.ForEachRegularEdgeWhile([&count](const Vertex &vtx)
-			{
-				++count;
-				return true;
-			});
-
-			ASSERT_EQ(0, count);
+			ASSERT_FALSE(obj.IsReachable());
 
 			// Once again, add regular edges:
-			for (auto &vtx : otherVertices)
-				obj.ReceiveEdge(&vtx);
+			for (auto vtx : otherVertices)
+				obj.ReceiveEdge(vtx);
 
-			ASSERT_FALSE(obj.HasRootEdge());
-
-			// Count regular edges:
-			count = 0;
-			obj.ForEachRegularEdgeWhile([&count](const Vertex &vtx)
-			{
-				++count;
-				return true;
-			});
-
-			ASSERT_EQ(n, count);
+			ASSERT_FALSE(obj.IsReachable());
 
 			// Once again, add root edges:
 			for (int idx = 0; idx < n; ++idx)
 				obj.ReceiveEdge(fakePtrs[idx]);
 
-			ASSERT_TRUE(obj.HasRootEdge());
-
-			// Count regular edges:
-			count = 0;
-			obj.ForEachRegularEdgeWhile([&count](const Vertex &vtx)
-			{
-				++count;
-				return true;
-			});
-
-			ASSERT_EQ(n, count);
+			ASSERT_TRUE(obj.IsReachable());
 
 			// Remove regular edges:
-			for (auto &vtx : otherVertices)
-				obj.RemoveEdge(&vtx);
+			for (auto vtx : otherVertices)
+				obj.RemoveEdge(vtx);
 
-			ASSERT_TRUE(obj.HasRootEdge());
-
-			// Count regular edges:
-			count = 0;
-			obj.ForEachRegularEdgeWhile([&count](const Vertex &vtx)
-			{
-				++count;
-				return true;
-			});
-
-			ASSERT_EQ(0, count);
+			ASSERT_TRUE(obj.IsReachable());
 
 			// Remove root edges:
 			for (auto ptr : fakePtrs)
 				obj.RemoveEdge(ptr);
 
-			ASSERT_FALSE(obj.HasRootEdge());
+			ASSERT_FALSE(obj.IsReachable());
 
-			// Count regular edges:
-			count = 0;
-			obj.ForEachRegularEdgeWhile([&count](const Vertex &vtx)
-			{
-				++count;
-				return true;
-			});
-
-			ASSERT_EQ(0, count);
+			// Return MemBlock's to the pool:
+			for (auto vtx : otherVertices)
+				delete vtx;
 		}
 
 	}// end of namespace unit_tests

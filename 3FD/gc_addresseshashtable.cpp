@@ -135,14 +135,15 @@ namespace _3fd
 		}
 
 		/// <summary>
-		/// Inserts a new entry in the hash table, placed according the memory address of the <see cref="sptr" /> object.
+		/// Inserts a new entry in the hash table, placed according
+		/// the memory address of the <see cref="sptr" /> object.
 		/// </summary>
 		/// <param name="sptrObjectAddr">The <see cref="sptr" /> object address.</param>
 		/// <param name="pointedAddr">The address pointed by the <see cref="sptr" /> object.</param>
 		/// <param name="container">The container memory block.</param>
 		/// <returns>A view to the inserted element.</returns>
 		AddressesHashTable::Element &
-		AddressesHashTable::Insert(void *sptrObjectAddr, void *pointedAddr, MemAddrContainer *container)
+		AddressesHashTable::Insert(void *sptrObjectAddr, void *pointedAddr, MemBlock *container)
 		{
 			if (CalculateLoadFactor() > AppConfig::GetSettings().framework.gc.sptrObjectsHashTable.loadFactorThreshold
 				|| m_bucketArray.empty())
@@ -191,7 +192,9 @@ namespace _3fd
 		/// Looks up for the specified <see cref="sptr" /> object address.
 		/// </summary>
 		/// <param name="sptrObjectAddr">The <see cref="sptr" /> object address.</param>
-		/// <returns>The <see cref="Element" /> object corresponding to the <see cref="sptr" /> object address.</returns>
+		/// <returns>
+		/// The <see cref="Element" /> object corresponding to the <see cref="sptr" /> object address.
+		/// </returns>
 		AddressesHashTable::Element &
 		AddressesHashTable::Lookup(void *sptrObjectAddr)
 		{

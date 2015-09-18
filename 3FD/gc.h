@@ -4,8 +4,8 @@
 #include "base.h"
 #include "utils.h"
 #include "gc_mastertable.h"
+#include "utils_lockfreequeue.h"
 
-#include <boost/lockfree/queue.hpp>
 #include <exception>
 #include <thread>
 #include <mutex>
@@ -39,11 +39,11 @@ namespace _3fd
 		{
 		private:
 
-			std::thread							m_thread;
-			std::exception_ptr					m_error;
-			MasterTable							m_masterTable;
-			boost::lockfree::queue<IMessage *>	m_messagesQueue;
-			utils::Event						m_terminationEvent;
+			std::thread						m_thread;
+			std::exception_ptr				m_error;
+			MasterTable						m_masterTable;
+			utils::LockedQueue<IMessage>	m_messagesQueue;
+			utils::Event					m_terminationEvent;
 
 			GarbageCollector();
 

@@ -24,8 +24,8 @@ namespace _3fd
 			// If the reference is not null, look for the corresponding MemBlock object and sets a connection
 			if (pointedAddr != 0)
 			{
-				MemAddrContainer *receiver = m_memDigraph.GetVertex(pointedAddr),
-								 *originator = sptrObjHashTableElem->GetContainerMemBlock();
+				MemBlock *receiver = m_memDigraph.GetVertex(pointedAddr),
+						 *originator = sptrObjHashTableElem->GetContainerMemBlock();
 
 				if (originator == nullptr)
 					// Sets the connection with the safe pointer ('root vertex' or 'access point')
@@ -52,11 +52,11 @@ namespace _3fd
 			// If the sptr object currently references an address, unmake the reference:
 			if (pointedAddr != 0)
 			{
-				MemAddrContainer *receiver = m_memDigraph.GetVertex(pointedAddr);
+				MemBlock *receiver = m_memDigraph.GetVertex(pointedAddr);
 
 				if (receiver != nullptr)
 				{
-					MemAddrContainer *originator = sptrObjHashTableElem->GetContainerMemBlock();
+					MemBlock *originator = sptrObjHashTableElem->GetContainerMemBlock();
 
 					// Undo the reference of the sptr object:
 					if (originator == nullptr)
@@ -106,8 +106,10 @@ namespace _3fd
 		/// </summary>
 		/// <param name="sptrObjAddr">The safe pointer object address.</param>
 		/// <param name="pointedAddr">The new memory address referred by the safe pointer.</param>
-		/// <param name="allowRefObjDtion">Whether the referred object should have its destructor invoked just in case it is to be collected.
-		/// The destruction must not be allowed when the object construction has failed due to a thrown exception.</param>
+		/// <param name="allowRefObjDtion">
+		/// Whether the referred object should have its destructor invoked just in case it is to be collected.
+		/// The destruction must not be allowed when the object construction has failed due to a thrown exception.
+		/// </param>
 		void MasterTable::DoUpdateReference(void *sptrObjAddr, void *pointedAddr, bool allowRefObjDtion) throw()
 		{
 			auto &sptrObjHashTableElem = m_sptrObjects.Lookup(sptrObjAddr);

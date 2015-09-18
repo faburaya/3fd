@@ -25,7 +25,11 @@ namespace _3fd
 			if (destroy)
 				ptr->X::~X();
 
+#	ifdef _WIN32
+			_aligned_free(ptr);
+#	else
 			free(ptr);
+#	endif
 		}
 
 

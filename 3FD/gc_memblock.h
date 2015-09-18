@@ -1,11 +1,10 @@
-#ifndef GC_MEMORYBLOCK_H // header guard
-#define GC_MEMORYBLOCK_H
+#ifndef GC_MEMBLOCK_H // header guard
+#define GC_MEMBLOCK_H
 
 #include "utils.h"
 #include "gc_common.h"
 #include "gc_memaddress.h"
 
-#include <functional>
 #include <cstdint>
 #include <cstdlib>
 
@@ -48,11 +47,27 @@ namespace _3fd
 
 			void RemoveEdgeImpl(MemAddress vtx);
 
+		protected:
+
+			/// <summary>
+			/// Marks or unmarks the instance.
+			/// </summary>
+			/// <param name="on">
+			/// if set to <c>true</c>, marks the instance, otherwise, unmark it.
+			/// </param>
+			virtual void Mark(bool on) = 0;
+
+			/// <summary>
+			/// Determines whether this instance is marked.
+			/// </summary>
+			/// <returns><c>true</c> whether marked, otherwise, <c>false</c>.</returns>
+			virtual bool IsMarked() const = 0;
+
 		public:
 
 			Vertex();
 
-			~Vertex();
+			virtual ~Vertex();
 
 			void ReceiveEdge(Vertex *vtxRegular);
 
@@ -64,20 +79,22 @@ namespace _3fd
 
 			void RemoveAllEdges();
 
-			bool HasRootEdge() const;
-
-			bool ForEachRegularEdgeWhile(const std::function<bool(const Vertex &)> &callback) const;
+			bool IsReachable() const;
 		};
 
 		/// <summary>
 		/// Represents a memory block region managed by the GC.
 		/// </summary>
-		class MemBlock : notcopiable, public Vertex, public MemAddrContainer
+		class MemBlock : notcopiable, public MemAddrContainer, public Vertex
 		{
 		private:
 
 			FreeMemProc		m_freeMemCallback;
 			uint32_t		m_blockSize;
+
+			virtual void Mark(bool on) override;
+
+			virtual bool IsMarked() const override;
 
 			static utils::DynamicMemPool *dynMemPool;
 
@@ -91,13 +108,11 @@ namespace _3fd
 
 			MemBlock(void *memAddr, size_t blockSize, FreeMemProc freeMemCallback);
 
-			~MemBlock();
+			virtual ~MemBlock();
 
 			bool Contains(void *someAddr) const;
 
-			bool IsReachable() const;
-
-			void Free(bool destroy);
+			void Free(bool destroy);			
 		};
 
 	}// end of namespace memory

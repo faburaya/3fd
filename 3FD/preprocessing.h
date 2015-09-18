@@ -63,7 +63,7 @@
 #endif
 
 // Some few useful "keywords":
-#define const_this	const_cast<decltype(this)> (this)
+#define const_this	const_cast<const decltype(*this) &> (*this)
 
 // These are the calls that should be used for handling errors: it uses the RuntimeManager class:
 #ifdef ENABLE_3FD_CST

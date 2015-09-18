@@ -16,8 +16,9 @@ namespace _3fd
 		{
 		private:
 
-			MemoryDigraph			m_memDigraph; 
-			AddressesHashTable		m_sptrObjects; // A hash table here might improve performance and can be used because it does not have to be sorted
+			MemoryDigraph		m_memDigraph; 
+			AddressesHashTable	m_sptrObjects; /* A hash table here might improve performance and
+											   can be used because it does not have to be sorted */
 
 			void MakeReference(AddressesHashTable::Element *sptrObjHashTableElem, void *pointedAddr);
 

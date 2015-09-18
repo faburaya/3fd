@@ -14,11 +14,39 @@ namespace _3fd
 		////////////////////////////////
 
 		/// <summary>
+		/// Perform allocation of aligned memory for an array, initialized to zero.
+		/// </summary>
+		/// <param name="alignment">The alignment.</param>
+		/// <param name="numBlocks">How many blocks to allocate.</param>
+		/// <param name="blockSize">The amount of bytes to allocate per block.</param>
+		/// <returns>
+		/// A pointer to the allocated memory.
+		/// </returns>
+		/// <remarks>
+		/// The product 'blockSize * numBlocks' has to be a multiple of the alignment.
+		/// </remarks>
+		static void *aligned_calloc(size_t alignment, size_t numBlocks, size_t blockSize)
+		{
+			auto nBytes = numBlocks * blockSize;
+#	ifdef _WIN32
+			auto ptr = _aligned_malloc(nBytes, alignment);
+#	else
+			auto ptr = aligned_alloc(alignment, nBytes);
+#	endif
+			if (ptr != nullptr)
+			{
+				memset(ptr, 0x0, nBytes);
+				return ptr;
+			}
+			else
+				throw core::AppException<std::runtime_error>("Failed to allocate memory for memory pool");
+		}
+
+		/// <summary>
 		/// Memories the pool.
 		/// </summary>
 		/// <param name="numBlocks">The number blocks.</param>
 		/// <param name="blockSize">Size of the block.</param>
-		/// <returns></returns>
 		MemoryPool::MemoryPool(uint32_t numBlocks, uint32_t blockSize)
 		try :
 			m_baseAddr(nullptr),
@@ -29,15 +57,11 @@ namespace _3fd
 		{
 			_ASSERTE(numBlocks * blockSize > 0); // Cannot handle a null value as the amount of memory
 
-			m_baseAddr = calloc(numBlocks, blockSize);
-
-			if (m_baseAddr != nullptr)
-			{
-				m_end = reinterpret_cast<void *> (reinterpret_cast<size_t> (m_baseAddr) + numBlocks * blockSize);
-				m_nextAddr = m_baseAddr;
-			}
-			else
-				throw core::AppException<std::runtime_error>("Failed to allocate memory for memory pool", "std::calloc");
+			/* Allocation aligned in 2 bytes guarantees the addresses will always have
+			the less significant bit unused. This is explored in the GC implementation. */
+			m_baseAddr = aligned_calloc(2, numBlocks, blockSize);
+			m_end = reinterpret_cast<void *> (reinterpret_cast<size_t> (m_baseAddr) +numBlocks * blockSize);
+			m_nextAddr = m_baseAddr;
 		}
 		catch (core::IAppException &)
 		{
@@ -74,7 +98,11 @@ namespace _3fd
 				(reinterpret_cast<uintptr_t> (m_nextAddr) - reinterpret_cast<uintptr_t> (m_baseAddr)) / m_blockSize);
 
 			if (m_baseAddr != nullptr)
+#	ifdef _WIN32
+				_aligned_free(m_baseAddr);
+#	else
 				free(m_baseAddr);
+#	endif
 		}
 
 		/// <summary>

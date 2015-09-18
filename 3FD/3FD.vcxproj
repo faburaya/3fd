@@ -269,7 +269,6 @@
     <ClCompile Include="utils_dynmempool.cpp" />
     <ClCompile Include="utils_event.cpp" />
     <ClCompile Include="gc_vertex.cpp" />
-    <ClCompile Include="utils_lockfreequeue.cpp" />
     <ClCompile Include="utils_memorypool.cpp" />
   </ItemGroup>
   <ItemGroup>

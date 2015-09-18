@@ -1,5 +1,5 @@
-#ifndef DIGRAPH_H // header guard
-#define DIGRAPH_H
+#ifndef	GC_MEMORYDIGRAPH_H // header guard
+#define GC_MEMORYDIGRAPH_H
 
 /*
 	Here is implemented a directed graph tuned for reachability analysis used by the garbage collector.
@@ -24,6 +24,8 @@ namespace _3fd
 {
 	namespace memory
 	{
+		class MemBlock;
+
 		/// <summary>
 		/// Directed graph representing the connections made by safe pointers between pieces of memory managed by the GC.
 		/// </summary>
@@ -41,7 +43,7 @@ namespace _3fd
 			/// <remarks>Although a hash table could be faster, it is not sorted, hence cannot be used.</remarks>
 			SetOfMemBlocks m_vertices;
 
-			void RemoveVertex(MemAddrContainer *vtx, bool allowDestruction);
+			void RemoveVertex(MemBlock *vtx, bool allowDestruction);
 
 		public:
 
@@ -49,22 +51,22 @@ namespace _3fd
 
 			void ShrinkObjectPool();
 
-			MemAddrContainer *AddVertex(void *memAddr, size_t blockSize, FreeMemProc freeMemCallback);
+			MemBlock *AddVertex(void *memAddr, size_t blockSize, FreeMemProc freeMemCallback);
 
-			MemAddrContainer *GetVertex(void *blockMemAddr) const;
+			MemBlock *GetVertex(void *blockMemAddr) const;
 
-			MemAddrContainer *GetContainerVertex(void *addr) const;
+			MemBlock *GetContainerVertex(void *addr) const;
 
-			void AddEdge(void *vtxRootFrom, MemAddrContainer *vtxRegularTo);
+			void AddEdge(void *vtxRootFrom, MemBlock *vtxRegularTo);
 
-			void AddEdge(MemAddrContainer *originatorVtx, MemAddrContainer *receivingVtx);
+			void AddEdge(MemBlock *originatorVtx, MemBlock *receivingVtx);
 
-			void RemoveEdge(void *vtxRootFrom, MemAddrContainer *vtxRegularTo, bool allowDestruction);
+			void RemoveEdge(void *vtxRootFrom, MemBlock *vtxRegularTo, bool allowDestruction);
 
-			void RemoveEdge(MemAddrContainer *originatorVtx, MemAddrContainer *receivingVtx, bool allowDestruction);
+			void RemoveEdge(MemBlock *originatorVtx, MemBlock *receivingVtx, bool allowDestruction);
 		};
 
-	}// end of namespace ctl
+	}// end of namespace memory
 }// end of namespace _3fd
 
 #endif // end of header guard
