@@ -43,8 +43,10 @@ namespace _3fd
 		/// Unsets in master table the connection between a safe pointer and its referred memory address.
 		/// </summary>
 		/// <param name="sptrObjHashTableElem">A hashtable element which represents the safe pointer.</param>
-		/// <param name="allowDestruction">Whether the pointed object should have its destructor invoked just in case it is to be collected.
-		/// The destruction must not be allowed when the object construction has failed due to a thrown exception.</param>
+		/// <param name="allowDestruction">
+		/// Whether the pointed object should have its destructor invoked just in case it is to be collected.
+		/// The destruction must not be allowed when the object construction has failed due to a thrown exception.
+		/// </param>
 		void MasterTable::UnmakeReference(AddressesHashTable::Element *sptrObjHashTableElem, bool allowDestruction)
 		{
 			void *pointedAddr = sptrObjHashTableElem->GetPointedAddr();

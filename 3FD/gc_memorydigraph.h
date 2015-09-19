@@ -38,9 +38,12 @@ namespace _3fd
 			typedef stx::btree_set<MemAddrContainer *, LessOperOnMemBlockRepAddr> SetOfMemBlocks;
 
 			/// <summary>
-			/// A binary tree of garbage collected pieces of memory, ordered by the memory addresses of those pieces.
+			/// A binary tree of garbage collected pieces of memory,
+			/// ordered by the memory addresses of those pieces.
 			/// </summary>
-			/// <remarks>Although a hash table could be faster, it is not sorted, hence cannot be used.</remarks>
+			/// <remarks>
+			/// Although a hash table could be faster, it is not sorted, hence cannot be used.
+			/// </remarks>
 			SetOfMemBlocks m_vertices;
 
 			void RemoveVertex(MemBlock *vtx, bool allowDestruction);

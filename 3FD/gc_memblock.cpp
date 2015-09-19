@@ -54,7 +54,6 @@ namespace _3fd
 		/// </summary>
 		MemBlock::~MemBlock()
 		{
-			RemoveAllEdges();
 		}
 
 		/// <summary>
