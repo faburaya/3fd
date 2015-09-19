@@ -8,7 +8,8 @@ namespace _3fd
 	namespace memory
 	{
 		/// <summary>
-		/// Holds a single memory address which can be flagged using less significant bits available.
+		/// Holds a single memory address which can be flagged using the 2 less significant bits.
+		/// The availability of such bits must be ensured allocating aligned memory.
 		/// </summary>
 		class MemAddress
 		{
@@ -17,9 +18,9 @@ namespace _3fd
 			mutable void *m_address;
 
 #if defined(_M_X64) || defined(__amd64__)
-			static const uintptr_t mask = 0xfffffffffffffffe;
+			static const uintptr_t mask = 0xfffffffffffffffc;
 #else
-			static const uintptr_t mask = 0xfffffffe;
+			static const uintptr_t mask = 0xfffffffc;
 #endif
 		public:
 
@@ -49,11 +50,10 @@ namespace _3fd
 			}
 
 			/// <summary>
-			/// Sets a bit flag to mark the less significant bit in the memory address.
-			/// In x86 architecture, such bit is not used.
+			/// Sets the less significant bit in the memory address.
 			/// </summary>
 			/// <param name="on">
-			/// if set to <c>true</c>, activates the less significant bit in the address.
+			/// if set to <c>true</c>, activates the less significant bit.
 			/// </param>
 			void SetBit0(bool on) const
 			{
@@ -66,20 +66,53 @@ namespace _3fd
 				else
 				{
 					m_address = reinterpret_cast <void *> (
-						reinterpret_cast<uintptr_t> (m_address) & mask
+						reinterpret_cast<uintptr_t> (m_address) & (uintptr_t(2) & mask)
 					);
 				}
 			}
 
 			/// <summary>
-			/// Determines whether the memory address has the less significant bit marked.
+			/// Determines whether the memory address has the less significant bit set.
 			/// </summary>
 			/// <returns>
-			/// Whether the less significant bit was activated to mark the memory address.
+			/// Whether the memory address is marked with the less significant bit activated.
 			/// </returns>
 			bool GetBit0() const
 			{
 				return (reinterpret_cast<uintptr_t> (m_address) & uintptr_t(1)) != 0;
+			}
+
+			/// <summary>
+			/// Sets the second less significant bit in the memory address.
+			/// </summary>
+			/// <param name="on">
+			/// if set to <c>true</c>, activates the second less significant bit.
+			/// </param>
+			void SetBit1(bool on) const
+			{
+				if (on)
+				{
+					m_address = reinterpret_cast <void *> (
+						reinterpret_cast<uintptr_t> (m_address) | uintptr_t(2)
+					);
+				}
+				else
+				{
+					m_address = reinterpret_cast <void *> (
+						reinterpret_cast<uintptr_t> (m_address)& (uintptr_t(1) & mask)
+					);
+				}
+			}
+
+			/// <summary>
+			/// Determines whether the memory address has the second less significant bit set.
+			/// </summary>
+			/// <returns>
+			/// Whether the memory address is marked with the second less significant bit activated.
+			/// </returns>
+			bool GetBit1() const
+			{
+				return (reinterpret_cast<uintptr_t> (m_address) & uintptr_t(2)) != 0;
 			}
 
 			/// <summary>

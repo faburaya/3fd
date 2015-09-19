@@ -30,9 +30,8 @@ namespace _3fd
 			{
 			private:
 
-				void *m_sptrObjectAddr;	// This is the unique key (the memory address of the sptr object)
-				void *m_pointedAddr;	// This is a value (where the sptr points to)
-				MemBlock *m_container; // This is a value (what contains sptr)
+				MemAddress m_sptrObjectAddr; // This is the unique key (the memory address of the sptr object)
+				void *m_pointedAddr; // This is a value (where the sptr points to)
 
 			public:
 
@@ -40,25 +39,30 @@ namespace _3fd
 				/// Initializes a new instance of the <see cref="Element"/> class.
 				/// </summary>
 				Element()
-					: m_sptrObjectAddr(nullptr), m_pointedAddr(nullptr), m_container(nullptr) {}
+					: m_sptrObjectAddr(nullptr), m_pointedAddr(nullptr) {}
 
 				/// <summary>
 				/// Constructor for the <see cref="Element" /> objects allocated on the stack.
 				/// </summary>
+				/// <param name="isRoot">
+				/// When set to <c>true</c>, means the <see cref="sptr" /> object does not
+				/// live on garbage collected memory (hence a "root" in the GC memory graph).
+				/// </param>
 				/// <param name="sptrObjectAddr">The <see cref="sptr" /> object address.</param>
 				/// <param name="pointedAddr">The address pointed by the <see cref="sptr" /> object.</param>
-				/// <param name="container">The container memory block.</param>
-				Element(void *sptrObjectAddr, void *pointedAddr, MemBlock *container) :
+				Element(bool isRoot, void *sptrObjectAddr, void *pointedAddr) :
 					m_sptrObjectAddr(sptrObjectAddr),
-					m_pointedAddr(pointedAddr),
-					m_container(container)
-				{}
+					m_pointedAddr(pointedAddr)
+				{
+					if (isRoot)
+						m_sptrObjectAddr.SetBit0(true);
+				}
 
-				void *GetSptrObjectAddr() const { return m_sptrObjectAddr; }
+				void *GetSptrObjectAddr() const { return m_sptrObjectAddr.Get(); }
+
+				bool IsRoot() const { return m_sptrObjectAddr.GetBit0(); }
 
 				void *GetPointedAddr() const { return m_pointedAddr; }
-
-				MemBlock *GetContainerMemBlock() const { return m_container; }
 
 				void SetAddrPointed(void *pointedAddr) { m_pointedAddr = pointedAddr; }
 			};
@@ -91,10 +95,7 @@ namespace _3fd
 
 			AddressesHashTable();
 
-			Element &Insert(
-				void *sptrObjectAddr,
-				void *pointedAddr,
-				MemBlock *container);
+			Element &Insert(bool isRoot, void *sptrObjectAddr, void *pointedAddr);
 
 			// Lookup for an sptr object
 			Element &Lookup(void *sptrObjectAddr);

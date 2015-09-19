@@ -46,6 +46,10 @@ namespace _3fd
 			/// </remarks>
 			SetOfMemBlocks m_vertices;
 
+			MemBlock *GetVertex(void *memAddr) const;
+
+			MemBlock *GetContainerVertex(void *addr) const;
+
 			void RemoveVertex(MemBlock *vtx, bool allowDestruction);
 
 		public:
@@ -56,17 +60,13 @@ namespace _3fd
 
 			MemBlock *AddVertex(void *memAddr, size_t blockSize, FreeMemProc freeMemCallback);
 
-			MemBlock *GetVertex(void *blockMemAddr) const;
+			void AddRootEdge(void *fromRoot, void *toAddr);
 
-			MemBlock *GetContainerVertex(void *addr) const;
+			void AddRegularEdge(void *fromAddr, void *toAddr);
 
-			void AddEdge(void *vtxRootFrom, MemBlock *vtxRegularTo);
+			void RemoveRootEdge(void *fromRoot, void *toAddr, bool allowDestruction);
 
-			void AddEdge(MemBlock *originatorVtx, MemBlock *receivingVtx);
-
-			void RemoveEdge(void *vtxRootFrom, MemBlock *vtxRegularTo, bool allowDestruction);
-
-			void RemoveEdge(MemBlock *originatorVtx, MemBlock *receivingVtx, bool allowDestruction);
+			void RemoveRegularEdge(void *fromAddr, void *toAddr, bool allowDestruction);
 		};
 
 	}// end of namespace memory

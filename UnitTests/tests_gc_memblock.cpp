@@ -44,7 +44,7 @@ namespace _3fd
 			{
 				auto previousBack = memBlocks.back();
 				memBlocks.pop_back();
-				memBlocks.back()->RemoveEdge(previousBack);
+				memBlocks.back()->RemoveReceivingEdge(previousBack);
 				delete previousBack;
 			}
 
@@ -64,9 +64,10 @@ namespace _3fd
 		}
 
 		/// <summary>
-		/// Tests reachability analysis in a graph of linked <see cref="MemBlock" /> objects.
+		/// Tests reachability analysis in a graph of linked <see cref="MemBlock" />
+		/// objects in a chain.
 		/// </summary>
-		TEST(Framework_MemoryGC_TestCase, MemBlock_GraphAlgorithmTest)
+		TEST(Framework_MemoryGC_TestCase, MemBlock_GraphReachabilityAnalysis_ChainTest)
 		{
 			using namespace memory;
 
@@ -103,7 +104,7 @@ namespace _3fd
 				EXPECT_TRUE(mblock->IsReachable());
 
 			// The removal of the single root vertex should make everyone unreachable:
-			memBlocks.back()->RemoveEdge(fakeRootVtx);
+			memBlocks.back()->RemoveReceivingEdge(fakeRootVtx);
 
 			for (auto mblock : memBlocks)
 				EXPECT_FALSE(mblock->IsReachable());
@@ -118,6 +119,61 @@ namespace _3fd
 
 			for (; index < memBlocks.size(); ++index)
 				EXPECT_FALSE(memBlocks[index]->IsReachable());
+
+			// Return vertices to the pool:
+			for (auto mblock : memBlocks)
+				delete mblock;
+		}
+
+		/// <summary>
+		/// Tests reachability analysis in a graph of linked <see cref="MemBlock" />
+		/// object, with a cycle.
+		/// </summary>
+		TEST(Framework_MemoryGC_TestCase, MemBlock_GraphReachabilityAnalysis_CycleTest)
+		{
+			using namespace memory;
+
+			// Sets the memory pool:
+			const size_t poolSize(16);
+			utils::DynamicMemPool myPool(poolSize, sizeof(MemBlock), 1.0F);
+			MemBlock::SetMemoryPool(myPool);
+
+			// Creates a 'graph' which is a chain of memory blocks:
+
+			std::vector<MemBlock *> memBlocks(poolSize * 1.5);
+
+			int index(0);
+
+			std::generate(begin(memBlocks), end(memBlocks), [&index]()
+			{
+				auto memBlock = new MemBlock(reinterpret_cast<void *> (index), 42, nullptr);
+				index += sizeof(void *);
+				return memBlock;
+			});
+
+			for (index = 0; index < memBlocks.size() - 1; ++index)
+				memBlocks[index]->ReceiveEdge(memBlocks[index + 1]);
+
+			// Close a cycle linking the end of the chain to its middle:
+			const auto middle = memBlocks.size() / 2;
+			memBlocks[middle]->ReceiveEdge(memBlocks.back());
+
+			// Because no root vertex has been added, all vertices are regular and unreachable:
+			for (auto mblock : memBlocks)
+				EXPECT_FALSE(mblock->IsReachable());
+
+			// The addition of an edge from a root vertex at the end of the chain should make everyone reachable:
+			void *fakeRootVtx = &index;
+			memBlocks.back()->ReceiveEdge(fakeRootVtx);
+
+			for (auto mblock : memBlocks)
+				EXPECT_TRUE(mblock->IsReachable());
+
+			// The removal of the single root vertex should make everyone unreachable:
+			memBlocks.back()->RemoveReceivingEdge(fakeRootVtx);
+
+			for (auto mblock : memBlocks)
+				EXPECT_FALSE(mblock->IsReachable());
 
 			// Return vertices to the pool:
 			for (auto mblock : memBlocks)

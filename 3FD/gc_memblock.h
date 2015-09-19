@@ -5,20 +5,33 @@
 #include "gc_common.h"
 #include "gc_memaddress.h"
 
+#include <functional>
 #include <cstdint>
 #include <cstdlib>
 
+/*
+	Comments about the implementation of the Vertex class:
+
+	The convention here is
+
+	+ Regular vertices are passed as 'Vertex *'
+	+ Root vertices are passed as 'void *'
+	+ Memory addresses in general are handled as 'void *'
+
+	The class has an array of edges, that are addresses to other vertices. In order to
+	distinguish starting and receiving edges, such addresses are marked setting their
+	least significant bit. When such addresses come from the heap, the availability of
+	the least significant bit must be guaranteed with allocation of memory aligned in a
+	2 byte boundary. Root vertices are pointers living on the stack, hence their addresses
+	are already aligned this way.
+
+	There is no need to distinguish root and regular vertices, because they are searched
+	individually by their addresses, which are always distinct.
+*/
 namespace _3fd
 {
 	namespace memory
 	{
-		/*
-			The convention here will be:
-			+ Regular vertices are passed as 'Vertex *'
-			+ Root vertices are passed as 'void *'
-			+ Memory addresses in general are handled as 'void *'
-		*/
-
 		/// <summary>
 		/// Represents a vertex in a directed graph of pieces of memory.
 		/// </summary>
@@ -27,23 +40,23 @@ namespace _3fd
 		private:
 
 			/// <summary>
-			/// Holds pointers to all vertices which have an edge directed to this node.
-			/// Root vertices are marked.
+			/// Holds pointers to all verticesconnected to this node.
+			/// Vertices have the least significant bit set when they represent starting edges.
 			/// </summary>
-			MemAddress *m_arrayEdges;
+			MemAddress *m_array;
 
 			uint32_t m_arraySize;
 
 			uint32_t m_arrayCapacity;
 
 			/// <summary>
-			/// Counting of how many root vertices are in the array.
+			/// Counting of how many root vertices (from receiving edges) are in the array.
 			/// </summary>
 			uint32_t m_rootCount;
 
 			void EvaluateShrinkCapacity();
 
-			void ReceiveEdgeImpl(MemAddress vtx);
+			void CreateEdge(MemAddress vtx);
 
 			void RemoveEdgeImpl(MemAddress vtx);
 
@@ -69,15 +82,21 @@ namespace _3fd
 
 			virtual ~Vertex();
 
-			void ReceiveEdge(Vertex *vtxRegular);
-
 			void ReceiveEdge(void *vtxRoot);
 
-			void RemoveEdge(Vertex *vtxRegular);
+			void ReceiveEdge(Vertex *vtxRegularFrom);
 
-			void RemoveEdge(void *vtxRoot);
+			void StartEdge(Vertex *vtxRegularTo);
+
+			void RemoveReceivingEdge(void *vtxRoot);
+
+			void RemoveReceivingEdge(Vertex *vtxRegularFrom);
+
+			void RemoveStartingEdge(Vertex *vtxRegularTo);
 
 			void RemoveAllEdges();
+
+			void ForEachStartingEdge(const std::function<void (Vertex &)> &callback);
 
 			bool IsReachable() const;
 		};

@@ -13,11 +13,9 @@ namespace _3fd
 		{
 			void *ptr;
 			int someVar;
-			memory::MemBlock memBlock;
 
 			Dummy() :
-				someVar(42),
-				memBlock(this, sizeof *this, nullptr)
+				someVar(42)
 			{
 				ptr = &someVar;
 			}
@@ -37,12 +35,11 @@ namespace _3fd
 			// Fill the hash table with some dummy entries:
 			for (auto &entry : entries)
 			{
-				auto &ref = hashtable.Insert(&entry.ptr, entry.ptr, &entry.memBlock);
+				auto &ref = hashtable.Insert(false, &entry.ptr, entry.ptr);
 
 				EXPECT_EQ(&entry.ptr, ref.GetSptrObjectAddr());
 				EXPECT_EQ(entry.ptr, ref.GetPointedAddr());
-				EXPECT_EQ(entry.memBlock.GetMemoryAddress().Get(),
-					ref.GetContainerMemBlock()->GetMemoryAddress().Get());
+				EXPECT_FALSE(ref.IsRoot());
 			}
 
 			// Try retrieving the entries:
@@ -52,8 +49,29 @@ namespace _3fd
 
 				EXPECT_EQ(&entry.ptr, ref.GetSptrObjectAddr());
 				EXPECT_EQ(entry.ptr, ref.GetPointedAddr());
-				EXPECT_EQ(entry.memBlock.GetMemoryAddress().Get(),
-					ref.GetContainerMemBlock()->GetMemoryAddress().Get());
+				EXPECT_FALSE(ref.IsRoot());
+
+				hashtable.Remove(&entry.ptr);
+			}
+
+			// Do it all over again, for "root" elements:
+
+			for (auto &entry : entries)
+			{
+				auto &ref = hashtable.Insert(true, &entry.ptr, entry.ptr);
+
+				EXPECT_EQ(&entry.ptr, ref.GetSptrObjectAddr());
+				EXPECT_EQ(entry.ptr, ref.GetPointedAddr());
+				EXPECT_TRUE(ref.IsRoot());
+			}
+
+			for (auto &entry : entries)
+			{
+				auto &ref = hashtable.Lookup(&entry.ptr);
+
+				EXPECT_EQ(&entry.ptr, ref.GetSptrObjectAddr());
+				EXPECT_EQ(entry.ptr, ref.GetPointedAddr());
+				EXPECT_TRUE(ref.IsRoot());
 
 				hashtable.Remove(&entry.ptr);
 			}

@@ -21,19 +21,12 @@ namespace _3fd
 		/// <param name="pointedAddr">The referred memory address.</param>
 		void MasterTable::MakeReference(AddressesHashTable::Element *sptrObjHashTableElem, void *pointedAddr)
 		{
-			// If the reference is not null, look for the corresponding MemBlock object and sets a connection
 			if (pointedAddr != 0)
 			{
-				MemBlock *receiver = m_memDigraph.GetVertex(pointedAddr),
-						 *originator = sptrObjHashTableElem->GetContainerMemBlock();
-
-				if (originator == nullptr)
-					// Sets the connection with the safe pointer ('root vertex' or 'access point')
-					m_memDigraph.AddEdge(sptrObjHashTableElem->GetSptrObjectAddr(), receiver);
+				if (sptrObjHashTableElem->IsRoot())
+					m_memDigraph.AddRootEdge(sptrObjHashTableElem->GetSptrObjectAddr(), pointedAddr);
 				else
-					/* It is not a safe pointer ('root vertex' or 'access point'), so set up a connection
-					between the container memory address and the pointed memory address: */
-					m_memDigraph.AddEdge(originator, receiver);
+					m_memDigraph.AddRegularEdge(sptrObjHashTableElem->GetSptrObjectAddr(), pointedAddr);
 			}
 
 			sptrObjHashTableElem->SetAddrPointed(pointedAddr);
@@ -51,20 +44,19 @@ namespace _3fd
 		{
 			void *pointedAddr = sptrObjHashTableElem->GetPointedAddr();
 
-			// If the sptr object currently references an address, unmake the reference:
 			if (pointedAddr != 0)
 			{
-				MemBlock *receiver = m_memDigraph.GetVertex(pointedAddr);
-
-				if (receiver != nullptr)
+				if (sptrObjHashTableElem->IsRoot())
 				{
-					MemBlock *originator = sptrObjHashTableElem->GetContainerMemBlock();
-
-					// Undo the reference of the sptr object:
-					if (originator == nullptr)
-						m_memDigraph.RemoveEdge(sptrObjHashTableElem->GetSptrObjectAddr(), receiver, allowDestruction);
-					else
-						m_memDigraph.RemoveEdge(originator, receiver, allowDestruction);
+					m_memDigraph.RemoveRootEdge(sptrObjHashTableElem->GetSptrObjectAddr(),
+												sptrObjHashTableElem->GetPointedAddr(),
+												allowDestruction);
+				}
+				else
+				{
+					m_memDigraph.RemoveRegularEdge(sptrObjHashTableElem->GetSptrObjectAddr(),
+												   sptrObjHashTableElem->GetPointedAddr(),
+												   allowDestruction);
 				}
 			}
 		}
@@ -87,8 +79,8 @@ namespace _3fd
 		/// <param name="pointedAddr">The memory address referred by the safe pointer.</param>
 		void MasterTable::DoRegisterSptr(void *sptrObjAddr, void *pointedAddr) throw()
 		{
-			auto container = m_memDigraph.GetContainerVertex(sptrObjAddr);
-			auto &sptrObjHashTableElem = m_sptrObjects.Insert(sptrObjAddr, nullptr, container);
+			bool isRoot = (m_memDigraph.GetContainerVertex(sptrObjAddr) == nullptr);
+			auto &sptrObjHashTableElem = m_sptrObjects.Insert(isRoot, sptrObjAddr, nullptr);
 			MakeReference(&sptrObjHashTableElem, pointedAddr);
 		}
 
