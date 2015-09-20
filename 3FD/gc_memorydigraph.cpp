@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "gc_memorydigraph.h"
-#include "gc_memblock.h"
+#include "gc_vertex.h"
 #include "configuration.h"
 
 #include <cassert>
@@ -16,10 +16,10 @@ namespace _3fd
 		/// </summary>
 		MemoryDigraph::MemoryDigraph() :
 			m_memBlocksPool(AppConfig::GetSettings().framework.gc.memBlocksMemPool.initialSize,
-							sizeof(MemBlock),
+							sizeof(Vertex),
 							AppConfig::GetSettings().framework.gc.memBlocksMemPool.growingFactor)
 		{
-			MemBlock::SetMemoryPool(m_memBlocksPool);
+			Vertex::SetMemoryPool(m_memBlocksPool);
 		}
 
 		/// <summary>
@@ -35,13 +35,13 @@ namespace _3fd
 		/// </summary>
 		/// <param name="memAddr">The given memory address.</param>
 		/// <returns>The vertex representing the given memory address.</returns>
-		MemBlock * MemoryDigraph::GetVertex(void *memAddr) const
+		Vertex * MemoryDigraph::GetVertex(void *memAddr) const
 		{
 			MemAddrContainer key(memAddr);
 			auto iter = m_vertices.find(&key);
 
 			if (m_vertices.end() != iter)
-				return static_cast<MemBlock *> (*iter);
+				return static_cast<Vertex *> (*iter);
 			else
 				return nullptr;
 		}
@@ -49,12 +49,12 @@ namespace _3fd
 		/// <summary>
 		/// Gets the regular vertex which represents a memory block containing a given address.
 		/// </summary>
-		/// <param name="addr">The address for which a container will looked.</param>
+		/// <param name="addr">The address for which a container will be searched.</param>
 		/// <returns>
 		/// The vertex representing the memory block which contains the given address,
-		/// if existent. Otherwise, a <c>nullptr</c>.
+		/// if existent, otherwise, a <c>nullptr</c>.
 		/// </returns>
-		MemBlock * MemoryDigraph::GetContainerVertex(void *addr) const
+		Vertex * MemoryDigraph::GetContainerVertex(void *addr) const
 		{
 			if (!m_vertices.empty())
 			{
@@ -63,9 +63,9 @@ namespace _3fd
 
 				if (m_vertices.end() != iter)
 				{
-					auto vtx = static_cast<MemBlock *> (*iter);
-					if (vtx->Contains(addr))
-						return vtx;
+					auto memBlock = static_cast<Vertex *> (*iter);
+					if (memBlock->Contains(addr))
+						return memBlock;
 
 					if (m_vertices.begin() != iter)
 						--iter;
@@ -73,9 +73,9 @@ namespace _3fd
 				else
 					--iter;
 
-				auto vtx = static_cast<MemBlock *> (*iter);
-				if (vtx->Contains(addr))
-					return vtx;
+				auto memBlock = static_cast<Vertex *> (*iter);
+				if (memBlock->Contains(addr))
+					return memBlock;
 			}
 
 			return nullptr;
@@ -91,12 +91,12 @@ namespace _3fd
 		/// The <see cref="MemBlock" /> object representing the GC allocated piece of memory,
 		/// which is the added vertex.
 		/// </returns>
-		MemBlock * MemoryDigraph::AddVertex(void *memAddr, size_t blockSize, FreeMemProc freeMemCallback)
+		Vertex * MemoryDigraph::AddVertex(void *memAddr, size_t blockSize, FreeMemProc freeMemCallback)
 		{
-			auto vtx = new MemBlock(memAddr, blockSize, freeMemCallback);
-			auto insertSucceded = m_vertices.insert(vtx).second;
+			auto memBlock = new Vertex(memAddr, blockSize, freeMemCallback);
+			auto insertSucceded = m_vertices.insert(memBlock).second;
 			_ASSERTE(insertSucceded); // insertion should always succeed because a vertex cannot be added twice
-			return vtx;
+			return memBlock;
 		}
 
 		/// <summary>
@@ -115,7 +115,7 @@ namespace _3fd
 		/// operation, the resources allocated to this vertex and its represented
 		/// piece of memory will be released.
 		/// </remarks>
-		void MemoryDigraph::RemoveVertex(MemBlock *vtx, bool allowDestruction)
+		void MemoryDigraph::RemoveVertex(Vertex *vtx, bool allowDestruction)
 		{
 			auto iter = m_vertices.find(vtx);
 			_ASSERTE(m_vertices.end() != iter); // cannot handle removal of unexistent vertex
@@ -147,7 +147,7 @@ namespace _3fd
 			the pointed memory block must already exist in the graph */
 			_ASSERTE(vtxRegularTo != nullptr);
 
-			vtxRegularTo->ReceiveEdge(fromRoot);
+			vtxRegularTo->AddReceivingEdge(fromRoot);
 		}
 
 		/// <summary>
@@ -181,8 +181,8 @@ namespace _3fd
 				return;
 			
 			// create the edge:
-			originatorVtx->StartEdge(receivingVtx);
-			receivingVtx->ReceiveEdge(originatorVtx);
+			originatorVtx->AddStartingEdge(receivingVtx);
+			receivingVtx->AddReceivingEdge(originatorVtx);
 		}
 
 		/// <summary>
@@ -262,6 +262,37 @@ namespace _3fd
 			// If the memory block became unreachable, remove it from the graph:
 			if (!receivingVtx->IsReachable())
 				RemoveVertex(receivingVtx, allowDestruction);
+		}
+
+		/// <summary>
+		/// Determines whether the given memory block is reachable (by any root vertex).
+		/// This implementation uses depth-first search algorithm to scan the graph.
+		/// Any unreachable memory block found in the search is removed from the graph,
+		/// plus the resources allocated to it and represented by it are released.
+		/// </summary>
+		/// <param name="memBlock">The vertex representing the memory block.</param>
+		/// <returns>
+		/// <c>true</c> when connected (directly or not) to a root vertex, otherwise, <c>false</c>.
+		/// </returns>
+		bool MemoryDigraph::AnalyseReachability(Vertex *memBlock)
+		{
+			if (memBlock->HasRootEdges())
+				return true;
+			
+			// mark this vertex as visited before going deeper
+			memBlock->Mark(true);
+
+			// search for an incoming connection from a root vertex:
+			memBlock->ForEachReceivingEdge(
+				[this, memBlock](Vertex *recvEdgeVtx)
+				{
+					if (AnalyseReachability(recvEdgeVtx))
+						; // TODO
+				}
+			);
+
+			// unmark this vertex before leaving
+			memBlock->Mark(false);
 		}
 
 	}// end of namespace memory

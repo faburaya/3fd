@@ -24,10 +24,11 @@ namespace _3fd
 {
 	namespace memory
 	{
-		class MemBlock;
+		class Vertex;
 
 		/// <summary>
-		/// Directed graph representing the connections made by safe pointers between pieces of memory managed by the GC.
+		/// Directed graph representing the connections made by safe pointers
+		/// between pieces of memory managed by the GC.
 		/// </summary>
 		class MemoryDigraph : notcopiable
 		{
@@ -35,10 +36,11 @@ namespace _3fd
 
 			utils::DynamicMemPool m_memBlocksPool;
 
+			// Compared to a binary tree, a B+Tree can render better cache efficiency
 			typedef stx::btree_set<MemAddrContainer *, LessOperOnMemBlockRepAddr> SetOfMemBlocks;
 
 			/// <summary>
-			/// A binary tree of garbage collected pieces of memory,
+			/// A sorted map of garbage collected pieces of memory,
 			/// ordered by the memory addresses of those pieces.
 			/// </summary>
 			/// <remarks>
@@ -46,11 +48,13 @@ namespace _3fd
 			/// </remarks>
 			SetOfMemBlocks m_vertices;
 
-			MemBlock *GetVertex(void *memAddr) const;
+			Vertex *GetVertex(void *memAddr) const;
 
-			MemBlock *GetContainerVertex(void *addr) const;
+			Vertex *GetContainerVertex(void *addr) const;
 
-			void RemoveVertex(MemBlock *vtx, bool allowDestruction);
+			void RemoveVertex(Vertex *memBlock, bool allowDestruction);
+
+			bool AnalyseReachability(Vertex *memBlock);
 
 		public:
 
@@ -58,7 +62,7 @@ namespace _3fd
 
 			void ShrinkObjectPool();
 
-			MemBlock *AddVertex(void *memAddr, size_t blockSize, FreeMemProc freeMemCallback);
+			Vertex *AddVertex(void *memAddr, size_t blockSize, FreeMemProc freeMemCallback);
 
 			void AddRootEdge(void *fromRoot, void *toAddr);
 

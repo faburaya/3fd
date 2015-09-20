@@ -146,16 +146,12 @@ namespace _3fd
 			/// <summary>
 			/// Initializes a new instance of the <see cref="LockedQueue{Type}"/> class.
 			/// </summary>
-			LockedQueue()
-			{
-			}
+			LockedQueue() {}
 
 			/// <summary>
 			/// Finalizes an instance of the <see cref="LockedQueue{Type}"/> class.
 			/// </summary>
-			~LockedQueue()
-			{
-			}
+			~LockedQueue() {}
 
 			/// <summary>
 			/// Adds a new entry to the queue head.
