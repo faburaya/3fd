@@ -192,7 +192,6 @@
     <ClInclude Include="gc.h" />
     <ClInclude Include="gc_addresseshashtable.h" />
     <ClInclude Include="gc_common.h" />
-    <ClInclude Include="gc_mastertable.h" />
     <ClInclude Include="gc_memaddress.h" />
     <ClInclude Include="gc_vertex.h" />
     <ClInclude Include="gc_memorydigraph.h" />
@@ -219,7 +218,6 @@
     <ClCompile Include="exceptions.cpp" />
     <ClCompile Include="gc_garbagecollector.cpp" />
     <ClCompile Include="gc_addresseshashtable.cpp" />
-    <ClCompile Include="gc_mastertable.cpp" />
     <ClCompile Include="gc_vertex.cpp" />
     <ClCompile Include="gc_memorydigraph.cpp" />
     <ClCompile Include="gc_messages.cpp" />

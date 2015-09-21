@@ -17,6 +17,7 @@
 #include "utils.h"
 #include "gc_common.h"
 #include "gc_memaddress.h"
+#include "gc_addresseshashtable.h"
 
 #include "stx/btree_set.h"
 
@@ -37,10 +38,10 @@ namespace _3fd
 			utils::DynamicMemPool m_memBlocksPool;
 
 			// Compared to a binary tree, a B+Tree can render better cache efficiency
-			typedef stx::btree_set<MemAddrContainer *, LessOperOnMemBlockRepAddr> SetOfMemBlocks;
+			typedef stx::btree_set<MemAddrContainer *, LessOperOnVertexRepAddr> SetOfMemBlocks;
 
 			/// <summary>
-			/// A sorted map of garbage collected pieces of memory,
+			/// A sorted set of garbage collected pieces of memory,
 			/// ordered by the memory addresses of those pieces.
 			/// </summary>
 			/// <remarks>
@@ -48,29 +49,38 @@ namespace _3fd
 			/// </remarks>
 			SetOfMemBlocks m_vertices;
 
+			/// <summary>
+			/// An unsorted map of elements representing <see cref="sptr"/> objects.
+			/// </summary>
+			/// <remarks>
+			/// A hash table here might improve performance and
+			/// can be used because it does not have to be sorted.
+			/// </remarks>
+			AddressesHashTable m_sptrObjects;
+
 			Vertex *GetVertex(void *memAddr) const;
 
 			Vertex *GetContainerVertex(void *addr) const;
 
-			void RemoveVertex(Vertex *memBlock, bool allowDestruction);
+			void MakeReference(AddressesHashTable::Element &sptrObjHashTableElem, void *pointedAddr);
 
-			bool AnalyseReachability(Vertex *memBlock);
+			void UnmakeReference(AddressesHashTable::Element &sptrObjHashTableElem, bool allowDestruction);
+
+			void RemoveVertex(Vertex *memBlock);
 
 		public:
 
 			MemoryDigraph();
 
-			void ShrinkObjectPool();
+			void ShrinkVertexPool();
 
-			Vertex *AddVertex(void *memAddr, size_t blockSize, FreeMemProc freeMemCallback);
+			void AddRegularVertex(void *memAddr, size_t blockSize, FreeMemProc freeMemCallback);
 
-			void AddRootEdge(void *fromRoot, void *toAddr);
+			void AddPointer(void *pointerAddr, void *pointedAddr);
 
-			void AddRegularEdge(void *fromAddr, void *toAddr);
+			void ResetPointer(void *pointerAddr, void *newPointedAddr, bool allowDtion);
 
-			void RemoveRootEdge(void *fromRoot, void *toAddr, bool allowDestruction);
-
-			void RemoveRegularEdge(void *fromAddr, void *toAddr, bool allowDestruction);
+			void RemovePointer(void *pointerAddr);
 		};
 
 	}// end of namespace memory

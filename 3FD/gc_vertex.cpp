@@ -13,6 +13,7 @@ namespace _3fd
 		/// <param name="ob">The object pool to use.</param>
 		void Vertex::SetMemoryPool(utils::DynamicMemPool &ob)
 		{
+			_ASSERTE(dynMemPool == nullptr); // can only set it once
 			dynMemPool = &ob;
 		}
 
@@ -48,18 +49,52 @@ namespace _3fd
 		/// The callback that frees the memory block this vertex represents.
 		/// </param>
 		Vertex::Vertex(void *memAddr, size_t blockSize, FreeMemProc freeMemCallback) :
-			MemAddrContainer(memAddr), 
+			MemAddrContainer(memAddr),
+			m_freeMemCallback(freeMemCallback),
 			m_blockSize(blockSize), 
-			m_freeMemCallback(freeMemCallback)
-		{}
+			m_outEdgeCount(0)
+		{
+			_ASSERTE(!GetMemoryAddress().GetBit0()); // regular vertices must have bit 0 unset
+		}
 
 		/// <summary>
 		/// Finalizes an instance of the <see cref="Vertex"/> class.
 		/// </summary>
 		Vertex::~Vertex()
 		{
+			m_incomingEdges.Clear();
 		}
 
+		/// <summary>
+		/// Increments the count of outgoing edges.
+		/// </summary>
+		void Vertex::IncrementOutgoingEdgeCount()
+		{
+			++m_outEdgeCount;
+		}
+
+		/// <summary>
+		/// Decrements the count of outgoing edges.
+		/// </summary>
+		void Vertex::DecrementOutgoingEdgeCount()
+		{
+			--m_outEdgeCount;
+			// counting of outgoing edges can never be negative
+			_ASSERTE(m_outEdgeCount >= 0);
+		}
+		
+		/// <summary>
+		/// Determines whether this vertex has any edges
+		/// (incoming and outgoing).
+		/// </summary>
+		/// <returns>
+		/// <c>true</c> if this vertex is connected to any other vertex, otherwise, <c>false</c>.
+		/// </returns>
+		bool Vertex::HasAnyEdges() const
+		{
+			return m_incomingEdges.Size() + m_outEdgeCount > 0;
+		}
+		
 		/// <summary>
 		/// Determines whether the memory block represented by
 		/// this vertex contains the specified memory address.
@@ -70,18 +105,6 @@ namespace _3fd
 		{
 			return someAddr >= GetMemoryAddress().Get()
 				&& someAddr < (void *)((uintptr_t)GetMemoryAddress().Get() + m_blockSize);
-		}
-
-		/// <summary>
-		/// Frees the resources allocated to
-		/// the object represented by this vertex.
-		/// </summary>
-		/// <param name="destroy">
-		/// If set to <c>true</c>, invokes the object destructor.
-		/// </param>
-		void Vertex::FreeRepresentedObject(bool destroy)
-		{
-			(*m_freeMemCallback)(GetMemoryAddress().Get(), destroy);
 		}
 
 		/// <summary>
@@ -104,6 +127,32 @@ namespace _3fd
 		bool Vertex::IsMarked() const
 		{
 			return GetMemoryAddress().GetBit0();
+		}
+
+		/// <summary>
+		/// Frees the resources allocated to
+		/// the object represented by this vertex.
+		/// </summary>
+		/// <param name="destroy">
+		/// If set to <c>true</c>, invokes the object destructor.
+		/// </param>
+		void Vertex::ReleaseReprObjResources(bool destroy)
+		{
+			_ASSERTE(GetMemoryAddress().Get() != nullptr); // resource already freed
+			(*m_freeMemCallback)(GetMemoryAddress().Get(), destroy);
+			SetMemoryAddress(nullptr);
+		}
+
+		/// <summary>
+		/// Determines whether the resources of the object
+		/// represent by this vertex are released already.
+		/// </summary>
+		/// <returns>
+		/// <c>true</c>, if resources have already been relesed, otherwise, <c>false</c>.
+		/// </returns>
+		bool Vertex::AreReprObjResourcesReleased() const
+		{
+			return GetMemoryAddress().Get() == nullptr;
 		}
 
 	}// end of namespace memory

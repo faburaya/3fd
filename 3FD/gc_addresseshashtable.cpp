@@ -139,17 +139,18 @@ namespace _3fd
 		/// Inserts a new entry in the hash table, placed according
 		/// the memory address of the <see cref="sptr" /> object.
 		/// </summary>
-		/// <param name="isRoot">
-		/// When set to <c>true</c>, means the <see cref="sptr" /> object does not
-		/// live on garbage collected memory (hence a "root" in the GC memory graph).
-		/// </param>
 		/// <param name="sptrObjectAddr">The <see cref="sptr" /> object address.</param>
-		/// <param name="pointedAddr">The address pointed by the <see cref="sptr" /> object.</param>
+		/// <param name="pointedMemBlock">
+		/// The vertex representing the memory block pointed by this <see cref="sptr" /> object.
+		/// </param>
+		/// <param name="containerMemBlock">
+		/// The vertex representing the memory block that contains this <see cref="sptr" /> object.
+		/// </param>
 		/// <returns>
 		/// A view to the inserted element.
 		/// </returns>
 		AddressesHashTable::Element &
-		AddressesHashTable::Insert(bool isRoot, void *sptrObjectAddr, void *pointedAddr)
+		AddressesHashTable::Insert(void *sptrObjectAddr, Vertex *pointedMemBlock, Vertex *containerMemBlock)
 		{
 			if (CalculateLoadFactor() > AppConfig::GetSettings().framework.gc.sptrObjectsHashTable.loadFactorThreshold
 				|| m_bucketArray.empty())
@@ -167,7 +168,7 @@ namespace _3fd
 			if (m_bucketArray[idx].GetSptrObjectAddr() == nullptr)
 			{
 				++m_elementsCount;
-				return m_bucketArray[idx] = Element(isRoot, sptrObjectAddr, pointedAddr);
+				return m_bucketArray[idx] = Element(sptrObjectAddr, pointedMemBlock, containerMemBlock);
 			}
 			else // Linear probe:
 			{
@@ -175,7 +176,7 @@ namespace _3fd
 				auto displacedElement = element;
 
 				// Place the new element in the first hashed index
-				element = Element(isRoot, sptrObjectAddr, pointedAddr);
+				element = Element(sptrObjectAddr, pointedMemBlock, containerMemBlock);
 				++m_elementsCount;
 
 				// And move the displaced element to the first vacant position:

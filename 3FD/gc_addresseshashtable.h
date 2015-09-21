@@ -2,7 +2,7 @@
 #define GC_ADDRESSESHASHTABLE_H
 
 #include "base.h"
-#include "gc_memaddress.h"
+#include "gc_vertex.h"
 #include <vector>
 #include <cstdint>
 
@@ -10,8 +10,6 @@ namespace _3fd
 {
 	namespace memory
 	{
-		class MemBlock;
-
 		/// <summary>
 		/// This class uses hash table data structure (with open addressing and linear probing) to store information about 
 		/// the <see cref="sptr" /> objects managed by the GC. It was not converted to a template because it was designed 
@@ -30,41 +28,59 @@ namespace _3fd
 			{
 			private:
 
-				MemAddress m_sptrObjectAddr; // This is the unique key (the memory address of the sptr object)
-				void *m_pointedAddr; // This is a value (where the sptr points to)
+				void *m_sptrObjectAddr; // This is the unique key (the memory address of the sptr object)
+				Vertex *m_pointedMemBlock; // This is a value (what the sptr points to)
+				Vertex *m_containerMemBlock; // this is a value (where the sptr lives)
 
 			public:
 
 				/// <summary>
 				/// Initializes a new instance of the <see cref="Element"/> class.
 				/// </summary>
-				Element()
-					: m_sptrObjectAddr(nullptr), m_pointedAddr(nullptr) {}
+				Element() :
+					m_sptrObjectAddr(nullptr),
+					m_pointedMemBlock(nullptr),
+					m_containerMemBlock(nullptr)
+				{}
 
 				/// <summary>
 				/// Constructor for the <see cref="Element" /> objects allocated on the stack.
 				/// </summary>
-				/// <param name="isRoot">
-				/// When set to <c>true</c>, means the <see cref="sptr" /> object does not
-				/// live on garbage collected memory (hence a "root" in the GC memory graph).
-				/// </param>
 				/// <param name="sptrObjectAddr">The <see cref="sptr" /> object address.</param>
-				/// <param name="pointedAddr">The address pointed by the <see cref="sptr" /> object.</param>
-				Element(bool isRoot, void *sptrObjectAddr, void *pointedAddr) :
+				/// <param name="pointedMemBlock">
+				/// The vertex representing the memory block pointed by this <see cref="sptr" /> object.
+				/// </param>
+				/// <param name="containerMemBlock">
+				/// The vertex representing the memory block that contains this <see cref="sptr" /> object.
+				/// </param>
+				Element(void *sptrObjectAddr, Vertex *pointedMemBlock, Vertex *containerMemBlock) :
 					m_sptrObjectAddr(sptrObjectAddr),
-					m_pointedAddr(pointedAddr)
+					m_pointedMemBlock(pointedMemBlock),
+					m_containerMemBlock(containerMemBlock)
+				{}
+
+				// Get the address of the sptr object this element represents
+				void *GetSptrObjectAddr() const { return m_sptrObjectAddr; }
+
+				// Get the address of the memory block this pointer refers to
+				void *GetPointedAddr() const
 				{
-					if (isRoot)
-						m_sptrObjectAddr.SetBit0(true);
+					return m_pointedMemBlock != nullptr
+						? m_pointedMemBlock->GetMemoryAddress().Get()
+						: nullptr;
 				}
 
-				void *GetSptrObjectAddr() const { return m_sptrObjectAddr.Get(); }
+				// Get the vertex representing the memory block this pointer refers to
+				Vertex *GetPointedMemBlock() const { return m_pointedMemBlock; }
 
-				bool IsRoot() const { return m_sptrObjectAddr.GetBit0(); }
+				// Set the vertex representing the memory block this pointer refers to
+				void SetPointedMemBlock(Vertex *pointedMemBlock) { m_pointedMemBlock = pointedMemBlock; }
 
-				void *GetPointedAddr() const { return m_pointedAddr; }
+				// Get the vertex for the memory block that contains the sptr object this element represents
+				Vertex *GetContainerMemBlock() const { return m_containerMemBlock; }
 
-				void SetAddrPointed(void *pointedAddr) { m_pointedAddr = pointedAddr; }
+				// Determines whether the sptr object this element represents is a root vertex
+				bool IsRoot() const { return m_containerMemBlock == nullptr; }
 			};
 
 		private:
@@ -95,7 +111,9 @@ namespace _3fd
 
 			AddressesHashTable();
 
-			Element &Insert(bool isRoot, void *sptrObjectAddr, void *pointedAddr);
+			Element &Insert(void *sptrObjectAddr,
+							Vertex *pointedMemBlock,
+							Vertex *containerMemBlock);
 
 			// Lookup for an sptr object
 			Element &Lookup(void *sptrObjectAddr);

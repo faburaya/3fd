@@ -130,44 +130,6 @@ namespace _3fd
 			}
 		};
 
-		/// <summary>
-		/// Base class for <see cref="MemBlock"/>.
-		/// Its only purpose is to ease searching a std::set{MemBlock *}.
-		/// </summary>
-		class MemAddrContainer
-		{
-		private:
-
-			MemAddress m_memAddr;
-
-		public:
-
-			/// <summary>
-			/// Initializes a new instance of the <see cref="MemAddrContainer"/> class.
-			/// </summary>
-			/// <param name="memAddress">The memory address to store.</param>
-			MemAddrContainer(void *memAddress)
-				: m_memAddr(memAddress) {}
-
-			MemAddress &GetMemoryAddress() { return m_memAddr; }
-
-			const MemAddress &GetMemoryAddress() const { return m_memAddr; }
-		};
-
-		/// <summary>
-		/// Implementation of functor for std::set{MemAddrContainer} that takes into consideration 
-		/// the address of the represented memory pieces, rather than the addresses of the actual
-		/// <see cref="MemAddrContainer"/> objects.
-		/// </summary>
-		struct LessOperOnMemBlockRepAddr
-		{
-			bool operator()(MemAddrContainer *left, MemAddrContainer *right) const
-			{
-				return left->GetMemoryAddress().Get()
-					< right->GetMemoryAddress().Get();
-			}
-		};
-
 	}// end of namespace memory
 }// end of namespace _3fd
 

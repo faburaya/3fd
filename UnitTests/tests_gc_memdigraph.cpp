@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "runtime.h"
 #include "gc_memorydigraph.h"
-#include "gc_memblock.h"
+#include "gc_vertex.h"
 #include "sptr.h"
 
 #include <vector>

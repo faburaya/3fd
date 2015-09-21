@@ -57,9 +57,9 @@ namespace _3fd
 		{
 			_ASSERTE(numBlocks * blockSize > 0); // Cannot handle a null value as the amount of memory
 
-			/* Allocation aligned in 2 bytes guarantees the addresses will always have
-			the less significant bit unused. This is explored in the GC implementation. */
-			m_baseAddr = aligned_calloc(2, numBlocks, blockSize);
+			/* Allocation aligned in 4 bytes guarantees the addresses will always have
+			the 2 least significant bit unused. This is explored in the GC implementation. */
+			m_baseAddr = aligned_calloc(4, numBlocks, blockSize);
 			m_end = reinterpret_cast<void *> (reinterpret_cast<size_t> (m_baseAddr) +numBlocks * blockSize);
 			m_nextAddr = m_baseAddr;
 		}

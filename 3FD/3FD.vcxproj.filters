@@ -140,9 +140,6 @@
     <ClInclude Include="gc_addresseshashtable.h">
       <Filter>Header Files\GC</Filter>
     </ClInclude>
-    <ClInclude Include="gc_mastertable.h">
-      <Filter>Header Files\GC</Filter>
-    </ClInclude>
     <ClInclude Include="gc_common.h">
       <Filter>Header Files\GC</Filter>
     </ClInclude>
@@ -239,9 +236,6 @@
       <Filter>Source Files\GC</Filter>
     </ClCompile>
     <ClCompile Include="gc_addresseshashtable.cpp">
-      <Filter>Source Files\GC</Filter>
-    </ClCompile>
-    <ClCompile Include="gc_mastertable.cpp">
       <Filter>Source Files\GC</Filter>
     </ClCompile>
     <ClCompile Include="gc_garbagecollector.cpp">
