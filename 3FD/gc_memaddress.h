@@ -46,7 +46,7 @@ namespace _3fd
 			/// <returns>The memory address, WITH the encoded flag.</returns>
 			void *GetEncoded() const
 			{
-				return reinterpret_cast <void *> (reinterpret_cast<uintptr_t> (m_address));
+				return m_address;
 			}
 
 			/// <summary>
@@ -99,7 +99,7 @@ namespace _3fd
 				else
 				{
 					m_address = reinterpret_cast <void *> (
-						reinterpret_cast<uintptr_t> (m_address)& (uintptr_t(1) & mask)
+						reinterpret_cast<uintptr_t> (m_address) & (uintptr_t(1) & mask)
 					);
 				}
 			}

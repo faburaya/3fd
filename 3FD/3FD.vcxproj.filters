@@ -161,6 +161,9 @@
     <ClInclude Include="gc_vertex.h">
       <Filter>Header Files\GC</Filter>
     </ClInclude>
+    <ClInclude Include="gc_vertexstore.h">
+      <Filter>Header Files\GC</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="sqlite3.c">
@@ -287,6 +290,9 @@
       <Filter>Source Files\GC</Filter>
     </ClCompile>
     <ClCompile Include="gc_vertex.cpp">
+      <Filter>Source Files\GC</Filter>
+    </ClCompile>
+    <ClCompile Include="gc_vertexstore.cpp">
       <Filter>Source Files\GC</Filter>
     </ClCompile>
   </ItemGroup>

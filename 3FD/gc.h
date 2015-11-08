@@ -3,7 +3,7 @@
 
 #include "base.h"
 #include "utils.h"
-#include "gc_mastertable.h"
+#include "gc_memorydigraph.h"
 #include "utils_lockfreequeue.h"
 
 #include <exception>
@@ -29,7 +29,7 @@ namespace _3fd
 
             virtual ~IMessage() {}
 
-			virtual void Execute(MasterTable &masterTable) = 0;
+			virtual void Execute(MemoryDigraph &graph) = 0;
 		};
 
 		/// <summary>
@@ -41,7 +41,7 @@ namespace _3fd
 
 			std::thread						m_thread;
 			std::exception_ptr				m_error;
-			MasterTable						m_masterTable;
+			MemoryDigraph					m_memoryDigraph;
 			utils::LockedQueue<IMessage>	m_messagesQueue;
 			utils::Event					m_terminationEvent;
 
@@ -63,13 +63,22 @@ namespace _3fd
 
 			~GarbageCollector();
 
-			void UpdateReference(void *sptrObjAddr, void *pointedAddr);
+			void RegisterNewObject(
+				void *sptrObjAddr,
+				void *pointedAddr,
+				size_t blockSize,
+				FreeMemProc freeMemCallback
+			);
 
-			void RegisterNewObject(void *sptrObjAddr, void *pointedAddr, size_t blockSize, FreeMemProc freeMemCallback);
+			void UpdateReference(void *leftSptrObjAddr, void *rightSptrObjAddr);
+
+			void ReleaseReference(void *sptrObjAddr);
 
 			void UnregisterAbortedObject(void *sptrObjAddr);
 
 			void RegisterSptr(void *sptrObjAddr, void *pointedAddr);
+
+			void RegisterSptrCopy(void *leftSptrObjAddr, void *rightSptrObjAddr);
 
 			void UnregisterSptr(void *sptrObjAddr);
 		};

@@ -115,10 +115,10 @@ namespace _3fd
 							Vertex *pointedMemBlock,
 							Vertex *containerMemBlock);
 
-			// Lookup for an sptr object
 			Element &Lookup(void *sptrObjectAddr);
 
-			// Removes an entry from the hash table
+			void Remove(Element &element);
+
 			void Remove(void *sptrObjectAddr);
 		};
 

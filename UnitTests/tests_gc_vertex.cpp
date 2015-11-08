@@ -31,7 +31,9 @@ namespace _3fd
 			int index(0);
 			std::generate(begin(vertices), end(vertices), [&index]()
 			{
-				return new Vertex(reinterpret_cast<void *> (index++), 42, nullptr);
+				auto vertex = new Vertex(reinterpret_cast<void *> (index), 42, nullptr);
+				index += sizeof(void *);
+				return vertex;
 			});
 
 			for (index = 0; index < vertices.size() - 1; ++index)
@@ -52,10 +54,13 @@ namespace _3fd
 			myPool.Shrink();
 
 			// Expand the graph again:
+			index = reinterpret_cast<int> (vertices.back()->GetMemoryAddress().Get());
 			while (vertices.size() < poolSize * 2)
 			{
+				index += sizeof(void *);
+
 				vertices.push_back(
-					new Vertex(reinterpret_cast<void *> (vertices.size()), 42, nullptr)
+					new Vertex(reinterpret_cast<void *> (index), 42, nullptr)
 				);
 			}
 
@@ -79,7 +84,7 @@ namespace _3fd
 #	endif
 			Vertex memBlock(ptr, sizeof *ptr, &FreeMemAddr<int>);
 
-			EXPECT_EQ(ptr, memBlock.GetMemoryAddress());
+			EXPECT_EQ(ptr, memBlock.GetMemoryAddress().Get());
 			EXPECT_FALSE(memBlock.AreReprObjResourcesReleased());
 
 			memBlock.ReleaseReprObjResources(true);

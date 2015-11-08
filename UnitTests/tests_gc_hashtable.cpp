@@ -88,7 +88,7 @@ namespace _3fd
 				EXPECT_EQ(nullptr, ref.GetContainerMemBlock());
 				EXPECT_TRUE(ref.IsRoot());
 
-				hashtable.Remove(&entry.ptr);
+				hashtable.Remove(ref);
 			}
 		}
 

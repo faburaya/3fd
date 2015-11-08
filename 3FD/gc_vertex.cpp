@@ -13,7 +13,6 @@ namespace _3fd
 		/// <param name="ob">The object pool to use.</param>
 		void Vertex::SetMemoryPool(utils::DynamicMemPool &ob)
 		{
-			_ASSERTE(dynMemPool == nullptr); // can only set it once
 			dynMemPool = &ob;
 		}
 

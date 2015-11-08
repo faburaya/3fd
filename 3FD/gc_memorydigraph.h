@@ -14,19 +14,13 @@
 	approach is not vulnerable to cyclic references, unlike reference counting.
 */
 
-#include "utils.h"
-#include "gc_common.h"
-#include "gc_memaddress.h"
+#include "gc_vertexstore.h"
 #include "gc_addresseshashtable.h"
-
-#include "stx/btree_set.h"
 
 namespace _3fd
 {
 	namespace memory
 	{
-		class Vertex;
-
 		/// <summary>
 		/// Directed graph representing the connections made by safe pointers
 		/// between pieces of memory managed by the GC.
@@ -34,20 +28,6 @@ namespace _3fd
 		class MemoryDigraph : notcopiable
 		{
 		private:
-
-			utils::DynamicMemPool m_memBlocksPool;
-
-			// Compared to a binary tree, a B+Tree can render better cache efficiency
-			typedef stx::btree_set<MemAddrContainer *, LessOperOnVertexRepAddr> SetOfMemBlocks;
-
-			/// <summary>
-			/// A sorted set of garbage collected pieces of memory,
-			/// ordered by the memory addresses of those pieces.
-			/// </summary>
-			/// <remarks>
-			/// Although a hash table could be faster, it is not sorted, hence cannot be used.
-			/// </remarks>
-			SetOfMemBlocks m_vertices;
 
 			/// <summary>
 			/// An unsorted map of elements representing <see cref="sptr"/> objects.
@@ -58,19 +38,15 @@ namespace _3fd
 			/// </remarks>
 			AddressesHashTable m_sptrObjects;
 
-			Vertex *GetVertex(void *memAddr) const;
+			VertexStore m_vertices;
 
-			Vertex *GetContainerVertex(void *addr) const;
+			void MakeReference(AddressesHashTable::Element &sptrObjHashTableElem, Vertex *pointedMemBlock);
 
 			void MakeReference(AddressesHashTable::Element &sptrObjHashTableElem, void *pointedAddr);
 
 			void UnmakeReference(AddressesHashTable::Element &sptrObjHashTableElem, bool allowDestruction);
 
-			void RemoveVertex(Vertex *memBlock);
-
 		public:
-
-			MemoryDigraph();
 
 			void ShrinkVertexPool();
 
@@ -78,7 +54,13 @@ namespace _3fd
 
 			void AddPointer(void *pointerAddr, void *pointedAddr);
 
+			void AddPointerOnCopy(void *leftPointerAddr, void *rightPointerAddr);
+
 			void ResetPointer(void *pointerAddr, void *newPointedAddr, bool allowDtion);
+
+			void ResetPointer(void *pointerAddr, void *otherPointerAddr);
+
+			void ReleasePointer(void *pointerAddr);
 
 			void RemovePointer(void *pointerAddr);
 		};

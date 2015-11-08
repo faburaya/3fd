@@ -31,7 +31,7 @@ namespace _3fd
 				return dynMemPool->GetFreeBlock();
 			}
 
-				void operator delete(void *ptr)
+			void operator delete(void *ptr)
 			{
 				dynMemPool->ReturnBlock(ptr);
 			}

@@ -175,6 +175,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="gc_arrayofedges.h" />
+    <ClInclude Include="gc_vertexstore.h" />
     <ClInclude Include="utils_arrayofbits.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -221,6 +222,7 @@
     <ClCompile Include="gc_vertex.cpp" />
     <ClCompile Include="gc_memorydigraph.cpp" />
     <ClCompile Include="gc_messages.cpp" />
+    <ClCompile Include="gc_vertexstore.cpp" />
     <ClCompile Include="isam_impl.cpp" />
     <ClCompile Include="isam_impl_cursor.cpp" />
     <ClCompile Include="isam_impl_database.cpp" />

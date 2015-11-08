@@ -225,12 +225,17 @@ namespace _3fd
 		}
 
 		/// <summary>
-		/// Removes the element corresponding to a <see cref="sptr" /> object address.
+		/// Removes an element given a reference to it.
 		/// </summary>
-		/// <param name="sptrObjectAddr">The specified <see cref="sptr" /> object address.</param>
-		void AddressesHashTable::Remove(void *sptrObjectAddr)
+		/// <param name="element">A reference to the element remove.</param>
+		void AddressesHashTable::Remove(Element &element)
 		{
-			Lookup(sptrObjectAddr) = Element();
+			// element reference must at least belong to the array of buckets:
+			_ASSERTE(m_elementsCount > 0
+					 && &element >= &m_bucketArray[0]
+					 && &element < &m_bucketArray[0] + m_bucketArray.size());
+
+			element = Element();
 			--m_elementsCount;
 
 			if (m_outHashSizeInBits > AppConfig::GetSettings().framework.gc.sptrObjectsHashTable.initialSizeLog2
@@ -238,6 +243,18 @@ namespace _3fd
 			{
 				ShrinkTable();
 			}
+		}
+
+		/// <summary>
+		/// Removes the element corresponding to a <see cref="sptr" /> object address.
+		/// </summary>
+		/// <param name="sptrObjectAddr">
+		/// The specified <see cref="sptr"/> object address.
+		/// </param>
+		void AddressesHashTable::Remove(void *sptrObjectAddr)
+		{
+			auto &element = Lookup(sptrObjectAddr);
+			Remove(element);
 		}
 
 	}// end of namespace memory

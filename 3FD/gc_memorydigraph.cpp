@@ -1,7 +1,5 @@
 #include "stdafx.h"
 #include "gc_memorydigraph.h"
-#include "gc_vertex.h"
-#include "configuration.h"
 
 #include <cassert>
 
@@ -9,76 +7,12 @@ namespace _3fd
 {
 	namespace memory
 	{
-		using core::AppConfig;
-
-		/// <summary>
-		/// Initializes a new instance of the <see cref="MemoryDigraph"/> class.
-		/// </summary>
-		MemoryDigraph::MemoryDigraph() :
-			m_memBlocksPool(AppConfig::GetSettings().framework.gc.memBlocksMemPool.initialSize,
-							sizeof(Vertex),
-							AppConfig::GetSettings().framework.gc.memBlocksMemPool.growingFactor)
-		{
-			Vertex::SetMemoryPool(m_memBlocksPool);
-		}
-
 		/// <summary>
 		/// Shrinks the pool of <see cref="Vertex"/> objects.
 		/// </summary>
 		void MemoryDigraph::ShrinkVertexPool()
 		{
-			m_memBlocksPool.Shrink();
-		}
-
-		/// <summary>
-		/// Gets the vertex representing a given memory address.
-		/// </summary>
-		/// <param name="memAddr">The given memory address.</param>
-		/// <returns>The vertex representing the given memory address.</returns>
-		Vertex * MemoryDigraph::GetVertex(void *memAddr) const
-		{
-			MemAddrContainer key(memAddr);
-			auto iter = m_vertices.find(&key);
-
-			if (m_vertices.end() != iter)
-				return static_cast<Vertex *> (*iter);
-			else
-				return nullptr;
-		}
-
-		/// <summary>
-		/// Gets the regular vertex which represents a memory block containing a given address.
-		/// </summary>
-		/// <param name="addr">The address for which a container will be searched.</param>
-		/// <returns>
-		/// The vertex representing the memory block which contains the given address,
-		/// if existent, otherwise, a <c>nullptr</c>.
-		/// </returns>
-		Vertex * MemoryDigraph::GetContainerVertex(void *addr) const
-		{
-			if (!m_vertices.empty())
-			{
-				MemAddrContainer key(addr);
-				auto iter = m_vertices.lower_bound(&key);
-
-				if (m_vertices.end() != iter)
-				{
-					auto memBlock = static_cast<Vertex *> (*iter);
-					if (memBlock->Contains(addr))
-						return memBlock;
-
-					if (m_vertices.begin() != iter)
-						--iter;
-				}
-				else
-					--iter;
-
-				auto memBlock = static_cast<Vertex *> (*iter);
-				if (memBlock->Contains(addr))
-					return memBlock;
-			}
-
-			return nullptr;
+			m_vertices.ShrinkPool();
 		}
 
 		/// <summary>
@@ -89,18 +23,35 @@ namespace _3fd
 		/// A hashtable element which represents the pointer.
 		/// </param>
 		/// <param name="pointedAddr">The referred memory address.</param>
-		void MemoryDigraph::MakeReference(AddressesHashTable::Element &sptrObjHashTableElem, void *pointedAddr)
+		void MemoryDigraph::MakeReference(
+			AddressesHashTable::Element &sptrObjHashTableElem,
+			void *pointedAddr)
 		{
-			if (pointedAddr == nullptr)
-				return;
+			auto pointedMemBlock = m_vertices.GetVertex(pointedAddr);
 
 			/* By the time the connection is to be set, the vertex representing
 			the pointed memory block must already exist in the graph. If not present,
 			that means it has been unappropriately collected too soon, or the vertex
-			removed from graph too early... */
-			auto pointedMemBlock = GetVertex(pointedAddr);
+			has been removed from the graph too early... */
 			_ASSERTE(pointedMemBlock != nullptr);
 
+			MakeReference(sptrObjHashTableElem, pointedMemBlock);
+		}
+
+		/// <summary>
+		/// Sets the connection between a pointer and its referred memory address,
+		/// creating an edge in the graph.
+		/// </summary>
+		/// <param name="sptrObjHashTableElem">
+		/// A hashtable element which represents the pointer.
+		/// </param>
+		/// <param name="pointedAddr">
+		/// The vertex representing the referred memory address.
+		/// </param>
+		void MemoryDigraph::MakeReference(
+			AddressesHashTable::Element &sptrObjHashTableElem,
+			Vertex *pointedMemBlock)
+		{
 			sptrObjHashTableElem.SetPointedMemBlock(pointedMemBlock);
 
 			if (sptrObjHashTableElem.IsRoot())
@@ -136,7 +87,7 @@ namespace _3fd
 				{
 					return rootFound =
 						!recvEdgeVtx->IsMarked() // prevent infinite recursion
-						&& !recvEdgeVtx->AreReprObjResourcesReleased() // 
+						&& !recvEdgeVtx->AreReprObjResourcesReleased() // already collected, skip
 						&& !IsReachable(recvEdgeVtx); // recursive search
 				}
 			);
@@ -154,7 +105,7 @@ namespace _3fd
 		/// <param name="sptrObjHashTableElem">
 		/// A hashtable element which represents the pointer.
 		/// </param>
-		/// <param name="allowDestruction">
+		/// <param name="allowDtion">
 		/// Whether the pointed object should have its destructor invoked just
 		/// in case it is to be collected. The destruction must not be allowed
 		/// when the object construction has failed due to a thrown exception.
@@ -163,10 +114,11 @@ namespace _3fd
 		/// If the previously pointed memory block becomes unreachable as a result
 		/// of this operation, the resources allocated to it will be released.
 		/// </remarks>
-		void MemoryDigraph::UnmakeReference(AddressesHashTable::Element &sptrObjHashTableElem, bool allowDestruction)
+		void MemoryDigraph::UnmakeReference(AddressesHashTable::Element &sptrObjHashTableElem, bool allowDtion)
 		{
 			// the receiving vertex is the pointed memory block, and has been cached
 			auto receivingVtx = sptrObjHashTableElem.GetPointedMemBlock();
+			sptrObjHashTableElem.SetPointedMemBlock(nullptr);
 
 			if (receivingVtx == nullptr)
 				return;
@@ -177,31 +129,33 @@ namespace _3fd
 			{
 				auto originatorVtx = sptrObjHashTableElem.GetContainerMemBlock();
 				originatorVtx->DecrementOutgoingEdgeCount();
+				receivingVtx->RemoveEdgeFrom(originatorVtx);
 
 				/* if no longer starts or receives any edge, then
-				this vertex became isolated in the graph (no other
-				vertex can reach it) and can be safely returned to
-				the object pool... */
+				this vertex became isolated in the graph and can
+				be safely returned to the object pool... */
 				if (!originatorVtx->HasAnyEdges())
 				{
 					/* ... but the represented object resources have
 					to be released before this vertex disappears */
 					_ASSERTE(originatorVtx->AreReprObjResourcesReleased());
-					delete this;
+					delete originatorVtx;
 				}
-
-				receivingVtx->RemoveEdgeFrom(originatorVtx);
 			}
 
-			/* If the memory block became unreachable, release its
-			resources and remove it from the graph: */
+			/* If the memory block became unreachable, release
+			its resources and remove it from the graph: */
 			if (!IsReachable(receivingVtx))
 			{
-				receivingVtx->ReleaseReprObjResources(allowDestruction);
-				RemoveVertex(receivingVtx);
+				receivingVtx->ReleaseReprObjResources(allowDtion);
+				m_vertices.RemoveVertex(receivingVtx);
+
+				/* if isolated in the graph, it can be
+				safely returned to the object pool... */
+				if (!receivingVtx->HasAnyEdges())
+					delete receivingVtx;
 			}
 		}
-
 		/// <summary>
 		/// Adds a new vertex to the graph.
 		/// </summary>
@@ -210,46 +164,57 @@ namespace _3fd
 		/// <param name="freeMemCallback">The callback that frees the memory block.</param>
 		void MemoryDigraph::AddRegularVertex(void *memAddr, size_t blockSize, FreeMemProc freeMemCallback)
 		{
-			auto memBlock = new Vertex(memAddr, blockSize, freeMemCallback);
-			auto insertSucceded = m_vertices.insert(memBlock).second;
-			_ASSERTE(insertSucceded); // insertion should always succeed because a vertex cannot be added twice
-		}
-
-		/// <summary>
-		/// Removes a given vertex from the graph.
-		/// </summary>
-		/// <param name="memBlock">
-		/// The vertex to remove, which represents a memory block.
-		/// </param>
-		void MemoryDigraph::RemoveVertex(Vertex *memBlock)
-		{
-			auto iter = m_vertices.find(memBlock);
-			_ASSERTE(m_vertices.end() != iter); // cannot handle removal of unexistent vertex
-			m_vertices.erase(iter);
+			m_vertices.AddVertex(memAddr, blockSize, freeMemCallback);
 		}
 
 		/// <summary>
 		/// Adds a new pointer to the graph.
 		/// </summary>
 		/// <param name="pointerAddr">The address of the pointer object.</param>
-		/// <param name="pointedAddr">The memory address pointed by the object.</param>
+		/// <param name="pointedAddr">The memory address referred by the pointer.</param>
 		void MemoryDigraph::AddPointer(void *pointerAddr, void *pointedAddr)
 		{
 			/* The edge origin is always a pointer. If the pointer is not a root
 			vertex, find the container vertex, which is a piece of memory containing
 			the pointer, so the connection to the pointed memory address will be set
 			using the container rather than the pointer: */
-			auto containerMemBlock = GetContainerVertex(pointerAddr); // null if root
+			auto containerMemBlock = m_vertices.GetContainerVertex(pointerAddr); // null if root
 			auto &sptrObjHashTableElem = m_sptrObjects.Insert(pointerAddr, nullptr, containerMemBlock);
-			MakeReference(sptrObjHashTableElem, pointedAddr);
+
+			if (pointedAddr != nullptr)
+				MakeReference(sptrObjHashTableElem, pointedAddr);
 		}
 
 		/// <summary>
-		/// Resets a given pointer to another memory address.
+		/// Adds a new pointer (constructed as a copy) to the graph.
+		/// </summary>
+		/// <param name="leftPointerAddr">The address of the pointer object to add.</param>
+		/// <param name="rightPointerAddr">The address of the pointer object being copied.</param>
+		void MemoryDigraph::AddPointerOnCopy(void *leftPointerAddr, void *rightPointerAddr)
+		{
+			/* The edge origin is always a pointer. If the pointer is not a root
+			vertex, find the container vertex, which is a piece of memory containing
+			the pointer, so the connection to the pointed memory address will be set
+			using the container rather than the pointer: */
+			auto containerMemBlock = m_vertices.GetContainerVertex(leftPointerAddr); // null if root
+
+			auto &leftSptrObjHTabElem = m_sptrObjects.Insert(leftPointerAddr, nullptr, containerMemBlock);
+
+			auto &rightSptrObjHTabElem = m_sptrObjects.Lookup(rightPointerAddr);
+
+			auto receivingVtx = rightSptrObjHTabElem.GetPointedMemBlock();
+
+			if (receivingVtx != nullptr)
+				MakeReference(leftSptrObjHTabElem, receivingVtx);
+		}
+
+		/// <summary>
+		/// Resets a given pointer to the memory address
+		/// of a newly created object (never assigned before).
 		/// </summary>
 		/// <param name="pointerAddr">The address of the pointer object.</param>
 		/// <param name="newPointedAddr">The new pointed memory address.</param>
-		/// <param name="allowDestruction">
+		/// <param name="allowDtion">
 		/// Whether the pointed object should have its destructor invoked just
 		/// in case it is to be collected. The destruction must not be allowed
 		/// when the object construction has failed due to a thrown exception.
@@ -257,8 +222,48 @@ namespace _3fd
 		void MemoryDigraph::ResetPointer(void *pointerAddr, void *newPointedAddr, bool allowDtion)
 		{
 			auto &sptrObjHashTableElem = m_sptrObjects.Lookup(pointerAddr);
+
 			UnmakeReference(sptrObjHashTableElem, allowDtion);
-			MakeReference(sptrObjHashTableElem, newPointedAddr);
+
+			if (newPointedAddr != nullptr)
+				MakeReference(sptrObjHashTableElem, newPointedAddr);
+		}
+
+		/// <summary>
+		/// Resets a given pointer to the memory address
+		/// of an object previously assigned to another pointer.
+		/// </summary>
+		/// <param name="pointerAddr">The address of the pointer object.</param>
+		/// <param name="otherPointerAddr">The address of the other pointer object.</param>
+		void MemoryDigraph::ResetPointer(void *pointerAddr, void *otherPointerAddr)
+		{
+			auto &leftSptrObjHashTabElem = m_sptrObjects.Lookup(pointerAddr);
+			auto &rightSptrObjHashTabElem = m_sptrObjects.Lookup(otherPointerAddr);
+
+			/* The reason this operation exists is that, differently from
+			ResetPointer, where the vertex of the newly pointed
+			address must be searched in the graph, here we can get this
+			vertex cached with the sptr in the hash table.
+
+			This allows the retrieval of vertices which no longer exists
+			in the graph due to a previous collection, which despite not
+			being the most common scenario, it is still possible. */
+			auto newlyPointedMemBlock = rightSptrObjHashTabElem.GetPointedMemBlock();
+
+			UnmakeReference(leftSptrObjHashTabElem, true);
+
+			if (newlyPointedMemBlock != nullptr)
+				MakeReference(leftSptrObjHashTabElem, newlyPointedMemBlock);
+		}
+
+		/// <summary>
+		/// Releases the reference a pointer holds to a memory address.
+		/// </summary>
+		/// <param name="pointerAddr">The address of the pointer object.</param>
+		void MemoryDigraph::ReleasePointer(void *pointerAddr)
+		{
+			auto &sptrObjHashTableElem = m_sptrObjects.Lookup(pointerAddr);
+			UnmakeReference(sptrObjHashTableElem, true);
 		}
 
 		/// <summary>
@@ -269,7 +274,7 @@ namespace _3fd
 		{
 			auto &sptrObjHashTableElem = m_sptrObjects.Lookup(pointerAddr);
 			UnmakeReference(sptrObjHashTableElem, true);
-			m_sptrObjects.Remove(pointerAddr);
+			m_sptrObjects.Remove(sptrObjHashTableElem);
 		}
 
 	}// end of namespace memory

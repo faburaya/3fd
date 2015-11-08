@@ -200,7 +200,7 @@
     </ClCompile>
     <ClCompile Include="tests_gc_hashtable.cpp" />
     <ClCompile Include="tests_gc_vertex.cpp" />
-    <ClCompile Include="tests_gc_memdigraph.cpp" />
+    <ClCompile Include="tests_gc_vertexstore.cpp" />
     <ClCompile Include="tests_gc_arrayofedges.cpp" />
     <ClCompile Include="tests_utils_arrayofbits.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>

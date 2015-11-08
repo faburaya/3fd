@@ -128,7 +128,7 @@ namespace _3fd
 		GarbageCollector::GarbageCollector() 
 		try : 
 			m_error(nullptr), 
-			m_masterTable(), 
+			m_memoryDigraph(), 
 			m_messagesQueue(/*AppConfig::GetSettings().framework.gc.msgQueueInitCap*/), 
 			m_terminationEvent()
 		{
@@ -218,14 +218,14 @@ namespace _3fd
 					IMessage *message = m_messagesQueue.Remove();
 					while(message != nullptr)
 					{
-						message->Execute(m_masterTable);
+						message->Execute(m_memoryDigraph);
 						delete message;
 						message = m_messagesQueue.Remove();
 					}
 
 					// If there is still work to do, optimize the master table
 					if(terminate == false)
-						m_masterTable.Shrink();
+						m_memoryDigraph.ShrinkVertexPool();
 				}
 				while(terminate == false);
 			}
@@ -253,9 +253,14 @@ namespace _3fd
 			}
 		}
 
-		void GarbageCollector::UpdateReference(void *sptrObjAddr, void *pointedAddr)
+		void GarbageCollector::UpdateReference(void *leftSptrObjAddr, void *rightSptrObjAddr)
 		{
-			m_messagesQueue.Add(new ReferenceUpdateMsg(sptrObjAddr, pointedAddr));
+			m_messagesQueue.Add(new ReferenceUpdateMsg(leftSptrObjAddr, rightSptrObjAddr));
+		}
+
+		void GarbageCollector::ReleaseReference(void *sptrObjAddr)
+		{
+			m_messagesQueue.Add(new ReferenceReleaseMsg(sptrObjAddr));
 		}
 
 		void GarbageCollector::RegisterNewObject(void *sptrObjAddr, void *pointedAddr, size_t blockSize, FreeMemProc freeMemCallback)
@@ -271,6 +276,11 @@ namespace _3fd
 		void GarbageCollector::RegisterSptr(void *sptrObjAddr, void *pointedAddr)
 		{
 			m_messagesQueue.Add(new SptrRegistrationMsg(sptrObjAddr, pointedAddr));
+		}
+
+		void GarbageCollector::RegisterSptrCopy(void *leftSptrObjAddr, void *rightSptrObjAddr)
+		{
+			m_messagesQueue.Add(new SptrCopyRegistrationMsg(leftSptrObjAddr, rightSptrObjAddr));
 		}
 
 		void GarbageCollector::UnregisterSptr(void *sptrObjAddr)
