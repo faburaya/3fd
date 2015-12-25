@@ -41,9 +41,11 @@ namespace _3fd
 #	else
 			void *ptr = aligned_alloc(2, size);
 #	endif
-			if(ptr != nullptr)
+			if (ptr != nullptr)
+			{
 				GarbageCollector::GetInstance()
 					.RegisterNewObject(sptrObjAddr, ptr, size, freeMemCallback);
+			}
 			else
 				throw AppException<std::runtime_error>("Failed to allocated collectable memory");
 

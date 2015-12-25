@@ -130,7 +130,7 @@ namespace _3fd
 
 			count = 0;
 			array.ForEachRegular([&count](Vertex *vtx){ ++count; return true; });
-			ASSERT_EQ(0, count);
+			ASSERT_EQ(n, count);
 
 			// Once again, add root edges:
 			for (int idx = 0; idx < n; ++idx)

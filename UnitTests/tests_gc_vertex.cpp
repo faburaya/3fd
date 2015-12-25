@@ -128,7 +128,13 @@ namespace _3fd
 
 			// Create a chain of regular vertices:
 			for (index = 0; index < vertices.size() - 1; ++index)
-				vertices[index]->ReceiveEdgeFrom(vertices[index + 1]);
+			{
+				auto thisVtx = vertices[index];
+				auto nextVtx = vertices[index + 1];
+				
+				thisVtx->ReceiveEdgeFrom(nextVtx);
+				nextVtx->IncrementOutgoingEdgeCount();
+			}
 
 			// Because no root vertex has been added, all vertices are unreachable:
 			index = 0;
@@ -136,7 +142,7 @@ namespace _3fd
 			{
 				EXPECT_FALSE(vtx->IsMarked());
 				EXPECT_FALSE(vtx->HasRootEdges());
-				EXPECT_EQ((index++ < vertices.size() - 1), vtx->HasAnyEdges());
+				EXPECT_TRUE(vtx->HasAnyEdges());
 				EXPECT_FALSE(IsReachable(vtx));
 			}
 
@@ -161,7 +167,7 @@ namespace _3fd
 			{
 				EXPECT_FALSE(vtx->IsMarked());
 				EXPECT_FALSE(vtx->HasRootEdges());
-				EXPECT_EQ((index < vertices.size() - 1), vtx->HasAnyEdges());
+				EXPECT_TRUE(vtx->HasAnyEdges());
 				EXPECT_FALSE(IsReachable(vtx));
 			}
 
@@ -209,11 +215,18 @@ namespace _3fd
 
 			// Create a chain of regular vertices:
 			for (index = 0; index < vertices.size() - 1; ++index)
-				vertices[index]->ReceiveEdgeFrom(vertices[index + 1]);
+			{
+				auto thisVtx = vertices[index];
+				auto nextVtx = vertices[index + 1];
+
+				thisVtx->ReceiveEdgeFrom(nextVtx);
+				nextVtx->IncrementOutgoingEdgeCount();
+			}
 
 			// Close a cycle making the end of the chain receive an edge from the middle:
 			const auto middle = vertices.size() / 2;
 			vertices.back()->ReceiveEdgeFrom(vertices[middle]);
+			vertices[middle]->IncrementOutgoingEdgeCount();
 			
 			// Because no root vertex has been added, all vertices are unreachable:
 			for (auto vtx : vertices)

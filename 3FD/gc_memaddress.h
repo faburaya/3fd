@@ -66,7 +66,7 @@ namespace _3fd
 				else
 				{
 					m_address = reinterpret_cast <void *> (
-						reinterpret_cast<uintptr_t> (m_address) & (uintptr_t(2) & mask)
+						reinterpret_cast<uintptr_t> (m_address) & (uintptr_t(2) | mask)
 					);
 				}
 			}
@@ -99,7 +99,7 @@ namespace _3fd
 				else
 				{
 					m_address = reinterpret_cast <void *> (
-						reinterpret_cast<uintptr_t> (m_address) & (uintptr_t(1) & mask)
+						reinterpret_cast<uintptr_t> (m_address) & (uintptr_t(1) | mask)
 					);
 				}
 			}

@@ -37,7 +37,7 @@ namespace _3fd
 		void ReferenceReleaseMsg::Execute(MemoryDigraph &graph)
 		{
 			/* release the reference made by a pointer, but do not
-			unregister it, because it still hasn't gone out of scope*/
+			unregister it, because it still hasn't gone out of scope */
 			graph.ReleasePointer(m_sptrObjAddr);
 		}
 

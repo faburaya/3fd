@@ -64,7 +64,7 @@ namespace _3fd
 				m_pointedAddress(ob.m_pointedAddress)
 			{
 				GarbageCollector::GetInstance()
-					.RegisterSptrCopy(this, &ob);
+					.RegisterSptrCopy(this, const_cast<sptr_base *> (&ob));
 			}
 
 			/// <summary>
@@ -77,7 +77,7 @@ namespace _3fd
 				m_pointedAddress(static_cast<Type *> (ob.m_pointedAddress)) // Fires a compile-time error when 'ObjectType' is not a derived/same/convertible type
 			{
 				GarbageCollector::GetInstance()
-					.RegisterSptrCopy(this, &ob);
+					.RegisterSptrCopy(this, const_cast<sptr_base<ObjectType> *> (&ob));
 			}
 
 			/// <summary>
@@ -100,7 +100,8 @@ namespace _3fd
 				if (static_cast<const void *> (&ob) != static_cast<const void *> (this)
 					&& static_cast<const void *> (m_pointedAddress) != static_cast<const void *> (ob.m_pointedAddress))
 				{
-					GarbageCollector::GetInstance().UpdateReference(this, &ob);
+					GarbageCollector::GetInstance()
+						.UpdateReference(this, const_cast<sptr_base<ObjectType> *> (&ob));
 
 					// Fires a compile-time error when 'ObjectType' is not a derived/same/convertible type
 					m_pointedAddress = static_cast<Type *> (ob.m_pointedAddress);

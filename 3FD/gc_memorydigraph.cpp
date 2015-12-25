@@ -88,7 +88,7 @@ namespace _3fd
 					return rootFound =
 						!recvEdgeVtx->IsMarked() // prevent infinite recursion
 						&& !recvEdgeVtx->AreReprObjResourcesReleased() // already collected, skip
-						&& !IsReachable(recvEdgeVtx); // recursive search
+						&& IsReachable(recvEdgeVtx); // recursive search
 				}
 			);
 
@@ -143,19 +143,38 @@ namespace _3fd
 				}
 			}
 
-			/* If the memory block became unreachable, release
-			its resources and remove it from the graph: */
-			if (!IsReachable(receivingVtx))
+			if (!receivingVtx->AreReprObjResourcesReleased())
 			{
-				receivingVtx->ReleaseReprObjResources(allowDtion);
-				m_vertices.RemoveVertex(receivingVtx);
+				/* If the memory block has just now became unreachable,
+				release its resources and remove it from the graph: */
+				if (!IsReachable(receivingVtx))
+				{
+					// First remove the vertex from the ordered set of vertices...
+					m_vertices.RemoveVertex(receivingVtx);
 
-				/* if isolated in the graph, it can be
-				safely returned to the object pool... */
-				if (!receivingVtx->HasAnyEdges())
-					delete receivingVtx;
+					/* When the piece of memory represented by this vertex is
+					released, the data member in the vertex object that holds
+					its memory address is set to zero. Because the ordered set
+					of vertices organizes the elements by such address, that
+					should not be altered before anything that performs a search
+					in the set, like the removal performed in the line above. */
+					receivingVtx->ReleaseReprObjResources(allowDtion);
+
+					/* if isolated in the graph, it can be
+					safely returned to the object pool... */
+					if (!receivingVtx->HasAnyEdges())
+						delete receivingVtx;
+				}
+			}
+			/* otherwise, if the memory block was already unreachable, just
+			check if the corresponding vertex is isolated in the graph, hence
+			able to be safely returned to the object pool: */
+			else if (!receivingVtx->HasAnyEdges())
+			{
+				delete receivingVtx;
 			}
 		}
+
 		/// <summary>
 		/// Adds a new vertex to the graph.
 		/// </summary>
@@ -240,10 +259,10 @@ namespace _3fd
 			auto &leftSptrObjHashTabElem = m_sptrObjects.Lookup(pointerAddr);
 			auto &rightSptrObjHashTabElem = m_sptrObjects.Lookup(otherPointerAddr);
 
-			/* The reason this operation exists is that, differently from
-			ResetPointer, where the vertex of the newly pointed
-			address must be searched in the graph, here we can get this
-			vertex cached with the sptr in the hash table.
+			/* The reason this overload exists is that, differently from
+			the other implementation of ResetPointer, where the vertex of
+			the newly pointed address must be searched in the graph, here
+			we can get this vertex cached with the sptr in the hash table.
 
 			This allows the retrieval of vertices which no longer exists
 			in the graph due to a previous collection, which despite not
