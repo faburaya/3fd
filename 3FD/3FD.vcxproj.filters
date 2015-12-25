@@ -140,16 +140,10 @@
     <ClInclude Include="gc_addresseshashtable.h">
       <Filter>Header Files\GC</Filter>
     </ClInclude>
-    <ClInclude Include="gc_mastertable.h">
-      <Filter>Header Files\GC</Filter>
-    </ClInclude>
     <ClInclude Include="gc_common.h">
       <Filter>Header Files\GC</Filter>
     </ClInclude>
     <ClInclude Include="gc_memaddress.h">
-      <Filter>Header Files\GC</Filter>
-    </ClInclude>
-    <ClInclude Include="gc_memblock.h">
       <Filter>Header Files\GC</Filter>
     </ClInclude>
     <ClInclude Include="utils.h">
@@ -157,6 +151,15 @@
     </ClInclude>
     <ClInclude Include="arrayofbits.h">
       <Filter>Header Files\utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="gc_arrayofedges.h">
+      <Filter>Header Files\GC</Filter>
+    </ClInclude>
+    <ClInclude Include="gc_vertex.h">
+      <Filter>Header Files\GC</Filter>
+    </ClInclude>
+    <ClInclude Include="gc_vertexstore.h">
+      <Filter>Header Files\GC</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -232,13 +235,7 @@
     <ClCompile Include="gc_messages.cpp">
       <Filter>Source Files\GC</Filter>
     </ClCompile>
-    <ClCompile Include="gc_memblock.cpp">
-      <Filter>Source Files\GC</Filter>
-    </ClCompile>
     <ClCompile Include="gc_addresseshashtable.cpp">
-      <Filter>Source Files\GC</Filter>
-    </ClCompile>
-    <ClCompile Include="gc_mastertable.cpp">
       <Filter>Source Files\GC</Filter>
     </ClCompile>
     <ClCompile Include="gc_garbagecollector.cpp">
@@ -268,9 +265,6 @@
     <ClCompile Include="isam_impl_errorhelper.cpp">
       <Filter>Source Files\ISAM</Filter>
     </ClCompile>
-    <ClCompile Include="gc_vertex.cpp">
-      <Filter>Source Files\GC</Filter>
-    </ClCompile>
     <ClCompile Include="utils_event.cpp">
       <Filter>Source Files\utilities</Filter>
     </ClCompile>
@@ -289,6 +283,14 @@
     <ClCompile Include="utils_arrayofbits.cpp">
       <Filter>Source Files\utilities</Filter>
     </ClCompile>
+    <ClCompile Include="gc_arrayofedges.cpp">
+      <Filter>Source Files\GC</Filter>
+    </ClCompile>
+    <ClCompile Include="gc_vertex.cpp">
+      <Filter>Source Files\GC</Filter>
+    </ClCompile>
+    <ClCompile Include="gc_vertexstore.cpp">
+      <Filter>Source Files\GC</Filter>
   </ItemGroup>
   <ItemGroup>
     <Xml Include="config3fd-template.xml">

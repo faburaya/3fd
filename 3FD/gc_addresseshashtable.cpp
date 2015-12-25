@@ -77,7 +77,8 @@ namespace _3fd
 									continue;
 								else
 									idx = 0;
-							} while (newArray[idx].GetSptrObjectAddr() != nullptr);
+							}
+							while (newArray[idx].GetSptrObjectAddr() != nullptr);
 
 							newArray[idx] = element;
 						}
@@ -135,14 +136,21 @@ namespace _3fd
 		}
 
 		/// <summary>
-		/// Inserts a new entry in the hash table, placed according the memory address of the <see cref="sptr" /> object.
+		/// Inserts a new entry in the hash table, placed according
+		/// the memory address of the <see cref="sptr" /> object.
 		/// </summary>
 		/// <param name="sptrObjectAddr">The <see cref="sptr" /> object address.</param>
-		/// <param name="pointedAddr">The address pointed by the <see cref="sptr" /> object.</param>
-		/// <param name="container">The container memory block.</param>
-		/// <returns>A view to the inserted element.</returns>
+		/// <param name="pointedMemBlock">
+		/// The vertex representing the memory block pointed by this <see cref="sptr" /> object.
+		/// </param>
+		/// <param name="containerMemBlock">
+		/// The vertex representing the memory block that contains this <see cref="sptr" /> object.
+		/// </param>
+		/// <returns>
+		/// A view to the inserted element.
+		/// </returns>
 		AddressesHashTable::Element &
-		AddressesHashTable::Insert(void *sptrObjectAddr, void *pointedAddr, MemAddrContainer *container)
+		AddressesHashTable::Insert(void *sptrObjectAddr, Vertex *pointedMemBlock, Vertex *containerMemBlock)
 		{
 			if (CalculateLoadFactor() > AppConfig::GetSettings().framework.gc.sptrObjectsHashTable.loadFactorThreshold
 				|| m_bucketArray.empty())
@@ -160,7 +168,7 @@ namespace _3fd
 			if (m_bucketArray[idx].GetSptrObjectAddr() == nullptr)
 			{
 				++m_elementsCount;
-				return m_bucketArray[idx] = Element(sptrObjectAddr, pointedAddr, container);
+				return m_bucketArray[idx] = Element(sptrObjectAddr, pointedMemBlock, containerMemBlock);
 			}
 			else // Linear probe:
 			{
@@ -168,7 +176,7 @@ namespace _3fd
 				auto displacedElement = element;
 
 				// Place the new element in the first hashed index
-				element = Element(sptrObjectAddr, pointedAddr, container);
+				element = Element(sptrObjectAddr, pointedMemBlock, containerMemBlock);
 				++m_elementsCount;
 
 				// And move the displaced element to the first vacant position:
@@ -191,7 +199,9 @@ namespace _3fd
 		/// Looks up for the specified <see cref="sptr" /> object address.
 		/// </summary>
 		/// <param name="sptrObjectAddr">The <see cref="sptr" /> object address.</param>
-		/// <returns>The <see cref="Element" /> object corresponding to the <see cref="sptr" /> object address.</returns>
+		/// <returns>
+		/// The <see cref="Element" /> object corresponding to the <see cref="sptr" /> object address.
+		/// </returns>
 		AddressesHashTable::Element &
 		AddressesHashTable::Lookup(void *sptrObjectAddr)
 		{
@@ -215,12 +225,17 @@ namespace _3fd
 		}
 
 		/// <summary>
-		/// Removes the element corresponding to a <see cref="sptr" /> object address.
+		/// Removes an element given a reference to it.
 		/// </summary>
-		/// <param name="sptrObjectAddr">The specified <see cref="sptr" /> object address.</param>
-		void AddressesHashTable::Remove(void *sptrObjectAddr)
+		/// <param name="element">A reference to the element remove.</param>
+		void AddressesHashTable::Remove(Element &element)
 		{
-			Lookup(sptrObjectAddr) = Element();
+			// element reference must at least belong to the array of buckets:
+			_ASSERTE(m_elementsCount > 0
+					 && &element >= &m_bucketArray[0]
+					 && &element < &m_bucketArray[0] + m_bucketArray.size());
+
+			element = Element();
 			--m_elementsCount;
 
 			if (m_outHashSizeInBits > AppConfig::GetSettings().framework.gc.sptrObjectsHashTable.initialSizeLog2
@@ -228,6 +243,18 @@ namespace _3fd
 			{
 				ShrinkTable();
 			}
+		}
+
+		/// <summary>
+		/// Removes the element corresponding to a <see cref="sptr" /> object address.
+		/// </summary>
+		/// <param name="sptrObjectAddr">
+		/// The specified <see cref="sptr"/> object address.
+		/// </param>
+		void AddressesHashTable::Remove(void *sptrObjectAddr)
+		{
+			auto &element = Lookup(sptrObjectAddr);
+			Remove(element);
 		}
 
 	}// end of namespace memory

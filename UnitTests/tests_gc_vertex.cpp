@@ -1,6 +1,7 @@
 #include "stdafx.h"
-#include "gc_memblock.h"
+#include "gc_vertex.h"
 
+#include <algorithm>
 #include <vector>
 
 namespace _3fd
@@ -8,154 +9,261 @@ namespace _3fd
 	namespace unit_tests
 	{
 		/// <summary>
-		/// Generic tests for <see cref="memory::MemAddress"/> class.
+		/// Tests resource management in a graph of linked <see cref="Vertex" />
+		/// objects coming from the same pool.
 		/// </summary>
-		TEST(Framework_MemoryGC_TestCase, MemAddress_Test)
+		TEST(Framework_MemoryGC_TestCase, Vertex_ResourceManTest)
 		{
-			auto ptr = new int(696);
-			memory::MemAddress memAddress(ptr);
-			EXPECT_EQ(ptr, memAddress.Get());
-			EXPECT_FALSE(memAddress.isMarked());
+			using namespace memory;
 
-			memAddress.Mark(true);
-			EXPECT_TRUE(memAddress.isMarked());
-			EXPECT_EQ(ptr, memAddress.Get());
+			// Sets the memory pool:
 
-			memAddress.Mark(false);
-			EXPECT_FALSE(memAddress.isMarked());
-			EXPECT_EQ(ptr, memAddress.Get());
+			const size_t poolSize(512);
 
-			delete ptr;
+			utils::DynamicMemPool myPool(poolSize, sizeof(Vertex), 1.0F);
+
+			Vertex::SetMemoryPool(myPool);
+
+			// Creates a 'graph' which is a chain of memory blocks:
+
+			std::vector<Vertex *> vertices(poolSize * 2.5);
+
+			int index(0);
+			std::generate(begin(vertices), end(vertices), [&index]()
+			{
+				auto vertex = new Vertex(reinterpret_cast<void *> (index), 42, nullptr);
+				index += sizeof(void *);
+				return vertex;
+			});
+
+			for (index = 0; index < vertices.size() - 1; ++index)
+				vertices[index]->ReceiveEdgeFrom(vertices[index + 1]);
+
+			// Get rid of half the graph, then shrink resource usage:
+
+			const auto half = vertices.size() / 2;
+
+			while (vertices.size() > half)
+			{
+				auto previousBack = vertices.back();
+				vertices.pop_back();
+				vertices.back()->RemoveEdgeFrom(previousBack);
+				delete previousBack;
+			}
+
+			myPool.Shrink();
+
+			// Expand the graph again:
+			index = reinterpret_cast<int> (vertices.back()->GetMemoryAddress().Get());
+			while (vertices.size() < poolSize * 2)
+			{
+				index += sizeof(void *);
+
+				vertices.push_back(
+					new Vertex(reinterpret_cast<void *> (index), 42, nullptr)
+				);
+			}
+
+			// Now get rid of all vertices:
+			for (auto vtx : vertices)
+				delete vtx;
 		}
 
 		/// <summary>
-		/// Generic tests for <see cref="memory::Vertex"/> class.
+		/// Tests a <see cref="Vertex"/> handling
+		/// the resouces of its represented object.
 		/// </summary>
-		TEST(Framework_MemoryGC_TestCase, Vertex_Test)
+		TEST(Framework_MemoryGC_TestCase, Vertex_ObjResourcesTest)
 		{
-			using memory::Vertex;
+			using namespace memory;
 
-			Vertex obj;
+#	ifdef _WIN32
+			auto ptr = (int *)_aligned_malloc(sizeof (int), 2);
+#	else
+			auto ptr = (int *)aligned_alloc(2, sizeof (int));
+#	endif
+			Vertex memBlock(ptr, sizeof *ptr, &FreeMemAddr<int>);
 
-			ASSERT_FALSE(obj.HasRootEdge());
+			EXPECT_EQ(ptr, memBlock.GetMemoryAddress().Get());
+			EXPECT_FALSE(memBlock.AreReprObjResourcesReleased());
 
-			const int n = 32;
-			std::vector<int> someVars(n, 696);
-			std::vector<void *> fakePtrs(n);
-			std::vector<Vertex> otherVertices(n);
+			memBlock.ReleaseReprObjResources(true);
 
-			// Add edges from regular vertices:
-			for (auto &vtx : otherVertices)
-				obj.ReceiveEdge(&vtx);
+			EXPECT_TRUE(memBlock.AreReprObjResourcesReleased());
+		}
 
-			ASSERT_FALSE(obj.HasRootEdge());
+		/// <summary>
+		/// Tests reachability analysis in a graph of linked
+		/// <see cref="Vertex"/> objects in a chain.
+		/// </summary>
+		TEST(Framework_MemoryGC_TestCase, Vertex_GraphReachabilityAnalysis_ChainTest)
+		{
+			using namespace memory;
 
-			// Count edges from regular vertices:
-			int count(0);
-			obj.ForEachRegularEdgeWhile([&count](const Vertex &vtx)
+			// Sets the memory pool:
+			const size_t poolSize(16);
+			utils::DynamicMemPool myPool(poolSize, sizeof(Vertex), 1.0F);
+			Vertex::SetMemoryPool(myPool);
+
+			// Creates a 'graph' which is a chain of memory blocks:
+
+			std::vector<Vertex *> vertices(poolSize * 1.5);
+
+			int index(0);
+			std::generate(begin(vertices), end(vertices), [&index]()
 			{
-				++count;
-				return true;
+				auto vertex = new Vertex(reinterpret_cast<void *> (index), 42, nullptr);
+				index += sizeof (void *);
+				return vertex;
 			});
 
-			ASSERT_EQ(n, count);
-
-			// Add edges from root vertices:
-			for (int idx = 0; idx < n; ++idx)
+			// All vertices are regular and unreachable:
+			for (auto vtx : vertices)
 			{
-				fakePtrs[idx] = &someVars[idx];
-				obj.ReceiveEdge(fakePtrs[idx]);
+				EXPECT_FALSE(vtx->IsMarked());
+				EXPECT_FALSE(vtx->HasRootEdges());
+				EXPECT_FALSE(vtx->HasAnyEdges());
+				EXPECT_FALSE(IsReachable(vtx));
 			}
 
-			ASSERT_TRUE(obj.HasRootEdge());
-
-			// Count regular edges:
-			count = 0;
-			obj.ForEachRegularEdgeWhile([&count](const Vertex &vtx)
+			// Create a chain of regular vertices:
+			for (index = 0; index < vertices.size() - 1; ++index)
 			{
-				++count;
-				return true;
+				auto thisVtx = vertices[index];
+				auto nextVtx = vertices[index + 1];
+				
+				thisVtx->ReceiveEdgeFrom(nextVtx);
+				nextVtx->IncrementOutgoingEdgeCount();
+			}
+
+			// Because no root vertex has been added, all vertices are unreachable:
+			index = 0;
+			for (auto vtx : vertices)
+			{
+				EXPECT_FALSE(vtx->IsMarked());
+				EXPECT_FALSE(vtx->HasRootEdges());
+				EXPECT_TRUE(vtx->HasAnyEdges());
+				EXPECT_FALSE(IsReachable(vtx));
+			}
+
+			// The addition of an edge from a root vertex at the end of the chain should make everyone reachable:
+			void *fakeRootVtx = &index;
+			vertices.back()->ReceiveEdgeFrom(fakeRootVtx);
+
+			index = 0;
+			for (auto vtx : vertices)
+			{
+				EXPECT_FALSE(vtx->IsMarked());
+				EXPECT_EQ((index++ == vertices.size() - 1), vtx->HasRootEdges());
+				EXPECT_TRUE(vtx->HasAnyEdges());
+				EXPECT_TRUE(IsReachable(vtx));
+			}
+
+			// The removal of the single root vertex should make everyone unreachable:
+			vertices.back()->RemoveEdgeFrom(fakeRootVtx);
+
+			index = 0;
+			for (auto vtx : vertices)
+			{
+				EXPECT_FALSE(vtx->IsMarked());
+				EXPECT_FALSE(vtx->HasRootEdges());
+				EXPECT_TRUE(vtx->HasAnyEdges());
+				EXPECT_FALSE(IsReachable(vtx));
+			}
+
+			/* Now the root vertex will point to a vertex in the
+			middle of the chain, making only half of it reachable: */
+
+			const auto half = vertices.size() / 2;
+			vertices[half]->ReceiveEdgeFrom(fakeRootVtx);
+
+			for (index = 0; index <= half; ++index)
+				EXPECT_TRUE(IsReachable(vertices[index]));
+
+			for (; index < vertices.size(); ++index)
+				EXPECT_FALSE(IsReachable(vertices[index]));
+
+			// Return vertices to the pool:
+			for (auto vtx : vertices)
+				delete vtx;
+		}
+
+		/// <summary>
+		/// Tests reachability analysis in a graph of
+		/// linked <see cref="Vertex"/> objects, with a cycle.
+		/// </summary>
+		TEST(Framework_MemoryGC_TestCase, Vertex_GraphReachabilityAnalysis_CycleTest)
+		{
+			using namespace memory;
+
+			// Sets the memory pool:
+			const size_t poolSize(16);
+			utils::DynamicMemPool myPool(poolSize, sizeof(Vertex), 1.0F);
+			Vertex::SetMemoryPool(myPool);
+
+			// Creates a 'graph' which is a chain of memory blocks:
+
+			std::vector<Vertex *> vertices(poolSize * 1.5);
+
+			int index(0);
+			std::generate(begin(vertices), end(vertices), [&index]()
+			{
+				auto vertex = new Vertex(reinterpret_cast<void *> (index), 42, nullptr);
+				index += sizeof(void *);
+				return vertex;
 			});
 
-			ASSERT_EQ(n, count);
-
-			// Remove all edges:
-			obj.RemoveAllEdges();
-			ASSERT_FALSE(obj.HasRootEdge());
-
-			// Count regular edges:
-			count = 0;
-			obj.ForEachRegularEdgeWhile([&count](const Vertex &vtx)
+			// Create a chain of regular vertices:
+			for (index = 0; index < vertices.size() - 1; ++index)
 			{
-				++count;
-				return true;
-			});
+				auto thisVtx = vertices[index];
+				auto nextVtx = vertices[index + 1];
 
-			ASSERT_EQ(0, count);
+				thisVtx->ReceiveEdgeFrom(nextVtx);
+				nextVtx->IncrementOutgoingEdgeCount();
+			}
 
-			// Once again, add regular edges:
-			for (auto &vtx : otherVertices)
-				obj.ReceiveEdge(&vtx);
-
-			ASSERT_FALSE(obj.HasRootEdge());
-
-			// Count regular edges:
-			count = 0;
-			obj.ForEachRegularEdgeWhile([&count](const Vertex &vtx)
+			// Close a cycle making the end of the chain receive an edge from the middle:
+			const auto middle = vertices.size() / 2;
+			vertices.back()->ReceiveEdgeFrom(vertices[middle]);
+			vertices[middle]->IncrementOutgoingEdgeCount();
+			
+			// Because no root vertex has been added, all vertices are unreachable:
+			for (auto vtx : vertices)
 			{
-				++count;
-				return true;
-			});
+				EXPECT_FALSE(vtx->IsMarked());
+				EXPECT_FALSE(vtx->HasRootEdges());
+				EXPECT_TRUE(vtx->HasAnyEdges());
+				EXPECT_FALSE(IsReachable(vtx));
+			}
 
-			ASSERT_EQ(n, count);
+			// The addition of an edge from a root vertex at the end of the chain should make everyone reachable:
+			void *fakeRootVtx = &index;
+			vertices.back()->ReceiveEdgeFrom(fakeRootVtx);
 
-			// Once again, add root edges:
-			for (int idx = 0; idx < n; ++idx)
-				obj.ReceiveEdge(fakePtrs[idx]);
-
-			ASSERT_TRUE(obj.HasRootEdge());
-
-			// Count regular edges:
-			count = 0;
-			obj.ForEachRegularEdgeWhile([&count](const Vertex &vtx)
+			index = 0;
+			for (auto vtx : vertices)
 			{
-				++count;
-				return true;
-			});
+				EXPECT_FALSE(vtx->IsMarked());
+				EXPECT_EQ((index++ == vertices.size() - 1), vtx->HasRootEdges());
+				EXPECT_TRUE(vtx->HasAnyEdges());
+				EXPECT_TRUE(IsReachable(vtx));
+			}
 
-			ASSERT_EQ(n, count);
+			// The removal of the single root vertex should make everyone unreachable:
+			vertices.back()->RemoveEdgeFrom(fakeRootVtx);
 
-			// Remove regular edges:
-			for (auto &vtx : otherVertices)
-				obj.RemoveEdge(&vtx);
-
-			ASSERT_TRUE(obj.HasRootEdge());
-
-			// Count regular edges:
-			count = 0;
-			obj.ForEachRegularEdgeWhile([&count](const Vertex &vtx)
+			for (auto vtx : vertices)
 			{
-				++count;
-				return true;
-			});
+				EXPECT_FALSE(vtx->IsMarked());
+				EXPECT_FALSE(vtx->HasRootEdges());
+				EXPECT_TRUE(vtx->HasAnyEdges());
+				EXPECT_FALSE(IsReachable(vtx));
+			}
 
-			ASSERT_EQ(0, count);
-
-			// Remove root edges:
-			for (auto ptr : fakePtrs)
-				obj.RemoveEdge(ptr);
-
-			ASSERT_FALSE(obj.HasRootEdge());
-
-			// Count regular edges:
-			count = 0;
-			obj.ForEachRegularEdgeWhile([&count](const Vertex &vtx)
-			{
-				++count;
-				return true;
-			});
-
-			ASSERT_EQ(0, count);
+			// Return vertices to the pool:
+			for (auto vtx : vertices)
+				delete vtx;
 		}
 
 	}// end of namespace unit_tests

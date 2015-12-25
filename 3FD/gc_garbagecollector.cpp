@@ -26,7 +26,7 @@ namespace _3fd
 		using core::AppException;
 
 		/// <summary>
-		/// Allocates memory and register it with the garbage collector.
+		/// Allocates memory (aligned in 2 bytes) and registers it with the GC.
 		/// </summary>
 		/// <param name="size">The size of the memory block to allocated.</param>
 		/// <param name="sptrObjAddr">The address of the smart pointer that will refer to the same memory.</param>
@@ -36,20 +36,25 @@ namespace _3fd
 										   void *sptrObjAddr, 
 										   FreeMemProc freeMemCallback)
 		{
-			void *ptr = malloc(size);
-		
-			if(ptr != nullptr)
+#	ifdef _WIN32
+			void *ptr = _aligned_malloc(size, 2);
+#	else
+			void *ptr = aligned_alloc(2, size);
+#	endif
+			if (ptr != nullptr)
+			{
 				GarbageCollector::GetInstance()
 					.RegisterNewObject(sptrObjAddr, ptr, size, freeMemCallback);
+			}
 			else
-				throw AppException<std::runtime_error>("Memory allocation failed.", "std::malloc");
+				throw AppException<std::runtime_error>("Failed to allocated collectable memory");
 
 			return ptr;
 		}
 
 		GarbageCollector * GarbageCollector::uniqueObjectPtr(nullptr);
 
-		std::mutex	GarbageCollector::singleInstanceCreationMutex;
+		std::mutex GarbageCollector::singleInstanceCreationMutex;
 
 		/// <summary>
 		/// Creates the unique instance of the <see cref="GarbageCollector" /> class.
@@ -89,7 +94,7 @@ namespace _3fd
 		/// <summary>
 		/// Gets the unique instance of the <see cref="GarbageCollector" /> class.
 		/// </summary>
-		/// <returns></returns>
+		/// <returns>A reference to the unique instance.</returns>
 		GarbageCollector & GarbageCollector::GetInstance()
 		{
 			if(uniqueObjectPtr != nullptr)
@@ -125,13 +130,13 @@ namespace _3fd
 		GarbageCollector::GarbageCollector() 
 		try : 
 			m_error(nullptr), 
-			m_masterTable(), 
-			m_messagesQueue(AppConfig::GetSettings().framework.gc.msgQueueInitCap), 
+			m_memoryDigraph(), 
+			m_messagesQueue(/*AppConfig::GetSettings().framework.gc.msgQueueInitCap*/), 
 			m_terminationEvent()
 		{
 			CALL_STACK_TRACE;
 
-			_ASSERTE(m_messagesQueue.is_lock_free()); // Queue must be implemented lock-free
+			//_ASSERTE(m_messagesQueue.is_lock_free()); // Queue must be implemented lock-free
 
 			// Create the GC dedicated thread
             std::thread temp(&GarbageCollector::GCThreadProc, this);
@@ -181,7 +186,9 @@ namespace _3fd
 			catch(std::system_error &ex)
 			{
 				std::ostringstream oss;
-				oss << "Failed when attempted to stop garbage collection thread: " << core::StdLibExt::GetDetailsFromSystemError(ex);
+				oss << "Failed when attempted to stop garbage collection thread: "
+					<< core::StdLibExt::GetDetailsFromSystemError(ex);
+
 				core::Logger::Write(oss.str(), core::Logger::PRIO_CRITICAL, true);
 			}
 			catch(std::exception &ex)
@@ -209,18 +216,18 @@ namespace _3fd
 						AppConfig::GetSettings().framework.gc.msgLoopSleepTimeoutMilisecs
 					);
 
-					IMessage *message;
-
 					// Consume the messages in the queue:
-					while(m_messagesQueue.pop(message))
+					IMessage *message = m_messagesQueue.Remove();
+					while(message != nullptr)
 					{
-						message->Execute(m_masterTable);
+						message->Execute(m_memoryDigraph);
 						delete message;
+						message = m_messagesQueue.Remove();
 					}
 
 					// If there is still work to do, optimize the master table
 					if(terminate == false)
-						m_masterTable.Shrink();
+						m_memoryDigraph.ShrinkVertexPool();
 				}
 				while(terminate == false);
 			}
@@ -232,7 +239,9 @@ namespace _3fd
 			catch(std::system_error &ex)
 			{
 				std::ostringstream oss;
-				oss << "There was an error in garbage collector thread: " << core::StdLibExt::GetDetailsFromSystemError(ex);
+				oss << "There was an error in garbage collector thread: "
+					<< core::StdLibExt::GetDetailsFromSystemError(ex);
+
 				core::Logger::Write(oss.str(), core::Logger::PRIO_CRITICAL);
 				m_error = std::current_exception();
 			}
@@ -240,34 +249,45 @@ namespace _3fd
 			{
 				std::ostringstream oss;
 				oss << "Generic failure in garbage collector thread: " << ex.what();
+
 				core::Logger::Write(oss.str(), core::Logger::PRIO_CRITICAL);
 				m_error = std::current_exception();
 			}
 		}
 
-		void GarbageCollector::UpdateReference(void *sptrObjAddr, void *pointedAddr)
+		void GarbageCollector::UpdateReference(void *leftSptrObjAddr, void *rightSptrObjAddr)
 		{
-			m_messagesQueue.push(new ReferenceUpdateMsg (sptrObjAddr, pointedAddr));
+			m_messagesQueue.Add(new ReferenceUpdateMsg(leftSptrObjAddr, rightSptrObjAddr));
+		}
+
+		void GarbageCollector::ReleaseReference(void *sptrObjAddr)
+		{
+			m_messagesQueue.Add(new ReferenceReleaseMsg(sptrObjAddr));
 		}
 
 		void GarbageCollector::RegisterNewObject(void *sptrObjAddr, void *pointedAddr, size_t blockSize, FreeMemProc freeMemCallback)
 		{
-			m_messagesQueue.push(new NewObjectMsg (sptrObjAddr, pointedAddr, blockSize, freeMemCallback));
+			m_messagesQueue.Add(new NewObjectMsg(sptrObjAddr, pointedAddr, blockSize, freeMemCallback));
 		}
 
 		void GarbageCollector::UnregisterAbortedObject(void *sptrObjAddr)
 		{
-			m_messagesQueue.push(new AbortedObjectMsg(sptrObjAddr));
+			m_messagesQueue.Add(new AbortedObjectMsg(sptrObjAddr));
 		}
 
 		void GarbageCollector::RegisterSptr(void *sptrObjAddr, void *pointedAddr)
 		{
-			m_messagesQueue.push(new SptrRegistrationMsg (sptrObjAddr, pointedAddr));
+			m_messagesQueue.Add(new SptrRegistrationMsg(sptrObjAddr, pointedAddr));
+		}
+
+		void GarbageCollector::RegisterSptrCopy(void *leftSptrObjAddr, void *rightSptrObjAddr)
+		{
+			m_messagesQueue.Add(new SptrCopyRegistrationMsg(leftSptrObjAddr, rightSptrObjAddr));
 		}
 
 		void GarbageCollector::UnregisterSptr(void *sptrObjAddr)
 		{
-			m_messagesQueue.push(new SptrUnregistrationMsg (sptrObjAddr));
+			m_messagesQueue.Add(new SptrUnregistrationMsg(sptrObjAddr));
 		}
 
 	}// end of namespace memory

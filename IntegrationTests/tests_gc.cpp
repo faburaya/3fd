@@ -307,7 +307,7 @@ namespace _3fd
 #else
 		INSTANTIATE_TEST_CASE_P(RealWorldStress_Test,
 			Framework_MemoryGC_TestCase,
-			::testing::Values(250, 1000, 4000));
+			::testing::Values(250, 1000, 4000, 16000));
 #endif
 
 

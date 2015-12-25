@@ -174,7 +174,8 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="arrayofbits.h">
+    <ClInclude Include="gc_arrayofedges.h" />
+    <ClInclude Include="gc_vertexstore.h" />
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -191,9 +192,8 @@
     <ClInclude Include="gc.h" />
     <ClInclude Include="gc_addresseshashtable.h" />
     <ClInclude Include="gc_common.h" />
-    <ClInclude Include="gc_mastertable.h" />
     <ClInclude Include="gc_memaddress.h" />
-    <ClInclude Include="gc_memblock.h" />
+    <ClInclude Include="gc_vertex.h" />
     <ClInclude Include="gc_memorydigraph.h" />
     <ClInclude Include="gc_messages.h" />
     <ClInclude Include="isam.h" />
@@ -217,10 +217,10 @@
     <ClCompile Include="exceptions.cpp" />
     <ClCompile Include="gc_garbagecollector.cpp" />
     <ClCompile Include="gc_addresseshashtable.cpp" />
-    <ClCompile Include="gc_mastertable.cpp" />
-    <ClCompile Include="gc_memblock.cpp" />
+    <ClCompile Include="gc_vertex.cpp" />
     <ClCompile Include="gc_memorydigraph.cpp" />
     <ClCompile Include="gc_messages.cpp" />
+    <ClCompile Include="gc_vertexstore.cpp" />
     <ClCompile Include="isam_impl.cpp" />
     <ClCompile Include="isam_impl_cursor.cpp" />
     <ClCompile Include="isam_impl_database.cpp" />
@@ -267,7 +267,7 @@
     <ClCompile Include="utils_asynchronous.cpp" />
     <ClCompile Include="utils_dynmempool.cpp" />
     <ClCompile Include="utils_event.cpp" />
-    <ClCompile Include="gc_vertex.cpp" />
+    <ClCompile Include="gc_arrayofedges.cpp" />
     <ClCompile Include="utils_memorypool.cpp" />
   </ItemGroup>
   <ItemGroup>

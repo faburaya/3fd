@@ -1,5 +1,5 @@
-#ifndef DIGRAPH_H // header guard
-#define DIGRAPH_H
+#ifndef	GC_MEMORYDIGRAPH_H // header guard
+#define GC_MEMORYDIGRAPH_H
 
 /*
 	Here is implemented a directed graph tuned for reachability analysis used by the garbage collector.
@@ -14,57 +14,58 @@
 	approach is not vulnerable to cyclic references, unlike reference counting.
 */
 
-#include "utils.h"
-#include "gc_common.h"
-#include "gc_memaddress.h"
-
-#include "stx/btree_set.h"
+#include "gc_vertexstore.h"
+#include "gc_addresseshashtable.h"
 
 namespace _3fd
 {
 	namespace memory
 	{
 		/// <summary>
-		/// Directed graph representing the connections made by safe pointers between pieces of memory managed by the GC.
+		/// Directed graph representing the connections made by safe pointers
+		/// between pieces of memory managed by the GC.
 		/// </summary>
 		class MemoryDigraph : notcopiable
 		{
 		private:
 
-			utils::DynamicMemPool m_memBlocksPool;
-
-			typedef stx::btree_set<MemAddrContainer *, LessOperOnMemBlockRepAddr> SetOfMemBlocks;
-
 			/// <summary>
-			/// A binary tree of garbage collected pieces of memory, ordered by the memory addresses of those pieces.
+			/// An unsorted map of elements representing <see cref="sptr"/> objects.
 			/// </summary>
-			/// <remarks>Although a hash table could be faster, it is not sorted, hence cannot be used.</remarks>
-			SetOfMemBlocks m_vertices;
+			/// <remarks>
+			/// A hash table here might improve performance and
+			/// can be used because it does not have to be sorted.
+			/// </remarks>
+			AddressesHashTable m_sptrObjects;
 
-			void RemoveVertex(MemAddrContainer *vtx, bool allowDestruction);
+			VertexStore m_vertices;
+
+			void MakeReference(AddressesHashTable::Element &sptrObjHashTableElem, Vertex *pointedMemBlock);
+
+			void MakeReference(AddressesHashTable::Element &sptrObjHashTableElem, void *pointedAddr);
+
+			void UnmakeReference(AddressesHashTable::Element &sptrObjHashTableElem, bool allowDestruction);
 
 		public:
 
-			MemoryDigraph();
+			void ShrinkVertexPool();
 
-			void ShrinkObjectPool();
+			void AddRegularVertex(void *memAddr, size_t blockSize, FreeMemProc freeMemCallback);
 
-			MemAddrContainer *AddVertex(void *memAddr, size_t blockSize, FreeMemProc freeMemCallback);
+			void AddPointer(void *pointerAddr, void *pointedAddr);
 
-			MemAddrContainer *GetVertex(void *blockMemAddr) const;
+			void AddPointerOnCopy(void *leftPointerAddr, void *rightPointerAddr);
 
-			MemAddrContainer *GetContainerVertex(void *addr) const;
+			void ResetPointer(void *pointerAddr, void *newPointedAddr, bool allowDtion);
 
-			void AddEdge(void *vtxRootFrom, MemAddrContainer *vtxRegularTo);
+			void ResetPointer(void *pointerAddr, void *otherPointerAddr);
 
-			void AddEdge(MemAddrContainer *originatorVtx, MemAddrContainer *receivingVtx);
+			void ReleasePointer(void *pointerAddr);
 
-			void RemoveEdge(void *vtxRootFrom, MemAddrContainer *vtxRegularTo, bool allowDestruction);
-
-			void RemoveEdge(MemAddrContainer *originatorVtx, MemAddrContainer *receivingVtx, bool allowDestruction);
+			void RemovePointer(void *pointerAddr);
 		};
 
-	}// end of namespace ctl
+	}// end of namespace memory
 }// end of namespace _3fd
 
 #endif // end of header guard

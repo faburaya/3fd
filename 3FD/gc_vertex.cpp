@@ -1,248 +1,157 @@
 #include "stdafx.h"
-#include "gc_memblock.h"
+#include "gc_vertex.h"
 
-#include <algorithm>
-#include <cassert>
-
-/*
-	Regular vertices are kept in the second partition whereas root vertices stay in the first. That is 
-	because the handling of regular vertices is expected to happen more often, hence their insertion must 
-	be simple (faster). They happen more often when the graph has long and complex paths, which is the 
-	scenario where garbage collection makes sense.
-*/
 namespace _3fd
 {
 	namespace memory
 	{
+		utils::DynamicMemPool * Vertex::dynMemPool(nullptr);
+
 		/// <summary>
-		/// Does insertion sort.
-		/// It expects a array interval that was sorted until the last insertion to the right.
-		/// The algorithm is fast (linear complexity) for such cases.
+		/// Sets the object pool that provides all the <see cref="Vertex"/> instances.
 		/// </summary>
-		/// <param name="begin">An iterator to the first position in the array interval to sort.</param>
-		/// <param name="end">An iterator to one past the last position in the array interval to sort.</param>
-		static void InsertionSort(MemAddress *begin, MemAddress *end)
+		/// <param name="ob">The object pool to use.</param>
+		void Vertex::SetMemoryPool(utils::DynamicMemPool &ob)
 		{
-			auto &right = end;
-			while (begin < --right)
-			{
-				auto left = right - 1;
-				if (left->Get() > right->Get())
-				{
-					auto temp = *right;
-					*right = *left;
-					*left = temp;
-				}
-				else
-					return;
-			}
+			dynMemPool = &ob;
 		}
 
 		/// <summary>
-		/// Searches for a value in a sorted array interval.
+		/// Implements the operator new, to construct a new <see cref="Vertex"/>
+		/// instance from resources in the object pool.
 		/// </summary>
-		/// <param name="left">An iterator to the first position in the array interval to search.</param>
-		/// <param name="right">An iterator to one past the last position in the array interval to search.</param>
-		/// <param name="what">The address value to look for.</param>
-		/// <returns>An iterator to the position where it was found, otherwise, <c>nullptr</c>.</returns>
-		static MemAddress *Search(MemAddress *left, MemAddress *right, MemAddress what)
+		/// <param name="">Currently not used.</param>
+		/// <returns>
+		/// A new <see cref="Vertex"/> instance retrieved from the object pool.
+		/// </returns>
+		void * Vertex::operator new(size_t)
 		{
-			// Use scan if the vector is small enough:
-			auto size = right - left;
-			if (size <= 7)
-				return std::find(left, right, what);
+			return dynMemPool->GetFreeBlock();
+		}
 
-			// Otherwise, do binary search:
-			do
-			{
-				auto middle = left + size / 2;
-
-				if (what.Get() < middle->Get())
-					right = middle;
-				else if (what.Get() > middle->Get())
-					left = middle + 1;
-				else
-					return middle;
-
-				size = right - left;
-			}
-			while (size > 0);
-
-			return nullptr;
+		/// <summary>
+		/// Implements the operator delete, to destroy a <see cref="Vertex"/>
+		/// instance returning itself to the object pool.
+		/// </summary>
+		/// <param name="ptr">The address of the object to delete.</param>
+		void Vertex::operator delete(void *ptr)
+		{
+			dynMemPool->ReturnBlock(ptr);
 		}
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="Vertex"/> class.
 		/// </summary>
-		Vertex::Vertex() : 
-			m_arrayEdges(nullptr),
-			m_arraySize(0),
-			m_arrayCapacity(0),
-			m_rootCount(0)
-		{}
+		/// <param name="memAddr">The address of the memory block.</param>
+		/// <param name="blockSize">Size of the block.</param>
+		/// <param name="freeMemCallback">
+		/// The callback that frees the memory block this vertex represents.
+		/// </param>
+		Vertex::Vertex(void *memAddr, size_t blockSize, FreeMemProc freeMemCallback) :
+			MemAddrContainer(memAddr),
+			m_freeMemCallback(freeMemCallback),
+			m_blockSize(blockSize), 
+			m_outEdgeCount(0)
+		{
+			_ASSERTE(!GetMemoryAddress().GetBit0()); // regular vertices must have bit 0 unset
+		}
 
 		/// <summary>
 		/// Finalizes an instance of the <see cref="Vertex"/> class.
 		/// </summary>
 		Vertex::~Vertex()
 		{
-			if (m_arrayEdges != nullptr)
-				free(m_arrayEdges);
+			m_incomingEdges.Clear();
 		}
 
 		/// <summary>
-		/// Implementation for receiving a new edge.
+		/// Increments the count of outgoing edges.
 		/// </summary>
-		/// <param name="vtx">The address of the vertex object. Root vertices must be marked.</param>
-		void Vertex::ReceiveEdgeImpl(MemAddress vtx)
+		void Vertex::IncrementOutgoingEdgeCount()
 		{
-			if (m_arrayCapacity > m_arraySize) // there is room in the array
-			{
-				m_arrayEdges[m_arraySize++] = vtx;
-			}
-			else if (m_arrayCapacity > 0) // it must expand the array so as to make room
-			{
-				m_arrayCapacity *= 2;
-				auto temp = (MemAddress *)realloc(m_arrayEdges, m_arrayCapacity * sizeof(MemAddress));
-
-				if (temp != nullptr)
-					m_arrayEdges = temp;
-				else
-					throw std::bad_alloc();
-
-				m_arrayEdges[m_arraySize++] = vtx;
-			}
-			else // the array is not yet allocated
-			{
-				m_arrayEdges = (MemAddress *)malloc(sizeof(MemAddress));
-
-				if (m_arrayEdges != nullptr)
-					m_arrayEdges[0] = vtx;
-				else
-					throw std::bad_alloc();
-
-				m_arrayCapacity = m_arraySize = 1;
-				return;
-			}
-
-			// keep the array sorted
-			InsertionSort(m_arrayEdges, m_arrayEdges + m_arraySize);
+			++m_outEdgeCount;
 		}
 
 		/// <summary>
-		/// Adds a receiving an edge from a regultar vertex.
+		/// Decrements the count of outgoing edges.
 		/// </summary>
-		/// <param name="vtxRegular">The regular vertex.</param>
-		void Vertex::ReceiveEdge(Vertex *vtxRegular)
+		void Vertex::DecrementOutgoingEdgeCount()
 		{
-			ReceiveEdgeImpl(MemAddress(vtxRegular));
+			--m_outEdgeCount;
+			// counting of outgoing edges can never be negative
+			_ASSERTE(m_outEdgeCount >= 0);
+		}
+		
+		/// <summary>
+		/// Determines whether this vertex has any edges
+		/// (incoming and outgoing).
+		/// </summary>
+		/// <returns>
+		/// <c>true</c> if this vertex is connected to any other vertex, otherwise, <c>false</c>.
+		/// </returns>
+		bool Vertex::HasAnyEdges() const
+		{
+			return m_incomingEdges.Size() + m_outEdgeCount > 0;
+		}
+		
+		/// <summary>
+		/// Determines whether the memory block represented by
+		/// this vertex contains the specified memory address.
+		/// </summary>
+		/// <param name="someAddr">The memory address to test.</param>
+		/// <returns>Whether this memory block contains the specified memory address</returns>
+		bool Vertex::Contains(void *someAddr) const
+		{
+			return someAddr >= GetMemoryAddress().Get()
+				&& someAddr < (void *)((uintptr_t)GetMemoryAddress().Get() + m_blockSize);
 		}
 
 		/// <summary>
-		/// Adds a receiving edge from a root vertex.
+		/// Marks or unmarks this vertex.
 		/// </summary>
-		/// <param name="vtxRoot">The root vertex.</param>
-		void Vertex::ReceiveEdge(void *vtxRoot)
+		/// <param name="on">
+		/// if set to <c>true</c>, marks the instance, otherwise, unmark it.
+		/// </param>
+		void Vertex::Mark(bool on)
 		{
-			MemAddress vtx(vtxRoot);
-			vtx.Mark(true);
-			ReceiveEdgeImpl(vtx);
-			++m_rootCount;
+			/* In order to save memory, use the vacant bits
+			in the held memory address for marking */
+			GetMemoryAddress().SetBit0(on);
 		}
 
 		/// <summary>
-		/// Evaluates whether capacity should shrink, then execute it.
+		/// Determines whether this vertex is marked.
 		/// </summary>
-		void Vertex::EvaluateShrinkCapacity()
+		/// <returns><c>true</c> whether marked, otherwise, <c>false</c>.</returns>
+		bool Vertex::IsMarked() const
 		{
-			if (m_arraySize < m_arrayCapacity / 4)
-			{
-				m_arrayCapacity /= 2;
-				auto temp = (MemAddress *)realloc(m_arrayEdges, m_arrayCapacity * sizeof(MemAddress));
-
-				if (temp != nullptr)
-					m_arrayEdges = temp;
-				else
-					throw std::bad_alloc();
-			}
+			return GetMemoryAddress().GetBit0();
 		}
 
 		/// <summary>
-		/// Implementation for removing an edge.
+		/// Frees the resources allocated to
+		/// the object represented by this vertex.
 		/// </summary>
-		/// <param name="vtx">The vertex to remove. Root vertices must be marked.</param>
-		void Vertex::RemoveEdgeImpl(MemAddress vtx)
+		/// <param name="destroy">
+		/// If set to <c>true</c>, invokes the object destructor.
+		/// </param>
+		void Vertex::ReleaseReprObjResources(bool destroy)
 		{
-			auto where = Search(m_arrayEdges, m_arrayEdges + m_arraySize--, vtx);
-			_ASSERTE(where != nullptr); // cannot handle removal of unexistent edge
-
-			for (auto idx = where - m_arrayEdges; idx < m_arraySize; ++idx)
-				m_arrayEdges[idx] = m_arrayEdges[idx + 1];
-
-			EvaluateShrinkCapacity();
+			_ASSERTE(GetMemoryAddress().Get() != nullptr); // resource already freed
+			(*m_freeMemCallback)(GetMemoryAddress().Get(), destroy);
+			SetMemoryAddress(nullptr);
 		}
 
 		/// <summary>
-		/// Removes an edge coming from a regular vertex.
+		/// Determines whether the resources of the object
+		/// represent by this vertex are released already.
 		/// </summary>
-		/// <param name="vtxRegular">The regular vertex.</param>
-		void Vertex::RemoveEdge(Vertex *vtxRegular)
+		/// <returns>
+		/// <c>true</c>, if resources have already been relesed, otherwise, <c>false</c>.
+		/// </returns>
+		bool Vertex::AreReprObjResourcesReleased() const
 		{
-			RemoveEdgeImpl(MemAddress(vtxRegular));
-		}
-
-		/// <summary>
-		/// Removes an edge coming from a root vertex.
-		/// </summary>
-		/// <param name="vtxRoot">The root vertex.</param>
-		void Vertex::RemoveEdge(void *vtxRoot)
-		{
-			MemAddress vtx(vtxRoot);
-			vtx.Mark(true);
-			RemoveEdgeImpl(vtx);
-			--m_rootCount;
-		}
-
-		/// <summary>
-		/// Removes all receiving edges from this vertex.
-		/// </summary>
-		void Vertex::RemoveAllEdges()
-		{
-			m_arraySize = m_rootCount = 0;
-			EvaluateShrinkCapacity();
-		}
-
-		/// <summary>
-		/// Determines whether this vertex has any receiving edge from a root vertex.
-		/// </summary>
-		/// <returns>Whether it has a receiving edge from a root vertex.</returns>
-		bool Vertex::HasRootEdge() const
-		{
-			return m_rootCount > 0;
-		}
-
-		/// <summary>
-		/// Iterates over regular edges while the callback keeps asking for continuation.
-		/// </summary>
-		/// <param name="callback">The callback that receives the vertices as parameter. Iteration continues while it returns 'true'.</param>
-		/// <returns><c>false</c> if the callback has returned <c>false</c> for any edge from regular vertex.</returns>
-		bool Vertex::ForEachRegularEdgeWhile(const std::function<bool(const Vertex &)> &callback) const
-		{
-			if (m_arraySize > 0)
-			{
-				uint32_t idx(0);
-				bool goAhead(true);
-				while (idx < m_arraySize && goAhead)
-				{
-					auto edge = m_arrayEdges[idx++];
-					if (!edge.isMarked())
-						goAhead = callback(*static_cast<Vertex *> (edge.Get()));
-				}
-
-				return idx == m_arraySize && goAhead;
-			}
-			else
-				return true;
+			return GetMemoryAddress().Get() == nullptr;
 		}
 
 	}// end of namespace memory

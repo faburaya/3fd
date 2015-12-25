@@ -5,30 +5,13 @@
 #include "gc_common.h"
 #include <functional>
 
-// A macro through which the client code constructs garbage collected objects and assigns them to a safe pointer.
+// A macro through which the client code constructs garbage collected objects and assigns them to a safe pointer
 #define has(CTOR_CALL)	createAndAcquireGCObject<decltype(CTOR_CALL)>([&] (void *gcRegMem) { new (gcRegMem) CTOR_CALL; })
 
 namespace _3fd
 {
 	namespace memory
 	{
-		/// <summary>
-		/// Frees memory allocated by the GC.
-		/// This is compiled by the client code compiler.
-		/// </summary>
-		/// <param name="addr">The memory address.</param>
-		template <typename X>
-		void FreeMemAddr(void *addr, bool destroy = true)
-		{
-			auto ptr = static_cast<X *> (addr);
-
-			if (destroy)
-				ptr->X::~X();
-
-			free(ptr);
-		}
-
-
 		/////////////////////////////////
 		//  sptr_base Class Template
 		/////////////////////////////////
@@ -49,20 +32,6 @@ namespace _3fd
 			/// The memory address referenced by this instance.
 			/// </summary>
 			Type *m_pointedAddress;
-
-			/// <summary>
-			/// Assigns a memory address to reference.
-			/// </summary>
-			/// <param name="ptr">The pointer with the memory address to reference.</param>
-			void Update(Type *ptr)
-			{
-				if(ptr != m_pointedAddress)
-				{
-					m_pointedAddress = ptr;
-					GarbageCollector::GetInstance()
-						.UpdateReference(this, ptr);
-				}
-			}
 
 		protected:
 
@@ -95,7 +64,7 @@ namespace _3fd
 				m_pointedAddress(ob.m_pointedAddress)
 			{
 				GarbageCollector::GetInstance()
-					.RegisterSptr(this, m_pointedAddress);
+					.RegisterSptrCopy(this, const_cast<sptr_base *> (&ob));
 			}
 
 			/// <summary>
@@ -108,7 +77,7 @@ namespace _3fd
 				m_pointedAddress(static_cast<Type *> (ob.m_pointedAddress)) // Fires a compile-time error when 'ObjectType' is not a derived/same/convertible type
 			{
 				GarbageCollector::GetInstance()
-					.RegisterSptr(this, m_pointedAddress);
+					.RegisterSptrCopy(this, const_cast<sptr_base<ObjectType> *> (&ob));
 			}
 
 			/// <summary>
@@ -128,8 +97,15 @@ namespace _3fd
 			template <typename ObjectType> 
 			void Assign(const sptr_base<ObjectType> &ob)
 			{
-				if(static_cast<const void *> (&ob) != static_cast<const void *> (this))
-					Update(static_cast<Type *> (ob.m_pointedAddress)); // Fires a compile-time error when 'ObjectType' is not a derived/same/convertible type
+				if (static_cast<const void *> (&ob) != static_cast<const void *> (this)
+					&& static_cast<const void *> (m_pointedAddress) != static_cast<const void *> (ob.m_pointedAddress))
+				{
+					GarbageCollector::GetInstance()
+						.UpdateReference(this, const_cast<sptr_base<ObjectType> *> (&ob));
+
+					// Fires a compile-time error when 'ObjectType' is not a derived/same/convertible type
+					m_pointedAddress = static_cast<Type *> (ob.m_pointedAddress);
+				}
 			}
 
 		public:
@@ -141,10 +117,10 @@ namespace _3fd
 			template <typename ObjectType> 
 			void createAndAcquireGCObject(const std::function<void (void *)> &invokeObjectCtor)
 			{
-				/* The object memory must first be registered with the GC. That is because the referred object might contain
-				a member which is a safe pointer. If that is the case, the registration of this 'child' safe pointer must be 
-				able to know it belongs to the memory region of the current instance, which is possible only if its memory was 
-				allocated before hand. */
+				/* The object memory must first be registered with the GC. That is because the referred object
+				might contain a member which is a safe pointer. If that is the case, the registration of this
+				'child' safe pointer must be able to know it belongs to the memory region of the current instance,
+				which is possible only if its memory was allocated before hand. */
 				void *gcRegMem = AllocMemoryAndRegisterWithGC(sizeof (ObjectType), this, &FreeMemAddr<ObjectType>);
 
 				try
@@ -220,7 +196,8 @@ namespace _3fd
 			/// </summary>
 			void Reset()
 			{
-				Update(nullptr);
+				GarbageCollector::GetInstance().ReleaseReference(this);
+				m_pointedAddress = nullptr;
 			}
 		};
 

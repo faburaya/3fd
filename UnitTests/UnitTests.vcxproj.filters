@@ -21,22 +21,22 @@
     <ClCompile Include="..\3FD\stdafx.cpp">
       <Filter>Header Files</Filter>
     </ClCompile>
-    <ClCompile Include="tests_gc_memblock.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="tests_gc_hashtable.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="tests_gc_memdigraph.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="tests_gc_vertex.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="tests_utils_pool.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="tests_utils_arrayofbits.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="tests_gc_arrayofedges.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="tests_gc_vertex.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="tests_gc_vertexstore.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

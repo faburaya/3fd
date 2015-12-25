@@ -2,7 +2,7 @@
 #define GC_ADDRESSESHASHTABLE_H
 
 #include "base.h"
-#include "gc_memaddress.h"
+#include "gc_vertex.h"
 #include <vector>
 #include <cstdint>
 
@@ -14,8 +14,8 @@ namespace _3fd
 		/// This class uses hash table data structure (with open addressing and linear probing) to store information about 
 		/// the <see cref="sptr" /> objects managed by the GC. It was not converted to a template because it was designed 
 		/// very specifically (optimized) for its job. The implementation could be more "OOP/C++ like", but the concern here 
-		/// is to save memory. If you find yourself wishing to change its model to make it more OOP compliant, remember it was 
-		/// designed that way so as to save something around 8 or 16 bytes per element added to the table.
+		/// is to save memory. If you find yourself wishing to change its model to make it more OOP compliant, remember it 
+		/// was designed that way so as to save something around 8 or 16 bytes per element added to the table.
 		/// </summary>
 		class AddressesHashTable : notcopiable
 		{
@@ -28,37 +28,59 @@ namespace _3fd
 			{
 			private:
 
-				void *m_sptrObjectAddr;	// This is the unique key (the memory address of the sptr object)
-				void *m_pointedAddr;	// This is a value (where the sptr points to)
-				MemAddrContainer *m_container; // This is a value (what contains sptr)
+				void *m_sptrObjectAddr; // This is the unique key (the memory address of the sptr object)
+				Vertex *m_pointedMemBlock; // This is a value (what the sptr points to)
+				Vertex *m_containerMemBlock; // this is a value (where the sptr lives)
 
 			public:
 
 				/// <summary>
 				/// Initializes a new instance of the <see cref="Element"/> class.
 				/// </summary>
-				Element()
-					: m_sptrObjectAddr(nullptr), m_pointedAddr(nullptr), m_container(nullptr) {}
+				Element() :
+					m_sptrObjectAddr(nullptr),
+					m_pointedMemBlock(nullptr),
+					m_containerMemBlock(nullptr)
+				{}
 
 				/// <summary>
 				/// Constructor for the <see cref="Element" /> objects allocated on the stack.
 				/// </summary>
 				/// <param name="sptrObjectAddr">The <see cref="sptr" /> object address.</param>
-				/// <param name="pointedAddr">The address pointed by the <see cref="sptr" /> object.</param>
-				/// <param name="container">The container memory block.</param>
-				Element(void *sptrObjectAddr, void *pointedAddr, MemAddrContainer *container) :
+				/// <param name="pointedMemBlock">
+				/// The vertex representing the memory block pointed by this <see cref="sptr" /> object.
+				/// </param>
+				/// <param name="containerMemBlock">
+				/// The vertex representing the memory block that contains this <see cref="sptr" /> object.
+				/// </param>
+				Element(void *sptrObjectAddr, Vertex *pointedMemBlock, Vertex *containerMemBlock) :
 					m_sptrObjectAddr(sptrObjectAddr),
-					m_pointedAddr(pointedAddr),
-					m_container(container)
+					m_pointedMemBlock(pointedMemBlock),
+					m_containerMemBlock(containerMemBlock)
 				{}
 
+				// Get the address of the sptr object this element represents
 				void *GetSptrObjectAddr() const { return m_sptrObjectAddr; }
 
-				void *GetPointedAddr() const { return m_pointedAddr; }
+				// Get the address of the memory block this pointer refers to
+				void *GetPointedAddr() const
+				{
+					return m_pointedMemBlock != nullptr
+						? m_pointedMemBlock->GetMemoryAddress().Get()
+						: nullptr;
+				}
 
-				MemAddrContainer *GetContainerMemBlock() const { return m_container; }
+				// Get the vertex representing the memory block this pointer refers to
+				Vertex *GetPointedMemBlock() const { return m_pointedMemBlock; }
 
-				void SetAddrPointed(void *pointedAddr) { m_pointedAddr = pointedAddr; }
+				// Set the vertex representing the memory block this pointer refers to
+				void SetPointedMemBlock(Vertex *pointedMemBlock) { m_pointedMemBlock = pointedMemBlock; }
+
+				// Get the vertex for the memory block that contains the sptr object this element represents
+				Vertex *GetContainerMemBlock() const { return m_containerMemBlock; }
+
+				// Determines whether the sptr object this element represents is a root vertex
+				bool IsRoot() const { return m_containerMemBlock == nullptr; }
 			};
 
 		private:
@@ -89,15 +111,14 @@ namespace _3fd
 
 			AddressesHashTable();
 
-			Element &Insert(
-				void *sptrObjectAddr,
-				void *pointedAddr,
-				MemAddrContainer *container);
+			Element &Insert(void *sptrObjectAddr,
+							Vertex *pointedMemBlock,
+							Vertex *containerMemBlock);
 
-			// Lookup for an sptr object
 			Element &Lookup(void *sptrObjectAddr);
 
-			// Removes an entry from the hash table
+			void Remove(Element &element);
+
 			void Remove(void *sptrObjectAddr);
 		};
 
