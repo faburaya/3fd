@@ -154,7 +154,7 @@ namespace _3fd
 					);
 				}
 			}
-			catch (core::IAppException &ex)
+			catch (core::IAppException &)
 			{
 				throw; // just forward exceptions regarding errors known to have been previously handled
 			}

@@ -128,7 +128,7 @@ namespace _3fd
 
 			openclErrors.RaiseExceptionWhen(status, "OpenCL API: clCreateCommandQueue");
 		}
-		catch (core::IAppException &ex)
+		catch (core::IAppException &)
 		{
 			if (m_context != nullptr)
 			{
@@ -287,7 +287,7 @@ namespace _3fd
 					return AsyncAction(eventHandle, false);
 				}
 			}
-			catch (core::IAppException &ex)
+			catch (core::IAppException &)
 			{
 				throw; // just forward exceptions regarding errors known to have been previously handled
 			}
@@ -364,7 +364,7 @@ namespace _3fd
 					openclErrors.RaiseExceptionWhen(status, "OpenCL API: clEnqueueReadBuffer");
 				}
 			}
-			catch (core::IAppException &ex)
+			catch (core::IAppException &)
 			{
 				throw; // just forward exceptions regarding errors known to have been previously handled
 			}
@@ -460,7 +460,7 @@ namespace _3fd
 					return AsyncAction(eventHandle, false);
 				}
 			}
-			catch (core::IAppException &ex)
+			catch (core::IAppException &)
 			{
 				throw; // just forward exceptions regarding errors known to have been previously handled
 			}
@@ -536,7 +536,7 @@ namespace _3fd
 					openclErrors.RaiseExceptionWhen(status, "OpenCL API: clEnqueueWriteBuffer");
 				}
 			}
-			catch (core::IAppException &ex)
+			catch (core::IAppException &)
 			{
 				throw; // just forward exceptions regarding errors known to have been previously handled
 			}
@@ -632,7 +632,7 @@ namespace _3fd
 					return AsyncAction(eventHandle, false);
 				}
 			}
-			catch (core::IAppException &ex)
+			catch (core::IAppException &)
 			{
 				throw; // just forward exceptions regarding errors known to have been previously handled
 			}
@@ -730,7 +730,7 @@ namespace _3fd
 					return AsyncAction(eventHandle, false);
 				}
 			}
-			catch (core::IAppException &ex)
+			catch (core::IAppException &)
 			{
 				throw; // just forward exceptions regarding errors known to have been previously handled
 			}
@@ -902,7 +902,7 @@ namespace _3fd
 					}
 				}
 			}
-			catch (core::IAppException &ex)
+			catch (core::IAppException &)
 			{
 				throw; // just forward exceptions regarding errors known to have been previously handled
 			}
@@ -1115,7 +1115,7 @@ namespace _3fd
 					}
 				}
 			}
-			catch (core::IAppException &ex)
+			catch (core::IAppException &)
 			{
 				throw; // just forward exceptions regarding errors known to have been previously handled
 			}
@@ -1226,7 +1226,7 @@ namespace _3fd
 					return AsyncAction(eventHandle, false);
 				}
 			}
-			catch (core::IAppException &ex)
+			catch (core::IAppException &)
 			{
 				throw; // just forward exceptions regarding errors known to have been previously handled
 			}

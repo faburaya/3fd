@@ -36,6 +36,12 @@
     <ClCompile Include="IntegrationTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="calculator.wsdl.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="tests_wws.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="application.config">
@@ -49,5 +55,16 @@
     <ClInclude Include="..\3FD\targetver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="calculator.wsdl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="calculator.wsdl">
+      <Filter>Resource Files</Filter>
+    </CustomBuild>
   </ItemGroup>
 </Project>

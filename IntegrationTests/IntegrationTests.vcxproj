@@ -103,9 +103,11 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>WebServices.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(ProjectDir)application.config" "$(TargetPath).3fd.config"</Command>
+      <Command>copy "$(ProjectDir)application.config" "$(TargetPath).3fd.config"
+copy "$(ProjectDir)calculator.wsdl" "$(TargetDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -121,9 +123,11 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>WebServices.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(ProjectDir)application.config" "$(TargetPath).3fd.config"</Command>
+      <Command>copy "$(ProjectDir)application.config" "$(TargetPath).3fd.config"
+copy "$(ProjectDir)calculator.wsdl" "$(TargetDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -143,9 +147,11 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>WebServices.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(ProjectDir)application.config" "$(TargetPath).3fd.config"</Command>
+      <Command>copy "$(ProjectDir)application.config" "$(TargetPath).3fd.config"
+copy "$(ProjectDir)calculator.wsdl" "$(TargetDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -165,9 +171,11 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>WebServices.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(ProjectDir)application.config" "$(TargetPath).3fd.config"</Command>
+      <Command>copy "$(ProjectDir)application.config" "$(TargetPath).3fd.config"
+copy "$(ProjectDir)calculator.wsdl" "$(TargetDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -177,12 +185,17 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="calculator.wsdl.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="IntegrationTests.cpp" />
     <ClCompile Include="tests_core.cpp" />
     <ClCompile Include="tests_gc.cpp" />
     <ClCompile Include="tests_isam.cpp" />
     <ClCompile Include="tests_opencl.cpp" />
     <ClCompile Include="tests_sqlite.cpp" />
+    <ClCompile Include="tests_wws.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\3FD\3FD.vcxproj">
@@ -200,6 +213,13 @@
   <ItemGroup>
     <ClInclude Include="..\3FD\stdafx.h" />
     <ClInclude Include="..\3FD\targetver.h" />
+    <ClInclude Include="calculator.wsdl.h" />
+    <ClInclude Include="resource.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="calculator.wsdl">
+      <SubType>Designer</SubType>
+    </CustomBuild>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

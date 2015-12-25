@@ -58,6 +58,12 @@
     <Filter Include="Header Files\utilities">
       <UniqueIdentifier>{0275ac77-e49a-48fb-83b7-7bd7c155c1f1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\WWS">
+      <UniqueIdentifier>{d82ab402-8e71-4264-848b-6b03a49da6a0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\WWS">
+      <UniqueIdentifier>{3857e457-1807-4bcd-95a3-3016a2106228}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt">
@@ -160,6 +166,15 @@
     </ClInclude>
     <ClInclude Include="gc_vertexstore.h">
       <Filter>Header Files\GC</Filter>
+    </ClInclude>
+    <ClInclude Include="web_wws_utils.h">
+      <Filter>Header Files\WWS</Filter>
+    </ClInclude>
+    <ClInclude Include="web_wws_webservicehost.h">
+      <Filter>Header Files\WWS</Filter>
+    </ClInclude>
+    <ClInclude Include="web_wws_webserviceproxy.h">
+      <Filter>Header Files\WWS</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -292,10 +307,30 @@
     <ClCompile Include="gc_vertexstore.cpp">
       <Filter>Source Files\GC</Filter>
     </ClCompile>
+    <ClCompile Include="web_wws_webservicehost.cpp">
+      <Filter>Source Files\WWS</Filter>
+    </ClCompile>
+    <ClCompile Include="web_wws_utils.cpp">
+      <Filter>Source Files\WWS</Filter>
+    </ClCompile>
+    <ClCompile Include="web_wws_webserviceproxy.cpp">
+      <Filter>Source Files\WWS</Filter>
+    </ClCompile>
+    <ClCompile Include="web_wws_utils_wserror.cpp">
+      <Filter>Source Files\WWS</Filter>
+    </ClCompile>
+    <ClCompile Include="web_wws_utils_xml.cpp">
+      <Filter>Source Files\WWS</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Xml Include="config3fd-template.xml">
       <Filter>Resource Files</Filter>
     </Xml>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="wsdl-example.wsdl">
+      <Filter>Resource Files</Filter>
+    </CustomBuild>
   </ItemGroup>
 </Project>

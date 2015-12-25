@@ -76,7 +76,7 @@ namespace _3fd
 			CALL_STACK_TRACE;
 			DiscoverDevices();
 		}
-		catch (core::IAppException &ex)
+		catch (core::IAppException &)
 		{
 			CALL_STACK_TRACE;
 
@@ -200,7 +200,7 @@ namespace _3fd
 
 				sourceCodeStream.close();
 			}
-			catch (core::IAppException &ex)
+			catch (core::IAppException &)
 			{
 				throw; // just forward exceptions regarding errors known to have been previously handled
 			}
@@ -248,7 +248,7 @@ namespace _3fd
 
 				return program;
 			}
-			catch (core::IAppException &ex)
+			catch (core::IAppException &)
 			{
 				throw; // just forward exceptions regarding errors known to have been previously handled
 			}
@@ -406,7 +406,7 @@ namespace _3fd
 
 				return program;
 			}
-			catch (core::IAppException &ex)
+			catch (core::IAppException &)
 			{
 				throw; // just forward exceptions regarding errors known to have been previously handled
 			}
@@ -461,7 +461,7 @@ namespace _3fd
 					}
 				}
 			}
-			catch (core::IAppException &ex)
+			catch (core::IAppException &)
 			{
 				throw; // just forward exceptions regarding errors known to have been previously handled
 			}
@@ -529,7 +529,7 @@ namespace _3fd
 
 				return std::unique_ptr<Program>(new Program(program));
 			}
-			catch (core::IAppException &ex)
+			catch (core::IAppException &)
 			{
 				throw; // just forward the exceptions referring to error know to have been previously handled
 			}
@@ -581,7 +581,7 @@ namespace _3fd
 
 				return std::unique_ptr<Program>(new Program(program));
 			}
-			catch (core::IAppException &ex)
+			catch (core::IAppException &)
 			{
 				throw; // just forward the exceptions referring to error know to have been previously handled
 			}

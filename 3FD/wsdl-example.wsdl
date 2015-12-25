@@ -1,9 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+
 <!-- For more information see http://msdn.microsoft.com/en-us/library/ms996486.aspx -->
-<wsdl:definitions xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
- xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
- xmlns:xsd="http://www.w3.org/2001/XMLSchema"
- xmlns:tns="http://calculator.example.org/"
- targetNamespace="http://calculator.example.org/">
+<wsdl:definitions
+  xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+  xmlns:wsp="http://schemas.xmlsoap.org/ws/2004/09/policy"
+  xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd"
+  xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap12/"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  xmlns:tns="http://calculator.example.org/"
+  targetNamespace="http://calculator.example.org/">
+
+  <!-- These policy settings tell wsutil.exe to generate code for a web service
+  with SSL security on transport. Remove this node if you do now wish to use SSL. -->
+  <wsp:Policy wsu:Id="sslpol">
+    <wsp:ExactlyOne>
+      <sp:TransportBinding xmlns:sp="http://schemas.xmlsoap.org/ws/2005/07/securitypolicy">
+        <wsp:Policy>
+          <sp:TransportToken>
+            <wsp:Policy>
+              <sp:HttpsToken RequireClientCertificate="false" />
+            </wsp:Policy>
+          </sp:TransportToken>
+          <sp:AlgorithmSuite>
+            <wsp:Policy>
+              <sp:Basic256 />
+            </wsp:Policy>
+          </sp:AlgorithmSuite>
+          <sp:Layout>
+            <wsp:Policy>
+              <sp:Strict />
+            </wsp:Policy>
+          </sp:Layout>
+          <sp:IncludeTimestamp />
+        </wsp:Policy>
+      </sp:TransportBinding>
+    </wsp:ExactlyOne>
+  </wsp:Policy>
 
   <!-- The type definitions you place here are referenced from higher-level message definitions in order to define the structural details of the message -->
   <wsdl:types>
@@ -61,7 +93,10 @@
 
   <!-- The WSDL binding element describes the concrete details of using a particular portType with a given protocol -->
   <wsdl:binding name="CalculatorBinding" type="tns:CalculatorPort">
+    
     <soap:binding transport="http://schemas.xmlsoap.org/soap/http"/>
+    <wsp:PolicyReference URI="#sslpol" />
+    
     <wsdl:operation name="Add">
       <soap:operation soapAction="http://calculator.example.org/Add" style="document"/>
       <wsdl:input>
@@ -73,10 +108,10 @@
     </wsdl:operation>
   </wsdl:binding>
 
-  <!-- The WSDL service element defines a collection of ports, or endpoints, that expose a particular binding -->
+  <!-- The WSDL service element defines a collection of ports, or endpoints, that exposes a particular binding -->
   <wsdl:service name="CalculatorService">
     <wsdl:port name="CalculatorEndpoint" binding="tns:CalculatorBinding">
-      <soap:address location="http://localhost:81/calculator"/>
+      <soap:address location="https://localhost:444/calculator"/>
     </wsdl:port>
   </wsdl:service>
 

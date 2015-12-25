@@ -67,7 +67,7 @@ namespace _3fd
 		{
 			if(ex.GetInnerException() != nullptr)
 			{
-				std::stack<IAppException *> lifo;
+				std::stack<std::shared_ptr<IAppException>> lifo;
 				auto item = ex.GetInnerException();
 
 				do
@@ -80,13 +80,13 @@ namespace _3fd
 				do
 				{
 					auto item = lifo.top();
-					WriteImpl(item->GetErrorMessage(), prio, false);
+					WriteImpl(item->ToString(), prio, false);
 					lifo.pop();
 				}
 				while(lifo.empty() == false);
 			}
 			
-			WriteImpl(ex.GetErrorMessage(), prio, false);
+			WriteImpl(ex.ToString(), prio, false);
 		}
 
 		/// <summary>

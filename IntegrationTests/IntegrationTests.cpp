@@ -7,14 +7,14 @@
 #ifdef _MSC_VER
     int wmain(int argc, wchar_t *argv[])
     {
-        std::cout << "Running main() from \'tests.cpp\'\n";
+        std::cout << "Running main() from \'IntegrationTests.cpp\'\n";
         testing::InitGoogleTest(&argc, argv);
         return RUN_ALL_TESTS();
     }
 #else
     int main(int argc, char *argv[])
     {
-        std::cout << "Running main() from \'tests.cpp\'\n";
+        std::cout << "Running main() from \'IntegrationTests.cpp\'\n";
         testing::InitGoogleTest(&argc, argv);
         return RUN_ALL_TESTS();
     }
@@ -37,7 +37,7 @@ namespace _3fd
 			}
 			catch(IAppException &appEx)
 			{
-				//std::cerr << appEx.GetErrorMessage() << std::endl;
+				//std::cerr << appEx.ToString() << std::endl;
 				core::Logger::Write(appEx, core::Logger::PRIO_ERROR);
 			}
 			catch(std::exception &stdEx)

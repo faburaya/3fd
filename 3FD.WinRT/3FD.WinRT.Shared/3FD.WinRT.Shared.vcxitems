@@ -28,7 +28,6 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\gc_memorydigraph.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\gc_messages.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\logger.h" />
-    <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\multilayerctnr.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\preprocessing.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\runtime.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\sptr.h" />

@@ -25,7 +25,6 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\runtime.h">
       <Filter>core</Filter>
     </ClInclude>
-    <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\multilayerctnr.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\stdafx.h">
       <Filter>VS</Filter>
     </ClInclude>

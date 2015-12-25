@@ -209,6 +209,9 @@
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="utils.h" />
+    <ClInclude Include="web_wws_utils.h" />
+    <ClInclude Include="web_wws_webservicehost.h" />
+    <ClInclude Include="web_wws_webserviceproxy.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="callstacktracer.cpp" />
@@ -269,11 +272,19 @@
     <ClCompile Include="utils_event.cpp" />
     <ClCompile Include="gc_arrayofedges.cpp" />
     <ClCompile Include="utils_memorypool.cpp" />
+    <ClCompile Include="web_wws_utils.cpp" />
+    <ClCompile Include="web_wws_utils_wserror.cpp" />
+    <ClCompile Include="web_wws_utils_xml.cpp" />
+    <ClCompile Include="web_wws_webservicehost.cpp" />
+    <ClCompile Include="web_wws_webserviceproxy.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Xml Include="config3fd-template.xml">
       <SubType>Designer</SubType>
     </Xml>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="wsdl-example.wsdl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />

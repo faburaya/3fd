@@ -303,7 +303,7 @@ namespace _3fd
 #ifdef NDEBUG
 		INSTANTIATE_TEST_CASE_P(RealWorldStress_Test,
 			Framework_MemoryGC_TestCase,
-			::testing::Values(2e4, 8e4, 32e4));
+			::testing::Values(1e4, 2e4, 4e4));
 #else
 		INSTANTIATE_TEST_CASE_P(RealWorldStress_Test,
 			Framework_MemoryGC_TestCase,

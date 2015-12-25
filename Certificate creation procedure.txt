@@ -1,0 +1,5 @@
+makecert -pe -n "CN=Certification Authority for WWS Development" -ss My -sr LocalMachine -a sha256 -r CertAuth4WWSDev.cer
+
+makecert -pe -n "CN=TARS" -ss My -sr LocalMachine -a sha256 -in "Certification Authority for WWS Development" -is My -ir LocalMachine SignedByCA4WWSDev.cer
+
+netsh http add sslcert ipport=0.0.0.0:8989 certhash=71db951d00682094cd1361d3b072349d7e18fb41 appid={04EBD759-F3FF-4992-8D02-C1BFDB027A58}

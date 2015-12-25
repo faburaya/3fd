@@ -126,7 +126,7 @@ namespace _3fd
 
 				blockerEvents.swap(temp);
 			}
-			catch (core::IAppException &ex)
+			catch (core::IAppException &)
 			{
 				throw; // just forward exceptions regarding errors known to have been previously handled
 			}
@@ -174,7 +174,7 @@ namespace _3fd
 
 				m_cmdsByEvent.emplace(cmdEvent.GetHandle(), blockingCmd);
 			}
-			catch (core::IAppException &ex)
+			catch (core::IAppException &)
 			{
 				throw; // just forward exceptions regarding errors known to have been previously handled
 			}

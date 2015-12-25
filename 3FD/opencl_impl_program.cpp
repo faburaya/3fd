@@ -193,7 +193,7 @@ namespace _3fd
 				for (auto handle : kernelHandles)
 					kernels.emplace_back(handle);
 			}
-			catch (core::IAppException &ex)
+			catch (core::IAppException &)
 			{
 				throw; // just forward exceptions regarding errors known to have been previously handled
 			}

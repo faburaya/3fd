@@ -57,7 +57,7 @@ namespace _3fd
 				catch (IAppException &appEx)
 				{
 					std::ostringstream oss;
-					oss << "The logging facility creation failed with an exception - " << appEx.GetErrorMessage();
+					oss << "The logging facility creation failed with an exception - " << appEx.ToString();
 					AttemptConsoleOutput(oss.str());
 				}
 
@@ -132,7 +132,7 @@ namespace _3fd
 				oss << "There was a failure when trying to set up the logger. POCO C++ library reported: " << ex.what();
 				AttemptConsoleOutput(oss.str());
 			}
-			catch (std::bad_alloc &ex)
+			catch (std::bad_alloc &)
 			{
 				if (m_logger != nullptr)
 				{
