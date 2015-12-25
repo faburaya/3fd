@@ -9,7 +9,7 @@ namespace _3fd
     namespace utils
     {
 		/// <summary>
-		/// Implements a lock free queue for multiple writers
+		/// Implements a lock-free queue for multiple writers
 		/// but a single consumer.
 		/// </summary>
 		template<typename Type>
