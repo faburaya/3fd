@@ -2,6 +2,7 @@
 #define UTILS_LOCKFREEQUEUE_H
 
 #include <atomic>
+#include <mutex>
 #include <queue>
 
 namespace _3fd

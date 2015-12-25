@@ -155,9 +155,6 @@
     <ClInclude Include="utils.h">
       <Filter>Header Files\utilities</Filter>
     </ClInclude>
-    <ClInclude Include="arrayofbits.h">
-      <Filter>Header Files\utilities</Filter>
-    </ClInclude>
     <ClInclude Include="gc_arrayofedges.h">
       <Filter>Header Files\GC</Filter>
     </ClInclude>
@@ -175,6 +172,9 @@
     </ClInclude>
     <ClInclude Include="web_wws_webserviceproxy.h">
       <Filter>Header Files\WWS</Filter>
+    </ClInclude>
+    <ClInclude Include="utils_lockfreequeue.h">
+      <Filter>Header Files\utilities</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

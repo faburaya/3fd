@@ -39,6 +39,9 @@
     <ClCompile Include="tests_gc_vertexstore.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="tests_utils_lockfreequeue.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\3FD\stdafx.h">
