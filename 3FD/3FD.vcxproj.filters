@@ -291,6 +291,7 @@
     </ClCompile>
     <ClCompile Include="gc_vertexstore.cpp">
       <Filter>Source Files\GC</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Xml Include="config3fd-template.xml">
