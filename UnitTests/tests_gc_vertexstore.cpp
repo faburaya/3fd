@@ -6,9 +6,9 @@
 #include <vector>
 
 #ifdef _WIN32
-#	define ALIGNED_NEW(TYPE, INITIALIZER) new (_aligned_malloc(sizeof TYPE, 2)) TYPE INITIALIZER
+#	define ALIGNED_NEW(TYPE, INITIALIZER) new (_aligned_malloc(sizeof (TYPE), 2)) TYPE INITIALIZER
 #else
-#	define ALIGNED_NEW(TYPE, INITIALIZER) new (aligned_alloc(2, sizeof TYPE)) TYPE INITIALIZER
+#	define ALIGNED_NEW(TYPE, INITIALIZER) new (aligned_alloc(2, sizeof (TYPE))) TYPE INITIALIZER
 #endif
 
 namespace _3fd
@@ -40,7 +40,7 @@ namespace _3fd
 			{
 				auto ptr = ALIGNED_NEW(Stuffed, ());
 				addrs.push_back(ptr);
-				vtxStore.AddVertex(ptr, sizeof *ptr, &memory::FreeMemAddr<Stuffed>);
+                vtxStore.AddVertex(ptr, sizeof *ptr, &memory::FreeMemAddr<Stuffed>);
 			}
 
 			// Try retriving the vertices:

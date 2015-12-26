@@ -42,7 +42,7 @@ namespace _3fd
 			std::thread						m_thread;
 			std::exception_ptr				m_error;
 			MemoryDigraph					m_memoryDigraph;
-			utils::LockFreeQueue<IMessage>	m_messagesQueue;
+            utils::LockFreeQueue<IMessage>	m_messagesQueue;
 			utils::Event					m_terminationEvent;
 
 			GarbageCollector();

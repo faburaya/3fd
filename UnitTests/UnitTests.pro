@@ -18,7 +18,8 @@ SOURCES += \
     tests_gc_memblock.cpp \
     tests_gc_memdigraph.cpp \
     tests_gc_vertex.cpp \
-    tests_utils_pool.cpp
+    tests_utils_pool.cpp \
+    tests_gc_vertexstore.cpp
 
 HEADERS += \
     stdafx.h

@@ -28,7 +28,7 @@ namespace _3fd
 
 			std::vector<Vertex *> vertices(poolSize * 2.5);
 
-			int index(0);
+            size_t index(0);
 			std::generate(begin(vertices), end(vertices), [&index]()
 			{
 				auto vertex = new Vertex(reinterpret_cast<void *> (index), 42, nullptr);
@@ -54,7 +54,7 @@ namespace _3fd
 			myPool.Shrink();
 
 			// Expand the graph again:
-			index = reinterpret_cast<int> (vertices.back()->GetMemoryAddress().Get());
+            index = reinterpret_cast<size_t> (vertices.back()->GetMemoryAddress().Get());
 			while (vertices.size() < poolSize * 2)
 			{
 				index += sizeof(void *);

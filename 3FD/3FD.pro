@@ -40,7 +40,9 @@ SOURCES += \
     utils_asynchronous.cpp \
     utils_dynmempool.cpp \
     utils_event.cpp \
-    utils_memorypool.cpp
+    utils_memorypool.cpp \
+    gc_arrayofedges.cpp \
+    gc_vertexstore.cpp
 
 HEADERS += \
     base.h \
@@ -64,7 +66,11 @@ HEADERS += \
     sptr.h \
     sqlite.h \
     sqlite3.h \
-    utils.h
+    utils.h \
+    gc_addresseshashtable.h \
+    gc_arrayofedges.h \
+    gc_vertexstore.h \
+    utils_lockfreequeue.h
 
 unix {
     target.path = /usr/local/lib

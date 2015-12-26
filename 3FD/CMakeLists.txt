@@ -37,12 +37,12 @@ add_library(3FD STATIC
     dependencies.cpp
     exceptions.cpp
     gc_addresseshashtable.cpp
+    gc_arrayofedges.cpp
     gc_garbagecollector.cpp
-    gc_mastertable.cpp
-    gc_memblock.cpp
     gc_memorydigraph.cpp
     gc_messages.cpp
     gc_vertex.cpp
+    gc_vertexstore.cpp
     logger.cpp
     logger_poco.cpp
     opencl_impl.cpp

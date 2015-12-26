@@ -23,10 +23,8 @@ namespace _3fd
                 std::atomic<Type *> value;
                 std::atomic<Element *> next;
 
-				Element() {}
-
-				Element(Type *entry)
-					: value(entry) {}
+                Element(Type *entry = nullptr)
+                    : next(nullptr), value(entry) {}
             };
 
             std::atomic<Element *> m_head;

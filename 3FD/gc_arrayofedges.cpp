@@ -1,7 +1,9 @@
 #include "stdafx.h"
 #include "gc_arrayofedges.h"
 
+#include "preprocessing.h"
 #include <algorithm>
+#include <cstdlib>
 #include <cassert>
 
 namespace _3fd
@@ -84,7 +86,7 @@ namespace _3fd
 		ArrayOfEdges::~ArrayOfEdges()
 		{
 			if (m_array != nullptr)
-				free(m_array);
+                free(m_array);
 		}
 
 		/// <summary>
