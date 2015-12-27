@@ -14,4 +14,6 @@ The provided features are:
 
 + An OOP+RAII model for simplified heterogeneous programming that makes OpenCL v1.2 more practical and robust to employ
 
-+ A library for ISAM data access backed by Microsoft ESE, but wrapped with real OOP+RAII design, very straightforward and practical
++ A module for ISAM data access backed by Microsoft ESE, but wrapped with real OOP+RAII design, very straightforward and practical
+
++ A module for SOAP web services containing helpers & wrappers around Microsoft WWS API, which enables quick development of native web services hosts and clients
