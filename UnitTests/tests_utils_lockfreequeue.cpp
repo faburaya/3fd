@@ -48,7 +48,7 @@ namespace _3fd
 		/// </summary>
 		TEST(Framework_Utils_TestCase, LockFreeQueue_ParallelProducerTest)
 		{
-			const unsigned long seqLen = 1UL << 16;
+			const unsigned long seqLen = 1UL << 18;
 
 			utils::LockFreeQueue<unsigned long> queue;
 
