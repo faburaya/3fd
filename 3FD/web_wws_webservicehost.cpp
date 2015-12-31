@@ -572,8 +572,9 @@ namespace _3fd
 
 					// Define a document to be provided by MEX:
 					auto document = m_svcHeap.Alloc<WS_SERVICE_METADATA_DOCUMENT>();
-					document->name = nullptr;
-					document->content = new (m_svcHeap.Alloc<WS_XML_STRING>()) WS_XML_STRING{ 0 };
+					document->name = m_svcHeap.Alloc<WS_STRING>();
+					*document->name = ToWsString("wsdl", m_svcHeap);
+					document->content = WS_HEAP_NEW(m_svcHeap, WS_XML_STRING, { 0 });
 					document->content->length = m_wsdContentBuffer.size();
 					document->content->bytes = (BYTE *)m_wsdContentBuffer.data();
 

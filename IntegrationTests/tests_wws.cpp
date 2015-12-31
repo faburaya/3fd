@@ -920,5 +920,53 @@ namespace _3fd
 			}
 		}
 
+		/// <summary>
+		/// Tests web service metadata retrieval via WS-MetadataExchange.
+		/// </summary>
+		TEST(Framework_WWS_TestCase, DISABLED_MetadataHttpGet_TransportUnsecure_Test)
+		{
+			// Ensures proper initialization/finalization of the framework
+			_3fd::core::FrameworkInstance _framework;
+
+			CALL_STACK_TRACE;
+
+			try
+			{
+				/////////////////
+				// HOST setup
+
+				// Function tables contains the implementations for the operations:
+				CalcBindingUnsecureFunctionTable funcTableSvcUnsecure = {
+					&AddImpl,
+					&MultiplyImpl
+				};
+
+				// Create the web service host with default configurations:
+				SvcEndpointsConfig hostCfg;
+
+				/* Map the binding used for the unsecure endpoint to
+				the corresponding implementations: */
+				hostCfg.MapBinding(
+					"CalcBindingUnsecure",
+					&funcTableSvcUnsecure,
+					CalcBindingUnsecure_CreateServiceEndpoint
+				);
+
+				// Create the service host:
+				WebServiceHost host(2048);
+				host.Setup("calculator.wsdl", hostCfg, true);
+				host.Open(); // start listening
+
+				// wait for metadata request...
+				std::this_thread::sleep_for(std::chrono::seconds(100));
+
+				host.Close();
+			}
+			catch (...)
+			{
+				HandleException();
+			}
+		}
+
 	}// end of namespace integration_tests
 }// end of namespace _3fd
