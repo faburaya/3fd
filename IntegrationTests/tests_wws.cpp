@@ -923,7 +923,7 @@ namespace _3fd
 		/// <summary>
 		/// Tests web service metadata retrieval via WS-MetadataExchange.
 		/// </summary>
-		TEST(Framework_WWS_TestCase, DISABLED_MetadataHttpGet_TransportUnsecure_Test)
+		TEST(Framework_WWS_TestCase, DISABLED_MexRequest_TransportUnsecure_Test)
 		{
 			// Ensures proper initialization/finalization of the framework
 			_3fd::core::FrameworkInstance _framework;
