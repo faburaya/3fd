@@ -18,8 +18,8 @@ if(buildType STREQUAL release)
     add_definitions(-DNDEBUG)
 endif()
 
-set(POCO_ROOT "/opt/Poco-1.4.7")
-set(BOOST_HOME "/opt/boost-1.55")
+set(POCO_ROOT "/opt/Poco-1.6.1")
+set(BOOST_HOME "/opt/boost-1.60")
 
 # Include directories:
 include_directories(
