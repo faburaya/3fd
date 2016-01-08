@@ -1,5 +1,21 @@
+/////////////////////////////////////////////////////
+// How to issue a certificate for testing purposes //
+/////////////////////////////////////////////////////
+
+(1) In the Visual Studio developer prompt, type:
+
 makecert -pe -n "CN=Certification Authority for WWS Development" -ss My -sr LocalMachine -a sha256 -r CertAuth4WWSDev.cer
 
-makecert -pe -n "CN=TARS" -ss My -sr LocalMachine -a sha256 -in "Certification Authority for WWS Development" -is My -ir LocalMachine SignedByCA4WWSDev.cer
+This creates a certification authority capable of issuing certificates.
 
-netsh http add sslcert ipport=0.0.0.0:8989 certhash=71db951d00682094cd1361d3b072349d7e18fb41 appid={04EBD759-F3FF-4992-8D02-C1BFDB027A58}
+(2) Then, use the new CA to create a new certificate for your local machine. Notice you must use your computer name in the command below:
+
+makecert -pe -n "CN=MyComputerName" -ss My -sr LocalMachine -a sha256 -in "Certification Authority for WWS Development" -is My -ir LocalMachine SignedByCA4WWSDev.cer
+
+(3) In the management console (mmc.exe), use the snap-in for certificate management to look for the certificate you have just created. The thumbprint is the hash you will use in the command below. This command will assign the new certificate to the endpoint localhost:8989. The application ID can be any GUID.
+
+netsh http add sslcert ipport=0.0.0.0:8989 certhash=38d74846663e060dc480c66a2cc0641235fa22ed appid={04EBD759-F3FF-4992-8D02-C1BFDB027A58}
+
+Still in the management console, move the CA to "Trusted Root Certification Authorities\Certificates".
+
+You are done!

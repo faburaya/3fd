@@ -24,7 +24,7 @@ namespace _3fd
 			{
 				return WS_XML_STRING
 				{
-					str.length(),
+					static_cast<ULONG> (str.length()),
 					(BYTE *)str.data(),
 					nullptr,
 					0
@@ -45,7 +45,7 @@ namespace _3fd
 				void *ptr = heap.Alloc<WS_XML_STRING>();
 				return new (ptr) WS_XML_STRING
 				{
-					str.length(),
+					static_cast<ULONG> (str.length()),
 					(BYTE *)str.data(),
 					nullptr,
 					0
