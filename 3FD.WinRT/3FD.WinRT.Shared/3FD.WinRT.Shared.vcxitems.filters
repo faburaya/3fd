@@ -52,13 +52,7 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\gc_common.h">
       <Filter>GC</Filter>
     </ClInclude>
-    <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\gc_mastertable.h">
-      <Filter>GC</Filter>
-    </ClInclude>
     <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\gc_memaddress.h">
-      <Filter>GC</Filter>
-    </ClInclude>
-    <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\gc_memblock.h">
       <Filter>GC</Filter>
     </ClInclude>
     <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\gc_memorydigraph.h">
@@ -68,6 +62,15 @@
       <Filter>GC</Filter>
     </ClInclude>
     <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\sptr.h">
+      <Filter>GC</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\gc_arrayofedges.h">
+      <Filter>GC</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\gc_vertexstore.h">
+      <Filter>GC</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\gc_vertex.h">
       <Filter>GC</Filter>
     </ClInclude>
   </ItemGroup>
@@ -132,12 +135,6 @@
     <ClCompile Include="$(MSBuildThisFileDirectory)..\..\3FD\gc_addresseshashtable.cpp">
       <Filter>GC</Filter>
     </ClCompile>
-    <ClCompile Include="$(MSBuildThisFileDirectory)..\..\3FD\gc_mastertable.cpp">
-      <Filter>GC</Filter>
-    </ClCompile>
-    <ClCompile Include="$(MSBuildThisFileDirectory)..\..\3FD\gc_memblock.cpp">
-      <Filter>GC</Filter>
-    </ClCompile>
     <ClCompile Include="$(MSBuildThisFileDirectory)..\..\3FD\gc_memorydigraph.cpp">
       <Filter>GC</Filter>
     </ClCompile>
@@ -145,6 +142,12 @@
       <Filter>GC</Filter>
     </ClCompile>
     <ClCompile Include="$(MSBuildThisFileDirectory)..\..\3FD\gc_vertex.cpp">
+      <Filter>GC</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MSBuildThisFileDirectory)..\..\3FD\gc_arrayofedges.cpp">
+      <Filter>GC</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MSBuildThisFileDirectory)..\..\3FD\gc_vertexstore.cpp">
       <Filter>GC</Filter>
     </ClCompile>
   </ItemGroup>
