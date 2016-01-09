@@ -227,6 +227,11 @@ namespace _3fd
                 {
                     Abort();
                     WsFreeServiceProxy(m_wsSvcProxyHandle);
+
+					/* Only after the service proxy is done, which means no more asynchronous
+					callbacks will be called, the promises can be deleted: */
+					for (auto entry : m_promises)
+						delete entry;
                 }
                 catch (IAppException &ex)
                 {
@@ -239,6 +244,20 @@ namespace _3fd
                     Logger::Write(oss.str(), Logger::Priority::PRIO_CRITICAL);
                 }
             }
+
+			/// <summary>
+			/// Creates an object that keeps track of an asynchronous operation.
+			/// </summary>
+			/// <param name="heapSize">
+			/// Size of the heap (in bytes) to provide memory for an asynchronous call in this proxy.
+			/// </param>
+			/// <returns>A <see cref="WSAsyncOper"/> object.</returns>
+			WSAsyncOper WebServiceProxy::CreateAsyncOperation(size_t heapSize)
+			{
+				auto promise = new std::promise<HRESULT>();
+				m_promises.push_back(promise);
+				return WSAsyncOper(heapSize, promise);
+			}
 
 			/// <summary>
 			/// Opens the service proxy before it can start sending requests.

@@ -150,7 +150,7 @@ namespace _3fd
 				CALL_STACK_TRACE;
 
 				// Prepare for an asynchronous operation:
-				WSAsyncOper asyncOp(proxyOperHeapSize);
+				auto asyncOp = CreateAsyncOperation(proxyOperHeapSize);
 				auto asyncContext = asyncOp.GetContext();
 				
 				HRESULT hr = // this is immediately returned HRESULT code
@@ -394,7 +394,7 @@ namespace _3fd
 				CALL_STACK_TRACE;
 
 				// Prepare for an asynchronous operation:
-				WSAsyncOper asyncOp(proxyOperHeapSize);
+				auto asyncOp = CreateAsyncOperation(proxyOperHeapSize);
 				auto asyncContext = asyncOp.GetContext();
 
 				HRESULT hr = // this is immediately returned HRESULT code

@@ -163,11 +163,19 @@ namespace _3fd
 			}
 
 			/// <summary>
-			/// Initializes a new instance of the <see cref="WSAsyncOper"/> class.
+			/// Initializes a new instance of the <see cref="WSAsyncOper" /> class.
 			/// </summary>
-			WSAsyncOper::WSAsyncOper(size_t heapSize)
+			/// <param name="heapSize">
+			/// Size of the heap (in bytes) that provides memory for the call in the web service proxy.
+			/// </param>
+			/// <param name="promise">
+			/// A <see cref="std::promise"/> object for the asynchronous call in the web service.
+			/// Such an object must be allocated in a way it is allowed o outlive this object in construction,
+			/// which is why it will actually reside inside the web service proxy.
+			/// </param>
+			WSAsyncOper::WSAsyncOper(size_t heapSize, std::promise<HRESULT> *promise)
 			try :
-				m_promise(new std::promise<HRESULT>()),
+				m_promise(promise),
 				m_heap(heapSize),
 				m_callReturn(WS_S_ASYNC)
 			{
@@ -186,14 +194,6 @@ namespace _3fd
 				std::ostringstream oss;
 				oss << "Generic failure when preparing for asynchronous operation: " << ex.what();
 				throw AppException<std::runtime_error>(oss.str());
-			}
-
-			/// <summary>
-			/// Finalizes an instance of the <see cref="WSAsyncOper"/> class.
-			/// </summary>
-			WSAsyncOper::~WSAsyncOper()
-			{
-				delete m_promise;
 			}
 
 			/// <summary>

@@ -4,6 +4,7 @@
 #include "web_wws_utils.h"
 
 #include <mutex>
+#include <vector>
 
 namespace _3fd
 {
@@ -144,6 +145,8 @@ namespace _3fd
 
 				WSHeap m_heap;
 
+				std::vector<std::promise<HRESULT> *> m_promises;
+
 			protected:
 
 				/// <summary>
@@ -166,6 +169,8 @@ namespace _3fd
 				);
 
                 ~WebServiceProxy();
+
+				WSAsyncOper CreateAsyncOperation(size_t heapSize);
 
                 void Open();
                 bool Close();

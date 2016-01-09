@@ -240,16 +240,17 @@ namespace _3fd
 
 				HRESULT GetResult();
 
-				friend void CALLBACK AsyncDoneCallback(HRESULT, WS_CALLBACK_MODEL, void *);
-
 				// Forbidden operation
 				WSAsyncOper &operator =(const WSAsyncOper &) { return *this; }
 
 			public:
 
-				WSAsyncOper(size_t heapSize);
+				WSAsyncOper(size_t heapSize, std::promise<HRESULT> *promise);
 
-				~WSAsyncOper();
+				/// <summary>
+				/// Finalizes an instance of the <see cref="WSAsyncOper"/> class.
+				/// </summary>
+				WSAsyncOper::~WSAsyncOper() {}
 
 				/// <summary>
 				/// Initializes a new instance of the <see cref="WSAsyncOper"/> class
@@ -262,9 +263,7 @@ namespace _3fd
 					m_heap(std::move(ob.m_heap)),
 					m_richErrorInfo(std::move(ob.m_richErrorInfo)),
 					m_callReturn(ob.m_callReturn)
-				{
-					ob.m_promise = nullptr;
-				}
+				{}
 
 				WS_ASYNC_CONTEXT GetContext();
 
