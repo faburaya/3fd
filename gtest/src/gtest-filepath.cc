@@ -204,9 +204,10 @@ FilePath FilePath::ConcatPaths(const FilePath& directory,
 bool FilePath::FileOrDirectoryExists() const {
 #if GTEST_OS_WINDOWS_MOBILE
   LPCWSTR unicode = String::AnsiToUtf16(pathname_.c_str());
-  const DWORD attributes = GetFileAttributes(unicode);
+  WIN32_FILE_ATTRIBUTE_DATA attributes;
+  GetFileAttributesEx(unicode, GetFileExInfoStandard, &attributes);
   delete [] unicode;
-  return attributes != kInvalidFileAttributes;
+  return attributes.dwFileAttributes != kInvalidFileAttributes;
 #else
   posix::StatStruct file_stat;
   return posix::Stat(pathname_.c_str(), &file_stat) == 0;
@@ -228,10 +229,11 @@ bool FilePath::DirectoryExists() const {
 
 #if GTEST_OS_WINDOWS_MOBILE
   LPCWSTR unicode = String::AnsiToUtf16(path.c_str());
-  const DWORD attributes = GetFileAttributes(unicode);
+  WIN32_FILE_ATTRIBUTE_DATA attributes;
+  GetFileAttributesEx(unicode, GetFileExInfoStandard, &attributes);
   delete [] unicode;
-  if ((attributes != kInvalidFileAttributes) &&
-      (attributes & FILE_ATTRIBUTE_DIRECTORY)) {
+  if ((attributes.dwFileAttributes != kInvalidFileAttributes) &&
+	  (attributes.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
     result = true;
   }
 #else

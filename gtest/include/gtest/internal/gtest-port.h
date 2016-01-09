@@ -233,7 +233,7 @@
 # define GTEST_OS_SYMBIAN 1
 #elif defined _WIN32
 # define GTEST_OS_WINDOWS 1
-# ifdef _WIN32_WCE
+# if (defined _WIN32_WCE) || (WINAPI_FAMILY == WINAPI_FAMILY_PC_APP) || (WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
 #  define GTEST_OS_WINDOWS_MOBILE 1
 # elif defined(__MINGW__) || defined(__MINGW32__)
 #  define GTEST_OS_WINDOWS_MINGW 1
@@ -1722,7 +1722,7 @@ inline char* StrDup(const char* src) { return _strdup(src); }
 # endif  // __BORLANDC__
 
 # if GTEST_OS_WINDOWS_MOBILE
-inline int FileNo(FILE* file) { return reinterpret_cast<int>(_fileno(file)); }
+inline int FileNo(FILE* file) { return _fileno(file); }
 // Stat(), RmDir(), and IsDir() are not needed on Windows CE at this
 // time and thus not defined there.
 # else

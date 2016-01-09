@@ -697,8 +697,8 @@ const ::std::vector<testing::internal::string>& GetInjectableArgvs() {
 #if GTEST_OS_WINDOWS_MOBILE
 namespace posix {
 void Abort() {
-  DebugBreak();
-  TerminateProcess(GetCurrentProcess(), 1);
+  *static_cast<volatile int*>(NULL) = 1;
+  exit(1);
 }
 }  // namespace posix
 #endif  // GTEST_OS_WINDOWS_MOBILE

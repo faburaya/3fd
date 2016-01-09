@@ -69,6 +69,8 @@ class GTEST_API_ String {
   static const char* CloneCString(const char* c_str);
 
 #if GTEST_OS_WINDOWS_MOBILE
+  typedef const wchar_t *LPCWSTR;
+
   // Windows CE does not have the 'ANSI' versions of Win32 APIs. To be
   // able to pass strings to Win32 APIs on CE we need to convert them
   // to 'Unicode', UTF-16.

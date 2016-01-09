@@ -36,10 +36,21 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		Performance1.psess = Performance1.psess
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "gtest.WinRT", "gtest.WinRT", "{EE86AB66-09DF-45EB-A42A-ED426AF3266E}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gtest.WinRT.Shared", "gtest.WinRT\gtest.WinRT.Shared\gtest.WinRT.Shared.vcxitems", "{DB9A7788-5840-496C-AF13-6100450D9C32}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gtest.WinRT.Windows", "gtest.WinRT\gtest.WinRT.Windows\gtest.WinRT.Windows.vcxproj", "{FC5F4BF1-6C86-45DC-93DA-78E380E20CD8}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gtest.WinRT.WindowsPhone", "gtest.WinRT\gtest.WinRT.WindowsPhone\gtest.WinRT.WindowsPhone.vcxproj", "{492F5223-5828-4D61-AEBB-2C6241BF84F9}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		3FD.WinRT\3FD.WinRT.Shared\3FD.WinRT.Shared.vcxitems*{857dc1c8-d5d4-471c-bcbe-c29e5f7dd49c}*SharedItemsImports = 9
+		gtest.WinRT\gtest.WinRT.Shared\gtest.WinRT.Shared.vcxitems*{db9a7788-5840-496c-af13-6100450d9c32}*SharedItemsImports = 9
+		gtest.WinRT\gtest.WinRT.Shared\gtest.WinRT.Shared.vcxitems*{fc5f4bf1-6c86-45dc-93da-78e380e20cd8}*SharedItemsImports = 4
 		3FD.WinRT\3FD.WinRT.Shared\3FD.WinRT.Shared.vcxitems*{ed6b839d-3ee6-46de-80dc-de2090a059c3}*SharedItemsImports = 4
+		gtest.WinRT\gtest.WinRT.Shared\gtest.WinRT.Shared.vcxitems*{492f5223-5828-4d61-aebb-2c6241bf84f9}*SharedItemsImports = 4
 		3FD.WinRT\3FD.WinRT.Shared\3FD.WinRT.Shared.vcxitems*{d4d1d2d5-7594-49bb-9427-ff7d770f5ae8}*SharedItemsImports = 4
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -127,6 +138,7 @@ Global
 		{D4D1D2D5-7594-49BB-9427-FF7D770F5AE8}.Debug|ARM.ActiveCfg = Debug|ARM
 		{D4D1D2D5-7594-49BB-9427-FF7D770F5AE8}.Debug|ARM.Build.0 = Debug|ARM
 		{D4D1D2D5-7594-49BB-9427-FF7D770F5AE8}.Debug|Mixed Platforms.ActiveCfg = Debug|ARM
+		{D4D1D2D5-7594-49BB-9427-FF7D770F5AE8}.Debug|Mixed Platforms.Build.0 = Debug|ARM
 		{D4D1D2D5-7594-49BB-9427-FF7D770F5AE8}.Debug|Win32.ActiveCfg = Debug|Win32
 		{D4D1D2D5-7594-49BB-9427-FF7D770F5AE8}.Debug|Win32.Build.0 = Debug|Win32
 		{D4D1D2D5-7594-49BB-9427-FF7D770F5AE8}.Debug|x64.ActiveCfg = Debug|Win32
@@ -141,6 +153,7 @@ Global
 		{55B15FE0-D788-4101-80D1-2FADB87CA16B}.Debug|ARM.Build.0 = Debug|ARM
 		{55B15FE0-D788-4101-80D1-2FADB87CA16B}.Debug|ARM.Deploy.0 = Debug|ARM
 		{55B15FE0-D788-4101-80D1-2FADB87CA16B}.Debug|Mixed Platforms.ActiveCfg = Debug|ARM
+		{55B15FE0-D788-4101-80D1-2FADB87CA16B}.Debug|Mixed Platforms.Build.0 = Debug|ARM
 		{55B15FE0-D788-4101-80D1-2FADB87CA16B}.Debug|Mixed Platforms.Deploy.0 = Debug|ARM
 		{55B15FE0-D788-4101-80D1-2FADB87CA16B}.Debug|Win32.ActiveCfg = Debug|Win32
 		{55B15FE0-D788-4101-80D1-2FADB87CA16B}.Debug|Win32.Build.0 = Debug|Win32
@@ -160,6 +173,36 @@ Global
 		{55B15FE0-D788-4101-80D1-2FADB87CA16B}.Release|x64.ActiveCfg = Release|x64
 		{55B15FE0-D788-4101-80D1-2FADB87CA16B}.Release|x64.Build.0 = Release|x64
 		{55B15FE0-D788-4101-80D1-2FADB87CA16B}.Release|x64.Deploy.0 = Release|x64
+		{FC5F4BF1-6C86-45DC-93DA-78E380E20CD8}.Debug|ARM.ActiveCfg = Debug|ARM
+		{FC5F4BF1-6C86-45DC-93DA-78E380E20CD8}.Debug|ARM.Build.0 = Debug|ARM
+		{FC5F4BF1-6C86-45DC-93DA-78E380E20CD8}.Debug|Mixed Platforms.ActiveCfg = Debug|x64
+		{FC5F4BF1-6C86-45DC-93DA-78E380E20CD8}.Debug|Mixed Platforms.Build.0 = Debug|x64
+		{FC5F4BF1-6C86-45DC-93DA-78E380E20CD8}.Debug|Win32.ActiveCfg = Debug|Win32
+		{FC5F4BF1-6C86-45DC-93DA-78E380E20CD8}.Debug|Win32.Build.0 = Debug|Win32
+		{FC5F4BF1-6C86-45DC-93DA-78E380E20CD8}.Debug|x64.ActiveCfg = Debug|x64
+		{FC5F4BF1-6C86-45DC-93DA-78E380E20CD8}.Debug|x64.Build.0 = Debug|x64
+		{FC5F4BF1-6C86-45DC-93DA-78E380E20CD8}.Release|ARM.ActiveCfg = Release|ARM
+		{FC5F4BF1-6C86-45DC-93DA-78E380E20CD8}.Release|ARM.Build.0 = Release|ARM
+		{FC5F4BF1-6C86-45DC-93DA-78E380E20CD8}.Release|Mixed Platforms.ActiveCfg = Release|Win32
+		{FC5F4BF1-6C86-45DC-93DA-78E380E20CD8}.Release|Mixed Platforms.Build.0 = Release|Win32
+		{FC5F4BF1-6C86-45DC-93DA-78E380E20CD8}.Release|Win32.ActiveCfg = Release|Win32
+		{FC5F4BF1-6C86-45DC-93DA-78E380E20CD8}.Release|Win32.Build.0 = Release|Win32
+		{FC5F4BF1-6C86-45DC-93DA-78E380E20CD8}.Release|x64.ActiveCfg = Release|x64
+		{FC5F4BF1-6C86-45DC-93DA-78E380E20CD8}.Release|x64.Build.0 = Release|x64
+		{492F5223-5828-4D61-AEBB-2C6241BF84F9}.Debug|ARM.ActiveCfg = Debug|ARM
+		{492F5223-5828-4D61-AEBB-2C6241BF84F9}.Debug|ARM.Build.0 = Debug|ARM
+		{492F5223-5828-4D61-AEBB-2C6241BF84F9}.Debug|Mixed Platforms.ActiveCfg = Debug|ARM
+		{492F5223-5828-4D61-AEBB-2C6241BF84F9}.Debug|Mixed Platforms.Build.0 = Debug|ARM
+		{492F5223-5828-4D61-AEBB-2C6241BF84F9}.Debug|Win32.ActiveCfg = Debug|Win32
+		{492F5223-5828-4D61-AEBB-2C6241BF84F9}.Debug|Win32.Build.0 = Debug|Win32
+		{492F5223-5828-4D61-AEBB-2C6241BF84F9}.Debug|x64.ActiveCfg = Debug|Win32
+		{492F5223-5828-4D61-AEBB-2C6241BF84F9}.Release|ARM.ActiveCfg = Release|ARM
+		{492F5223-5828-4D61-AEBB-2C6241BF84F9}.Release|ARM.Build.0 = Release|ARM
+		{492F5223-5828-4D61-AEBB-2C6241BF84F9}.Release|Mixed Platforms.ActiveCfg = Release|Win32
+		{492F5223-5828-4D61-AEBB-2C6241BF84F9}.Release|Mixed Platforms.Build.0 = Release|Win32
+		{492F5223-5828-4D61-AEBB-2C6241BF84F9}.Release|Win32.ActiveCfg = Release|Win32
+		{492F5223-5828-4D61-AEBB-2C6241BF84F9}.Release|Win32.Build.0 = Release|Win32
+		{492F5223-5828-4D61-AEBB-2C6241BF84F9}.Release|x64.ActiveCfg = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -172,6 +215,9 @@ Global
 		{ED6B839D-3EE6-46DE-80DC-DE2090A059C3} = {C6537317-4B66-427D-BFC6-2FC4FC6937E7}
 		{D4D1D2D5-7594-49BB-9427-FF7D770F5AE8} = {C6537317-4B66-427D-BFC6-2FC4FC6937E7}
 		{55B15FE0-D788-4101-80D1-2FADB87CA16B} = {C6537317-4B66-427D-BFC6-2FC4FC6937E7}
+		{DB9A7788-5840-496C-AF13-6100450D9C32} = {EE86AB66-09DF-45EB-A42A-ED426AF3266E}
+		{FC5F4BF1-6C86-45DC-93DA-78E380E20CD8} = {EE86AB66-09DF-45EB-A42A-ED426AF3266E}
+		{492F5223-5828-4D61-AEBB-2C6241BF84F9} = {EE86AB66-09DF-45EB-A42A-ED426AF3266E}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		VisualSVNWorkingCopyRoot = .
