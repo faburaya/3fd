@@ -54,7 +54,6 @@ namespace _3fd
 
 					struct
 					{
-						int msgQueueInitCap;
 						int msgLoopSleepTimeoutMilisecs;
 						
 						struct

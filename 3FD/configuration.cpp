@@ -205,7 +205,6 @@ namespace _3fd
 
 				settings.framework.stackTracing.stackLogInitialCap = config->getInt("framework.stackTracing.stackLogInitialCap", 32);
 
-				settings.framework.gc.msgQueueInitCap = config->getInt("framework.gc.msgQueueInitCap", 64);
 				settings.framework.gc.msgLoopSleepTimeoutMilisecs = config->getInt("framework.gc.msgLoopSleepTimeoutMilisecs", 100);
 				settings.framework.gc.memBlocksMemPool.initialSize = config->getInt("framework.gc.memBlocksMemPool.initialSize", 128);
 				settings.framework.gc.memBlocksMemPool.growingFactor = static_cast<float> (config->getDouble("framework.gc.memBlocksMemPool.growingFactor", 1.0));
@@ -345,7 +344,6 @@ namespace _3fd
 
 				// Garbage collector options:
 				auto nodeGC = framework->SelectSingleNode(L"./gc");
-				settings.framework.gc.msgQueueInitCap = GetInteger(nodeGC, L"./msgQueueInitCap", 64);
 				settings.framework.gc.msgLoopSleepTimeoutMilisecs = GetInteger(nodeGC, L"./msgLoopSleepTimeoutMilisecs", 100);
 
 				node = nodeGC->SelectSingleNode(L"./memBlocksMemPool");

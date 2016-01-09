@@ -23,7 +23,6 @@
       <stackLogInitialCap>64</stackLogInitialCap>
     </stackTracing>
     <gc>
-      <msgQueueInitCap>64</msgQueueInitCap>
       <msgLoopSleepTimeoutMilisecs>100</msgLoopSleepTimeoutMilisecs>
       <memBlocksMemPool>
         <initialSize>128</initialSize>

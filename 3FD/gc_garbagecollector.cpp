@@ -131,7 +131,7 @@ namespace _3fd
 		try : 
 			m_error(nullptr), 
 			m_memoryDigraph(), 
-			m_messagesQueue(/*AppConfig::GetSettings().framework.gc.msgQueueInitCap*/), 
+			m_messagesQueue(), 
 			m_terminationEvent()
 		{
 			CALL_STACK_TRACE;
