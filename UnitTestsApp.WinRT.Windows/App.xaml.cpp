@@ -6,7 +6,8 @@
 #include "pch.h"
 #include "MainPage.xaml.h"
 #include "utils_winrt.h"
-#include <sstream>
+#include <thread>
+#include <cstdio>
 
 using namespace UnitTestsApp_WinRT_Windows;
 
@@ -38,19 +39,23 @@ App::App()
 	using namespace Windows::Storage;
 
 	auto outputFile = _3fd::utils::WinRTExt::WaitForAsync(
-		ApplicationData::Current->LocalFolder->CreateFileAsync(L"test-report.xml", CreationCollisionOption::OpenIfExists)
+		ApplicationData::Current->LocalFolder
+			->CreateFileAsync(L"test-report.txt", CreationCollisionOption::OpenIfExists)
 	);
-
-	std::wostringstream woss;
-	woss << L"--gtest_output=\"xml:" << outputFile->Path->Data() << L'\"';
-
-	std::wstring outFilePath = woss.str();
-
-	int argc(2);
+	
+	// Replace standard output for a TXT file
+	_wfreopen(outputFile->Path->Data(), L"w", stdout);
+	
+	auto appExePath =
+		String::Concat(
+			ApplicationData::Current->LocalFolder->Path,
+			ref new String(L"\\UnitTestsApp.WinRT.Windows.exe")
+		);
+	
+	int argc(1);
 	wchar_t *argv[] =
 	{
-		L"UnitTestsApp.WinRT.Windows",
-		const_cast<wchar_t *> (outFilePath.c_str()),
+		const_cast<wchar_t *> (appExePath->Data()),
 		nullptr
 	};
 
@@ -121,7 +126,12 @@ void App::OnLaunched(Windows::ApplicationModel::Activation::LaunchActivatedEvent
 		Window::Current->Activate();
 	}
 
-	RUN_ALL_TESTS();
+	std::thread gTestRun([](){
+		RUN_ALL_TESTS();
+		fflush(stdout);
+	});
+
+	gTestRun.detach();
 }
 
 /// <summary>

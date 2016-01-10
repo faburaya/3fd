@@ -100,7 +100,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>ENABLE_3FD_CST;TESTING;WIN32;_SCL_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions);%(PreprocessorDefinitions);%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ENABLE_3FD_CST;TESTING;WIN32;_SCL_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(SolutionDir)3FD;$(SolutionDir)gtest\include;$(SolutionDir)btree;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4290;4482</DisableSpecificWarnings>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>

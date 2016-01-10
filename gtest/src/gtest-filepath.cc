@@ -205,7 +205,7 @@ bool FilePath::FileOrDirectoryExists() const {
 #if GTEST_OS_WINDOWS_MOBILE
   LPCWSTR unicode = String::AnsiToUtf16(pathname_.c_str());
   WIN32_FILE_ATTRIBUTE_DATA attributes;
-  GetFileAttributesEx(unicode, GetFileExInfoStandard, &attributes);
+  GetFileAttributesExW(unicode, GetFileExInfoStandard, &attributes);
   delete [] unicode;
   return attributes.dwFileAttributes != kInvalidFileAttributes;
 #else
@@ -230,7 +230,7 @@ bool FilePath::DirectoryExists() const {
 #if GTEST_OS_WINDOWS_MOBILE
   LPCWSTR unicode = String::AnsiToUtf16(path.c_str());
   WIN32_FILE_ATTRIBUTE_DATA attributes;
-  GetFileAttributesEx(unicode, GetFileExInfoStandard, &attributes);
+  GetFileAttributesExW(unicode, GetFileExInfoStandard, &attributes);
   delete [] unicode;
   if ((attributes.dwFileAttributes != kInvalidFileAttributes) &&
 	  (attributes.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
@@ -323,7 +323,7 @@ bool FilePath::CreateFolder() const {
 #if GTEST_OS_WINDOWS_MOBILE
   FilePath removed_sep(this->RemoveTrailingPathSeparator());
   LPCWSTR unicode = String::AnsiToUtf16(removed_sep.c_str());
-  int result = CreateDirectory(unicode, NULL) ? 0 : -1;
+  int result = CreateDirectoryW(unicode, NULL) ? 0 : -1;
   delete [] unicode;
 #elif GTEST_OS_WINDOWS
   int result = _mkdir(pathname_.c_str());

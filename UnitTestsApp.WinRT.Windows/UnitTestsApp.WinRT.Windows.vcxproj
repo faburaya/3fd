@@ -90,7 +90,7 @@
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>4453;28204</DisableSpecificWarnings>
       <AdditionalIncludeDirectories>$(ProjectDir);$(GeneratedFilesDir);$(IntDir);$(SolutionDir)3FD;$(SolutionDir)3FD.WinRT\3FD.WinRT.Shared;$(SolutionDir)gtest\include;$(SolutionDir)btree;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>ENABLE_3FD_ERR_IMPL_DETAILS;ENABLE_3FD_CST;TESTING;_SCL_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ENABLE_3FD_ERR_IMPL_DETAILS;ENABLE_3FD_CST;TESTING;_SCL_SECURE_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
     </ClCompile>
     <PostBuildEvent>
@@ -103,7 +103,7 @@
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>4453;28204</DisableSpecificWarnings>
       <AdditionalIncludeDirectories>$(ProjectDir);$(GeneratedFilesDir);$(IntDir);$(SolutionDir)3FD;$(SolutionDir)3FD.WinRT\3FD.WinRT.Shared;$(SolutionDir)gtest\include;$(SolutionDir)btree;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>ENABLE_3FD_ERR_IMPL_DETAILS;ENABLE_3FD_CST;TESTING;_SCL_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ENABLE_3FD_ERR_IMPL_DETAILS;ENABLE_3FD_CST;TESTING;_SCL_SECURE_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
     </ClCompile>
     <PostBuildEvent>
@@ -116,7 +116,7 @@
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>4453;28204</DisableSpecificWarnings>
       <AdditionalIncludeDirectories>$(ProjectDir);$(GeneratedFilesDir);$(IntDir);$(SolutionDir)3FD;$(SolutionDir)3FD.WinRT\3FD.WinRT.Shared;$(SolutionDir)gtest\include;$(SolutionDir)btree;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>ENABLE_3FD_ERR_IMPL_DETAILS;ENABLE_3FD_CST;TESTING;_SCL_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ENABLE_3FD_ERR_IMPL_DETAILS;ENABLE_3FD_CST;TESTING;_SCL_SECURE_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
     </ClCompile>
     <PostBuildEvent>
@@ -129,7 +129,7 @@
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>4453;28204</DisableSpecificWarnings>
       <AdditionalIncludeDirectories>$(ProjectDir);$(GeneratedFilesDir);$(IntDir);$(SolutionDir)3FD;$(SolutionDir)3FD.WinRT\3FD.WinRT.Shared;$(SolutionDir)gtest\include;$(SolutionDir)btree;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>ENABLE_3FD_ERR_IMPL_DETAILS;ENABLE_3FD_CST;TESTING;_SCL_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ENABLE_3FD_ERR_IMPL_DETAILS;ENABLE_3FD_CST;TESTING;_SCL_SECURE_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
     </ClCompile>
     <PostBuildEvent>
