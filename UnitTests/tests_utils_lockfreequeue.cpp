@@ -1,10 +1,14 @@
 #include "stdafx.h"
 #include "utils_lockfreequeue.h"
+#include "preprocessing.h"
 
 #include <vector>
 #include <thread>
-#include <iostream>
 #include <cassert>
+
+#ifdef _3FD_CONSOLE_AVAILABLE
+#	include <iostream>
+#endif
 
 namespace _3fd
 {
@@ -12,6 +16,7 @@ namespace _3fd
 	{
 		void PrintProgressBar(double fraction)
 		{
+#ifdef _3FD_CONSOLE_AVAILABLE
 			assert(fraction <= 1.0);
 
 			// Amount of symbols = inside the progress bar
@@ -25,7 +30,7 @@ namespace _3fd
 				return;
 			else
 				done = update;
-			
+
 			// Print the progress bar:
 
 			std::cout << "\rProgress: [";
@@ -41,6 +46,7 @@ namespace _3fd
 
 			if (fraction == 1.0)
 				std::cout << std::endl;
+#endif
 		}
 
 		/// <summary>

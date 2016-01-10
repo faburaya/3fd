@@ -34,9 +34,6 @@
     <Filter Include="MORE\SQLite3">
       <UniqueIdentifier>{395999a4-24a7-4dfe-9a52-6bf9eb87e510}</UniqueIdentifier>
     </Filter>
-    <Filter Include="MORE\Visual C++">
-      <UniqueIdentifier>{9dd1a655-8f07-4b3d-807f-d5f7640be150}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\OpenCL">
       <UniqueIdentifier>{ccc3c52c-aff6-436c-8adf-78d07d1a852a}</UniqueIdentifier>
     </Filter>
@@ -63,6 +60,9 @@
     </Filter>
     <Filter Include="Header Files\WWS">
       <UniqueIdentifier>{3857e457-1807-4bcd-95a3-3016a2106228}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="MORE\pch">
+      <UniqueIdentifier>{9dd1a655-8f07-4b3d-807f-d5f7640be150}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -117,10 +117,10 @@
       <Filter>Header Files\core</Filter>
     </ClInclude>
     <ClInclude Include="targetver.h">
-      <Filter>MORE\Visual C++</Filter>
+      <Filter>MORE\pch</Filter>
     </ClInclude>
     <ClInclude Include="stdafx.h">
-      <Filter>MORE\Visual C++</Filter>
+      <Filter>MORE\pch</Filter>
     </ClInclude>
     <ClInclude Include="preprocessing.h">
       <Filter>Header Files\core</Filter>
@@ -206,7 +206,7 @@
       <Filter>Source Files\ISAM</Filter>
     </ClCompile>
     <ClCompile Include="stdafx.cpp">
-      <Filter>MORE\Visual C++</Filter>
+      <Filter>MORE\pch</Filter>
     </ClCompile>
     <ClCompile Include="isam_impl_cursor.cpp">
       <Filter>Source Files\ISAM</Filter>

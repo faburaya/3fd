@@ -226,6 +226,11 @@
     (__GNUC__*10000 + __GNUC_MINOR__*100 + __GNUC_PATCHLEVEL__)
 #endif  // __GNUC__
 
+// Visual Studio:
+#ifdef _MSC_VER
+# include <winapifamily.h>
+#endif
+
 // Determines the platform on which Google Test is compiled.
 #ifdef __CYGWIN__
 # define GTEST_OS_CYGWIN 1

@@ -47,12 +47,14 @@ namespace _3fd
 
 			void ShowContent()
 			{
+#ifdef _3FD_CONSOLE_AVAILABLE
 				std::cout << "Content of the object " << this << ": ";
 
 				for (int index = 0; index < m_integers.size(); ++index)
 					std::cout << m_integers[index] << " ";
 
 				std::cout << '\n';
+#endif
 			}
 		};
 

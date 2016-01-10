@@ -26,10 +26,10 @@
       <Filter>core</Filter>
     </ClInclude>
     <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\stdafx.h">
-      <Filter>VS</Filter>
+      <Filter>pch</Filter>
     </ClInclude>
     <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\targetver.h">
-      <Filter>VS</Filter>
+      <Filter>pch</Filter>
     </ClInclude>
     <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\sqlite3.h">
       <Filter>SQLite\SQLite3</Filter>
@@ -94,7 +94,7 @@
       <Filter>core</Filter>
     </ClCompile>
     <ClCompile Include="$(MSBuildThisFileDirectory)..\..\3FD\stdafx.cpp">
-      <Filter>VS</Filter>
+      <Filter>pch</Filter>
     </ClCompile>
     <ClCompile Include="$(MSBuildThisFileDirectory)..\..\3FD\sqlite3.c">
       <Filter>SQLite\SQLite3</Filter>
@@ -155,9 +155,6 @@
     <Filter Include="core">
       <UniqueIdentifier>{cb4543ca-3686-4f43-af80-4deaa88f416d}</UniqueIdentifier>
     </Filter>
-    <Filter Include="VS">
-      <UniqueIdentifier>{0f1f3f48-c08f-4417-84fa-201f33b43f1f}</UniqueIdentifier>
-    </Filter>
     <Filter Include="SQLite">
       <UniqueIdentifier>{1315d311-f876-447e-bc69-6e1df5fc46b5}</UniqueIdentifier>
     </Filter>
@@ -169,6 +166,9 @@
     </Filter>
     <Filter Include="GC">
       <UniqueIdentifier>{856acd8a-ade3-4325-b172-1fa27b608c83}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="pch">
+      <UniqueIdentifier>{0f1f3f48-c08f-4417-84fa-201f33b43f1f}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

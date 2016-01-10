@@ -10,6 +10,7 @@
 #		include <winapifamily.h>
 
 #		if WINAPI_FAMILY == WINAPI_FAMILY_DESKTOP_APP // Windows Desktop App:
+
 #			ifdef TESTING // Test application:
 #				include "targetver.h"
 #				include <stdio.h>
@@ -23,15 +24,12 @@
 #			endif
 
 #		else // Windows Store Apps:
+
 #			ifdef TESTING // Test application:
-#				include "targetver.h"
-#				include "CppUnitTest.h" // Headers for CppUnitTest
-#				define MSVC_CPPUNIT
-#				define TEST(TEST_CASE, TEST_NAME)	TEST_METHOD(TEST_NAME)
-#				define EXPECT_EQ(EXPECTED, ACTUAL)	Microsoft::VisualStudio::CppUnitTestFramework::Assert::IsTrue((EXPECTED) == (ACTUAL));
-#				define EXPECT_NE(EXPECTED, ACTUAL)	Microsoft::VisualStudio::CppUnitTestFramework::Assert::IsFalse((EXPECTED) == (ACTUAL));
-#				define EXPECT_TRUE(EXPR)	Microsoft::VisualStudio::CppUnitTestFramework::Assert::IsTrue((EXPR));
-#				define EXPECT_FALSE(EXPR)	Microsoft::VisualStudio::CppUnitTestFramework::Assert::IsFalse((EXPR));
+#				include <collection.h>
+#				include <ppltasks.h>
+#				include <gtest/gtest.h>
+#				include "App.xaml.h"
 
 #			else // Static library:
 #				include "targetver.h"
@@ -40,6 +38,7 @@
 #				endif
 #				include <windows.h>
 #			endif
+
 #		endif
 
 // TODO: reference additional headers your program requires here
