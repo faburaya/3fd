@@ -35,31 +35,6 @@ App::App()
 {
 	InitializeComponent();
 	Suspending += ref new SuspendingEventHandler(this, &App::OnSuspending);
-
-	using namespace Windows::Storage;
-
-	auto outputFile = _3fd::utils::WinRTExt::WaitForAsync(
-		ApplicationData::Current->LocalFolder
-			->CreateFileAsync(L"test-report.txt", CreationCollisionOption::OpenIfExists)
-	);
-	
-	// Replace standard output for a TXT file
-	_wfreopen(outputFile->Path->Data(), L"w", stdout);
-	
-	auto appExePath =
-		String::Concat(
-			ApplicationData::Current->LocalFolder->Path,
-			ref new String(L"\\UnitTestsApp.WinRT.Windows.exe")
-		);
-	
-	int argc(1);
-	wchar_t *argv[] =
-	{
-		const_cast<wchar_t *> (appExePath->Data()),
-		nullptr
-	};
-
-	testing::InitGoogleTest(&argc, argv);
 }
 
 /// <summary>
@@ -126,9 +101,42 @@ void App::OnLaunched(Windows::ApplicationModel::Activation::LaunchActivatedEvent
 		Window::Current->Activate();
 	}
 
-	std::thread gTestRun([](){
+	std::thread gTestRun([]()
+	{
+		using namespace Windows::Storage;
+
+		auto stdOutFile = _3fd::utils::WinRTExt::WaitForAsync(
+			ApplicationData::Current->LocalFolder
+				->CreateFileAsync(L"test-report.txt", CreationCollisionOption::OpenIfExists)
+		);
+
+		auto stdErrFile = _3fd::utils::WinRTExt::WaitForAsync(
+			ApplicationData::Current->LocalFolder
+				->CreateFileAsync(L"gtest-errors.txt", CreationCollisionOption::OpenIfExists)
+		);
+
+		// Replace standard output & error for TXT files:
+		_wfreopen(stdOutFile->Path->Data(), L"w", stdout);
+		_wfreopen(stdErrFile->Path->Data(), L"w", stderr);
+
+		auto appExePath =
+			String::Concat(
+				ApplicationData::Current->LocalFolder->Path,
+				ref new String(L"\\UnitTestsApp.WinRT.Windows.exe")
+			);
+
+		int argc(1);
+		wchar_t *argv[] =
+		{
+			const_cast<wchar_t *> (appExePath->Data()),
+			nullptr
+		};
+
+		testing::InitGoogleTest(&argc, argv);
 		RUN_ALL_TESTS();
+
 		fflush(stdout);
+		fflush(stderr);
 	});
 
 	gTestRun.detach();
