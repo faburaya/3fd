@@ -8,5 +8,17 @@
     mc:Ignorable="d">
 
     <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <ProgressRing Name="waitingRing" Visibility="Collapsed"></ProgressRing>
+
+        <TextBlock Name="mainTextBlock" Grid.Row="0"></TextBlock>
+        
+        <StackPanel Orientation="Horizontal" Grid.Row="1" HorizontalAlignment="Right">
+            <Button Name="runButton" Click="OnClickRunButton">Run</Button>
+        </StackPanel>
     </Grid>
 </Page>
