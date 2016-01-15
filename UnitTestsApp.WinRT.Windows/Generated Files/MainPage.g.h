@@ -8,6 +8,17 @@
 //     the code is regenerated.
 //------------------------------------------------------------------------------
 
+namespace Windows {
+    namespace UI {
+        namespace Xaml {
+            namespace Controls {
+                ref class ProgressRing;
+                ref class TextBlock;
+                ref class Button;
+            }
+        }
+    }
+}
 
 namespace UnitTestsApp_WinRT_Windows
 {
@@ -21,6 +32,9 @@ namespace UnitTestsApp_WinRT_Windows
     private:
         bool _contentLoaded;
     
+        private: ::Windows::UI::Xaml::Controls::ProgressRing^ waitingRing;
+        private: ::Windows::UI::Xaml::Controls::TextBlock^ mainTextBlock;
+        private: ::Windows::UI::Xaml::Controls::Button^ runButton;
     };
 }
 

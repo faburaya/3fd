@@ -5,9 +5,6 @@
 
 #include "pch.h"
 #include "MainPage.xaml.h"
-#include "utils_winrt.h"
-#include <thread>
-#include <cstdio>
 
 using namespace UnitTestsApp_WinRT_Windows;
 
@@ -100,46 +97,6 @@ void App::OnLaunched(Windows::ApplicationModel::Activation::LaunchActivatedEvent
 		// Ensure the current window is active
 		Window::Current->Activate();
 	}
-
-	std::thread gTestRun([]()
-	{
-		using namespace Windows::Storage;
-
-		auto stdOutFile = _3fd::utils::WinRTExt::WaitForAsync(
-			ApplicationData::Current->LocalFolder
-				->CreateFileAsync(L"test-report.txt", CreationCollisionOption::OpenIfExists)
-		);
-
-		auto stdErrFile = _3fd::utils::WinRTExt::WaitForAsync(
-			ApplicationData::Current->LocalFolder
-				->CreateFileAsync(L"gtest-errors.txt", CreationCollisionOption::OpenIfExists)
-		);
-
-		// Replace standard output & error for TXT files:
-		_wfreopen(stdOutFile->Path->Data(), L"w", stdout);
-		_wfreopen(stdErrFile->Path->Data(), L"w", stderr);
-
-		auto appExePath =
-			String::Concat(
-				ApplicationData::Current->LocalFolder->Path,
-				ref new String(L"\\UnitTestsApp.WinRT.Windows.exe")
-			);
-
-		int argc(1);
-		wchar_t *argv[] =
-		{
-			const_cast<wchar_t *> (appExePath->Data()),
-			nullptr
-		};
-
-		testing::InitGoogleTest(&argc, argv);
-		RUN_ALL_TESTS();
-
-		fflush(stdout);
-		fflush(stderr);
-	});
-
-	gTestRun.detach();
 }
 
 /// <summary>

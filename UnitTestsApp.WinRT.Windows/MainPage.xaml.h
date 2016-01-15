@@ -15,7 +15,11 @@ namespace UnitTestsApp_WinRT_Windows
 	public ref class MainPage sealed
 	{
 	public:
+
 		MainPage();
 
+	private:
+
+		void OnClickRunButton(Platform::Object ^sender, Windows::UI::Xaml::RoutedEventArgs ^evArgs);
 	};
 }

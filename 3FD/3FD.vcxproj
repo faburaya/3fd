@@ -107,6 +107,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <IncludePath>$(BOOST_HOME);$(POCO_ROOT)\Foundation\include;$(POCO_ROOT)\XML\include;$(POCO_ROOT)\Util\include;C:\Program Files (x86)\Visual Leak Detector\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(BOOST_HOME)\stage\lib\x64;$(LibraryPath)</LibraryPath>
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>$(BOOST_HOME);$(POCO_ROOT)\Foundation\include;$(POCO_ROOT)\XML\include;$(POCO_ROOT)\Util\include;C:\Program Files (x86)\Visual Leak Detector\include;$(IncludePath)</IncludePath>
@@ -119,6 +121,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <IncludePath>$(BOOST_HOME);$(POCO_ROOT)\Foundation\include;$(POCO_ROOT)\XML\include;$(POCO_ROOT)\Util\include;C:\Program Files (x86)\Visual Leak Detector\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(BOOST_HOME)\stage\lib\x64;$(LibraryPath)</LibraryPath>
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>

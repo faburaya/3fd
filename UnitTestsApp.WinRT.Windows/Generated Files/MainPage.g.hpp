@@ -22,10 +22,23 @@ void ::UnitTestsApp_WinRT_Windows::MainPage::InitializeComponent()
     // Call LoadComponent on ms-appx:///MainPage.xaml
     ::Windows::UI::Xaml::Application::LoadComponent(this, ref new ::Windows::Foundation::Uri(L"ms-appx:///MainPage.xaml"), ::Windows::UI::Xaml::Controls::Primitives::ComponentResourceLocation::Application);
 
+    // Get the ProgressRing named 'waitingRing'
+    waitingRing = safe_cast<::Windows::UI::Xaml::Controls::ProgressRing^>(static_cast<Windows::UI::Xaml::IFrameworkElement^>(this)->FindName(L"waitingRing"));
+    // Get the TextBlock named 'mainTextBlock'
+    mainTextBlock = safe_cast<::Windows::UI::Xaml::Controls::TextBlock^>(static_cast<Windows::UI::Xaml::IFrameworkElement^>(this)->FindName(L"mainTextBlock"));
+    // Get the Button named 'runButton'
+    runButton = safe_cast<::Windows::UI::Xaml::Controls::Button^>(static_cast<Windows::UI::Xaml::IFrameworkElement^>(this)->FindName(L"runButton"));
 }
 
 void ::UnitTestsApp_WinRT_Windows::MainPage::Connect(int connectionId, Platform::Object^ target)
 {
+    switch (connectionId)
+    {
+    case 1:
+        (safe_cast<::Windows::UI::Xaml::Controls::Primitives::ButtonBase^>(target))->Click +=
+            ref new ::Windows::UI::Xaml::RoutedEventHandler(this, (void (::UnitTestsApp_WinRT_Windows::MainPage::*)(Platform::Object^, Windows::UI::Xaml::RoutedEventArgs^))&MainPage::OnClickRunButton);
+        break;
+    }
     (void)connectionId; // Unused parameter
     (void)target; // Unused parameter
     _contentLoaded = true;
