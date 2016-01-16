@@ -131,7 +131,10 @@ namespace _3fd
 			auto asyncOperReadLogToBuffer = FileIO::ReadBufferAsync(txtLogFile);
 
 			// Create a new log file:
-			txtLogFile = utils::WinRTExt::WaitForAsync(ApplicationData::Current->LocalFolder->CreateFileAsync(currLogFileName));
+			txtLogFile = utils::WinRTExt::WaitForAsync(
+				ApplicationData::Current->LocalFolder->CreateFileAsync(currLogFileName)
+			);
+
 			OpenTextLogStream(txtLogFile->Path, ofs);
 
 			// Await for completion of reading operation:

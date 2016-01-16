@@ -118,7 +118,7 @@ namespace _3fd
 			catch (std::exception &ex)
 			{
 				std::ostringstream oss;
-				oss << "Generic failures when getting the file name of the framework configuration file: " << ex.what();
+				oss << "Generic failures when determining the file name of the framework configuration file: " << ex.what();
 				throw AppException<std::runtime_error>(oss.str());
 			}
 
@@ -136,18 +136,18 @@ namespace _3fd
 		/// <returns>A text ID (UTF-8 encoded) for the running application.</returns>
 		static string CallSysForApplicationId(Platform::String ^&appFilePath)
 		{
-			auto curPackageIdName = Windows::ApplicationModel::Package::Current->Id->Name;
+			auto curPackageId = Windows::ApplicationModel::Package::Current->Id->Name;
 
 			try
 			{
-				appFilePath = curPackageIdName + L".3fd.config";
+				appFilePath = curPackageId + Platform::StringReference(L".3fd.config");
 				std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
-				return converter.to_bytes(curPackageIdName->Data());
+				return converter.to_bytes(curPackageId->Data());
 			}
 			catch (std::exception &ex)
 			{
 				std::ostringstream oss;
-				oss << "Generic failure when getting the file name of the framework configuration file: " << ex.what();
+				oss << "Generic failure when determining the file name of the framework configuration file: " << ex.what();
 				throw AppException<std::runtime_error>(oss.str());
 			}
 		}

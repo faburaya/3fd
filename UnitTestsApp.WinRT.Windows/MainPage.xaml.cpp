@@ -32,7 +32,7 @@ MainPage::MainPage()
 
 void MainPage::OnClickRunButton(Object ^sender, RoutedEventArgs ^evArgs)
 {
-	mainTextBlock->Text = "";
+	mainTextBlock->Text = L"";
 	runButton->IsEnabled = false;
 	waitingRing->Visibility = Windows::UI::Xaml::Visibility::Visible;
 	waitingRing->IsActive = true;
