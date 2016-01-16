@@ -84,37 +84,91 @@ namespace _3fd
 		////////////////////////////////////
 
 		/// <summary>
-		/// Waits for an asynchronous WinRT actions.
+		/// Determines whether the current thread is the application main STA thread.
+		/// </summary>
+		/// <returns>
+		/// <c>true</c> if the current thread is the application main STA thread or if information
+		/// regarding the thread apartment could not be retrieved, otherwise, <c>false</c>.
+		/// </returns>
+		bool WinRTExt::IsCurrentThreadASTA()
+		{
+			APTTYPE aptType;
+			APTTYPEQUALIFIER aptTypeQualifier;
+
+			auto hres = CoGetApartmentType(&aptType, &aptTypeQualifier);
+
+			_ASSERTE(hres != E_INVALIDARG);
+
+			if (hres != S_OK)
+			{
+				std::ostringstream oss;
+				oss << "COM API error: could not get apartment information from current thread"
+					   " - CoGetApartmentType returned "
+					<< core::WWAPI::GetHResultLabel(hres);
+
+				throw core::AppException<std::runtime_error>(oss.str());
+			}
+
+			return (aptType == APTTYPE_STA || aptType == APTTYPE_MAINSTA);
+		}
+
+		// Translates a WinRT exception to a framework exception
+		core::AppException<std::runtime_error> WinRTExt::TranslateAsyncWinRTEx(Platform::Exception ^ex)
+		{
+			std::ostringstream oss;
+			oss << "Windows Runtime asynchronous call reported an error: "
+				<< core::WWAPI::GetDetailsFromWinRTEx(ex);
+
+			return core::AppException<std::runtime_error>(oss.str());
+		}
+
+		/// <summary>
+		/// Waits for an asynchronous WinRT action in the application UI STA thread.
 		/// </summary>
 		/// <param name="asyncAction">The asynchronous WinRT action to wait for.</param>
-		void WinRTExt::WaitForAsync(Windows::Foundation::IAsyncAction ^asyncAction)
+		void WinRTExt::WaitForAsync(IAsyncAction ^asyncAction)
 		{
 			try
 			{
+				/* If callback is completed, just exit. If callback execution
+				is not finished, awaiting for completion is allowed as long as
+				the current thread is not in app UI STA: */
+				if (asyncAction->Status != AsyncStatus::Started || !IsCurrentThreadASTA())
+				{
+					try
+					{
+						return concurrency::create_task(asyncAction).get();
+					}
+					catch (Platform::Exception ^ex)
+					{
+						throw TranslateAsyncWinRTEx(ex);
+					}
+				}
+
+				/* Otherwise, await for completion the way done below, which is the easiest
+				that works in the app UI STA thread, and transports any eventual exception: */
+
 				std::promise<void> resultPromise;
 				auto resultFuture = resultPromise.get_future();
 
 				// Set delegate for completion event:
-				asyncAction->Completed = ref new Windows::Foundation::AsyncActionCompletedHandler(
+				asyncAction->Completed = ref new AsyncActionCompletedHandler(
 					// Handler for completion:
-					[&resultPromise](decltype(asyncAction) action, Windows::Foundation::AsyncStatus status)
-				{
-					try
+					[&resultPromise](decltype(asyncAction) action, AsyncStatus status)
 					{
-						// Get result and fulfill the promise:
-						action->GetResults();
-						action->Close();
-						resultPromise.set_value();
+						try
+						{
+							// Get result and fulfill the promise:
+							action->GetResults();
+							action->Close();
+							resultPromise.set_value();
+						}
+						catch (Platform::Exception ^ex) // transport exception:
+						{
+							auto appEx = std::make_exception_ptr(TranslateAsyncWinRTEx(ex));
+							resultPromise.set_exception(appEx);
+						}
 					}
-					catch (Platform::Exception ^ex) // transport exception:
-					{
-						action->Close();
-						std::ostringstream oss;
-						oss << "A Windows Runtime asynchronous action has failed: " << core::WWAPI::GetDetailsFromWinRTEx(ex);
-						auto appEx = std::make_exception_ptr(core::AppException<std::runtime_error>(oss.str()));
-						resultPromise.set_exception(appEx);
-					}
-				}
 				);
 
 				resultFuture.get(); // waits for completion and throws any transported exception
@@ -126,7 +180,9 @@ namespace _3fd
 			catch (std::future_error &ex)
 			{
 				std::ostringstream oss;
-				oss << "Failed to wait for WinRT asynchronous action: " << core::StdLibExt::GetDetailsFromFutureError(ex);
+				oss << "Failed to wait for WinRT asynchronous action: "
+					<< core::StdLibExt::GetDetailsFromFutureError(ex);
+
 				throw core::AppException<std::runtime_error>(oss.str());
 			}
 			catch (std::exception &ex)
@@ -138,7 +194,9 @@ namespace _3fd
 			catch (Platform::Exception ^ex)
 			{
 				std::ostringstream oss;
-				oss << "Generic failure when preparing to wait for Windows Runtime asynchronous action: " << core::WWAPI::GetDetailsFromWinRTEx(ex);
+				oss << "Generic failure when preparing to wait for Windows Runtime asynchronous action: "
+					<< core::WWAPI::GetDetailsFromWinRTEx(ex);
+
 				throw core::AppException<std::runtime_error>(oss.str());
 			}
 		}

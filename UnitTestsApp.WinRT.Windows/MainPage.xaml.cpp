@@ -58,10 +58,10 @@ void MainPage::OnClickRunButton(Object ^sender, RoutedEventArgs ^evArgs)
 		_wfreopen(stdErrFile->Path->Data(), L"w", stderr);
 
 		auto appExePath =
-			String::Concat(
-				ApplicationData::Current->LocalFolder->Path,
-				ref new String(L"\\UnitTestsApp.WinRT.Windows.exe")
-			);
+			Windows::ApplicationModel::Package::Current->InstalledLocation->Path
+			+ StringReference(L"\\")
+			+ Windows::ApplicationModel::Package::Current->DisplayName
+			+ StringReference(L".exe");
 
 		int argc(1);
 		wchar_t *argv[] =
@@ -106,7 +106,7 @@ void MainPage::OnClickRunButton(Object ^sender, RoutedEventArgs ^evArgs)
 			std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
 			std::wostringstream woss;
 			woss << L"Windows Runtime exception: "
-				<< transcoder.from_bytes(_3fd::core::WWAPI::GetDetailsFromWinRTEx(ex));
+				 << transcoder.from_bytes(_3fd::core::WWAPI::GetDetailsFromWinRTEx(ex));
 
 			mainTextBlock->Text = ref new String(woss.str().c_str());
 		}

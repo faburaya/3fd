@@ -63,7 +63,10 @@ namespace _3fd
 		{
 			std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
 			std::ostringstream oss;
-			oss << "HRESULT error code = 0x" << std::hex << ex->HResult << ", " << transcoder.to_bytes(ex->Message->Data()) << std::flush;
+			oss << "HRESULT error code = 0x" << std::hex << ex->HResult
+				<< " - " << transcoder.to_bytes(ex->Message->Data())
+				<< std::flush;
+
 			return oss.str();
 		}
 #	endif

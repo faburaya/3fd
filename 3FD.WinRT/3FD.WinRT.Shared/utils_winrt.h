@@ -35,30 +35,57 @@ namespace _3fd
 			void unlock();
 		};
 
+		using namespace Windows::Foundation;
+
 		/// <summary>
 		/// Gathers WinRT API extensions that use C++/CX features.
 		/// </summary>
 		private ref struct WinRTExt
 		{
+		private:
+
+			static bool IsCurrentThreadASTA();
+
+			static core::AppException<std::runtime_error> TranslateAsyncWinRTEx(Platform::Exception ^ex);
+
 		internal:
 
 			/// <summary>
-			/// Waits for an asynchronous WinRT operation that supports progress information.
+			/// Awaits an asynchronous WinRT operation (in the app UI STA thread)
+			/// that supports progress information.
 			/// </summary>
 			/// <param name="asyncOp">The asynchronous WinRT operation to wait for.</param>
 			/// <returns>The result of the call.</returns>
 			template <typename ResultType, typename ProgressType>
-			static ResultType WaitForAsync(Windows::Foundation::IAsyncOperationWithProgress<ResultType, ProgressType> ^asyncOp)
+			static ResultType WaitForAsync(IAsyncOperationWithProgress<ResultType, ProgressType> ^asyncOp)
 			{
 				try
 				{
+					/* If callback is completed, just get the results. If callback execution
+					is not finished, awaiting for completion is allowed as long as the current
+					thread is not in app UI STA: */
+					if (asyncOp->Status != AsyncStatus::Started || !IsCurrentThreadASTA())
+					{
+						try
+						{
+							return concurrency::create_task(asyncOp).get();
+						}
+						catch (Platform::Exception ^ex)
+						{
+							throw TranslateAsyncWinRTEx(ex);
+						}
+					}
+
+					/* Otherwise, await for completion the way done below, which is the easiest
+					that works in the app UI STA thread, and transports any eventual exception: */
+
 					std::promise<ResultType> resultPromise;
 					auto resultFuture = resultPromise.get_future();
 
 					// Set delegate for completion event:
-					asyncOp->Completed = ref new Windows::Foundation::AsyncOperationWithProgressCompletedHandler<ResultType, ProgressType>(
+					asyncOp->Completed = ref new AsyncOperationWithProgressCompletedHandler<ResultType, ProgressType>(
 						// Handler for completion:
-						[&resultPromise](decltype(asyncOp) op, Windows::Foundation::AsyncStatus status)
+						[&resultPromise](decltype(asyncOp) op, AsyncStatus status)
 						{
 							try
 							{
@@ -67,10 +94,7 @@ namespace _3fd
 							}
 							catch (Platform::Exception ^ex) // transport exception:
 							{
-								op->Close();
-								std::ostringstream oss;
-								oss << "A Windows Runtime asynchronous call has failed: " << core::WWAPI::GetDetailsFromWinRTEx(ex);
-								auto appEx = std::make_exception_ptr(core::AppException<std::runtime_error>(oss.str()));
+								auto appEx = std::make_exception_ptr(TranslateAsyncWinRTEx(ex));
 								resultPromise.set_exception(appEx);
 							}
 						}
@@ -85,7 +109,9 @@ namespace _3fd
 				catch (std::future_error &ex)
 				{
 					std::ostringstream oss;
-					oss << "Failed to wait for WinRT asynchronous operation: " << core::StdLibExt::GetDetailsFromFutureError(ex);
+					oss << "Failed to wait for WinRT asynchronous operation: "
+						<< core::StdLibExt::GetDetailsFromFutureError(ex);
+
 					throw core::AppException<std::runtime_error>(oss.str());
 				}
 				catch (std::exception &ex)
@@ -97,7 +123,9 @@ namespace _3fd
 				catch (Platform::Exception ^ex)
 				{
 					std::ostringstream oss;
-					oss << "Generic failure when preparing to wait for Windows Runtime asynchronous operation: " << core::WWAPI::GetDetailsFromWinRTEx(ex);
+					oss << "Generic failure when preparing to wait for Windows Runtime asynchronous operation: "
+						<< core::WWAPI::GetDetailsFromWinRTEx(ex);
+
 					throw core::AppException<std::runtime_error>(oss.str());
 				}
 			}
@@ -112,13 +140,31 @@ namespace _3fd
 			{
 				try
 				{
+					/* If callback is completed, just get the results. If callback execution
+					is not finished, awaiting for completion is allowed as long as the current
+					thread is not in app UI STA: */
+					if (asyncOp->Status != AsyncStatus::Started || !IsCurrentThreadASTA())
+					{
+						try
+						{
+							return concurrency::create_task(asyncOp).get();
+						}
+						catch (Platform::Exception ^ex)
+						{
+							throw TranslateAsyncWinRTEx(ex);
+						}
+					}
+
+					/* Otherwise, await for completion the way done below, which is the easiest
+					that works in the app UI STA thread, and transports any eventual exception: */
+
 					std::promise<ResultType> resultPromise;
 					auto resultFuture = resultPromise.get_future();
 
 					// Set delegate for completion event:
-					asyncOp->Completed = ref new Windows::Foundation::AsyncOperationCompletedHandler<ResultType>(
+					asyncOp->Completed = ref new AsyncOperationCompletedHandler<ResultType>(
 						// Handler for completion:
-						[&resultPromise](decltype(asyncOp) op, Windows::Foundation::AsyncStatus status)
+						[&resultPromise](decltype(asyncOp) op, AsyncStatus status)
 						{
 							try
 							{
@@ -127,10 +173,7 @@ namespace _3fd
 							}
 							catch (Platform::Exception ^ex) // transport exception:
 							{
-								op->Close();
-								std::ostringstream oss;
-								oss << "A Windows Runtime asynchronous call has failed: " << core::WWAPI::GetDetailsFromWinRTEx(ex);
-								auto appEx = std::make_exception_ptr(core::AppException<std::runtime_error>(oss.str()));
+								auto appEx = std::make_exception_ptr(TranslateAsyncWinRTEx(ex));
 								resultPromise.set_exception(appEx);
 							}
 						}
@@ -145,7 +188,9 @@ namespace _3fd
 				catch (std::future_error &ex)
 				{
 					std::ostringstream oss;
-					oss << "Failed to wait for WinRT asynchronous operation: " << core::StdLibExt::GetDetailsFromFutureError(ex);
+					oss << "Failed to wait for WinRT asynchronous operation: "
+						<< core::StdLibExt::GetDetailsFromFutureError(ex);
+
 					throw core::AppException<std::runtime_error>(oss.str());
 				}
 				catch (std::exception &ex)
@@ -157,12 +202,14 @@ namespace _3fd
 				catch (Platform::Exception ^ex)
 				{
 					std::ostringstream oss;
-					oss << "Generic failure when preparing to wait for Windows Runtime asynchronous operation: " << core::WWAPI::GetDetailsFromWinRTEx(ex);
+					oss << "Generic failure when preparing to wait for Windows Runtime asynchronous operation: "
+						<< core::WWAPI::GetDetailsFromWinRTEx(ex);
+
 					throw core::AppException<std::runtime_error>(oss.str());
 				}
 			}
 
-			static void WaitForAsync(Windows::Foundation::IAsyncAction ^asyncAction);
+			static void WaitForAsync(IAsyncAction ^asyncAction);
 
 		};// end of WinRTExt class
 
