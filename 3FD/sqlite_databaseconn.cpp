@@ -36,7 +36,10 @@ namespace _3fd
 			if(status != SQLITE_OK)
 			{
 				ostringstream oss;
-				oss << "SQLite API error. 'sqlite3_open_v2' reported: " << sqlite3_errstr(status) << " - Database was " << dbFilePath;
+				oss << "SQLite API error code " << status
+					<< " - 'sqlite3_open_v2' reported: " << sqlite3_errstr(status)
+					<< " - Database was " << dbFilePath;
+
 				throw core::AppException<std::runtime_error>("Failed to open a connection to the database", oss.str());
 			}
 
@@ -45,18 +48,11 @@ namespace _3fd
 			if(status != SQLITE_OK)
 			{
 				ostringstream oss;
-				oss << "SQLite API error. 'sqlite3_extended_result_codes' reported: " << sqlite3_errstr(status) << " - Database was " << dbFilePath;
-				throw core::AppException<std::runtime_error>("Could not enable SQLite support for extended result codes", oss.str());
-			}
-		
-			// Enable foreign keys support and enforcements of their constraints:
-			status = sqlite3_exec(m_dbHandle, "PRAGMA foreign_keys=ON;", nullptr, nullptr, nullptr);
+				oss << "SQLite API error code " << status
+					<< " - 'sqlite3_extended_result_codes' reported: " << sqlite3_errstr(status)
+					<< " - Database was " << dbFilePath;
 
-			if(status != SQLITE_OK)
-			{
-				ostringstream oss;
-				oss << "SQLite API error. 'sqlite3_exec' reported: " << sqlite3_errstr(status) << " - Database was " << dbFilePath;
-				throw core::AppException<std::runtime_error>("Could not enable SQLite support for foreign keys", oss.str());
+				throw core::AppException<std::runtime_error>("Could not enable SQLite support for extended result codes", oss.str());
 			}
 		}
 		catch(core::IAppException &)

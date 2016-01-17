@@ -58,12 +58,17 @@ namespace _3fd
 				{
 					// Write in the log about the attempts:
 					ostringstream oss;
-					oss << "Failed to prepare SQLite statement after " << attempts << " attempt(s): " << sqlite3_errstr(status);
+					oss << "Failed to prepare SQLite statement after " << attempts
+						<< " attempt(s): " << sqlite3_errstr(status);
+
 					core::Logger::Write(oss.str(), core::Logger::PRIO_ERROR);
 					oss.str("");
 
 					// Then abort throwing an exception:
-					oss << "SQLite API error. 'sqlite3_prepare_v2' reported: " << sqlite3_errstr(status) << ". Query was {" << query << '}';
+					oss << "SQLite API error code " << status
+						<< " - 'sqlite3_prepare_v2' reported: " << sqlite3_errstr(status)
+						<< ". Query was {" << query << '}';
+
 					throw core::AppException<std::runtime_error>("Failed to prepare SQLite statement", oss.str());
 				}
 			}// loop: if lock failure, retry
@@ -183,7 +188,7 @@ namespace _3fd
 			{
 				CALL_STACK_TRACE;
 				ostringstream oss;
-				oss << "SQLite API 'sqlite3_bind_parameter_index' - The parameter \'" << paramName 
+				oss << "SQLite API: 'sqlite3_bind_parameter_index' - The parameter \'" << paramName 
 					<< "\' was not found int the query. Please check SQLite documentation. Query was {" << sqlite3_sql(stmtHandle) << '}';
 
 				throw core::AppException<std::runtime_error>("Could not find parameter in SQLite statement", oss.str());
@@ -207,7 +212,8 @@ namespace _3fd
 			{
 				CALL_STACK_TRACE;
 				ostringstream oss;
-				oss << "SQLite API error. 'sqlite3_bind_int' reported: " << sqlite3_errstr(status) 
+				oss << "SQLite API error code " << status
+					<< " - 'sqlite3_bind_int' reported: " << sqlite3_errstr(status) 
 					<< ". Parameter was \'" << paramName 
 					<< "\' and the query was {" << sqlite3_sql(m_stmtHandle) << '}';
 
@@ -229,7 +235,8 @@ namespace _3fd
 			{
 				CALL_STACK_TRACE;
 				ostringstream oss;
-				oss << "SQLite API error. 'sqlite3_bind_int64' reported: " << sqlite3_errstr(status) 
+				oss << "SQLite API error code " << status
+					<< " - 'sqlite3_bind_int64' reported: " << sqlite3_errstr(status)
 					<< ". Parameter was \'" << paramName 
 					<< "\' and the query was {" << sqlite3_sql(m_stmtHandle) << '}';
 
@@ -251,7 +258,8 @@ namespace _3fd
 			{
 				CALL_STACK_TRACE;
 				ostringstream oss;
-				oss << "SQLite API error. 'sqlite3_bind_double' reported: " << sqlite3_errstr(status) 
+				oss << "SQLite API error code " << status
+					<< " - 'sqlite3_bind_double' reported: " << sqlite3_errstr(status)
 					<< ". Parameter was \'" << paramName 
 					<< "\' and the query was {" << sqlite3_sql(m_stmtHandle) << '}';
 
@@ -275,7 +283,8 @@ namespace _3fd
 			{
 				CALL_STACK_TRACE;
 				ostringstream oss;
-				oss << "SQLite API error. 'sqlite3_bind_text' reported: " << sqlite3_errstr(status) 
+				oss << "SQLite API error code " << status
+					<< " - 'sqlite3_bind_text' reported: " << sqlite3_errstr(status)
 					<< ". Parameter was \'" << paramName 
 					<< "\' and the query was {" << sqlite3_sql(m_stmtHandle) << '}';
 
@@ -329,7 +338,8 @@ namespace _3fd
 			{
 				CALL_STACK_TRACE;
 				ostringstream oss;
-				oss << "SQLite API error. 'sqlite3_bind_blob' reported: " << sqlite3_errstr(status) 
+				oss << "SQLite API error code " << status
+					<< " - 'sqlite3_bind_blob' reported: " << sqlite3_errstr(status)
 					<< ". Parameter was \'" << paramName 
 					<< "\' and the query was {" << sqlite3_sql(m_stmtHandle) << '}';
 
@@ -348,7 +358,8 @@ namespace _3fd
 			{
 				CALL_STACK_TRACE;
 				ostringstream oss;
-				oss << "SQLite API error. 'sqlite3_clear_bindings' reported: " << sqlite3_errstr(status) 
+				oss << "SQLite API error code " << status
+					<< " - 'sqlite3_clear_bindings' reported: " << sqlite3_errstr(status)
 					<< ". Query was {" << sqlite3_sql(m_stmtHandle) << '}';
 
 				throw core::AppException<std::runtime_error>("Failed to clear parameter bindings from the SQLite statement", oss.str());
@@ -403,14 +414,17 @@ namespace _3fd
 					{
 						// Write in the log about the attempts:
 						ostringstream oss;
-						oss << "Failed to execute step of SQLite statement after " << attempts << " attempt(s): " << sqlite3_errstr(status);
+						oss << "Failed to execute step of SQLite statement after " << attempts
+							<< " attempt(s): " << sqlite3_errstr(status);
+
 						core::Logger::Write(oss.str(), core::Logger::PRIO_ERROR, true);
 
 						// Abort:
 						if (throwEx)
 						{
 							oss.str("");
-							oss << "SQLite API error. 'sqlite3_step' reported: " << sqlite3_errstr(status) 
+							oss << "SQLite API error code " << status
+								<< " - 'sqlite3_step' reported: " << sqlite3_errstr(status) 
 								<< ". Query was {" << sqlite3_sql(m_stmtHandle) << '}';
 
 							throw core::AppException<std::runtime_error>("Failed to execute step of SQLite statement", oss.str());
@@ -464,7 +478,8 @@ namespace _3fd
 				if (throwEx)
 				{
 					ostringstream oss;
-					oss << "SQLite API error. 'sqlite3_step' reported: " << sqlite3_errstr(status) 
+					oss << "SQLite API error code " << status
+						<< " - 'sqlite3_step' reported: " << sqlite3_errstr(status) 
 						<< ". Query was {" << sqlite3_sql(m_stmtHandle) << '}';
 
 					throw core::AppException<std::runtime_error>("Failed to execute step of SQLite statement", oss.str());

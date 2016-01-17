@@ -31,9 +31,6 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\targetver.h">
       <Filter>pch</Filter>
     </ClInclude>
-    <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\sqlite3.h">
-      <Filter>SQLite\SQLite3</Filter>
-    </ClInclude>
     <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\sqlite.h">
       <Filter>SQLite</Filter>
     </ClInclude>
@@ -73,6 +70,9 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\gc_vertex.h">
       <Filter>GC</Filter>
     </ClInclude>
+    <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\sqlite3.h">
+      <Filter>SQLite\sqlite3</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="$(MSBuildThisFileDirectory)..\..\3FD\callstacktracer.cpp">
@@ -95,9 +95,6 @@
     </ClCompile>
     <ClCompile Include="$(MSBuildThisFileDirectory)..\..\3FD\stdafx.cpp">
       <Filter>pch</Filter>
-    </ClCompile>
-    <ClCompile Include="$(MSBuildThisFileDirectory)..\..\3FD\sqlite3.c">
-      <Filter>SQLite\SQLite3</Filter>
     </ClCompile>
     <ClCompile Include="$(MSBuildThisFileDirectory)logger_winrt.cpp">
       <Filter>core</Filter>
@@ -150,6 +147,9 @@
     <ClCompile Include="$(MSBuildThisFileDirectory)..\..\3FD\gc_vertexstore.cpp">
       <Filter>GC</Filter>
     </ClCompile>
+    <ClCompile Include="$(MSBuildThisFileDirectory)..\..\3FD\sqlite3.c">
+      <Filter>SQLite\sqlite3</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="core">
@@ -157,9 +157,6 @@
     </Filter>
     <Filter Include="SQLite">
       <UniqueIdentifier>{1315d311-f876-447e-bc69-6e1df5fc46b5}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="SQLite\SQLite3">
-      <UniqueIdentifier>{94de4c02-75f7-44e1-9044-dbc76e30785d}</UniqueIdentifier>
     </Filter>
     <Filter Include="Utils">
       <UniqueIdentifier>{8f047188-10f4-423f-915b-5cfffa8e3dda}</UniqueIdentifier>
@@ -169,6 +166,9 @@
     </Filter>
     <Filter Include="pch">
       <UniqueIdentifier>{0f1f3f48-c08f-4417-84fa-201f33b43f1f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="SQLite\sqlite3">
+      <UniqueIdentifier>{47c8ec88-77a8-4f28-93bd-0b624ea9dd43}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

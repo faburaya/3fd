@@ -76,7 +76,10 @@ namespace _3fd
 				else // However, when it fails for any other reason:
 				{
 					ostringstream oss;
-					oss << "Failed to commit SQLite transaction after " << attempts << " attempt(s): " << sqlite3_errstr(status);
+					oss << "Failed to commit SQLite transaction after " << attempts
+						<< " attempt(s) with error code " << status
+						<< ": " << sqlite3_errstr(status);
+
 					core::Logger::Write(oss.str(), core::Logger::PRIO_ERROR, true);
 					return; // abort
 				}
@@ -115,7 +118,10 @@ namespace _3fd
 				else // However, when it fails for any other reason:
 				{
 					ostringstream oss;
-					oss << "Failed to rollback SQLite transaction after " << attempts << " attempt(s): " << sqlite3_errstr(status);
+					oss << "Failed to rollback SQLite transaction after " << attempts
+						<< " attempt(s) with error code " << status
+						<< ": " << sqlite3_errstr(status);
+
 					core::Logger::Write(oss.str(), core::Logger::PRIO_CRITICAL, true);
 					return; // abort
 				}
