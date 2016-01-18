@@ -1,8 +1,6 @@
 #include "stdafx.h"
 #include "isam_impl.h"
 #include "logger.h"
-#include <Poco\DateTime.h>
-#include <Poco\Timestamp.h>
 #include <cassert>
 #include <cmath>
 
@@ -21,7 +19,7 @@ namespace _3fd
 		/// <returns>Seconds since epoch.</returns>
 		time_t RecordReader::ConvertToEpoch(double daysSince1900)
 		{
-			static const time_t epoch1900 = Poco::DateTime(1900, 1, 1).timestamp().epochTime();
+			static const time_t epoch1900 = GetEpoch1900();
 			return static_cast<time_t> (floor(86400 * daysSince1900 + epoch1900 + 0.5));
 		}
 		

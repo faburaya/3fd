@@ -18,6 +18,23 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\3FD\isam_impl.cpp" />
+    <ClCompile Include="..\..\3FD\isam_impl_cursor.cpp" />
+    <ClCompile Include="..\..\3FD\isam_impl_database.cpp" />
+    <ClCompile Include="..\..\3FD\isam_impl_databaseconn.cpp" />
+    <ClCompile Include="..\..\3FD\isam_impl_errorhelper.cpp" />
+    <ClCompile Include="..\..\3FD\isam_impl_instance.cpp" />
+    <ClCompile Include="..\..\3FD\isam_impl_recordreader.cpp" />
+    <ClCompile Include="..\..\3FD\isam_impl_session.cpp" />
+    <ClCompile Include="..\..\3FD\isam_impl_table.cpp" />
+    <ClCompile Include="..\..\3FD\isam_impl_tablewriter.cpp" />
+    <ClCompile Include="..\..\3FD\isam_impl_transaction.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\3FD\isam.h" />
+    <ClInclude Include="..\..\3FD\isam_impl.h" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{ed6b839d-3ee6-46de-80dc-de2090a059c3}</ProjectGuid>
     <RootNamespace>_3FD_WinRT</RootNamespace>
@@ -108,6 +125,9 @@
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
       <GenerateWindowsMetadata>false</GenerateWindowsMetadata>
     </Link>
+    <Lib>
+      <AdditionalDependencies>esent.lib</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -127,6 +147,9 @@
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
       <GenerateWindowsMetadata>false</GenerateWindowsMetadata>
     </Link>
+    <Lib>
+      <AdditionalDependencies>esent.lib</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|arm'">
     <ClCompile>
@@ -184,6 +207,9 @@
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
       <GenerateWindowsMetadata>false</GenerateWindowsMetadata>
     </Link>
+    <Lib>
+      <AdditionalDependencies>esent.lib</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -203,6 +229,9 @@
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
       <GenerateWindowsMetadata>false</GenerateWindowsMetadata>
     </Link>
+    <Lib>
+      <AdditionalDependencies>esent.lib</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

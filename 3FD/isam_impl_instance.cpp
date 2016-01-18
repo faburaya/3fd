@@ -26,7 +26,7 @@ namespace _3fd
 			unsigned int minCachedPages,
 			unsigned int maxVerStorePages,
 			unsigned int logBufferSizeInSectors)
-			try :
+		try :
 			m_name(name),
 			m_jetInstance(NULL),
 			m_numMaxSessions(0)
@@ -58,7 +58,12 @@ namespace _3fd
 
 			// Create instance:
 			auto ucs2InstName = transcoder.from_bytes(name);
+
+#ifndef _3FD_PLATFORM_WINRT
 			auto rcode = JetCreateInstanceW(&m_jetInstance, ucs2InstName.c_str());
+#else
+			auto rcode = JetCreateInstance2W(&m_jetInstance, ucs2InstName.c_str(), ucs2InstName.c_str(), 0);
+#endif
 			ErrorHelper::HandleError(m_jetInstance, NULL, rcode, [&name]()
 			{
 				std::ostringstream oss;
@@ -131,7 +136,11 @@ namespace _3fd
 			});
 
 			// Initialize instance:
+#ifndef _3FD_PLATFORM_WINRT
 			rcode = JetInit(&m_jetInstance);
+#else
+			rcode = JetInit3W(&m_jetInstance, nullptr, 0);
+#endif
 			ErrorHelper::HandleError(m_jetInstance, NULL, rcode, [&name]()
 			{
 				std::ostringstream oss;
@@ -156,11 +165,16 @@ namespace _3fd
 			if (m_jetInstance != NULL)
 			{
 				CALL_STACK_TRACE;
+
+#ifndef _3FD_PLATFORM_WINRT
 				auto rcode = JetTerm(m_jetInstance);
+#else
+				auto rcode = JetTerm2(m_jetInstance, 0);
+#endif
 				ErrorHelper::LogError(m_jetInstance, NULL, rcode, [name]()
 				{
 					std::ostringstream oss;
-					oss << "Failed to finalize ISAM storage instance \'" << name 
+					oss << "Failed to finalize ISAM storage instance \'" << name
 						<< "\' after error during instantiation";
 					return oss.str();
 				}, core::Logger::PRIO_ERROR);
@@ -174,7 +188,11 @@ namespace _3fd
 
 			if (m_jetInstance != NULL)
 			{
+#ifndef _3FD_PLATFORM_WINRT
 				auto rcode = JetTerm(m_jetInstance);
+#else
+				auto rcode = JetTerm2(m_jetInstance, 0);
+#endif
 				ErrorHelper::LogError(m_jetInstance, NULL, rcode, [&name]()
 				{
 					std::ostringstream oss;
@@ -230,7 +248,12 @@ namespace _3fd
 			if (m_jetInstance != NULL) // if the object was not moved
 			{
 				CALL_STACK_TRACE;
+
+#ifndef _3FD_PLATFORM_WINRT
 				auto rcode = JetTerm(m_jetInstance);
+#else
+				auto rcode = JetTerm2(m_jetInstance, 0);
+#endif
 				ErrorHelper::LogError(m_jetInstance, NULL, rcode, [this]()
 				{
 					std::ostringstream oss;

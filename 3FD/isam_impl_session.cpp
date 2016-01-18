@@ -33,8 +33,11 @@ namespace _3fd
 		{
 			CALL_STACK_TRACE;
 
+#ifndef _3FD_PLATFORM_WINRT
 			auto rcode = JetAttachDatabaseW(m_jetSession, dbFileName.c_str(), 0);
-
+#else
+			auto rcode = JetAttachDatabase2W(m_jetSession, dbFileName.c_str(), 0, 0);
+#endif
 			if (throwNotFound == false && rcode == JET_errFileNotFound)
 				return STATUS_FAIL;
 
@@ -58,8 +61,11 @@ namespace _3fd
 		{
 			CALL_STACK_TRACE;
 
+#ifndef _3FD_PLATFORM_WINRT
 			auto rcode = JetDetachDatabaseW(m_jetSession, dbFileName.data());
-
+#else
+			auto rcode = JetDetachDatabase2W(m_jetSession, dbFileName.data(), 0);
+#endif
 			ErrorHelper::LogError(NULL, m_jetSession, rcode, [&dbFileName]()
 			{
 				std::ostringstream oss;
@@ -81,7 +87,7 @@ namespace _3fd
 			try
 			{
 				JET_DBID jetDatabaseId(NULL);
-				auto rcode = JetCreateDatabaseW(m_jetSession, dbFileName.c_str(), nullptr, &jetDatabaseId, 0);
+				auto rcode = JetCreateDatabase2W(m_jetSession, dbFileName.c_str(), 0, &jetDatabaseId, 0);
 
 				ErrorHelper::HandleError(NULL, m_jetSession, rcode, [&dbFileName]()
 				{
@@ -153,7 +159,11 @@ namespace _3fd
 
 			try
 			{
+#ifndef _3FD_PLATFORM_WINRT
 				auto rcode = JetBeginTransaction(m_jetSession);
+#else
+				auto rcode = JetBeginTransaction3(m_jetSession, 0, 0);
+#endif
 				ErrorHelper::HandleError(NULL, m_jetSession, rcode, "Failed to begin ISAM transaction");
 				return new TransactionImpl(m_jetSession);
 			}

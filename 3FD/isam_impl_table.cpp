@@ -335,7 +335,7 @@ namespace _3fd
 				std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
 				const auto ucs2tableName = transcoder.from_bytes(name);
 
-				auto rcode = JetDeleteColumnW(m_pimplDatabase->GetSessionHandle(), m_jetTable, ucs2tableName.c_str());
+				auto rcode = JetDeleteColumn2W(m_pimplDatabase->GetSessionHandle(), m_jetTable, ucs2tableName.c_str(), 0);
 
 				ErrorHelper::HandleError(NULL, m_pimplDatabase->GetSessionHandle(), rcode, [this, &name] ()
 				{
@@ -501,14 +501,20 @@ namespace _3fd
 
 			try
 			{
-				std::vector<JET_INDEXCREATE_W> jetIndexes;
+				std::vector<JET_INDEXCREATE_X> jetIndexes;
 				TranslateStructures(indexes, jetIndexes);
 
+#ifndef _3FD_PLATFORM_WINRT
 				auto rcode = JetCreateIndex2W(m_pimplDatabase->GetSessionHandle(), 
 											  m_jetTable, 
 											  jetIndexes.data(), 
 											  jetIndexes.size());
-
+#else
+				auto rcode = JetCreateIndex4W(m_pimplDatabase->GetSessionHandle(),
+											  m_jetTable,
+											  jetIndexes.data(),
+											  jetIndexes.size());
+#endif
 				if(rcode != JET_errSuccess) // Failed to create indexes:
 				{
 					// Log an error for each index that might have caused the error:

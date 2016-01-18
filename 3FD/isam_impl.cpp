@@ -1,7 +1,5 @@
 #include "stdafx.h"
 #include "isam_impl.h"
-#include <Poco\DateTime.h>
-#include <Poco\Timestamp.h>
 
 namespace _3fd
 {
@@ -83,6 +81,14 @@ namespace _3fd
 									 DataType::Text);
 		}
 
+		// Gets 1900-jan-01 00:00:00
+		time_t GetEpoch1900()
+		{
+			tm base1900 = {};
+			base1900.tm_mday = 1;
+			return mktime(&base1900);
+		}
+
 		/// <summary>
 		/// Makes a 'date time' input parameter from a <see cref="time_t" /> value.
 		/// </summary>
@@ -91,7 +97,7 @@ namespace _3fd
 		/// <returns>A <see cref="GenericInputParam" /> struct referring the given floating point value.</returns>
 		GenericInputParam AsInputParam(double &daysSince1900, time_t value)
 		{
-			static const time_t epoch1900 = Poco::DateTime(1900, 1, 1).timestamp().epochTime();
+			static const time_t epoch1900 = GetEpoch1900();
 			daysSince1900 = (value - epoch1900) / 86400.0;
 			return GenericInputParam(&daysSince1900, sizeof daysSince1900, DataType::DateTime);
 		}
@@ -115,7 +121,7 @@ namespace _3fd
 		/// <param name="indexes">An array of definitions for indexes.</param>
 		/// <param name="jetIndexes">An array of definitions for indexes, as understood by the ISAM implementation.</param>
 		void TranslateStructures(const std::vector<ITable::IndexDefinition> &indexes, 
-								 std::vector<JET_INDEXCREATE_W> &jetIndexes)
+								 std::vector<JET_INDEXCREATE_X> &jetIndexes)
 		{
 			jetIndexes.clear();
 			jetIndexes.reserve(indexes.size());
@@ -123,16 +129,18 @@ namespace _3fd
 			// Translate the indexes definitions into the ESENT API expected structures:
 			for(auto &idx : indexes)
 			{
-				JET_INDEXCREATE_W jetIdx = {};
+				JET_INDEXCREATE_X jetIdx = {};
 				jetIdx.cbStruct = sizeof jetIdx;
 				jetIdx.szIndexName = const_cast<wchar_t *> (idx.name.c_str());
 				jetIdx.szKey = const_cast<wchar_t *> (idx.keys.data());
 				jetIdx.cbKey = idx.keys.size() * sizeof(wchar_t);
 				jetIdx.ulDensity = 80;
-				jetIdx.lcid = 1033;
 				jetIdx.cbVarSegMac = 0;
 				jetIdx.grbit = JET_bitIndexCrossProduct;
 
+#ifndef _3FD_PLATFORM_WINRT
+				jetIdx.lcid = 1033;
+#endif
 				if(idx.primary)
 					jetIdx.grbit |= JET_bitIndexPrimary;
 

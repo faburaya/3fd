@@ -97,8 +97,13 @@ namespace _3fd
 				std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
 				const auto ucs2tableName = transcoder.from_bytes(name);
 
+#ifndef _3FD_PLATFORM_WINRT
+				typedef JET_TABLECREATE2_W JET_TABLECREATE_X;
+#else
+				typedef JET_TABLECREATE4_W JET_TABLECREATE_X;
+#endif
 				// Set the table specs:
-				JET_TABLECREATE2_W jetTable = {};
+				JET_TABLECREATE_X jetTable = {};
 				jetTable.cbStruct = sizeof jetTable;
 				jetTable.szTableName = const_cast<wchar_t *> (ucs2tableName.c_str());
 				jetTable.szTemplateTableName = nullptr;
@@ -181,14 +186,17 @@ namespace _3fd
 				jetTable.cColumns = jetColumns.size();
 
 				// Index definitions:
-				std::vector<JET_INDEXCREATE_W> jetIndexes;
+				std::vector<JET_INDEXCREATE_X> jetIndexes;
 				TranslateStructures(indexes, jetIndexes);
 				jetTable.rgindexcreate = jetIndexes.data();
 				jetTable.cIndexes = jetIndexes.size();
 
 				// Finally invoke API to create the table:
+#ifndef _3FD_PLATFORM_WINRT
 				auto rcode = JetCreateTableColumnIndex2W(m_jetSession, m_jetDatabase, &jetTable);
-
+#else
+				auto rcode = JetCreateTableColumnIndex4W(m_jetSession, m_jetDatabase, &jetTable);
+#endif
 				if (rcode != JET_errSuccess) // Failed to create the table:
 				{
 					// Log an error for each column that might have caused the error:
@@ -268,8 +276,13 @@ namespace _3fd
 				const auto ucs2tableName = transcoder.from_bytes(name);
 				const auto ucs2templateName = transcoder.from_bytes(templateName);
 
+#ifndef _3FD_PLATFORM_WINRT
+				typedef JET_TABLECREATE_W JET_TABLECREATE_X;
+#else
+				typedef JET_TABLECREATE4_W JET_TABLECREATE_X;
+#endif
 				// Set the table specs:
-				JET_TABLECREATE_W jetTable;
+				JET_TABLECREATE_X jetTable = {};
 				jetTable.cbStruct = sizeof jetTable;
 				jetTable.szTableName = const_cast<wchar_t *> (ucs2tableName.c_str());
 				jetTable.szTemplateTableName = const_cast<wchar_t *> (ucs2templateName.c_str());
@@ -282,8 +295,11 @@ namespace _3fd
 				jetTable.grbit = 0;
 
 				// Finally invoke API to create the table:
+#ifndef _3FD_PLATFORM_WINRT
 				auto rcode = JetCreateTableColumnIndexW(m_jetSession, m_jetDatabase, &jetTable);
-
+#else
+				auto rcode = JetCreateTableColumnIndex4W(m_jetSession, m_jetDatabase, &jetTable);
+#endif
 				ErrorHelper::HandleError(NULL, m_jetSession, rcode, [&name]()
 				{
 					std::ostringstream oss;

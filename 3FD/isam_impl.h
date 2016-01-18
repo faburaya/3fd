@@ -4,12 +4,14 @@
 #include "base.h"
 #include "isam.h"
 #include "logger.h"
-#include <Poco\Message.h>
+#include <ctime>
 
 namespace _3fd
 {
 	namespace isam
 	{
+		time_t GetEpoch1900();
+
 		class Session;
 
 		/// <summary>
@@ -314,9 +316,15 @@ namespace _3fd
 
 			const IndexMetadata &GetIndexMetadata(int indexCode) const;
 		};
-		
+
+#ifndef _3FD_PLATFORM_WINRT
+		typedef JET_INDEXCREATE_W JET_INDEXCREATE_X;
+#else
+		typedef JET_INDEXCREATE3_W JET_INDEXCREATE_X;
+#endif
+
 		void TranslateStructures(const std::vector<ITable::IndexDefinition> &indexes, 
-								 std::vector<JET_INDEXCREATE_W> &jetIndexes);
+								 std::vector<JET_INDEXCREATE_X> &jetIndexes);
 
 		/// <summary>
 		/// A wrapper for a table in the ISAM database.

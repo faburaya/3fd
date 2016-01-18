@@ -35,6 +35,9 @@
     <ClCompile Include="..\..\IntegrationTests\IntegrationTests.cpp">
       <Filter>Tests</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\IntegrationTests\tests_isam.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MainPage.xaml.h" />

@@ -85,7 +85,17 @@ namespace _3fd
 			int attempts(1);
 			JET_ERR rcode;
 
-			while((rcode = JetUpdate(m_pimplTableCursor.GetSessionHandle(), m_pimplTableCursor.GetCursorHandle(), nullptr, 0, nullptr)) != JET_errSuccess)
+			while(
+#ifndef _3FD_PLATFORM_WINRT
+				(rcode = JetUpdate(m_pimplTableCursor.GetSessionHandle(),
+								   m_pimplTableCursor.GetCursorHandle(),
+								   nullptr, 0, nullptr)) != JET_errSuccess
+#else
+				(rcode = JetUpdate2(m_pimplTableCursor.GetSessionHandle(),
+									m_pimplTableCursor.GetCursorHandle(),
+									nullptr, 0, nullptr, 0)) != JET_errSuccess
+#endif
+			)
 			{
 				if(rcode == JET_errWriteConflict)
 				{
