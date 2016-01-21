@@ -554,9 +554,17 @@ namespace _3fd
 			/// </summary>
 			enum class IndexKeyMatch 
 			{
-				Regular, // Do not use wildcards
-				Wildcard, // Use wildcards as values for the unspecified columns
-				PrefixWildcard // Only for text content, matching the specified columns as prefix and wildcards for the unspecified columns
+				Regular, /* Do not use wildcards:
+                            All columns in the index must be present in the key,
+                            and the search looks for an exact match. */
+
+				Wildcard, /* The search use wildcards as values for the unspecified columns,
+                             and an exact match is required in the specified ones. */
+
+				PrefixWildcard /* Only allowed when the last key is text content,
+                                  when a prefix match is used, whereas an exact match is
+                                  required for the previously specified ones. The search
+                                  uses wildcards as values for the unspecified columns */
 			};
 
 		private:
@@ -615,7 +623,7 @@ namespace _3fd
 			/// For this key the comparison operator has to be an equality.
 			/// It must be closer to the end of the index than the first key is.</param>
 			/// <param name="typeMatch2">The type of match to apply in the second key.</param>
-			/// <param name="upperLimit2">Whether the match of the second key should.</param>
+			/// <param name="upperLimit2">Whether the match of the second key should occur in the upper boundary (closest to the end of the index).</param>
 			/// <param name="inclusive2">Whether the established range must include the record pointed by the second key.</param>
 			/// <param name="callback">The callback to invoke for every record the cursor visits.
 			/// It must return 'true' to continue going forward, or 'false' to stop iterating over the records.</param>

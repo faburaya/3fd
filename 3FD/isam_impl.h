@@ -285,9 +285,6 @@ namespace _3fd
 
 			Table(DatabaseImpl *pimplDatabase, JET_TABLEID jetTable, const string &name);
 
-			/// <summary>
-			/// Finalizes an instance of the <see cref="Table"/> class.
-			/// </summary>
 			virtual ~Table();
 
 			/// <summary>

@@ -104,7 +104,8 @@ namespace _3fd
 					// Wildcard match is not compatible with equality operator:
 					_ASSERTE(comparisonOp != TableCursor::ComparisonOperator::EqualTo);
 					
-					// Choose the type of wildcard key according to the specified comparison operator and type of match:
+					/* Choose the type of wildcard key according to the
+                    specified comparison operator and type of match: */
 					switch (comparisonOp)
 					{
 					case TableCursor::ComparisonOperator::GreaterThanOrEqualTo:
@@ -128,6 +129,8 @@ namespace _3fd
 					}
 				}
 
+                /* If this is the case, set a flat to indicate that
+                the value has lenght ZERO, but it is not null: */
 				if(value.qtBytes == 0 && value.data != nullptr)
 					grbit |= JET_bitKeyDataZeroLength;
 
@@ -187,6 +190,8 @@ namespace _3fd
 					}
 				}
 
+                /* If this is the case, set a flat to indicate that
+                the value has lenght ZERO, but it is not null: */
 				if(value.qtBytes == 0 && value.data != nullptr)
 					grbit |= JET_bitKeyDataZeroLength;
 
@@ -406,7 +411,7 @@ namespace _3fd
 		/// For this key the comparison operator has to be an equality.
 		/// It must be closer to the end of the index than the first key is.</param>
 		/// <param name="typeMatch2">The type of match to apply in the second key.</param>
-		/// <param name="upperLimit2">Whether the match of the second key should.</param>
+		/// <param name="upperLimit2">Whether the match of the second key should occur in the upper boundary (closest to the end of the index).</param>
 		/// <param name="inclusive2">Whether the established range must include the record pointed by the second key.</param>
 		/// <param name="callback">The callback to invoke for every record the cursor visits.
 		/// It must return 'true' to continue going forward, or 'false' to stop iterating over the records.</param>
