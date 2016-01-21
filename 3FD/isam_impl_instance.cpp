@@ -16,7 +16,7 @@ namespace _3fd
 		/// Initializes a new instance of the <see cref="InstanceImpl" /> class.
 		/// </summary>
 		/// <param name="name">The name of the instance.</param>
-		/// <param name="transactionLogsPath">The transaction logs directory path.</param>
+		/// <param name="transactionLogsPath">The transaction logs directory path. (This parameter is not used in WinRT platform.)</param>
 		/// <param name="minCachedPages">The minimum amount of pages to keep in cache. (The more cache you guarantee, the faster is the IO.)</param>
 		/// <param name="maxVerStorePages">The maximum amount of pages to reserve for the version store. (Affects how big a transaction can become and how many concurrent isolated sessions the engine can afford.)</param>
 		/// <param name="logBufferSizeInSectors">The size (in volume sectors) of the transaction log write buffer. (A bigger buffer will render less frequent flushes to disk.)</param>
@@ -37,7 +37,7 @@ namespace _3fd
 			{
 				// Set instance to use Windows file cache (see http://msdn.microsoft.com/en-us/library/gg269260):
 				auto rcode = JetSetSystemParameterW(&m_jetInstance, NULL, JET_paramEnableFileCache, true, nullptr);
-				ErrorHelper::HandleError(NULL, NULL, rcode, [&name]()
+				ErrorHelper::HandleError(NULL, NULL, rcode, []()
 				{
 					std::ostringstream oss;
 					oss << "Failed to turn on Windows file cache for ISAM storage";
@@ -46,7 +46,7 @@ namespace _3fd
 
 				// Set instance to access Windows file cache directly (see http://msdn.microsoft.com/en-us/library/gg269293)
 				rcode = JetSetSystemParameterW(&m_jetInstance, NULL, JET_paramEnableViewCache, true, nullptr);
-				ErrorHelper::HandleError(NULL, NULL, rcode, [&name]()
+				ErrorHelper::HandleError(NULL, NULL, rcode, []()
 				{
 					std::ostringstream oss;
 					oss << "Failed to set ISAM storage to access Windows file cache directly";
@@ -97,10 +97,21 @@ namespace _3fd
 				oss << "Failed to set maximum amount of pages for version store in ISAM storage instance \'" << name << "\'";
 				return oss.str();
 			});
+	
+#ifndef _3FD_PLATFORM_WINRT
 
-			// Set location for transaction logs:
+			// Set instance to create non-existent paths (see http://msdn.microsoft.com/en-us/library/gg269260):
+			rcode = JetSetSystemParameterW(&m_jetInstance, NULL, JET_paramCreatePathIfNotExist, true, nullptr);
+			ErrorHelper::HandleError(NULL, NULL, rcode, [&name]()
+			{
+				std::ostringstream oss;
+				oss << "Failed to enable silent creation of paths by ISAM storage instance \'" << name << "\'";
+				return oss.str();
+			});
+
+			// Set location for transaction logs (see http://msdn.microsoft.com/en-us/library/gg269235):
 			auto ucs2tlogsPath = transcoder.from_bytes(transactionLogsPath);
-			rcode = JetSetSystemParameterW(&m_jetInstance, NULL, JET_paramLogFilePath, reinterpret_cast<JET_API_PTR> (ucs2tlogsPath.c_str()), 0);
+			rcode = JetSetSystemParameterW(&m_jetInstance, NULL, JET_paramLogFilePath, 0, ucs2tlogsPath.c_str());
 			ErrorHelper::HandleError(m_jetInstance, NULL, rcode, [&name]()
 			{
 				std::ostringstream oss;
@@ -108,6 +119,15 @@ namespace _3fd
 				return oss.str();
 			});
 
+			// Set location for checkpoint files (see http://msdn.microsoft.com/en-us/library/gg269235):
+			rcode = JetSetSystemParameterW(&m_jetInstance, NULL, JET_paramSystemPath, 0, ucs2tlogsPath.c_str());
+			ErrorHelper::HandleError(m_jetInstance, NULL, rcode, [&name]()
+			{
+				std::ostringstream oss;
+				oss << "Failed to set directory for checkpoint files of ISAM storage instance \'" << name << "\'";
+				return oss.str();
+			});
+#endif
 			// Set instance to use circular transaction log files (see http://msdn.microsoft.com/en-us/library/gg269235):
 			rcode = JetSetSystemParameterW(&m_jetInstance, NULL, JET_paramCircularLog, true, nullptr);
 			ErrorHelper::HandleError(m_jetInstance, NULL, rcode, [&name]()

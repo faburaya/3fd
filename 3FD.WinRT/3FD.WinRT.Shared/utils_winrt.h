@@ -6,6 +6,7 @@
 
 #include <functional>
 #include <future>
+#include <string>
 
 namespace _3fd
 {
@@ -36,6 +37,7 @@ namespace _3fd
 		};
 
 		using namespace Windows::Foundation;
+		using namespace Windows::Storage;
 
 		/// <summary>
 		/// Gathers WinRT API extensions that use C++/CX features.
@@ -49,6 +51,25 @@ namespace _3fd
 			static core::AppException<std::runtime_error> TranslateAsyncWinRTEx(Platform::Exception ^ex);
 
 		internal:
+
+			/// <summary>
+			/// Enumerates some likely location in the sandboxed
+			/// storage system of WinRT platform.
+			/// </summary>
+			enum class FileLocation
+			{
+				LocalFolder,
+				TempFolder,
+				RoamingFolder
+			};
+
+			static std::string GetPathUtf8(FileLocation where);
+
+			static std::string GetFilePathUtf8(const std::string &fileName, FileLocation where);
+
+			static std::string GetFilePathUtf8(const char *fileName, FileLocation where);
+
+			static std::string GetFilePathUtf8(const wchar_t *fileName, FileLocation where);
 
 			/// <summary>
 			/// Awaits an asynchronous WinRT operation (in the app UI STA thread)

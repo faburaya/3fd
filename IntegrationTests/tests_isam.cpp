@@ -10,6 +10,13 @@
 #include <random>
 #include <iostream>
 
+#ifdef _3FD_PLATFORM_WINRT
+#	include "utils_winrt.h"
+#	define FILE_PATH(fileName)	_3fd::utils::WinRTExt::GetFilePathUtf8(fileName, _3fd::utils::WinRTExt::FileLocation::LocalFolder)
+#else
+#	define FILE_PATH(fileName)	fileName
+#endif
+
 namespace _3fd
 {
 	using std::generate;
@@ -364,12 +371,12 @@ namespace _3fd
 			try
 			{
 				// Create an instance
-				Instance instance("tester", ".\\");
-
+				Instance instance("tester", ".\\temp\\");
+				
 				bool dbIsNew, schemaIsReady;
-
+				
 				// Open the database if already existent, otherwise, create it:
-				auto conn = instance.OpenDatabase(0, "isam-test.dat", dbIsNew);
+				auto conn = instance.OpenDatabase(0, FILE_PATH("isam-test.dat"), dbIsNew);
 
 				if(dbIsNew == false)
 				{
@@ -486,10 +493,10 @@ namespace _3fd
 			try
 			{
 				// Create an instance
-				Instance instance("tester", ".\\");
+				Instance instance("tester", ".\\temp\\");
 
 				// Open the database
-				auto conn = instance.OpenDatabase(0, "isam-test.dat");
+				auto conn = instance.OpenDatabase(0, FILE_PATH("isam-test.dat"));
 
 				// Get the table schema
 				auto table = conn.OpenTable("products");
@@ -525,7 +532,7 @@ namespace _3fd
 								CALL_STACK_TRACE;
 
 								// Open the database
-								auto conn = instance.OpenDatabase(0, "isam-test.dat");
+								auto conn = instance.OpenDatabase(0, FILE_PATH("isam-test.dat"));
 
 								// Get a table cursor:
 								auto cursor = conn.GetCursorFor(table);
@@ -685,10 +692,10 @@ namespace _3fd
 			try
 			{
 				// Create an instance
-				Instance instance("tester", ".\\");
+				Instance instance("tester", ".\\temp\\");
 
 				// Open the database
-				auto conn = instance.OpenDatabase(0, "isam-test.dat");
+				auto conn = instance.OpenDatabase(0, FILE_PATH("isam-test.dat"));
 
 				// Get the table schema
 				auto table = conn.OpenTable("products");
@@ -852,10 +859,10 @@ namespace _3fd
 			try
 			{
 				// Create an instance
-				Instance instance("tester", ".\\");
+				Instance instance("tester", ".\\temp\\");
 
 				// Open the database
-				auto conn = instance.OpenDatabase(0, "isam-test.dat");
+				auto conn = instance.OpenDatabase(0, FILE_PATH("isam-test.dat"));
 
 				// Get the table schema
 				auto table = conn.OpenTable("products");
@@ -1025,10 +1032,10 @@ namespace _3fd
 			try
 			{
 				// Create an instance
-				Instance instance("tester", ".\\");
+				Instance instance("tester", ".\\temp\\");
 
 				// Open the database
-				auto conn = instance.OpenDatabase(0, "isam-test.dat");
+				auto conn = instance.OpenDatabase(0, FILE_PATH("isam-test.dat"));
 
 				// Get the table schema
 				auto table = conn.OpenTable("products");
@@ -1189,10 +1196,10 @@ namespace _3fd
 			try
 			{
 				// Create an instance
-				Instance instance("tester", ".\\");
+				Instance instance("tester", ".\\temp\\");
 
 				// Open the database
-				auto conn = instance.OpenDatabase(0, "isam-test.dat");
+				auto conn = instance.OpenDatabase(0, FILE_PATH("isam-test.dat"));
 				{
 					// Get the table schema
 					auto table = conn.OpenTable("products");
@@ -1244,12 +1251,12 @@ namespace _3fd
 			try
 			{
 				// Create an instance
-				Instance instance("tester", ".\\", 4, 256);
+				Instance instance("tester", ".\\temp\\", 4, 256);
 
 				bool dbIsNew, schemaAlreadyExistent(false);
 
 				// Open the database if already existent, otherwise, create it:
-				auto conn = instance.OpenDatabase(0, "isam-stress.dat", dbIsNew);
+				auto conn = instance.OpenDatabase(0, FILE_PATH("isam-stress.dat"), dbIsNew);
 				{
 					if (dbIsNew == false)
 						conn.TryOpenTable(schemaAlreadyExistent, "history");

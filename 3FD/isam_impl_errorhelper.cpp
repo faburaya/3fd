@@ -21,7 +21,8 @@ namespace _3fd
 		/// <param name="errorCode">The error code.</param>
 		/// <param name="what">The main part of the error message.
 		/// The details will be retrieved from the ISAM engine implementation using the error code.</param>
-		void ErrorHelper::HandleError(JET_INSTANCE jetInstance,
+		void ErrorHelper::HandleError(
+			JET_INSTANCE jetInstance,
 			JET_SESID jetSession,
 			JET_ERR errorCode,
 			const char *what)
@@ -49,7 +50,8 @@ namespace _3fd
 		/// <param name="errorCode">The error code.</param>
 		/// <param name="what">A functor which wich generates the main part of the error message.
 		/// The details will be retrieved from the ISAM engine implementation using the error code.</param>
-		void ErrorHelper::HandleError(JET_INSTANCE jetInstance,
+		void ErrorHelper::HandleError(
+			JET_INSTANCE jetInstance,
 			JET_SESID jetSession,
 			JET_ERR errorCode,
 			const std::function<string(void)> &what)
@@ -77,7 +79,8 @@ namespace _3fd
 		/// <param name="what">The main part of the error message.
 		/// The details will be retrieved from the ISAM engine implementation using the error code.</param>
 		/// <param name="prio">The priority of the error. (optional, in case the error must be logged)</param>
-		void ErrorHelper::LogError(JET_INSTANCE jetInstance,
+		void ErrorHelper::LogError(
+			JET_INSTANCE jetInstance,
 			JET_SESID jetSession,
 			JET_ERR errorCode,
 			const char *what,
@@ -162,7 +165,9 @@ namespace _3fd
 				else
 				{
 					std::ostringstream oss;
-					oss << "Microsoft ESE API returned error code " << errorCode << ". Another failure prevented proper error details to be loaded.";
+					oss << "Microsoft ESE API returned error code " << errorCode
+						<< ". Another failure prevented proper error details to be loaded.";
+
 					return core::AppException<std::exception>(what().c_str(), oss.str());
 				}
 			}

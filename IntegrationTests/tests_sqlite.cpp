@@ -26,43 +26,29 @@ namespace _3fd
 
 		void HandleException();
 
-#ifdef _3FD_PLATFORM_WINRT
-		/// <summary>
-		/// Ensures the existence of database file before SQLite tries to open it.
-		/// </summary>
-		/// <param name="fileName">The database file name.</param>
-		/// <returns>The database file path inside the app local data store.</returns>
-		static string SetUpDatabaseFile(const string &fileName)
-		{
-			using namespace Windows::Storage;
-
-			std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
-			auto dbFileName = ref new Platform::String(transcoder.from_bytes(fileName).c_str());
-			auto dbFile = utils::WinRTExt::WaitForAsync(
-				ApplicationData::Current->LocalFolder->CreateFileAsync(dbFileName, CreationCollisionOption::OpenIfExists)
-			);
-			return transcoder.to_bytes(dbFile->Path->Data());
-		}
-#endif
 		/// <summary>
 		/// Performs single thread tests on the SQLite module.
 		/// </summary>
 		TEST(Framework_SQLite_TestCase, SingleThreadUsage_Test)
 		{
+			using namespace utils;
 			using namespace sqlite;
 
 			// Ensures proper initialization/finalization of the framework
 			_3fd::core::FrameworkInstance _framework;
 
 			CALL_STACK_TRACE;
-
+			
 			try
 			{
 				// Open/Create database instance:
 #ifndef _3FD_PLATFORM_WINRT
 				DatabaseConn database("testdb-basic.dat");
 #else
-				DatabaseConn database(SetUpDatabaseFile("testdb-basic.dat"));
+				DatabaseConn database = WinRTExt::GetFilePathUtf8(
+					"testdb-basic.dat",
+					WinRTExt::FileLocation::LocalFolder
+				);
 #endif
 				// Change to WAL mode
 				database.CreateStatement("PRAGMA journal_mode=WAL;").Step();
@@ -143,6 +129,7 @@ namespace _3fd
 		/// </summary>
 		TEST(Framework_SQLite_TestCase, PoolAndTransactions_Test)
 		{
+			using namespace utils;
 			using namespace sqlite;
 
 			// Ensures proper initialization/finalization of the framework
@@ -155,7 +142,10 @@ namespace _3fd
 #ifndef _3FD_PLATFORM_WINRT
 				string dbFilePath("testdb-basic.dat");
 #else
-				string dbFilePath = SetUpDatabaseFile("testdb-basic.dat");
+				string dbFilePath = WinRTExt::GetFilePathUtf8(
+					"testdb-basic.dat",
+					WinRTExt::FileLocation::LocalFolder
+				);
 #endif
 				{// Use WAL mode:
 					DatabaseConn database(dbFilePath);

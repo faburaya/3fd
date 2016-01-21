@@ -2,6 +2,7 @@
 #include "utils_winrt.h"
 
 #include <cassert>
+#include <codecvt>
 
 namespace _3fd
 {
@@ -82,6 +83,118 @@ namespace _3fd
 		////////////////////////////////////
 		// WinRTExt Struct
 		////////////////////////////////////
+
+		/// <summary>
+		/// Gets the path of a specified location of the
+		/// sandboxed storage system of WinRT platform.
+		/// </summary>
+		/// <param name="where">The location.</param>
+		/// <returns>The location path, UTF-8 encoded.</returns>
+		std::string WinRTExt::GetPathUtf8(FileLocation where)
+		{
+			using namespace Windows::Storage;
+
+			Platform::String ^path;
+
+			switch (where)
+			{
+			case WinRTExt::FileLocation::LocalFolder:
+				path = ApplicationData::Current->LocalFolder->Path + L"\\";
+				break;
+
+			case WinRTExt::FileLocation::TempFolder:
+				path = ApplicationData::Current->TemporaryFolder->Path + L"\\";
+				break;
+
+			case WinRTExt::FileLocation::RoamingFolder:
+				path = ApplicationData::Current->RoamingFolder->Path + L"\\";
+				break;
+
+			default:
+				_ASSERTE(false);
+			}
+
+			std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
+			return transcoder.to_bytes(path->Data());
+		}
+
+		// Private implementation for 'GetFilePath'
+		static std::string GetFilePathUtf8Impl(
+			Platform::String ^utf16FileName,
+			WinRTExt::FileLocation where,
+			std::wstring_convert<std::codecvt_utf8<wchar_t>> &transcoder)
+		{
+			using namespace Windows::Storage;
+
+			StorageFolder ^folder;
+
+			switch (where)
+			{
+			case WinRTExt::FileLocation::LocalFolder:
+				folder = ApplicationData::Current->LocalFolder;
+				break;
+
+			case WinRTExt::FileLocation::TempFolder:
+				folder = ApplicationData::Current->TemporaryFolder;
+				break;
+
+			case WinRTExt::FileLocation::RoamingFolder:
+				folder = ApplicationData::Current->RoamingFolder;
+				break;
+
+			default:
+				break;
+			}
+
+			std::wostringstream woss;
+			woss << folder->Path->Data() << L'\\' << utf16FileName->Data();
+			return transcoder.to_bytes(woss.str());
+		}
+
+		/// <summary>
+		/// Gets the path of a file in the specified location
+		/// of the sandboxed storage system of WinRT platform.
+		/// The files does not need to exist. Only the path is generated.
+		/// </summary>
+		/// <param name="fileName">Name of the file.</param>
+		/// <param name="where">The location where to look for the file.</param>
+		/// <returns>The complete path of the file (UTF-8 encoded) in the given location.</returns>
+		std::string WinRTExt::GetFilePathUtf8(const std::string &fileName, WinRTExt::FileLocation where)
+		{
+			std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
+			auto utf16FileName = ref new Platform::String(transcoder.from_bytes(fileName).c_str());
+			return GetFilePathUtf8Impl(utf16FileName, where, transcoder);
+		}
+
+		/// <summary>
+		/// Gets the path of a file in the specified location
+		/// of the sandboxed storage system of WinRT platform.
+		/// If the specified file does not exist, it is created.
+		/// </summary>
+		/// <param name="fileName">Name of the file.</param>
+		/// <param name="where">The location where to look for the file.</param>
+		/// <returns>The complete path of the file (UTF-8 encoded) in the given location.</returns>
+		std::string WinRTExt::GetFilePathUtf8(const char *fileName, WinRTExt::FileLocation where)
+		{
+			std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
+			auto utf16FileName = ref new Platform::String(transcoder.from_bytes(fileName).c_str());
+			return GetFilePathUtf8Impl(utf16FileName, where, transcoder);
+		}
+
+		/// <summary>
+		/// Gets the path of a file in the specified location
+		/// of the sandboxed storage system of WinRT platform.
+		/// If the specified file does not exist, it is created.
+		/// </summary>
+		/// <param name="fileName">Name of the file.</param>
+		/// <param name="where">The location where to look for the file.</param>
+		/// <returns>The complete path of the file (UTF-8 encoded) in the given location.</returns>
+		std::string WinRTExt::GetFilePathUtf8(const wchar_t *fileName, WinRTExt::FileLocation where)
+		{
+			std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
+			Platform::StringReference utf16FileName(fileName);
+			return GetFilePathUtf8Impl(utf16FileName, where, transcoder);
+		}
 
 		/// <summary>
 		/// Determines whether the current thread is the application main STA thread.

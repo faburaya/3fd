@@ -206,7 +206,8 @@ namespace _3fd
 		}
 		
 		/// <summary>
-		/// Seeks the current index for an entry that satifies the condition imposed by a comparison operator and and the current made key.
+		/// Seeks the current index for an entry that satifies the condition imposed by
+		/// a comparison operator and the current made key.
 		/// ON SUCCESS:
 		/// If a record has been prepared for update, then that update will be canceled.
 		/// If an index range is in effect, that index range will be canceled.
