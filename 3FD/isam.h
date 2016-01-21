@@ -567,6 +567,52 @@ namespace _3fd
                                   uses wildcards as values for the unspecified columns */
 			};
 
+            /// <summary>
+            /// Holds the configurations for the keys that define an index range.
+            /// </summary>
+            struct IndexRangeDefinition
+            {
+                /// <summary>
+                /// The numeric code that identifies an index, as set by <see cref="ITable::MapInt2IdxName"/>
+                /// </summary>
+                int indexCode;
+
+                /// <summary>
+                /// The key for the record starting this range,
+                /// which is closer to the beginning of the index.
+                /// </summary>
+                struct
+                {
+                    /// <summary>
+                    /// The values to match the columns that form the index. In this vector they must occur
+                    /// in the same order established upon index definition. If not all expected keys are present,
+                    /// the type of match for this key has to use wildcards.
+                    /// </summary>
+                    std::vector<GenericInputParam> colsVals;
+
+                    IndexKeyMatch typeMatch;
+                    ComparisonOperator comparisonOper;
+                } beginKey;
+
+                /// <summary>
+                /// The key for the record starting this range,
+                /// which is closer to the end of the index.
+                /// </summary>
+                struct KeyEnd
+                {
+                    /// <summary>
+                    /// The values to match the columns that form the index. In this vector they must occur
+                    /// in the same order established upon index definition. If not all expected keys are present,
+                    /// the type of match for this key has to use wildcards.
+                    /// </summary>
+                    std::vector<GenericInputParam> colsVals;
+
+                    IndexKeyMatch typeMatch;
+                    bool isUpperLimit;
+                    bool isInclusive;
+                } endKey;
+            };
+
 		private:
 
 			TableCursorImpl *m_pimplTableCursor;
@@ -596,10 +642,10 @@ namespace _3fd
 			/// <summary>
 			/// Scans the table beginning in the match found for the provided key and going forward/backward until the last/first record.
 			/// </summary>
-			/// <param name="idxCode">The index numeric code.</param>
-			/// <param name="comparisonOp">The comparison operator to use to match the provided key.</param>
+			/// <param name="idxCode">The numeric code that identifies an index, as set by <see cref="ITable::MapInt2IdxName"/>.</param>
 			/// <param name="colKeyVals">The key. A set of values to search in the columns covered by the given index.</param>
 			/// <param name="typeMatch">The type of match to apply.</param>
+            /// <param name="comparisonOp">The comparison operator to use to match the provided key.</param>
 			/// <param name="callback">The callback to invoke for every record the cursor visits. 
 			/// It must return 'true' to continue going forward, or 'false' to stop iterating over the records.</param>
 			/// <param name="backward">Whether the iteration should proceed backwards.</param>
@@ -614,11 +660,11 @@ namespace _3fd
 			/// <summary>
 			/// Scans the table over the range established by the provided keys.
 			/// </summary>
-			/// <param name="idxCode">The index numeric code.</param>
-			/// <param name="comparisonOp1">The comparison operator to use to match the first key.</param>
+            /// <param name="idxCode">The numeric code that identifies an index, as set by <see cref="ITable::MapInt2IdxName"/>.</param>
 			/// <param name="colKeyVals">The first key. A set of values to search in the columns covered by the given index. 
 			/// It must be closer to the start of the index than the second key is.</param>
 			/// <param name="typeMatch1">The type of match to apply in the first key.</param>
+            /// <param name="comparisonOp1">The comparison operator to use to match the first key.</param>
 			/// <param name="colKeyVals2">The second key. A set of values to search in the columns covered by the given index. 
 			/// For this key the comparison operator has to be an equality.
 			/// It must be closer to the end of the index than the first key is.</param>
@@ -640,10 +686,13 @@ namespace _3fd
 							 bool inclusive2, 
 							 const std::function<bool (RecordReader &)> &callback);
 
+            size_t ScanIntersection(std::vector<IndexRangeDefinition> &rangeDefs,
+                                    const std::function<bool(RecordReader &)> &callback);
+
 			/// <summary>
 			/// Scans all the records in the table.
 			/// </summary>
-			/// <param name="idxCode">The index numeric code.</param>
+            /// <param name="idxCode">The numeric code that identifies an index, as set by <see cref="ITable::MapInt2IdxName"/>.</param>
 			/// <param name="callback">The callback to invoke for every record the cursor visits.
 			/// It must return 'true' to continue going forward, or 'false' to stop iterating over the records.</param>
 			/// <param name="backward">Whether the iteration should proceed backwards.</param>

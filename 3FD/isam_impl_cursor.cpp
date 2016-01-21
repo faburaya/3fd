@@ -350,10 +350,10 @@ namespace _3fd
 		/// <summary>
 		/// Scans the table beginning in the match found for the provided key and going forward/backward until the last/first record.
 		/// </summary>
-		/// <param name="idxCode">The index numeric code.</param>
-		/// <param name="comparisonOp">The comparison operator to use to match the provided key.</param>
+        /// <param name="idxCode">The numeric code that identifies an index, as set by <see cref="ITable::MapInt2IdxName"/>.</param>
 		/// <param name="colKeyVals">The key. A set of values to search in the columns covered by the given index.</param>
 		/// <param name="typeMatch">The type of match to apply.</param>
+        /// <param name="comparisonOp">The comparison operator to use to match the provided key.</param>
 		/// <param name="callback">The callback to invoke for every record the cursor visits.
 		/// It must return 'true' to continue going forward, or 'false' to stop iterating over the records.</param>
 		/// <param name="backward">Whether the iteration should proceed backwards.</param>
@@ -403,7 +403,7 @@ namespace _3fd
 		/// <summary>
 		/// Scans the table over the range established by the provided keys.
 		/// </summary>
-		/// <param name="idxCode">The index numeric code.</param>
+        /// <param name="idxCode">The numeric code that identifies an index, as set by <see cref="ITable::MapInt2IdxName"/>.</param>
 		/// <param name="colKeyVals1">The col key vals1.</param>
 		/// <param name="typeMatch1">The type of match to apply in the first key.</param>
 		/// <param name="comparisonOp1">The comparison operator to use to match the first key.</param>
@@ -477,7 +477,7 @@ namespace _3fd
 		/// <summary>
 		/// Scans all the records in the table.
 		/// </summary>
-		/// <param name="idxCode">The index numeric code.</param>
+        /// <param name="idxCode">The numeric code that identifies an index, as set by <see cref="ITable::MapInt2IdxName"/>.</param>
 		/// <param name="callback">The callback to invoke for every record the cursor visits.
 		/// It must return 'true' to continue going forward, or 'false' to stop iterating over the records.</param>
 		/// <param name="backward">Whether the iteration should proceed backwards.</param>

@@ -410,6 +410,9 @@ namespace _3fd
 							 bool inclusive2, 
 							 const std::function<bool (RecordReader &)> &callback);
 
+            size_t ScanIntersection(std::vector<TableCursor::IndexRangeDefinition> &rangeDefs,
+                                    const std::function<bool(RecordReader &)> &callback);
+
 			size_t ScanAll(int idxCode, 
 						   const std::function<bool (RecordReader &)> &callback, 
 						   bool backward);
