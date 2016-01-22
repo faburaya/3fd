@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "isam_impl.h"
+#include <memory>
 #include <codecvt>
 #include <cassert>
 
@@ -473,6 +474,84 @@ namespace _3fd
 												 colKeyVals2, typeMatch2, upperLimit2, inclusive2, 
 												 callback);
 		}
+
+        size_t TableCursorImpl::ScanIntersection(std::vector<TableCursor::IndexRangeDefinition> &rangeDefs,
+                                                 const std::function<bool(RecordReader &)> &callback)
+        {
+            CALL_STACK_TRACE;
+
+            std::vector<std::unique_ptr<TableCursorImpl>> cursors;
+            cursors.reserve(rangeDefs.size());
+
+            std::vector<JET_INDEXRANGE> idxRanges;
+            idxRanges.reserve(rangeDefs.size());
+
+            // Create an index range for each definition:
+            for (auto &rangeDef : rangeDefs)
+            {
+                // Duplicate cursor:
+                auto idxRange = JET_INDEXRANGE{ sizeof(JET_INDEXRANGE), 0, JET_bitRecordInIndex };
+                auto rcode = JetDupCursor(m_jetSession, m_jetTable, &idxRange.tableid, 0);
+
+                ErrorHelper::HandleError(NULL, m_jetSession, rcode, [this]()
+                {
+                    std::ostringstream oss;
+                    oss << "Failed to intersect indexes of table \'" << m_table.GetName()
+                        << "\' from ISAM database - Could not duplicate cursor";
+                    return oss.str();
+                });
+
+                // With the new cursor, set the index range according the given definition:
+
+                std::unique_ptr<TableCursorImpl> dupCursor(
+                    new TableCursorImpl(m_table, idxRange.tableid, m_jetSession)
+                );
+
+                dupCursor->SetCurrentIndex(rangeDef.indexCode);
+
+                dupCursor->MakeKey(rangeDef.beginKey.colsVals,
+                                   rangeDef.beginKey.typeMatch,
+                                   rangeDef.beginKey.comparisonOper);
+
+                if (dupCursor->Seek(rangeDef.beginKey.comparisonOper) == STATUS_OKAY)
+                {
+                    dupCursor->MakeKey(rangeDef.endKey.colsVals,
+                                       rangeDef.endKey.typeMatch,
+                                       rangeDef.endKey.isUpperLimit);
+                }
+                else // no range to set because the key had no match, so skip:
+                    continue;
+
+                // If the range could be set with this cursor, keep it:
+                if (SetIndexRange(rangeDef.endKey.isUpperLimit, rangeDef.endKey.isInclusive) == STATUS_OKAY)
+                {
+                    cursors.push_back(std::move(dupCursor));
+                    idxRanges.push_back(idxRange);
+                }
+            }
+
+            // No index to work:
+            if (idxRanges.empty())
+                return 0;
+
+            // If there is only 1 index range available, do a normal scan of ranges:
+            if (idxRanges.size() == 1)
+                return ; // TODO
+
+            // Intersect the index ranges:
+            JET_RECORDLIST intersection;
+            auto rcode = JetIntersectIndexes(m_jetSession, idxRanges.data(), idxRanges.size(), &intersection, 0);
+            
+            ErrorHelper::HandleError(NULL, m_jetSession, rcode, [this]()
+            {
+                std::ostringstream oss;
+                oss << "Failed to perform intersection of indexes in table \'" << m_table.GetName()
+                    << "\' from ISAM database";
+                return oss.str();
+            });
+
+
+        }
 
 		/// <summary>
 		/// Scans all the records in the table.

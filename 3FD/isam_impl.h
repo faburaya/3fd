@@ -362,6 +362,15 @@ namespace _3fd
 
 			bool MoveCursor(MoveOption option);
 
+            /// <summary>
+            /// Initializes a new instance of the <see cref="TableCursorImpl" /> class.
+            /// </summary>
+            /// <param name="table">The table implementation.</param>
+            /// <param name="jetTable">The table handle.</param>
+            /// <param name="jetSession">The session handle.</param>
+            TableCursorImpl(const Table &table, JET_TABLEID jetTable, JET_SESID jetSession)
+                : m_table(table), m_jetTable(jetTable), m_jetSession(jetSession) {}
+
 		public:
 
 			/// <summary>
