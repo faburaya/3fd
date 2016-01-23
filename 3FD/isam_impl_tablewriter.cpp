@@ -112,7 +112,8 @@ namespace _3fd
 					ErrorHelper::HandleError(NULL, m_pimplTableCursor.GetSessionHandle(), rcode, [this, attempts] ()
 					{
 						std::ostringstream oss;
-						oss << "Failed to save table update in ISAM database after " << attempts << " attempts";
+						oss << "Failed to save table update in ISAM database after "
+							<< attempts << " attempt(s)";
 						return oss.str();
 					});
 					return;

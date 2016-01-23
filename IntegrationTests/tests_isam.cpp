@@ -416,19 +416,23 @@ namespace _3fd
 					// Define the indexes:
 
 					std::vector<std::pair<string, Order>> barCodeIdxKeys;
+					barCodeIdxKeys.reserve(1);
 					barCodeIdxKeys.emplace_back("barcode", Order::Ascending);
 
 					std::vector<std::pair<string, Order>> nameIdxKeys;
-					nameIdxKeys.reserve(4);
+					nameIdxKeys.reserve(2);
 					nameIdxKeys.emplace_back("name", Order::Ascending);
-					nameIdxKeys.emplace_back("amount", Order::Ascending);
-					nameIdxKeys.emplace_back("price", Order::Descending);
 					nameIdxKeys.emplace_back("id", Order::Descending);
 
+					std::vector<std::pair<string, Order>> idIdxKeys;
+					idIdxKeys.reserve(1);
+					idIdxKeys.emplace_back("id", Order::Ascending);
+
 					std::vector<ITable::IndexDefinition> indexes;
-					indexes.reserve(2);
-					indexes.emplace_back("barcodeidx", barCodeIdxKeys, true); // primary, hence unique
-					indexes.emplace_back("nameidx", nameIdxKeys); // secondary
+					indexes.reserve(3);
+					indexes.emplace_back("idx-barcode", barCodeIdxKeys, true); // primary, hence unique
+					indexes.emplace_back("idx-name", nameIdxKeys); // secondary
+					indexes.emplace_back("idx-id", idIdxKeys); // secondary
 
 					// Create the table:
 					auto table = conn.CreateTable("products", false, columns, indexes);
@@ -450,7 +454,8 @@ namespace _3fd
 		}
 
 		/// <summary>
-		/// Enumerates some columns just to assign a numeric code to a descriptive type enforced by the compiler.
+		/// Enumerates some columns just to assign a numeric code
+		/// to a descriptive type enforced by the compiler.
 		/// </summary>
 		enum Column
 		{
@@ -476,7 +481,7 @@ namespace _3fd
 		/// <summary>
 		/// Enumerates some indexes just to assign a numeric code to a descriptive type enforced by the compiler.
 		/// </summary>
-		enum Index { IdxName, IdxBarCode, IdxProvider };
+		enum Index { IdxName, IdxBarCode, IdxProvider, IdxID };
 
 		/// <summary>
 		/// Tests filling the ISAM database with data.
@@ -559,7 +564,10 @@ namespace _3fd
 									double expiration1900; // the expiration date must first be converted to fractional days since 1900 so backend can understand
 
 									// The expiration date is a nullable column:
-									writer.SetColumn(ColExpiration, (prod.expiration >= 0) ? AsInputParam(expiration1900, prod.expiration) : NullParameter(DataType::DateTime));
+									writer.SetColumn(ColExpiration,
+										(prod.expiration >= 0) ? AsInputParam(expiration1900, prod.expiration)
+															   : NullParameter(DataType::DateTime)
+									);
 					
 									// The 'providers' is a multi-value column:
 									for(auto &provider : prod.providers)
@@ -599,7 +607,7 @@ namespace _3fd
 
 				/* Map numeric codes for the indexes names. The framework uses this 
 				approach in order to optimize metadata retrieval keeping it in cache: */
-				table->MapInt2IdxName(IdxName, "nameidx");
+				table->MapInt2IdxName(IdxName, "idx-name");
 				
 				// Get a table cursor
 				auto cursor = conn.GetCursorFor(table, true);
@@ -712,7 +720,7 @@ namespace _3fd
 
 				/* Map numeric codes for the indexes names. The framework uses this 
 				approach in order to optimize metadata retrieval keeping it in cache: */
-				table->MapInt2IdxName(IdxName, "nameidx");
+				table->MapInt2IdxName(IdxName, "idx-name");
 				
 				// Create an index key through which the table will be scanned:
 				std::vector<GenericInputParam> keys;
@@ -724,121 +732,196 @@ namespace _3fd
 				/* This test is only going to read the table, but you use 
 				a transaction in order to have snapshot isolation */
 				auto transaction = conn.BeginTransaction();
+
+				auto callback = [this](RecordReader &rec)
+				{
+					using namespace std::chrono;
+
+					uint16_t id;
+					EXPECT_TRUE(rec.ReadFixedSizeValue(ColId, id));
+					auto &product = products[id];
+
+					string name;
+					EXPECT_TRUE(rec.ReadTextValue(ColName, name));
+					EXPECT_EQ(product.name, name);
+
+					float price;
+					EXPECT_TRUE(rec.ReadFixedSizeValue(ColPrice, price));
+					EXPECT_EQ(product.price, price);
+
+					unsigned int amount;
+					EXPECT_TRUE(rec.ReadFixedSizeValue(ColAmount, amount));
+					EXPECT_EQ(product.amount, amount);
+
+					static std::vector<string> providers;
+					rec.ReadTextValues(ColProviders, providers);
+					EXPECT_TRUE(std::equal(providers.begin(), providers.end(), product.providers.begin()));
+
+					static std::vector<time_point<system_clock, seconds>> deliveries;
+					rec.ReadFixedSizeValues(ColDeliveries, deliveries);
+					EXPECT_TRUE(
+						std::equal(deliveries.begin(),
+								   deliveries.end(),
+								   product.deliveries.begin(),
+								   [](const time_point<system_clock, seconds> &a, time_t b)
+								   {
+									   return a.time_since_epoch().count() == b;
+								   })
+					);
+
+					string description;
+					EXPECT_TRUE(rec.ReadTextValue(ColDescription, description));
+					EXPECT_EQ(product.description, description);
+
+					return true;
+				};
 				
 				// Find an entry and from that point scan until the end of the index:
 				auto numRecords = cursor.ScanFrom(
-					IdxName, 
-					keys, 
+					IdxName, keys, 
 					TableCursor::IndexKeyMatch::PrefixWildcard, 
-					TableCursor::ComparisonOperator::GreaterThanOrEqualTo, 
-
-					// Callback:
-					[this] (RecordReader &rec)
-					{
-						using namespace std::chrono;
-
-						uint16_t id;
-						EXPECT_TRUE(rec.ReadFixedSizeValue(ColId, id));
-						auto &product = products[id];
-
-						string name;
-						EXPECT_TRUE(rec.ReadTextValue(ColName, name));
-						EXPECT_EQ(product.name, name);
-
-						float price;
-						EXPECT_TRUE(rec.ReadFixedSizeValue(ColPrice, price));
-						EXPECT_EQ(product.price, price);
-
-						unsigned int amount;
-						EXPECT_TRUE(rec.ReadFixedSizeValue(ColAmount, amount));
-						EXPECT_EQ(product.amount, amount);
-
-						static std::vector<string> providers;
-						rec.ReadTextValues(ColProviders, providers);
-						EXPECT_TRUE( std::equal(providers.begin(), providers.end(), product.providers.begin()) );
-
-						static std::vector<time_point<system_clock, seconds>> deliveries;
-						rec.ReadFixedSizeValues(ColDeliveries, deliveries);
-						EXPECT_TRUE(
-							std::equal(deliveries.begin(), 
-									   deliveries.end(), 
-									   product.deliveries.begin(), 
-									   [] (const time_point<system_clock, seconds> &a, time_t b)
-									   {
-										   return a.time_since_epoch().count() == b;
-									   })
-						);
-
-						string description;
-						EXPECT_TRUE(rec.ReadTextValue(ColDescription, description));
-						EXPECT_EQ(product.description, description);
-
-						return true;
-					}
+					TableCursor::ComparisonOperator::GreaterThanOrEqualTo,
+					callback
 				);
 
 				EXPECT_GT(numRecords, 0);
 
 				// Find an entry and from that point scan backwards until the beginning of the index:
 				numRecords = cursor.ScanFrom(
-					IdxName, 
-					keys, 
+					IdxName, keys, 
 					TableCursor::IndexKeyMatch::PrefixWildcard, 
 					TableCursor::ComparisonOperator::LessThanOrEqualTo, 
-
-					// Callback:
-					[this] (RecordReader &rec)
-					{
-						using namespace std::chrono;
-
-						uint16_t id;
-						EXPECT_TRUE(rec.ReadFixedSizeValue(ColId, id));
-						auto &product = products[id];
-
-						string name;
-						EXPECT_TRUE(rec.ReadTextValue(ColName, name));
-						EXPECT_EQ(product.name, name);
-
-						float price;
-						EXPECT_TRUE(rec.ReadFixedSizeValue(ColPrice, price));
-						EXPECT_EQ(product.price, price);
-
-						unsigned int amount;
-						EXPECT_TRUE(rec.ReadFixedSizeValue(ColAmount, amount));
-						EXPECT_EQ(product.amount, amount);
-
-						static std::vector<string> providers;
-						rec.ReadTextValues(ColProviders, providers);
-						EXPECT_TRUE( std::equal(providers.begin(), providers.end(), product.providers.begin()) );
-
-						static std::vector<time_point<system_clock, seconds>> deliveries;
-						rec.ReadFixedSizeValues(ColDeliveries, deliveries);
-						EXPECT_TRUE(
-							std::equal(deliveries.begin(), 
-									   deliveries.end(), 
-									   product.deliveries.begin(), 
-									   [] (const time_point<system_clock, seconds> &a, time_t b)
-									   {
-										   return a.time_since_epoch().count() == b;
-									   })
-						);
-
-						string description;
-						EXPECT_TRUE(rec.ReadTextValue(ColDescription, description));
-						EXPECT_EQ(product.description, description);
-
-						return true;
-					}, 
-
+					callback, 
 					true // backwards
 				);
 
 				EXPECT_GT(numRecords, 0);
 
-				// Commit the inserted data so the other sessions can see it
+				// Finalize the transaction with nothing to commit
 				transaction.Commit();
 			}
 			catch(...)
+			{
+				HandleException();
+			}
+		}
+
+		/// <summary>
+		/// Tests searching the ISAM database using ranges.
+		/// </summary>
+		TEST_F(Framework_ISAM_TestCase, TableSearchRange_Test)
+		{
+			using namespace isam;
+
+			// Ensures proper initialization/finalization of the framework
+			_3fd::core::FrameworkInstance _framework;
+
+			CALL_STACK_TRACE;
+
+			try
+			{
+				// Create an instance
+				Instance instance("tester", ".\\temp\\");
+
+				// Open the database
+				auto conn = instance.OpenDatabase(0, FILE_PATH("isam-test.dat"));
+
+				// Get the table schema
+				auto table = conn.OpenTable("products");
+
+				/* Map numeric codes for the column names. The framework uses this
+				approach in order to optimize metadata retrieval keeping in cache: */
+				table->MapInt2ColName(ColId, "id");
+				table->MapInt2ColName(ColName, "name");
+				table->MapInt2ColName(ColPrice, "price");
+				table->MapInt2ColName(ColAmount, "amount");
+				table->MapInt2ColName(ColProviders, "providers");
+				table->MapInt2ColName(ColDeliveries, "deliveries");
+				table->MapInt2ColName(ColDescription, "description");
+
+				/* Map numeric codes for the indexes names. The framework uses this
+				approach in order to optimize metadata retrieval keeping it in cache: */
+				table->MapInt2IdxName(IdxName, "idx-name");
+
+				// Create an index range through which the table will be scanned:
+				TableCursor::IndexRangeDefinition range;
+				range.indexCode = IdxName;
+
+				range.beginKey.colsVals.push_back(AsInputParam("pc"));
+				range.beginKey.typeMatch = TableCursor::IndexKeyMatch::PrefixWildcard;
+				range.beginKey.comparisonOper = TableCursor::ComparisonOperator::GreaterThanOrEqualTo;
+
+				range.endKey.colsVals.push_back(AsInputParam("pc"));
+				range.endKey.typeMatch = TableCursor::IndexKeyMatch::PrefixWildcard;
+				range.endKey.isUpperLimit = true;
+				range.endKey.isInclusive = true;
+
+				// Get a table cursor:
+				auto cursor = conn.GetCursorFor(table, true);
+
+				/* This test is only going to read the table, but you use
+				a transaction in order to have snapshot isolation */
+				auto transaction = conn.BeginTransaction();
+
+				// Callback is:
+				auto callback = [this](RecordReader &rec)
+				{
+					using namespace std::chrono;
+
+					uint16_t id;
+					EXPECT_TRUE(rec.ReadFixedSizeValue(ColId, id));
+					auto &product = products[id];
+
+					string name;
+					EXPECT_TRUE(rec.ReadTextValue(ColName, name));
+					EXPECT_EQ(product.name, name);
+
+					float price;
+					EXPECT_TRUE(rec.ReadFixedSizeValue(ColPrice, price));
+					EXPECT_EQ(product.price, price);
+
+					unsigned int amount;
+					EXPECT_TRUE(rec.ReadFixedSizeValue(ColAmount, amount));
+					EXPECT_EQ(product.amount, amount);
+
+					static std::vector<string> providers;
+					rec.ReadTextValues(ColProviders, providers);
+					EXPECT_TRUE(std::equal(providers.begin(), providers.end(), product.providers.begin()));
+
+					static std::vector<time_point<system_clock, seconds>> deliveries;
+					rec.ReadFixedSizeValues(ColDeliveries, deliveries);
+					EXPECT_TRUE(
+						std::equal(deliveries.begin(),
+								   deliveries.end(),
+								   product.deliveries.begin(),
+								   [](const time_point<system_clock, seconds> &a, time_t b)
+								   {
+									   return a.time_since_epoch().count() == b;
+								   })
+					);
+
+					string description;
+					EXPECT_TRUE(rec.ReadTextValue(ColDescription, description));
+					EXPECT_EQ(product.description, description);
+
+					return true;
+				};
+
+				// Scan the range forward:
+				auto numRecords1 = cursor.ScanRange(range, callback);
+				EXPECT_GT(numRecords1, 0);
+
+				// Scan the range backward:
+				auto numRecords2 = cursor.ScanRange(range, callback);
+				EXPECT_GT(numRecords2, 0);
+
+				// Going forward or backward must produce the same count:
+				EXPECT_EQ(numRecords2, numRecords1);
+
+				// Finalize the transaction with nothing to commit
+				transaction.Commit();
+			}
+			catch (...)
 			{
 				HandleException();
 			}
@@ -879,7 +962,7 @@ namespace _3fd
 
 				/* Map numeric codes for the indexes names. The framework uses this 
 				approach in order to optimize metadata retrieval keeping it in cache: */
-				table->MapInt2IdxName(IdxName, "nameidx");
+				table->MapInt2IdxName(IdxName, "idx-name");
 				
 				// Create an index range through which the table will be scanned:
 				TableCursor::IndexRangeDefinition range;
@@ -1044,8 +1127,8 @@ namespace _3fd
 				table->AddColumn(ITable::ColumnDefinition("sphandling", DataType::Text, false, true)); // nullable, multi-value
 				table->MapInt2ColName(ColSpHandling, "sphandling");
 
-				// Remove index for bar code:
-				table->DeleteIndex("nameidx");
+				// Remove index for product name:
+				table->DeleteIndex("idx-name");
 
 				// Create a new index for the providers:
 				std::vector<std::pair<string, Order>> idxKeyCols;
@@ -1057,7 +1140,7 @@ namespace _3fd
 				/* Map numeric codes for the indexes names. The framework uses this 
 				approach in order to optimize metadata retrieval keeping it in cache: */
 				table->MapInt2IdxName(IdxProvider, "providersidx");
-				table->MapInt2IdxName(IdxBarCode, "barcodeidx");
+				table->MapInt2IdxName(IdxBarCode, "idx-barcode");
 				
 				// Get a table cursor
 				auto cursor = conn.GetCursorFor(table);
@@ -1195,7 +1278,7 @@ namespace _3fd
 
 					/* Map numeric codes for the indexes names. The framework uses this 
 					approach in order to optimize metadata retrieval keeping it in cache: */
-					table->MapInt2IdxName(IdxBarCode, "barcodeidx");
+					table->MapInt2IdxName(IdxBarCode, "idx-barcode");
 					
 					// Get a table cursor
 					auto cursor = conn.GetCursorFor(table);
