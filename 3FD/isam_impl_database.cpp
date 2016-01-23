@@ -363,26 +363,27 @@ namespace _3fd
 		/// <returns>
 		/// A private implementation for table cursor.
 		/// </returns>
-		TableCursorImpl * DatabaseImpl::GetCursorFor(const std::shared_ptr<ITable> &table, bool prefetch)
+		TableCursorImpl * DatabaseImpl::GetCursorFor(const ITable &table, bool prefetch)
 		{
 			CALL_STACK_TRACE;
 
 			try
 			{
 				std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
-				const auto ucs2tableName = transcoder.from_bytes(table->GetName());
+				const auto ucs2tableName = transcoder.from_bytes(table.GetName());
 
 				JET_TABLEID jetTable;
-				auto rcode = JetOpenTableW(m_jetSession, m_jetDatabase,
-					ucs2tableName.data(),
-					nullptr, 0,
-					prefetch ? JET_bitTableSequential : 0,
-					&jetTable);
+				auto rcode = JetOpenTableW(m_jetSession,
+										   m_jetDatabase,
+										   ucs2tableName.data(),
+										   nullptr, 0,
+										   prefetch ? JET_bitTableSequential : 0,
+										   &jetTable);
 
 				ErrorHelper::HandleError(NULL, m_jetSession, rcode, [&table]()
 				{
 					std::ostringstream oss;
-					oss << "Failed to get cursor for table \'" << table->GetName() << "\' from ISAM database";
+					oss << "Failed to get cursor for table \'" << table.GetName() << "\' from ISAM database";
 					return oss.str();
 				});
 

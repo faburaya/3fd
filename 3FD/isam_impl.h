@@ -194,7 +194,7 @@ namespace _3fd
 
 			void DeleteTable(const string &name);
 
-			TableCursorImpl *GetCursorFor(const std::shared_ptr<ITable> &table, bool prefetch);
+			TableCursorImpl *GetCursorFor(const ITable &table, bool prefetch);
 		};
 
 		/// <summary>
@@ -287,6 +287,9 @@ namespace _3fd
 
 			virtual ~Table();
 
+#ifdef _3FD_PLATFORM_WINRT
+			DatabaseImpl *GetDatabase() const { return m_pimplDatabase; }
+#endif
 			/// <summary>
 			/// Gets the name of the table.
 			/// </summary>
@@ -348,11 +351,11 @@ namespace _3fd
 			
 			void SetCurrentIndex(int idxCode);
 
-			void MakeKey(std::vector<GenericInputParam> &colKeyVals, 
+			void MakeKey(const std::vector<GenericInputParam> &colKeyVals, 
 						 TableCursor::IndexKeyMatch typeMatch, 
 						 TableCursor::ComparisonOperator comparisonOp);
 
-			void MakeKey(std::vector<GenericInputParam> &colKeyVals, 
+			void MakeKey(const std::vector<GenericInputParam> &colKeyVals, 
 						 TableCursor::IndexKeyMatch typeMatch, 
 						 bool upperLimit);
 
@@ -362,15 +365,6 @@ namespace _3fd
 
 			bool MoveCursor(MoveOption option);
 
-            /// <summary>
-            /// Initializes a new instance of the <see cref="TableCursorImpl" /> class.
-            /// </summary>
-            /// <param name="table">The table implementation.</param>
-            /// <param name="jetTable">The table handle.</param>
-            /// <param name="jetSession">The session handle.</param>
-            TableCursorImpl(const Table &table, JET_TABLEID jetTable, JET_SESID jetSession)
-                : m_table(table), m_jetTable(jetTable), m_jetSession(jetSession) {}
-
 		public:
 
 			/// <summary>
@@ -379,8 +373,8 @@ namespace _3fd
 			/// <param name="table">The table implementation.</param>
 			/// <param name="jetTable">The table handle.</param>
 			/// <param name="jetSession">The session handle.</param>
-			TableCursorImpl(const std::shared_ptr<ITable> &table, JET_TABLEID jetTable, JET_SESID jetSession)
-				: m_table(*static_cast<Table *> (table.get())), m_jetTable(jetTable), m_jetSession(jetSession) {}
+			TableCursorImpl(const ITable &table, JET_TABLEID jetTable, JET_SESID jetSession)
+				: m_table(static_cast<const Table &> (table)), m_jetTable(jetTable), m_jetSession(jetSession) {}
 
 			~TableCursorImpl();
 
@@ -403,23 +397,16 @@ namespace _3fd
 			JET_TABLEID GetCursorHandle() { return m_jetTable; }
 
 			size_t ScanFrom(int idxCode, 
-							std::vector<GenericInputParam> &colKeyVals, 
+							const std::vector<GenericInputParam> &colKeyVals, 
 							TableCursor::IndexKeyMatch typeMatch, 
 							TableCursor::ComparisonOperator comparisonOp, 
 							const std::function<bool (RecordReader &)> &callback, 
 							bool backward);
 
-			size_t ScanRange(int idxCode, 
-							 std::vector<GenericInputParam> &colKeyVals1, 
-							 TableCursor::IndexKeyMatch typeMatch1, 
-							 TableCursor::ComparisonOperator comparisonOp1, 
-							 std::vector<GenericInputParam> &colKeyVals2, 
-							 TableCursor::IndexKeyMatch typeMatch2, 
-							 bool upperLimit2, 
-							 bool inclusive2, 
+			size_t ScanRange(const TableCursor::IndexRangeDefinition &idxRangeDef,
 							 const std::function<bool (RecordReader &)> &callback);
 
-            size_t ScanIntersection(std::vector<TableCursor::IndexRangeDefinition> &rangeDefs,
+            size_t ScanIntersection(const std::vector<TableCursor::IndexRangeDefinition> &rangeDefs,
                                     const std::function<bool(RecordReader &)> &callback);
 
 			size_t ScanAll(int idxCode, 

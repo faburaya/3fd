@@ -87,7 +87,7 @@ namespace _3fd
 		/// <returns>A table cursor.</returns>
 		TableCursor DatabaseConn::GetCursorFor(const std::shared_ptr<ITable> &table, bool prefetch)
 		{
-			return TableCursor(m_pimplDatabase->GetCursorFor(table, prefetch));
+			return TableCursor(m_pimplDatabase->GetCursorFor(*table, prefetch));
 		}
 		
 		/// <summary>

@@ -26,6 +26,9 @@
     <Filter Include="Common">
       <UniqueIdentifier>{2b8bf2f4-49f0-4b07-877d-7df623899e4a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Tests">
+      <UniqueIdentifier>{84a562fb-280c-40fa-8ef8-366310b3378b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest" />
@@ -46,6 +49,7 @@
     <ClInclude Include="Common\SuspensionManager.h">
       <Filter>Common</Filter>
     </ClInclude>
+    <ClInclude Include="MainPage.xaml.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Common\NavigationHelper.cpp">
@@ -56,6 +60,19 @@
     </ClCompile>
     <ClCompile Include="Common\SuspensionManager.cpp">
       <Filter>Common</Filter>
+    </ClCompile>
+    <ClCompile Include="MainPage.xaml.cpp" />
+    <ClCompile Include="..\..\IntegrationTests\IntegrationTests.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\IntegrationTests\tests_core.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\IntegrationTests\tests_gc.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\IntegrationTests\tests_sqlite.cpp">
+      <Filter>Tests</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

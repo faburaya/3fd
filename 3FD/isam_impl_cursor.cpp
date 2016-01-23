@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "isam_impl.h"
+#include <array>
 #include <memory>
 #include <codecvt>
 #include <cassert>
@@ -84,7 +85,7 @@ namespace _3fd
 		/// a key column in the index and is subject to truncation if bigger than it is supposed to.</param>
 		/// <param name="typeMatch">The type of index match to apply.</param>
 		/// <param name="comparisonOp">The comparison operator.</param>
-		void TableCursorImpl::MakeKey(std::vector<GenericInputParam> &colKeyVals, 
+		void TableCursorImpl::MakeKey(const std::vector<GenericInputParam> &colKeyVals, 
 									  TableCursor::IndexKeyMatch typeMatch, 
 									  TableCursor::ComparisonOperator comparisonOp)
 		{
@@ -157,7 +158,7 @@ namespace _3fd
 		/// a key column in the index and is subject to truncation if bigger than it is supposed to.</param>
 		/// <param name="typeMatch">The type of index match to apply.</param>
 		/// <param name="upperLimit">Whether to choose the upper limit of the key matches.</param>
-		void TableCursorImpl::MakeKey(std::vector<GenericInputParam> &colKeyVals, 
+		void TableCursorImpl::MakeKey(const std::vector<GenericInputParam> &colKeyVals, 
 									  TableCursor::IndexKeyMatch typeMatch, 
 									  bool upperLimit)
 		{
@@ -360,7 +361,7 @@ namespace _3fd
 		/// <param name="backward">Whether the iteration should proceed backwards.</param>
 		/// <returns>How many records the callback was invoked on. Zero means it could not find a match for the provided key.</returns>
 		size_t TableCursorImpl::ScanFrom(int idxCode, 
-										 std::vector<GenericInputParam> &colKeyVals, 
+										 const std::vector<GenericInputParam> &colKeyVals, 
 										 TableCursor::IndexKeyMatch typeMatch, 
 										 TableCursor::ComparisonOperator comparisonOp, 
 										 const std::function<bool (RecordReader &)> &callback, 
@@ -392,7 +393,7 @@ namespace _3fd
 		}
 		
 		size_t TableCursor::ScanFrom(int idxCode, 
-									 std::vector<GenericInputParam> &colKeyVals, 
+									 const std::vector<GenericInputParam> &colKeyVals, 
 									 IndexKeyMatch typeMatch, 
 									 ComparisonOperator comparisonOp, 
 									 const std::function<bool (RecordReader &)> &callback, 
@@ -404,45 +405,36 @@ namespace _3fd
 		/// <summary>
 		/// Scans the table over the range established by the provided keys.
 		/// </summary>
-        /// <param name="idxCode">The numeric code that identifies an index, as set by <see cref="ITable::MapInt2IdxName"/>.</param>
-		/// <param name="colKeyVals1">The col key vals1.</param>
-		/// <param name="typeMatch1">The type of match to apply in the first key.</param>
-		/// <param name="comparisonOp1">The comparison operator to use to match the first key.</param>
-		/// <param name="colKeyVals2">The second key. A set of values to search in the columns covered by the given index. 
-		/// For this key the comparison operator has to be an equality.
-		/// It must be closer to the end of the index than the first key is.</param>
-		/// <param name="typeMatch2">The type of match to apply in the second key.</param>
-		/// <param name="upperLimit2">Whether the match of the second key should occur in the upper boundary (closest to the end of the index).</param>
-		/// <param name="inclusive2">Whether the established range must include the record pointed by the second key.</param>
+        /// <param name="idxRangeDef">The index range definition.</param>
 		/// <param name="callback">The callback to invoke for every record the cursor visits.
 		/// It must return 'true' to continue going forward, or 'false' to stop iterating over the records.</param>
 		/// <returns>
 		/// How many records the callback was invoked on. Zero means it could not match both keys to set a range.
 		/// </returns>
-		size_t TableCursorImpl::ScanRange(int idxCode, 
-										  std::vector<GenericInputParam> &colKeyVals1, 
-										  TableCursor::IndexKeyMatch typeMatch1, 
-										  TableCursor::ComparisonOperator comparisonOp1, 
-										  std::vector<GenericInputParam> &colKeyVals2, 
-										  TableCursor::IndexKeyMatch typeMatch2, 
-										  bool upperLimit2, 
-										  bool inclusive2, 
+		size_t TableCursorImpl::ScanRange(const TableCursor::IndexRangeDefinition &idxRangeDef,
 										  const std::function<bool (RecordReader &)> &callback)
 		{
 			CALL_STACK_TRACE;
 
-			SetCurrentIndex(idxCode);
-			MakeKey(colKeyVals1, typeMatch1, comparisonOp1);
+			SetCurrentIndex(idxRangeDef.indexCode);
 
-			if(Seek(comparisonOp1) == STATUS_OKAY)
-				MakeKey(colKeyVals2, typeMatch2, upperLimit2);
+			MakeKey(idxRangeDef.beginKey.colsVals,
+					idxRangeDef.beginKey.typeMatch,
+					idxRangeDef.beginKey.comparisonOper);
+
+			if (Seek(idxRangeDef.beginKey.comparisonOper) == STATUS_OKAY)
+			{
+				MakeKey(idxRangeDef.endKey.colsVals,
+						idxRangeDef.endKey.typeMatch,
+						idxRangeDef.endKey.isUpperLimit);
+			}
 			else
 				return 0;
 
 			size_t count(0);
 
 			// Set an index range ending with the second key:
-			if(SetIndexRange(upperLimit2, inclusive2) == STATUS_OKAY)
+			if (SetIndexRange(idxRangeDef.endKey.isUpperLimit, idxRangeDef.endKey.isInclusive) == STATUS_OKAY)
 			{
 				RecordReader recReader(this);
 
@@ -459,99 +451,204 @@ namespace _3fd
 			return count;
 		}
 		
-		size_t TableCursor::ScanRange(int idxCode, 
-									  std::vector<GenericInputParam> &colKeyVals1, 
-									  IndexKeyMatch typeMatch1, 
-									  ComparisonOperator comparisonOp1, 
-									  std::vector<GenericInputParam> &colKeyVals2, 
-									  IndexKeyMatch typeMatch2, 
-									  bool upperLimit2, 
-									  bool inclusive2, 
+		size_t TableCursor::ScanRange(const IndexRangeDefinition &idxRangeDef,
 									  const std::function<bool (RecordReader &)> &callback)
 		{
-			return m_pimplTableCursor->ScanRange(idxCode, 
-												 colKeyVals1, typeMatch1, comparisonOp1, 
-												 colKeyVals2, typeMatch2, upperLimit2, inclusive2, 
-												 callback);
+			return m_pimplTableCursor->ScanRange(idxRangeDef, callback);
 		}
 
-        size_t TableCursorImpl::ScanIntersection(std::vector<TableCursor::IndexRangeDefinition> &rangeDefs,
+		/// <summary>
+		/// Scans the intersection of several index ranges in this table.
+		/// </summary>
+		/// <param name="rangeDefs">The definitions for the index ranges to intersect.</param>
+		/// <param name="callback">The callback to invoke for every record the cursor visits.
+		/// It must return 'true' to continue going forward, or 'false' to stop iterating over the records.</param>
+		/// <returns>
+		/// How many records the callback was invoked on.
+		/// Zero means there was no intersection, or that one or more ranges were empty.
+		/// </returns>
+		size_t TableCursorImpl::ScanIntersection(const std::vector<TableCursor::IndexRangeDefinition> &rangeDefs,
                                                  const std::function<bool(RecordReader &)> &callback)
         {
             CALL_STACK_TRACE;
 
-            std::vector<std::unique_ptr<TableCursorImpl>> cursors;
-            cursors.reserve(rangeDefs.size());
+			_ASSERTE(rangeDefs.size() > 1); // can only intersect if more than one index range is provided
 
-            std::vector<JET_INDEXRANGE> idxRanges;
-            idxRanges.reserve(rangeDefs.size());
+			try
+			{
+				std::vector<std::unique_ptr<TableCursorImpl>> cursors;
+				cursors.reserve(rangeDefs.size());
 
-            // Create an index range for each definition:
-            for (auto &rangeDef : rangeDefs)
-            {
-                // Duplicate cursor:
-                auto idxRange = JET_INDEXRANGE{ sizeof(JET_INDEXRANGE), 0, JET_bitRecordInIndex };
-                auto rcode = JetDupCursor(m_jetSession, m_jetTable, &idxRange.tableid, 0);
+				std::vector<JET_INDEXRANGE> idxRanges;
+				idxRanges.reserve(rangeDefs.size());
 
-                ErrorHelper::HandleError(NULL, m_jetSession, rcode, [this]()
-                {
-                    std::ostringstream oss;
-                    oss << "Failed to intersect indexes of table \'" << m_table.GetName()
-                        << "\' from ISAM database - Could not duplicate cursor";
-                    return oss.str();
-                });
+				// Create an index range for each definition:
+				for (auto &rangeDef : rangeDefs)
+				{
+					auto idxRange = JET_INDEXRANGE{ sizeof(JET_INDEXRANGE), 0, JET_bitRecordInIndex };
 
-                // With the new cursor, set the index range according the given definition:
+#ifndef _3FD_PLATFORM_WINRT
+					// Duplicate cursor:
+					auto rcode = JetDupCursor(m_jetSession, m_jetTable, &idxRange.tableid, 0);
+					ErrorHelper::HandleError(NULL, m_jetSession, rcode, "Failed to duplicate cursor");
 
-                std::unique_ptr<TableCursorImpl> dupCursor(
-                    new TableCursorImpl(m_table, idxRange.tableid, m_jetSession)
-                );
+					std::unique_ptr<TableCursorImpl> dupCursor(
+						new TableCursorImpl(m_table, idxRange.tableid, m_jetSession)
+					);
+#else
+					std::unique_ptr<TableCursorImpl> dupCursor(
+						m_table.GetDatabase()->GetCursorFor(m_table, false)
+					);
+#endif
+					// With the new cursor, set the index range according the given definition:
 
-                dupCursor->SetCurrentIndex(rangeDef.indexCode);
+					dupCursor->SetCurrentIndex(rangeDef.indexCode);
 
-                dupCursor->MakeKey(rangeDef.beginKey.colsVals,
-                                   rangeDef.beginKey.typeMatch,
-                                   rangeDef.beginKey.comparisonOper);
+					dupCursor->MakeKey(rangeDef.beginKey.colsVals,
+									   rangeDef.beginKey.typeMatch,
+									   rangeDef.beginKey.comparisonOper);
 
-                if (dupCursor->Seek(rangeDef.beginKey.comparisonOper) == STATUS_OKAY)
-                {
-                    dupCursor->MakeKey(rangeDef.endKey.colsVals,
-                                       rangeDef.endKey.typeMatch,
-                                       rangeDef.endKey.isUpperLimit);
-                }
-                else // no range to set because the key had no match, so skip:
-                    continue;
+					if (dupCursor->Seek(rangeDef.beginKey.comparisonOper) == STATUS_OKAY)
+					{
+						dupCursor->MakeKey(rangeDef.endKey.colsVals,
+										   rangeDef.endKey.typeMatch,
+										   rangeDef.endKey.isUpperLimit);
+					}
+					else // no range to set because the key had no match, so skip:
+						continue;
 
-                // If the range could be set with this cursor, keep it:
-                if (SetIndexRange(rangeDef.endKey.isUpperLimit, rangeDef.endKey.isInclusive) == STATUS_OKAY)
-                {
-                    cursors.push_back(std::move(dupCursor));
-                    idxRanges.push_back(idxRange);
-                }
-            }
+					// If the range could be set with this cursor, keep it:
+					if (dupCursor->SetIndexRange(rangeDef.endKey.isUpperLimit,
+												 rangeDef.endKey.isInclusive) == STATUS_OKAY)
+					{
+						cursors.push_back(std::move(dupCursor));
+						idxRanges.push_back(idxRange);
+					}
+				}
 
-            // No index to work:
-            if (idxRanges.empty())
-                return 0;
+				// No index to work:
+				if (idxRanges.empty())
+					return 0;
 
-            // If there is only 1 index range available, do a normal scan of ranges:
-            if (idxRanges.size() == 1)
-                return ; // TODO
+				// If there is only 1 index range available, do a normal scan of ranges:
+				if (idxRanges.size() == 1)
+				{
+					auto cursor = cursors[0].get();
+					RecordReader recReader(cursor);
 
-            // Intersect the index ranges:
-            JET_RECORDLIST intersection;
-            auto rcode = JetIntersectIndexes(m_jetSession, idxRanges.data(), idxRanges.size(), &intersection, 0);
-            
-            ErrorHelper::HandleError(NULL, m_jetSession, rcode, [this]()
-            {
-                std::ostringstream oss;
-                oss << "Failed to perform intersection of indexes in table \'" << m_table.GetName()
-                    << "\' from ISAM database";
-                return oss.str();
-            });
+					// Iterate over the records invoking the callback for each one of them:
+					size_t count(0);
+					while (callback(recReader))
+					{
+						if (cursor->MoveCursor(MoveOption::Next) == STATUS_OKAY)
+							++count;
+						else
+							return ++count;
+					}
 
+					return count;
+				}
 
+				// Intersect the index ranges:
+				JET_RECORDLIST intersectionRowset;
+				auto rcode = JetIntersectIndexes(m_jetSession,
+												 idxRanges.data(),
+												 idxRanges.size(),
+												 &intersectionRowset,
+												 0);
+
+				ErrorHelper::HandleError(NULL, m_jetSession, rcode,
+					"Failed to perform intersection of indexes");
+
+				cursors.clear(); // release some memory
+
+				/* This cursor must be prepared to visit the records in the intersection
+				by setting the clustered index as the current one: */
+				rcode = JetSetCurrentIndex4W(m_jetSession, m_jetTable,
+											 nullptr, nullptr,
+											 JET_bitMoveFirst, 0);
+
+				ErrorHelper::HandleError(NULL, m_jetSession, rcode,
+					"Failed to set clustered index as current cursor");
+
+				size_t count(0);
+				std::array<char, JET_cbBookmarkMost> bookmarkBuffer;
+
+				// The result is a temporary table. Scan the records in the rowset:
+				for (unsigned long idx = 0; idx < intersectionRowset.cRecord; ++idx)
+				{
+					unsigned long qtBytes;
+
+					// There is a single column in the table. Retrieve the value:
+					rcode = JetRetrieveColumn(m_jetSession,
+											  intersectionRowset.tableid,
+											  intersectionRowset.columnidBookmark,
+											  bookmarkBuffer.data(),
+											  bookmarkBuffer.size(),
+											  &qtBytes,
+											  0, nullptr);
+
+					ErrorHelper::HandleError(NULL, m_jetSession, rcode,
+						"Failed to retrieve column value from temporary table");
+
+					// The value is a bookmark. Use this bookmark to position this cursor:
+					rcode = JetGotoBookmark(m_jetSession,
+											m_jetTable,
+											bookmarkBuffer.data(),
+											qtBytes);
+
+					ErrorHelper::HandleError(NULL, m_jetSession, rcode,
+						"Failed to use bookmark to move the cursor to a record");
+
+					// Read the record:
+					RecordReader recReader(this);
+
+					if (callback(recReader))
+						++count;
+					else
+						return ++count;
+
+					// Move to next record of intersection:
+					rcode = JetMove(m_jetSession,
+									intersectionRowset.tableid,
+									static_cast<long> (MoveOption::Next),
+									0);
+
+					/* If not expected to be the last record, the cursor move should be succesfull. In the
+					last record, the only error allowed is the one signaling no more records available. */
+					if (idx + 1 != intersectionRowset.cRecord
+						|| rcode != JET_errNoCurrentRecord)
+					{
+						ErrorHelper::HandleError(NULL, m_jetSession, rcode,
+							"Failed to move cursor forward in temporary table");
+					}
+				}// end of loop
+
+				return count;
+			}
+			catch (core::IAppException &ex)
+			{
+				std::ostringstream oss;
+				oss << "Failed to intersect indexes of table \'" << m_table.GetName()
+					<< "\' from ISAM database";
+
+				throw core::AppException<std::runtime_error>(oss.str(), ex);
+			}
+			catch (std::exception &ex)
+			{
+				std::ostringstream oss;
+				oss << "Generic failure when intersecting indexes of table \'" << m_table.GetName()
+					<< "\' from ISAM database:" << ex.what();
+
+				throw core::AppException<std::runtime_error>(oss.str());
+			}
         }
+
+		size_t TableCursor::ScanIntersection(const std::vector<IndexRangeDefinition> &rangeDefs,
+											 const std::function<bool(RecordReader &)> &callback)
+		{
+			return m_pimplTableCursor->ScanIntersection(rangeDefs, callback);
+		}
 
 		/// <summary>
 		/// Scans all the records in the table.

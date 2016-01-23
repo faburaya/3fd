@@ -881,9 +881,18 @@ namespace _3fd
 				approach in order to optimize metadata retrieval keeping it in cache: */
 				table->MapInt2IdxName(IdxName, "nameidx");
 				
-				// Create an index key through which the table will be scanned:
-				std::vector<GenericInputParam> keys;
-				keys.push_back(AsInputParam("pc"));
+				// Create an index range through which the table will be scanned:
+				TableCursor::IndexRangeDefinition range;
+				range.indexCode = IdxName;
+
+				range.beginKey.colsVals.push_back(AsInputParam("pc"));
+				range.beginKey.typeMatch = TableCursor::IndexKeyMatch::PrefixWildcard;
+				range.beginKey.comparisonOper = TableCursor::ComparisonOperator::GreaterThanOrEqualTo;
+				
+				range.endKey.colsVals.push_back(AsInputParam("pc"));
+				range.endKey.typeMatch = TableCursor::IndexKeyMatch::PrefixWildcard;
+				range.endKey.isUpperLimit = true;
+				range.endKey.isInclusive = true;
 				
 				// Get a table cursor:
 				auto cursor = conn.GetCursorFor(table);
@@ -892,119 +901,97 @@ namespace _3fd
 				auto transaction = conn.BeginTransaction();
 
 				// Go though all the added entries and update the records with new values:
-				auto numRecords = cursor.ScanRange(
-					IdxName, 
-					keys, 
-					TableCursor::IndexKeyMatch::PrefixWildcard, 
-					TableCursor::ComparisonOperator::GreaterThanOrEqualTo, 
-					keys, 
-					TableCursor::IndexKeyMatch::PrefixWildcard, 
-					true, // upper limit
-					true, // inclusive
+				auto numRecords = cursor.ScanRange(range, [this, &cursor] (RecordReader &rec)
+				{
+					uint16_t id;
+					EXPECT_TRUE(rec.ReadFixedSizeValue(ColId, id));
+					auto &product = products[id];
 
-					[this, &cursor] (RecordReader &rec) // callback:
+					// Start an update to update a record in the table
+					auto writer = cursor.StartUpdate(TableWriter::Mode::Replace);
+
+					// Define some new values for the record:
+
+					product.price *= 2;
+					writer.SetColumn(ColPrice, AsInputParam(product.price));
+
+					product.amount /= 2;
+					writer.SetColumn(ColAmount, AsInputParam(product.amount));
+
+					/* The 'providers' is a multi-value column. The last value will be removed, 
+					a new provider will be added, and the removed value will be put back: */
+
+					auto lastVal = std::move(product.providers.back());
+					writer.RemoveValueFromMVColumn(ColProviders, product.providers.size());
+					product.providers.pop_back();
+
+					auto newProvider = "cheaptechlc";
+					writer.SetColumn(ColProviders, AsInputParam(newProvider)); // each call adds a value to the list
+					product.providers.push_back(newProvider);
+
+					writer.SetColumn(ColProviders, AsInputParam(lastVal));
+					product.providers.push_back(std::move(lastVal));
+
+					// The expiration date must be in fractional days since 1900 so the backend can use it
+					std::vector<double> deliveries(product.deliveries.size());
+
+					for(int idx = 0; idx < product.deliveries.size(); ++idx)
 					{
-						uint16_t id;
-						EXPECT_TRUE(rec.ReadFixedSizeValue(ColId, id));
-						auto &product = products[id];
-
-						// Start an update to update a record in the table
-						auto writer = cursor.StartUpdate(TableWriter::Mode::Replace);
-
-						// Define some new values for the record:
-
-						product.price *= 2;
-						writer.SetColumn(ColPrice, AsInputParam(product.price));
-
-						product.amount /= 2;
-						writer.SetColumn(ColAmount, AsInputParam(product.amount));
-
-						/* The 'providers' is a multi-value column. The last value will be removed, 
-						a new provider will be added, and the removed value will be put back: */
-
-						auto lastVal = std::move(product.providers.back());
-						writer.RemoveValueFromMVColumn(ColProviders, product.providers.size());
-						product.providers.pop_back();
-
-						auto newProvider = "cheaptechlc";
-						writer.SetColumn(ColProviders, AsInputParam(newProvider)); // each call adds a value to the list
-						product.providers.push_back(newProvider);
-
-						writer.SetColumn(ColProviders, AsInputParam(lastVal));
-						product.providers.push_back(std::move(lastVal));
-
-						// The expiration date must be in fractional days since 1900 so the backend can use it
-						std::vector<double> deliveries(product.deliveries.size());
-
-						for(int idx = 0; idx < product.deliveries.size(); ++idx)
-						{
-							product.deliveries[idx] += 86400; // increase 1 day in the delivery date
-							writer.SetColumn(ColDeliveries, AsInputParam(deliveries[idx], product.deliveries[idx]), idx + 1);
-						}
-
-						// Append something to the description text:
-						static const string descSuffix(" (updated)");
-						product.description += descSuffix;
-						writer.SetLargeColumnAppend(ColDescription, AsInputParam(descSuffix));
-
-						// Save the new record
-						writer.Save();
-						return true;
+						product.deliveries[idx] += 86400; // increase 1 day in the delivery date
+						writer.SetColumn(ColDeliveries, AsInputParam(deliveries[idx], product.deliveries[idx]), idx + 1);
 					}
-				);
+
+					// Append something to the description text:
+					static const string descSuffix(" (updated)");
+					product.description += descSuffix;
+					writer.SetLargeColumnAppend(ColDescription, AsInputParam(descSuffix));
+
+					// Save the new record
+					writer.Save();
+					return true;
+				});
 
 				EXPECT_GT(numRecords, 0);
 
 				// Go though all the updated entries and validate them:
-				numRecords = cursor.ScanRange(
-					IdxName, 
-					keys, 
-					TableCursor::IndexKeyMatch::PrefixWildcard, 
-					TableCursor::ComparisonOperator::GreaterThanOrEqualTo, 
-					keys, 
-					TableCursor::IndexKeyMatch::PrefixWildcard, 
-					true, // upper limit
-					true, // inclusive
+				numRecords = cursor.ScanRange(range, [this] (RecordReader &rec)
+				{
+					using namespace std::chrono;
 
-					[this] (RecordReader &rec) // callback:
-					{
-						using namespace std::chrono;
+					uint16_t id;
+					EXPECT_TRUE(rec.ReadFixedSizeValue(ColId, id));
+					auto &product = products[id];
 
-						uint16_t id;
-						EXPECT_TRUE(rec.ReadFixedSizeValue(ColId, id));
-						auto &product = products[id];
+					float price;
+					EXPECT_TRUE(rec.ReadFixedSizeValue(ColPrice, price));
+					EXPECT_EQ(product.price, price);
 
-						float price;
-						EXPECT_TRUE(rec.ReadFixedSizeValue(ColPrice, price));
-						EXPECT_EQ(product.price, price);
+					unsigned int amount;
+					EXPECT_TRUE(rec.ReadFixedSizeValue(ColAmount, amount));
+					EXPECT_EQ(product.amount, amount);
 
-						unsigned int amount;
-						EXPECT_TRUE(rec.ReadFixedSizeValue(ColAmount, amount));
-						EXPECT_EQ(product.amount, amount);
+					static std::vector<string> providers;
+					rec.ReadTextValues(ColProviders, providers);
+					EXPECT_TRUE( std::equal(providers.begin(), providers.end(), product.providers.begin()) );
 
-						static std::vector<string> providers;
-						rec.ReadTextValues(ColProviders, providers);
-						EXPECT_TRUE( std::equal(providers.begin(), providers.end(), product.providers.begin()) );
+					static std::vector<time_point<system_clock, seconds>> deliveries;
+					rec.ReadFixedSizeValues(ColDeliveries, deliveries);
+					EXPECT_TRUE(
+						std::equal(deliveries.begin(), 
+								   deliveries.end(),
+								   product.deliveries.begin(),
+								   [] (const time_point<system_clock, seconds> &a, time_t b)
+								   {
+									   return a.time_since_epoch().count() == b;
+								   })
+					);
 
-						static std::vector<time_point<system_clock, seconds>> deliveries;
-						rec.ReadFixedSizeValues(ColDeliveries, deliveries);
-						EXPECT_TRUE(
-							std::equal(deliveries.begin(), 
-									   deliveries.end(), 
-									   product.deliveries.begin(), 
-									   [] (const time_point<system_clock, seconds> &a, time_t b)
-									   {
-										   return a.time_since_epoch().count() == b;
-									   })
-						);
+					string description;
+					EXPECT_TRUE(rec.ReadTextValue(ColDescription, description));
+					EXPECT_EQ(product.description, description);
 
-						string description;
-						EXPECT_TRUE(rec.ReadTextValue(ColDescription, description));
-						EXPECT_EQ(product.description, description);
-
-						return true;
-					}
-				);
+					return true;
+				});
 
 				EXPECT_GT(numRecords, 0);
 
@@ -1102,23 +1089,25 @@ namespace _3fd
 
 				EXPECT_EQ(products.size(), numRecords);
 
-				// Create an index key through which the table will be scanned:
 				auto newProvider("ceasa");
 				auto oldProvider("makro");
-				std::vector<GenericInputParam> keys;
-				keys.push_back(AsInputParam(oldProvider));
+
+				// Create an index range through which the table will be scanned:
+				TableCursor::IndexRangeDefinition range;
+				range.indexCode = IdxProvider;
+
+				range.beginKey.colsVals.push_back(AsInputParam(oldProvider));
+				range.beginKey.typeMatch = TableCursor::IndexKeyMatch::PrefixWildcard;
+				range.beginKey.comparisonOper = TableCursor::ComparisonOperator::GreaterThanOrEqualTo;
+
+				range.endKey.colsVals.push_back(AsInputParam(oldProvider));
+				range.endKey.typeMatch = TableCursor::IndexKeyMatch::PrefixWildcard;
+				range.endKey.isUpperLimit = true;
+				range.endKey.isInclusive = true;
 
 				// Go through the new index for providers and replace one provider by another:
-				numRecords = cursor.ScanRange(
-					IdxProvider, 
-					keys, 
-					TableCursor::IndexKeyMatch::PrefixWildcard, 
-					TableCursor::ComparisonOperator::GreaterThanOrEqualTo, 
-					keys, 
-					TableCursor::IndexKeyMatch::PrefixWildcard, 
-					true, // upper limit
-					true, // inclusive
-
+				numRecords = cursor.ScanRange(range,
+					// Callback:
 					[this, &cursor, oldProvider, newProvider] (RecordReader &rec)
 					{
 						uint16_t id;

@@ -578,38 +578,70 @@ namespace _3fd
                 int indexCode;
 
                 /// <summary>
-                /// The key for the record starting this range,
-                /// which is closer to the beginning of the index.
+                /// The key used to find the record starting this range, which must
+                /// be closer to the beginning of the index than the second key is.
                 /// </summary>
                 struct
                 {
                     /// <summary>
                     /// The values to match the columns that form the index. In this vector they must occur
-                    /// in the same order established upon index definition. If not all expected keys are present,
-                    /// the type of match for this key has to use wildcards.
+                    /// in the same order established upon index definition. If not all expected keys are
+                    /// present, the type of match for this key has to use wildcards. (See <see cref="IndexKeyMatch"/>.)
                     /// </summary>
                     std::vector<GenericInputParam> colsVals;
 
-                    IndexKeyMatch typeMatch;
+					/// <summary>
+					/// The type of match to use when searching for the key.
+					/// The use of wildcards for undefined columns implies the possibility of
+					/// several records matching this key definition, hence it is not compatible
+					/// with the equality operator. In this case, the comparison operator is used
+					/// to select a single match. 
+					/// </summary>
+					IndexKeyMatch typeMatch;
+
+					/// <summary>
+					/// The comparison operator to use when selecting a match for this key.
+					/// When a record must be chosen from a set of possible matches (result of
+					/// a key containing wildcards, and ordered as defined by the index), the
+					/// operators &gt; and &gt;= cause a match with the record closest to the beginning
+					/// of the index (lower limit), while the operators &lt; and &lt;= cause a match
+					/// with the record closest to the end of the index.
+					/// </summary>
                     ComparisonOperator comparisonOper;
                 } beginKey;
 
                 /// <summary>
-                /// The key for the record starting this range,
-                /// which is closer to the end of the index.
+                /// The key used to find the record starting this range, which must
+                /// be closer to the end of the index than the first key is.
                 /// </summary>
                 struct KeyEnd
                 {
-                    /// <summary>
-                    /// The values to match the columns that form the index. In this vector they must occur
-                    /// in the same order established upon index definition. If not all expected keys are present,
-                    /// the type of match for this key has to use wildcards.
-                    /// </summary>
+					/// <summary>
+					/// The values to match the columns that form the index. In this vector they must occur
+					/// in the same order established upon index definition. If not all expected keys are
+					/// present, the type of match for this key has to use wildcards. (See <see cref="IndexKeyMatch"/>.)
+					/// </summary>
                     std::vector<GenericInputParam> colsVals;
 
-                    IndexKeyMatch typeMatch;
-                    bool isUpperLimit;
-                    bool isInclusive;
+					/// <summary>
+					/// The type of match to use when searching for the key.
+					/// The use of wildcards for undefined columns implies the possibility of
+					/// several records matching this key definition. Because this key has no
+					/// choice but using the equality operator for match, the fields <see cref="isUpperLimit"/>
+					/// and <see cref="isInclusive"/> are used as tie breakers.
+					/// </summary>
+					IndexKeyMatch typeMatch;
+
+					/// <summary>
+					/// Whether the match of the this key should occur in the upper boundary
+					/// (closest to the end of the index).
+					/// </summary>
+					bool isUpperLimit;
+
+					/// <summary>
+					/// Whether the established range must include the record pointed by the second key.
+					/// </summary>
+					bool isInclusive;
                 } endKey;
             };
 
@@ -651,7 +683,7 @@ namespace _3fd
 			/// <param name="backward">Whether the iteration should proceed backwards.</param>
 			/// <returns>How many records the callback was invoked on. Zero means it could not find a match for the provided key.</returns>
 			size_t ScanFrom(int idxCode, 
-							std::vector<GenericInputParam> &colKeyVals, 
+							const std::vector<GenericInputParam> &colKeyVals, 
 							IndexKeyMatch typeMatch, 
 							ComparisonOperator comparisonOp, 
 							const std::function<bool (RecordReader &)> &callback, 
@@ -660,33 +692,26 @@ namespace _3fd
 			/// <summary>
 			/// Scans the table over the range established by the provided keys.
 			/// </summary>
-            /// <param name="idxCode">The numeric code that identifies an index, as set by <see cref="ITable::MapInt2IdxName"/>.</param>
-			/// <param name="colKeyVals">The first key. A set of values to search in the columns covered by the given index. 
-			/// It must be closer to the start of the index than the second key is.</param>
-			/// <param name="typeMatch1">The type of match to apply in the first key.</param>
-            /// <param name="comparisonOp1">The comparison operator to use to match the first key.</param>
-			/// <param name="colKeyVals2">The second key. A set of values to search in the columns covered by the given index. 
-			/// For this key the comparison operator has to be an equality.
-			/// It must be closer to the end of the index than the first key is.</param>
-			/// <param name="typeMatch2">The type of match to apply in the second key.</param>
-			/// <param name="upperLimit2">Whether the match of the second key should occur in the upper boundary (closest to the end of the index).</param>
-			/// <param name="inclusive2">Whether the established range must include the record pointed by the second key.</param>
+			/// <param name="idxRangeDef">The index range definition.</param>
 			/// <param name="callback">The callback to invoke for every record the cursor visits.
 			/// It must return 'true' to continue going forward, or 'false' to stop iterating over the records.</param>
 			/// <returns>
 			/// How many records the callback was invoked on. Zero means it could not match both keys to set a range.
 			/// </returns>
-			size_t ScanRange(int idxCode, 
-							 std::vector<GenericInputParam> &colKeyVals1, 
-							 IndexKeyMatch typeMatch1, 
-							 ComparisonOperator comparisonOp1, 
-							 std::vector<GenericInputParam> &colKeyVals2, 
-							 IndexKeyMatch typeMatch2, 
-							 bool upperLimit2, 
-							 bool inclusive2, 
+			size_t ScanRange(const IndexRangeDefinition &idxRangeDef,
 							 const std::function<bool (RecordReader &)> &callback);
 
-            size_t ScanIntersection(std::vector<IndexRangeDefinition> &rangeDefs,
+			/// <summary>
+			/// Scans the intersection of several index ranges in this table.
+			/// </summary>
+			/// <param name="rangeDefs">The definitions for the index ranges to intersect.</param>
+			/// <param name="callback">The callback to invoke for every record the cursor visits.
+			/// It must return 'true' to continue going forward, or 'false' to stop iterating over the records.</param>
+			/// <returns>
+			/// How many records the callback was invoked on.
+			/// Zero means there was no intersection, or that one or more ranges were empty.
+			/// </returns>
+            size_t ScanIntersection(const std::vector<IndexRangeDefinition> &rangeDefs,
                                     const std::function<bool(RecordReader &)> &callback);
 
 			/// <summary>
