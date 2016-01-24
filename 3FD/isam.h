@@ -555,8 +555,8 @@ namespace _3fd
 			enum class IndexKeyMatch 
 			{
 				Regular, /* Do not use wildcards:
-                            All columns in the index must be present in the key,
-                            and the search looks for an exact match. */
+                            All columns in the index must be present in the
+							key, and the search looks for an exact match. */
 
 				Wildcard, /* The search use wildcards as values for the unspecified columns,
                              and an exact match is required in the specified ones. */
@@ -578,8 +578,7 @@ namespace _3fd
                 int indexCode;
 
                 /// <summary>
-                /// The key used to find the record starting this range, which must
-                /// be closer to the beginning of the index than the second key is.
+                /// The key used to find the record in the beginning of the range.
                 /// </summary>
                 struct
                 {
@@ -611,10 +610,9 @@ namespace _3fd
                 } beginKey;
 
                 /// <summary>
-                /// The key used to find the record starting this range, which must
-                /// be closer to the end of the index than the first key is.
+                /// The key used to find the record in the end of this range.
                 /// </summary>
-                struct KeyEnd
+                struct
                 {
 					/// <summary>
 					/// The values to match the columns that form the index. In this vector they must occur
@@ -633,13 +631,14 @@ namespace _3fd
 					IndexKeyMatch typeMatch;
 
 					/// <summary>
-					/// Whether the match of the this key should occur in the upper boundary
-					/// (closest to the end of the index).
+					/// Whether the this end-key matches a record closer to the end of the index than
+					/// then begin-key. That means going from the begin-key to the end-key, the cursor
+					/// is moving forward (towards the end of the index).
 					/// </summary>
 					bool isUpperLimit;
 
 					/// <summary>
-					/// Whether the established range must include the record pointed by the second key.
+					/// Whether the range to be set must include the records that match the key.
 					/// </summary>
 					bool isInclusive;
                 } endKey;
@@ -704,7 +703,8 @@ namespace _3fd
 			/// <summary>
 			/// Scans the intersection of several index ranges in this table.
 			/// </summary>
-			/// <param name="rangeDefs">The definitions for the index ranges to intersect.</param>
+			/// <param name="rangeDefs">The definitions for the index ranges to intersect.
+			/// All ranges must be of distinct indexes from the same table of this cursor.</param>
 			/// <param name="callback">The callback to invoke for every record the cursor visits.
 			/// It must return 'true' to continue going forward, or 'false' to stop iterating over the records.</param>
 			/// <returns>

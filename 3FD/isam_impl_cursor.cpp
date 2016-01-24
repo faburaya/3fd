@@ -438,10 +438,13 @@ namespace _3fd
 			{
 				RecordReader recReader(this);
 
+				auto direction =
+					idxRangeDef.endKey.isUpperLimit ? MoveOption::Next : MoveOption::Previous;
+
 				// Iterate over the records invoking the callback for each one of them:
 				while(callback(recReader))
 				{
-					if(MoveCursor(MoveOption::Next) == STATUS_OKAY)
+					if (MoveCursor(direction) == STATUS_OKAY)
 						++count;
 					else
 						return ++count;
@@ -460,7 +463,8 @@ namespace _3fd
 		/// <summary>
 		/// Scans the intersection of several index ranges in this table.
 		/// </summary>
-		/// <param name="rangeDefs">The definitions for the index ranges to intersect.</param>
+		/// <param name="rangeDefs">The definitions for the index ranges to intersect.
+		/// All ranges must be of distinct indexes from the same table of this cursor.</param>
 		/// <param name="callback">The callback to invoke for every record the cursor visits.
 		/// It must return 'true' to continue going forward, or 'false' to stop iterating over the records.</param>
 		/// <returns>
@@ -476,6 +480,10 @@ namespace _3fd
 
 			try
 			{
+				JET_ERR rcode;
+
+				bool onlyRangeEndKeyIsUpperLimit;
+
 				std::vector<std::unique_ptr<TableCursorImpl>> cursors;
 				cursors.reserve(rangeDefs.size());
 
@@ -485,11 +493,11 @@ namespace _3fd
 				// Create an index range for each definition:
 				for (auto &rangeDef : rangeDefs)
 				{
-					auto idxRange = JET_INDEXRANGE{ sizeof(JET_INDEXRANGE), 0, JET_bitRecordInIndex };
+					JET_INDEXRANGE idxRange { sizeof(JET_INDEXRANGE), 0, JET_bitRecordInIndex };
 
 #ifndef _3FD_PLATFORM_WINRT
 					// Duplicate cursor:
-					auto rcode = JetDupCursor(m_jetSession, m_jetTable, &idxRange.tableid, 0);
+					rcode = JetDupCursor(m_jetSession, m_jetTable, &idxRange.tableid, 0);
 					ErrorHelper::HandleError(NULL, m_jetSession, rcode, "Failed to duplicate cursor");
 
 					std::unique_ptr<TableCursorImpl> dupCursor(
@@ -499,6 +507,8 @@ namespace _3fd
 					std::unique_ptr<TableCursorImpl> dupCursor(
 						m_table.GetDatabase()->GetCursorFor(m_table, false)
 					);
+
+					idxRange.tableid = dupCursor->GetCursorHandle();
 #endif
 					// With the new cursor, set the index range according the given definition:
 
@@ -521,6 +531,7 @@ namespace _3fd
 					if (dupCursor->SetIndexRange(rangeDef.endKey.isUpperLimit,
 												 rangeDef.endKey.isInclusive) == STATUS_OKAY)
 					{
+						onlyRangeEndKeyIsUpperLimit = rangeDef.endKey.isUpperLimit;
 						cursors.push_back(std::move(dupCursor));
 						idxRanges.push_back(idxRange);
 					}
@@ -530,17 +541,20 @@ namespace _3fd
 				if (idxRanges.empty())
 					return 0;
 
-				// If there is only 1 index range available, do a normal scan of ranges:
+				// If there is only 1 index range available, do a normal scan of range:
 				if (idxRanges.size() == 1)
 				{
 					auto cursor = cursors[0].get();
 					RecordReader recReader(cursor);
 
+					auto direction =
+						onlyRangeEndKeyIsUpperLimit ? MoveOption::Next : MoveOption::Previous;
+
 					// Iterate over the records invoking the callback for each one of them:
 					size_t count(0);
 					while (callback(recReader))
 					{
-						if (cursor->MoveCursor(MoveOption::Next) == STATUS_OKAY)
+						if (cursor->MoveCursor(direction) == STATUS_OKAY)
 							++count;
 						else
 							return ++count;
@@ -550,17 +564,24 @@ namespace _3fd
 				}
 
 				// Intersect the index ranges:
-				JET_RECORDLIST intersectionRowset;
-				auto rcode = JetIntersectIndexes(m_jetSession,
-												 idxRanges.data(),
-												 idxRanges.size(),
-												 &intersectionRowset,
-												 0);
+				JET_RECORDLIST intersectionRowset{ sizeof(JET_RECORDLIST), NULL, 0, NULL };
+
+				rcode = JetIntersectIndexes(m_jetSession,
+											idxRanges.data(),
+											idxRanges.size(),
+											&intersectionRowset,
+											0);
 
 				ErrorHelper::HandleError(NULL, m_jetSession, rcode,
 					"Failed to perform intersection of indexes");
 
-				cursors.clear(); // release some memory
+				// If the intersection is empty:
+				if (intersectionRowset.cRecord == 0)
+					return 0;
+
+				// Release some resources no longer needed:
+				idxRanges.clear();
+				cursors.clear();
 
 				/* This cursor must be prepared to visit the records in the intersection
 				by setting the clustered index as the current one: */
@@ -569,7 +590,22 @@ namespace _3fd
 											 JET_bitMoveFirst, 0);
 
 				ErrorHelper::HandleError(NULL, m_jetSession, rcode,
-					"Failed to set clustered index as current cursor");
+					"Failed to set clustered index as current");
+
+				/* Before scanning the temporary table, the cursor must be moved. This
+				signals the end of the insertion phase, making read operations allowed: */
+				rcode = JetMove(m_jetSession,
+								intersectionRowset.tableid,
+								static_cast<long> (MoveOption::First),
+								0);
+
+				if (rcode != JET_errNoCurrentRecord)
+				{
+					ErrorHelper::HandleError(NULL, m_jetSession, rcode,
+						"Failed to move cursor in temporary table");
+				}
+				else
+					return 0;
 
 				size_t count(0);
 				std::array<char, JET_cbBookmarkMost> bookmarkBuffer;
