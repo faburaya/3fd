@@ -703,8 +703,11 @@ namespace _3fd
 			/// <summary>
 			/// Scans the intersection of several index ranges in this table.
 			/// </summary>
-			/// <param name="rangeDefs">The definitions for the index ranges to intersect.
-			/// All ranges must be of distinct indexes from the same table of this cursor.</param>
+			/// <param name="rangeDefs">The definitions for the index ranges to intersect. All ranges
+			/// must be of distinct SECONDARY indexes from the same table of this cursor, otherwise an
+			/// error is issued. ALSO, all ranges must go in the same direction, which is from closer
+			/// to the index start towards closer to the index end, otherwise the results would not make
+			/// sense (but an error is issued only in debug mode as an assertion).</param>
 			/// <param name="callback">The callback to invoke for every record the cursor visits.
 			/// It must return 'true' to continue going forward, or 'false' to stop iterating over the records.</param>
 			/// <returns>

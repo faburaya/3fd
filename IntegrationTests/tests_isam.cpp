@@ -508,8 +508,8 @@ namespace _3fd
 					std::vector<ITable::IndexDefinition> indexes;
 					indexes.reserve(3);
 					indexes.emplace_back("idx-barcode", barCodeIdxKeys, true); // primary, hence unique
-					indexes.emplace_back("idx-name", nameIdxKeys); // secondary
-					indexes.emplace_back("idx-id", idIdxKeys); // secondary
+					indexes.emplace_back("idx-name", nameIdxKeys, false, false); // secondary, not unique
+					indexes.emplace_back("idx-id", idIdxKeys, false, true); // secondary, unique
 
 					// Create the table:
 					auto table = conn.CreateTable("products", false, columns, indexes);
@@ -901,7 +901,7 @@ namespace _3fd
 				std::vector<TableCursor::IndexRangeDefinition> ranges(2);
 
 				// Range 1: second half of the set
-				unsigned short idStart = 0;// products.size() / 2;
+				unsigned short idStart = products.size() / 2;
 				unsigned short idEnd = products.size() - 1;
 
 				ranges[0].indexCode = IdxID;
@@ -919,11 +919,11 @@ namespace _3fd
 				ranges[1].indexCode = IdxName;
 				ranges[1].beginKey.colsVals.push_back(AsInputParam("pc"));
 				ranges[1].beginKey.typeMatch = TableCursor::IndexKeyMatch::PrefixWildcard;
-				ranges[1].beginKey.comparisonOper = TableCursor::ComparisonOperator::LessThanOrEqualTo;
+				ranges[1].beginKey.comparisonOper = TableCursor::ComparisonOperator::GreaterThanOrEqualTo;
 
 				ranges[1].endKey.colsVals.push_back(AsInputParam("pc"));
 				ranges[1].endKey.typeMatch = TableCursor::IndexKeyMatch::PrefixWildcard;
-				ranges[1].endKey.isUpperLimit = false;
+				ranges[1].endKey.isUpperLimit = true;
 				ranges[1].endKey.isInclusive = true;
 
 				// Further checking:
@@ -932,6 +932,8 @@ namespace _3fd
 				// Intersect the ranges:
 				auto numRecords = cursor.ScanIntersection(ranges, checkWithReference);
 				EXPECT_GT(numRecords, 0);
+				std::cout << "Records in intersection with column product=pc* are "
+						  << numRecords << std::endl;
 
 				// Finalize the transaction with nothing to commit
 				transaction.Commit();

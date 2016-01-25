@@ -461,10 +461,37 @@ namespace _3fd
 		}
 
 		/// <summary>
+		/// Uses RAII to control resources for a temporary table.
+		/// </summary>
+		struct ScopeTempTable
+		{
+		private:
+
+			JET_SESID jetSessionHandle;
+			JET_TABLEID jetTableHandle;
+
+		public:
+
+			ScopeTempTable(JET_SESID p_jetSessionHandle, JET_TABLEID &p_jetTableHandle)
+				: jetSessionHandle(p_jetSessionHandle), jetTableHandle(p_jetTableHandle) {}
+
+			~ScopeTempTable()
+			{
+				CALL_STACK_TRACE;
+				auto rcode = JetCloseTable(jetSessionHandle, jetTableHandle);
+				ErrorHelper::LogError(NULL, jetSessionHandle, rcode,
+					"Failed to close temporary table", core::Logger::PRIO_ERROR);
+			}
+		};
+
+		/// <summary>
 		/// Scans the intersection of several index ranges in this table.
 		/// </summary>
-		/// <param name="rangeDefs">The definitions for the index ranges to intersect.
-		/// All ranges must be of distinct indexes from the same table of this cursor.</param>
+		/// <param name="rangeDefs">The definitions for the index ranges to intersect. All ranges
+		/// must be of distinct SECONDARY indexes from the same table of this cursor, otherwise an
+		/// error is issued. ALSO, all ranges must go in the same direction, which is from closer
+		/// to the index start towards closer to the index end, otherwise the results would not make
+		/// sense (but an error is issued only in debug mode as an assertion).</param>
 		/// <param name="callback">The callback to invoke for every record the cursor visits.
 		/// It must return 'true' to continue going forward, or 'false' to stop iterating over the records.</param>
 		/// <returns>
@@ -480,9 +507,14 @@ namespace _3fd
 
 			try
 			{
-				JET_ERR rcode;
+				/* This cursor must be prepared to visit the records in the intersection
+				by setting the clustered index as the current one: */
+				auto rcode = JetSetCurrentIndex4W(m_jetSession, m_jetTable,
+												  nullptr, nullptr,
+												  JET_bitMoveFirst, 0);
 
-				bool onlyRangeEndKeyIsUpperLimit;
+				ErrorHelper::HandleError(NULL, m_jetSession, rcode,
+					"Failed to set clustered index as current");
 
 				std::vector<std::unique_ptr<TableCursorImpl>> cursors;
 				cursors.reserve(rangeDefs.size());
@@ -493,6 +525,12 @@ namespace _3fd
 				// Create an index range for each definition:
 				for (auto &rangeDef : rangeDefs)
 				{
+					/* Although documentation for ESE does not say that, tests confirm that in order to
+					intersection results be correct, all the index ranges must have the same direction,
+					which is from closer to the index start to closer to the index end. Thus it is wrong
+					use of the API to intersect an index range whose end-key is not the upper limit. */
+					_ASSERTE(rangeDef.endKey.isUpperLimit);
+
 					JET_INDEXRANGE idxRange { sizeof(JET_INDEXRANGE), 0, JET_bitRecordInIndex };
 
 #ifndef _3FD_PLATFORM_WINRT
@@ -524,43 +562,18 @@ namespace _3fd
 										   rangeDef.endKey.typeMatch,
 										   rangeDef.endKey.isUpperLimit);
 					}
-					else // no range to set because the key had no match, so skip:
-						continue;
+					else // no range to set because the key had no match:
+						return 0;
 
-					// If the range could be set with this cursor, keep it:
+					// If the range can be set with this cursor, keep it:
 					if (dupCursor->SetIndexRange(rangeDef.endKey.isUpperLimit,
 												 rangeDef.endKey.isInclusive) == STATUS_OKAY)
 					{
-						onlyRangeEndKeyIsUpperLimit = rangeDef.endKey.isUpperLimit;
 						cursors.push_back(std::move(dupCursor));
 						idxRanges.push_back(idxRange);
 					}
-				}
-
-				// No index to work:
-				if (idxRanges.empty())
-					return 0;
-
-				// If there is only 1 index range available, do a normal scan of range:
-				if (idxRanges.size() == 1)
-				{
-					auto cursor = cursors[0].get();
-					RecordReader recReader(cursor);
-
-					auto direction =
-						onlyRangeEndKeyIsUpperLimit ? MoveOption::Next : MoveOption::Previous;
-
-					// Iterate over the records invoking the callback for each one of them:
-					size_t count(0);
-					while (callback(recReader))
-					{
-						if (cursor->MoveCursor(direction) == STATUS_OKAY)
-							++count;
-						else
-							return ++count;
-					}
-
-					return count;
+					else
+						return 0;
 				}
 
 				// Intersect the index ranges:
@@ -575,6 +588,10 @@ namespace _3fd
 				ErrorHelper::HandleError(NULL, m_jetSession, rcode,
 					"Failed to perform intersection of indexes");
 
+				/* This object destructor guarantees proper release of
+				resources of the temporary table in all scenarios of exit */
+				ScopeTempTable tempTable(m_jetSession, intersectionRowset.tableid);
+
 				// If the intersection is empty:
 				if (intersectionRowset.cRecord == 0)
 					return 0;
@@ -582,15 +599,6 @@ namespace _3fd
 				// Release some resources no longer needed:
 				idxRanges.clear();
 				cursors.clear();
-
-				/* This cursor must be prepared to visit the records in the intersection
-				by setting the clustered index as the current one: */
-				rcode = JetSetCurrentIndex4W(m_jetSession, m_jetTable,
-											 nullptr, nullptr,
-											 JET_bitMoveFirst, 0);
-
-				ErrorHelper::HandleError(NULL, m_jetSession, rcode,
-					"Failed to set clustered index as current");
 
 				/* Before scanning the temporary table, the cursor must be moved. This
 				signals the end of the insertion phase, making read operations allowed: */
