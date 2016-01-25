@@ -26,10 +26,10 @@ void ::UnitTestsApp_WinRT::MainPage::InitializeComponent()
     pageTitle = safe_cast<::Windows::UI::Xaml::Controls::TextBlock^>(static_cast<Windows::UI::Xaml::IFrameworkElement^>(this)->FindName(L"pageTitle"));
     // Get the ProgressRing named 'waitingRing'
     waitingRing = safe_cast<::Windows::UI::Xaml::Controls::ProgressRing^>(static_cast<Windows::UI::Xaml::IFrameworkElement^>(this)->FindName(L"waitingRing"));
-    // Get the TextBlock named 'mainTextBlock'
-    mainTextBlock = safe_cast<::Windows::UI::Xaml::Controls::TextBlock^>(static_cast<Windows::UI::Xaml::IFrameworkElement^>(this)->FindName(L"mainTextBlock"));
     // Get the Button named 'runButton'
     runButton = safe_cast<::Windows::UI::Xaml::Controls::Button^>(static_cast<Windows::UI::Xaml::IFrameworkElement^>(this)->FindName(L"runButton"));
+    // Get the TextBlock named 'mainTextBlock'
+    mainTextBlock = safe_cast<::Windows::UI::Xaml::Controls::TextBlock^>(static_cast<Windows::UI::Xaml::IFrameworkElement^>(this)->FindName(L"mainTextBlock"));
 }
 
 void ::UnitTestsApp_WinRT::MainPage::Connect(int connectionId, Platform::Object^ target)

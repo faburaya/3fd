@@ -48,7 +48,9 @@
 
             <ProgressRing Name="waitingRing" Visibility="Collapsed"></ProgressRing>
 
-            <TextBlock Name="mainTextBlock" Grid.Row="0" FontSize="14"></TextBlock>
+            <ScrollViewer Grid.Row="0">
+                <TextBlock Name="mainTextBlock" FontSize="14"></TextBlock>
+            </ScrollViewer>
 
             <StackPanel Orientation="Horizontal" Grid.Row="1" HorizontalAlignment="Right">
                 <Button Name="runButton" Click="OnClickRunButton">Run</Button>

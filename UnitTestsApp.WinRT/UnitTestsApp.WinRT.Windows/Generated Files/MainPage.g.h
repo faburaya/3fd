@@ -34,8 +34,8 @@ namespace UnitTestsApp_WinRT
     
         private: ::Windows::UI::Xaml::Controls::TextBlock^ pageTitle;
         private: ::Windows::UI::Xaml::Controls::ProgressRing^ waitingRing;
-        private: ::Windows::UI::Xaml::Controls::TextBlock^ mainTextBlock;
         private: ::Windows::UI::Xaml::Controls::Button^ runButton;
+        private: ::Windows::UI::Xaml::Controls::TextBlock^ mainTextBlock;
     };
 }
 

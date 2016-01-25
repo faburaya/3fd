@@ -14,8 +14,8 @@ namespace Windows {
             namespace Controls {
                 ref class Grid;
                 ref class ProgressRing;
-                ref class TextBlock;
                 ref class Button;
+                ref class TextBlock;
             }
         }
     }
@@ -36,8 +36,8 @@ namespace UnitTestsApp_WinRT
         private: ::Windows::UI::Xaml::Controls::Grid^ LayoutRoot;
         private: ::Windows::UI::Xaml::Controls::Grid^ ContentRoot;
         private: ::Windows::UI::Xaml::Controls::ProgressRing^ waitingRing;
-        private: ::Windows::UI::Xaml::Controls::TextBlock^ mainTextBlock;
         private: ::Windows::UI::Xaml::Controls::Button^ runButton;
+        private: ::Windows::UI::Xaml::Controls::TextBlock^ mainTextBlock;
     };
 }
 
