@@ -28,9 +28,9 @@ namespace _3fd
         static auto oclGoodExampleFilePath = "..\\..\\opencl-c-example.txt";
         static auto currentDirectory = ".\\";
 #else
-        static const cl_device_type oclDeviceType = CL_DEVICE_TYPE_GPU;
-        static auto oclWrongExampleFilePath = "/home/felipe/Documents/QtCreator/3FD/opencl-c-example-wrong.txt";
-        static auto oclGoodExampleFilePath = "/home/felipe/Documents/QtCreator/3FD/opencl-c-example.txt";
+        static const cl_device_type oclDeviceType = CL_DEVICE_TYPE_CPU;
+        static auto oclWrongExampleFilePath = "../../../opencl-c-example-wrong.txt";
+        static auto oclGoodExampleFilePath = "../../../opencl-c-example.txt";
         static auto currentDirectory = "./";
 #endif
 
