@@ -1021,7 +1021,7 @@ namespace _3fd
 					/* The 'providers' is a multi-value column. The last value will be removed, 
 					a new provider will be added, and the removed value will be put back: */
 
-					auto lastVal = std::move(product.providers.back());
+					string lastVal = std::move(product.providers.back());
 					writer.RemoveValueFromMVColumn(ColProviders, product.providers.size());
 					product.providers.pop_back();
 

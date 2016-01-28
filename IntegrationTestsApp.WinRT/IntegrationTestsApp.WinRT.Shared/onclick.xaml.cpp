@@ -93,6 +93,5 @@ void MainPage::OnClickRunButton(Object ^sender, RoutedEventArgs ^evArgs)
 
 		waitingRing->IsActive = false;
 		waitingRing->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
-		runButton->IsEnabled = true;
 	});
 }
