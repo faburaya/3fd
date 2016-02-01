@@ -272,6 +272,8 @@
     <ClInclude Include="opencl.h" />
     <ClInclude Include="opencl_impl.h" />
     <ClInclude Include="preprocessing.h" />
+    <ClInclude Include="rpc.h" />
+    <ClInclude Include="rpc_impl.h" />
     <ClInclude Include="runtime.h" />
     <ClInclude Include="sptr.h" />
     <ClInclude Include="sqlite.h" />
@@ -315,6 +317,7 @@
     <ClCompile Include="opencl_impl_platform.cpp" />
     <ClCompile Include="opencl_impl_program.cpp" />
     <ClCompile Include="opencl_impl_programmanifest.cpp" />
+    <ClCompile Include="rpc_impl.cpp" />
     <ClCompile Include="runtime.cpp" />
     <ClCompile Include="sqlite_transaction.cpp" />
     <ClCompile Include="sqlite_dbconnpool.cpp" />
