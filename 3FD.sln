@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.40629.0
+# Visual Studio 14
+VisualStudioVersion = 14.0.24720.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "3FD", "3FD\3FD.vcxproj", "{CCC4A0A2-15FD-4A6E-AC6C-094AAAAEC80B}"
 EndProject
@@ -56,6 +56,8 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "IntegrationTestsApp.WinRT.Windows", "IntegrationTestsApp.WinRT\IntegrationTestsApp.WinRT.Windows\IntegrationTestsApp.WinRT.Windows.vcxproj", "{09ED5B36-D345-4D62-9F01-DC41168BCB35}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "IntegrationTestsApp.WinRT.WindowsPhone", "IntegrationTestsApp.WinRT\IntegrationTestsApp.WinRT.WindowsPhone\IntegrationTestsApp.WinRT.WindowsPhone.vcxproj", "{CEB9F9FD-5E2A-49FB-AC14-2DEF01DC80B8}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "3FD.WinRT.Universal", "3FD.WinRT.Universal\3FD.WinRT.Universal.vcxproj", "{B5457423-3F41-4B5C-AD76-BED9A58FB12E}"
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
@@ -275,6 +277,22 @@ Global
 		{CEB9F9FD-5E2A-49FB-AC14-2DEF01DC80B8}.Release|Win32.Build.0 = Release|Win32
 		{CEB9F9FD-5E2A-49FB-AC14-2DEF01DC80B8}.Release|Win32.Deploy.0 = Release|Win32
 		{CEB9F9FD-5E2A-49FB-AC14-2DEF01DC80B8}.Release|x64.ActiveCfg = Release|Win32
+		{B5457423-3F41-4B5C-AD76-BED9A58FB12E}.Debug|ARM.ActiveCfg = Debug|ARM
+		{B5457423-3F41-4B5C-AD76-BED9A58FB12E}.Debug|ARM.Build.0 = Debug|ARM
+		{B5457423-3F41-4B5C-AD76-BED9A58FB12E}.Debug|Mixed Platforms.ActiveCfg = Debug|Win32
+		{B5457423-3F41-4B5C-AD76-BED9A58FB12E}.Debug|Mixed Platforms.Build.0 = Debug|Win32
+		{B5457423-3F41-4B5C-AD76-BED9A58FB12E}.Debug|Win32.ActiveCfg = Debug|Win32
+		{B5457423-3F41-4B5C-AD76-BED9A58FB12E}.Debug|Win32.Build.0 = Debug|Win32
+		{B5457423-3F41-4B5C-AD76-BED9A58FB12E}.Debug|x64.ActiveCfg = Debug|x64
+		{B5457423-3F41-4B5C-AD76-BED9A58FB12E}.Debug|x64.Build.0 = Debug|x64
+		{B5457423-3F41-4B5C-AD76-BED9A58FB12E}.Release|ARM.ActiveCfg = Release|ARM
+		{B5457423-3F41-4B5C-AD76-BED9A58FB12E}.Release|ARM.Build.0 = Release|ARM
+		{B5457423-3F41-4B5C-AD76-BED9A58FB12E}.Release|Mixed Platforms.ActiveCfg = Release|Win32
+		{B5457423-3F41-4B5C-AD76-BED9A58FB12E}.Release|Mixed Platforms.Build.0 = Release|Win32
+		{B5457423-3F41-4B5C-AD76-BED9A58FB12E}.Release|Win32.ActiveCfg = Release|Win32
+		{B5457423-3F41-4B5C-AD76-BED9A58FB12E}.Release|Win32.Build.0 = Release|Win32
+		{B5457423-3F41-4B5C-AD76-BED9A58FB12E}.Release|x64.ActiveCfg = Release|x64
+		{B5457423-3F41-4B5C-AD76-BED9A58FB12E}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -298,6 +316,7 @@ Global
 		{35A12F43-25FF-406A-8CCF-B203F688A791} = {8E00B911-43B2-49D5-9B4A-AB6E1ED097A1}
 		{09ED5B36-D345-4D62-9F01-DC41168BCB35} = {35A12F43-25FF-406A-8CCF-B203F688A791}
 		{CEB9F9FD-5E2A-49FB-AC14-2DEF01DC80B8} = {35A12F43-25FF-406A-8CCF-B203F688A791}
+		{B5457423-3F41-4B5C-AD76-BED9A58FB12E} = {C6537317-4B66-427D-BFC6-2FC4FC6937E7}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		VisualSVNWorkingCopyRoot = .

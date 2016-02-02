@@ -16,7 +16,9 @@ namespace _3fd
 
         class RpcServerImpl;
 
-        // Represents the RPC server that runs inside the application process
+        /// <summary>
+        /// Represents the RPC server that runs inside the application process.
+        /// </summary>
         class RpcServer
         {
         private:

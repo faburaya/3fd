@@ -13,14 +13,24 @@ namespace _3fd
 
             RPC_BINDING_VECTOR *m_bindings;
 
-            enum class State { Instantiated, Listening, InterfacesRegistered, BindingsAcquired };
+            const wchar_t *m_protSeqName;
+
+            /// <summary>
+            /// Enumerates the possible states for the RPC server.
+            /// </summary>
+            enum class State
+            {
+                Instantiated,
+                Listening,
+                InterfacesRegistered,
+                BindingsAcquired
+            };
 
             State m_state;
 
         public:
 
-            RpcServerImpl()
-                : m_bindings(nullptr), m_state(State::Instantiated) {}
+            RpcServerImpl(RpcServer::ProtocolSequence protSeq);
 
             ~RpcServerImpl();
 

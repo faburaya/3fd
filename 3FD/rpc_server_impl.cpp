@@ -14,6 +14,16 @@ namespace _3fd
         // RpcServer Class
         /////////////////////////
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="RpcServerImpl" /> class.
+        /// </summary>
+        /// <param name="protSeq">The prot seq.</param>
+        RpcServerImpl::RpcServerImpl(RpcServer::ProtocolSequence protSeq) :
+            m_bindings(nullptr),
+            m_state(State::Instantiated)
+        {
+        }
+
         void RpcServerImpl::Run(
             RpcServer::ProtocolSequence protSeq,
             const std::vector<RpcInterfaceHandle> &interfaces,
@@ -82,7 +92,7 @@ namespace _3fd
                             m_bindings,
                             nullptr,
                             (RPC_WSTR)annotation.c_str()
-                            );
+                        );
 
                         ThrowIfError(status, "Failed to register endpoints for RPC server");
                     }
