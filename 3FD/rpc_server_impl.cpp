@@ -2,130 +2,145 @@
 #include "rpc_server_impl.h"
 #include "rpc_util_impl.h"
 #include "callstacktracer.h"
+#include "logger.h"
 
-#include <map>
+#include <codecvt>
 
 namespace _3fd
 {
     namespace rpc
     {
         /////////////////////////
-        // Interface Class
-        /////////////////////////
-
-        Interface::Interface(RpcInterfaceHandle handle, const string &uuid)
-            : m_handle(handle)
-        {
-            CALL_STACK_TRACE;
-
-            // Parse the UUID:
-            if (!m_uuid.tryParse(uuid))
-            {
-                throw core::AppException<std::runtime_error>(
-                    "Failed to parse UUID for RPC server interface: UUID string is invalid!",
-                    uuid
-                );
-            }
-        }
-
-        // Adds a new UUID for an object implementing this interface
-        void Interface::AddObjectUUID(const string &uuid)
-        {
-            CALL_STACK_TRACE;
-
-            m_objectsUUIDs.emplace_back();
-
-            // Parse the UUID:
-            if (!m_objectsUUIDs.back().tryParse(uuid))
-            {
-                throw core::AppException<std::runtime_error>(
-                    "Failed to parse UUID for object implementing interface for RPC server: "
-                    "UUID string is invalid!",
-                    uuid
-                );
-            }
-        }
-
-        /////////////////////////
         // RpcServer Class
         /////////////////////////
 
-        void RpcServerImpl::Start(RpcServer::ProtocolSequence protSeq,
-                                  const std::vector<Interface> &interfaces)
+        void RpcServerImpl::Run(
+            RpcServer::ProtocolSequence protSeq,
+            const std::vector<RpcInterfaceHandle> &interfaces,
+            const string &description)
         {
             CALL_STACK_TRACE;
 
-            std::map<string, std::vector<UUID>> objIDsByIntfID;
+            RPC_STATUS status;
 
-            for (auto &interface : interfaces)
+            switch (m_state)
             {
-                // A list of UUID's for the objects implementing this interface must be kept aside for later use:
-                string intfUuidStr = interface.GetUUID().toString();
-                auto mapInsert = objIDsByIntfID.emplace(intfUuidStr, interface.GetObjectsUUIDs().size());
-
-                // Cannot insert in the map when 2 or more interfaces have the same UUID:
-                if (!mapInsert.second)
+                case State::Instantiated:
                 {
-                    throw core::AppException<std::runtime_error>(
-                        "Could not register RPC interface because the provided UUID is not unique in the list",
-                        intfUuidStr
+                    // What protocol sequence?
+                    const wchar_t *protSeqStr;
+                    switch (protSeq)
+                    {
+                    case RpcServer::ProtocolSequence::Local:
+                        protSeqStr = L"ncalrpc";
+                        break;
+                    case RpcServer::ProtocolSequence::TCP:
+                        protSeqStr = L"ncacn_ip_tcp";
+                        break;
+                    case RpcServer::ProtocolSequence::UDP:
+                        protSeqStr = L"ncadg_ip_udp";
+                        break;
+                    default:
+                        protSeqStr = nullptr;
+                        break;
+                    }
+
+                    // Set the protocol sequence:
+                    _ASSERTE(protSeqStr != nullptr);
+                    status = RpcServerUseProtseqW(
+                        (unsigned short *)protSeqStr,
+                        RPC_C_PROTSEQ_MAX_REQS_DEFAULT,
+                        nullptr
                     );
+
+                    ThrowIfError(status, "Failed to set protocol sequence for RPC server");
+
+                    // Inquire bindings:
+                    status = RpcServerInqBindings(&m_bindings);
+                    ThrowIfError(status, "Failed to inquire bindings for RPC server");
+                    m_state = State::BindingsAcquired;
                 }
 
-                // Register the interface:
-                UUID intfUuidBin;
-                interface.GetUUID().copyTo(reinterpret_cast<char *> (&intfUuidBin));
-                auto status = RpcServerRegisterIf(interface.GetHandle(), &intfUuidBin, nullptr);
-                ThrowIfError(status, "Failed to register RPC interface", intfUuidStr);
-
-                // For later retrieval, the objects UUID's will be stored in a structured binary representation:
-                auto &objectsUUIDs = mapInsert.first->second;
-                int idx(0);
-                for (auto &objUUID : interface.GetObjectsUUIDs())
+                // FALLTHROUGH:
+                case State::BindingsAcquired:
                 {
-                    UUID *objUuidBin = &objectsUUIDs[idx++];
-                    objUUID.copyTo(reinterpret_cast<char *> (objUuidBin));
+                    // Generate the annotation according the API doc:
+                    std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
+                    const int annStrMaxSize(64);
+                    std::wstring annotation = transcoder.from_bytes(description).substr(0, annStrMaxSize - 1);
 
-                    // TO DO: RpcSetObjectType
+                    // For each interface:
+                    for (auto &intfHandle : interfaces)
+                    {
+                        // Register the interface:
+                        status = RpcServerRegisterIf(intfHandle, nullptr, nullptr);
+                        ThrowIfError(status, "Failed to register RPC interface");
+
+                        // Update server address information in the local endpoint-map database:
+                        status = RpcEpRegisterW(
+                            intfHandle,
+                            m_bindings,
+                            nullptr,
+                            (RPC_WSTR)annotation.c_str()
+                            );
+
+                        ThrowIfError(status, "Failed to register endpoints for RPC server");
+                    }
+
+                    m_state = State::InterfacesRegistered;
                 }
-            }
 
-            // What protocol sequence?
-            const wchar_t *protSeqStr;
-            switch (protSeq)
-            {
-            case RpcServer::ProtocolSequence::Local:
-                protSeqStr = L"ncalrpc";
+            // FALLTHROUGH:
+            case State::InterfacesRegistered:
+
+                // Start listening requests (blocking call):
+                status = RpcServerListen(1, RPC_C_LISTEN_MAX_CALLS_DEFAULT, 0);
+                ThrowIfError(status, "Failed to start RPC server listeners");
+                m_state = State::Listening;
                 break;
-            case RpcServer::ProtocolSequence::TCP:
-                protSeqStr = L"ncacn_ip_tcp";
-                break;
-            case RpcServer::ProtocolSequence::UDP:
-                protSeqStr = L"ncadg_ip_udp";
-                break;
-            case RpcServer::ProtocolSequence::HTTP:
-                protSeqStr = L"ncacn_http";
-                break;
+
+            case State::Listening:
+                break; // nothing to do
+            
             default:
-                protSeqStr = nullptr;
+                _ASSERTE(false); // unsupported state
                 break;
             }
+        }
 
-            // Set the protocol sequence:
-            _ASSERTE(protSeqStr != nullptr);
-            auto status = RpcServerUseProtseqW(
-                (unsigned short *)protSeqStr,
-                RPC_C_PROTSEQ_MAX_REQS_DEFAULT,
-                nullptr
-            );
+        RpcServerImpl::~RpcServerImpl()
+        {
+            if (m_state == State::Instantiated)
+                return;
 
-            ThrowIfError(status, "Failed to set protocol sequence for RPC server");
+            CALL_STACK_TRACE;
 
-            // Inquire bindings:
-            status = RpcServerInqBindings(&m_bindings);
-            ThrowIfError(status, "Failed to inquire bindings for RPC server");
+            RPC_STATUS status;
 
+            switch (m_state)
+            {
+            case State::Listening:
+                status = RpcMgmtStopServerListening(m_bindings);
+                LogIfError(status, "Failed to stop RPC server listeners", core::Logger::PRIO_CRITICAL);
 
+            // FALLTHROUGH:
+            case State::InterfacesRegistered:
+                status = RpcServerUnregisterIf(nullptr, nullptr, 1);
+                LogIfError(status, "Failed to unregister interfaces from RPC server", core::Logger::PRIO_CRITICAL);
+
+            // FALLTHROUGH:
+            case State::BindingsAcquired:
+                status = RpcBindingVectorFree(&m_bindings);
+                LogIfError(status, "Failed to release resources for RPC server bindings", core::Logger::PRIO_CRITICAL);
+                break;
+
+            case State::Instantiated:
+                break;
+
+            default:
+                _ASSERTE(false); // unsupported state
+                break;
+            }
         }
 
     }// end of namespace rpc

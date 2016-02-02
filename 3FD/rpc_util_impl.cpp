@@ -9,6 +9,16 @@ namespace _3fd
 {
     namespace rpc
     {
+        void __RPC_FAR * __RPC_USER midl_user_allocate(size_t len)
+        {
+            return(malloc(len));
+        }
+
+        void __RPC_USER midl_user_free(void __RPC_FAR * ptr)
+        {
+            free(ptr);
+        }
+
         static
         core::AppException<std::runtime_error>
         CreateException(

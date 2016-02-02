@@ -13,14 +13,21 @@ namespace _3fd
 
             RPC_BINDING_VECTOR *m_bindings;
 
+            enum class State { Instantiated, Listening, InterfacesRegistered, BindingsAcquired };
+
+            State m_state;
+
         public:
 
             RpcServerImpl()
-                : m_bindings(nullptr) {}
+                : m_bindings(nullptr), m_state(State::Instantiated) {}
 
             ~RpcServerImpl();
 
-            void Start(RpcServer::ProtocolSequence protSeq, const std::vector<Interface> &interfaces);
+            void Run(
+                RpcServer::ProtocolSequence protSeq,
+                const std::vector<RpcInterfaceHandle> &interfaces,
+                const string &description);
         };
 
     }// end of namespace rpc
