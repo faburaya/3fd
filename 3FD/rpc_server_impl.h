@@ -9,14 +9,18 @@ namespace _3fd
     {
         class RpcServerImpl
         {
+        private:
+
+            RPC_BINDING_VECTOR *m_bindings;
+
         public:
 
-            RpcServerImpl();
+            RpcServerImpl()
+                : m_bindings(nullptr) {}
+
             ~RpcServerImpl();
 
-            void Start(RPC_IF_HANDLE interfaceHandle,
-                       const string &implGUID,
-                       RPC_MGR_EPV *entryPointVector);
+            void Start(RpcServer::ProtocolSequence protSeq, const std::vector<Interface> &interfaces);
         };
 
     }// end of namespace rpc

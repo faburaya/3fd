@@ -185,7 +185,10 @@
     <ClInclude Include="rpc.h">
       <Filter>Header Files\RPC</Filter>
     </ClInclude>
-    <ClInclude Include="rpc_impl.h">
+    <ClInclude Include="rpc_util_impl.h">
+      <Filter>Header Files\RPC</Filter>
+    </ClInclude>
+    <ClInclude Include="rpc_server_impl.h">
       <Filter>Header Files\RPC</Filter>
     </ClInclude>
   </ItemGroup>
@@ -334,7 +337,10 @@
     <ClCompile Include="web_wws_utils_xml.cpp">
       <Filter>Source Files\WWS</Filter>
     </ClCompile>
-    <ClCompile Include="rpc_impl.cpp">
+    <ClCompile Include="rpc_server_impl.cpp">
+      <Filter>Source Files\RPC</Filter>
+    </ClCompile>
+    <ClCompile Include="rpc_util_impl.cpp">
       <Filter>Source Files\RPC</Filter>
     </ClCompile>
   </ItemGroup>
