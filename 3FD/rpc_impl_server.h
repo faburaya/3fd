@@ -33,7 +33,7 @@ namespace _3fd
 
         public:
 
-            RpcServerImpl(RpcServer::ProtocolSequence protSeq);
+            RpcServerImpl(ProtocolSequence protSeq);
 
             ~RpcServerImpl();
 

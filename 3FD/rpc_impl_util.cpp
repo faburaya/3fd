@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "rpc_util_impl.h"
+#include "rpc_impl_util.h"
 #include "logger.h"
 
 #include <sstream>
@@ -9,6 +9,10 @@ namespace _3fd
 {
     namespace rpc
     {
+        ////////////////////////////
+        // RPC Memory Allocation
+        ////////////////////////////
+
         void __RPC_FAR * __RPC_USER midl_user_allocate(size_t len)
         {
             return(malloc(len));
@@ -18,6 +22,10 @@ namespace _3fd
         {
             free(ptr);
         }
+
+        /////////////////////////
+        // Error Helpers
+        /////////////////////////
 
         static
         core::AppException<std::runtime_error>

@@ -1,6 +1,6 @@
 #include "stdafx.h"
-#include "rpc_server_impl.h"
-#include "rpc_util_impl.h"
+#include "rpc_impl_server.h"
+#include "rpc_impl_util.h"
 #include "callstacktracer.h"
 #include "logger.h"
 
@@ -58,20 +58,20 @@ namespace _3fd
         /// Initializes a new instance of the <see cref="RpcServerImpl" /> class.
         /// </summary>
         /// <param name="protSeq">The protocol sequence to be used.</param>
-        RpcServerImpl::RpcServerImpl(RpcServer::ProtocolSequence protSeq) :
+        RpcServerImpl::RpcServerImpl(ProtocolSequence protSeq) :
             m_bindings(nullptr),
             m_state(State::Instantiated)
         {
             // What protocol sequence?
             switch (protSeq)
             {
-            case RpcServer::ProtocolSequence::Local:
+            case ProtocolSequence::Local:
                 m_protSeqName = L"ncalrpc";
                 break;
-            case RpcServer::ProtocolSequence::TCP:
+            case ProtocolSequence::TCP:
                 m_protSeqName = L"ncacn_ip_tcp";
                 break;
-            case RpcServer::ProtocolSequence::UDP:
+            case ProtocolSequence::UDP:
                 m_protSeqName = L"ncadg_ip_udp";
                 break;
             default:
