@@ -7,6 +7,9 @@ namespace _3fd
 {
     namespace rpc
     {
+        /// <summary>
+        /// Private implementation of <see cref="RpcServer"/> class.
+        /// </summary>
         class RpcServerImpl
         {
         private:
@@ -34,10 +37,14 @@ namespace _3fd
 
             ~RpcServerImpl();
 
-            void Run(
-                RpcServer::ProtocolSequence protSeq,
-                const std::vector<RpcInterfaceHandle> &interfaces,
-                const string &description);
+            bool Start(const std::vector<RPC_IF_HANDLE> &interfaces,
+                       const string &description);
+
+            bool Stop();
+
+            bool Resume();
+
+            bool Wait();
         };
 
     }// end of namespace rpc

@@ -1,9 +1,10 @@
 #ifndef RPC_H // header guard
 #define RPC_H
 
-#include <Poco\UUID.h>
+#include <memory>
 #include <string>
 #include <vector>
+#include <mutex>
 #include <rpc.h>
 
 namespace _3fd
@@ -12,8 +13,6 @@ namespace _3fd
 
     namespace rpc
     {
-        using RpcInterfaceHandle = RPC_IF_HANDLE;
-
         class RpcServerImpl;
 
         /// <summary>
@@ -23,22 +22,33 @@ namespace _3fd
         {
         private:
 
-            static RpcServerImpl *uniqueObject;
+            static std::unique_ptr<RpcServerImpl> uniqueObject;
 
-            RpcServer();
+            static std::mutex singletonAccessMutex;
+
+            RpcServer() {}
 
         public:
 
+            ~RpcServer() {}
+
+            /// <summary>
+            /// Enumerates the possible options for RPC transport.
+            /// </summary>
             enum class ProtocolSequence { Local, TCP, UDP };
 
-            static RpcServer &GetInstance();
-            
-            ~RpcServer();
+            static void Initialize(ProtocolSequence protSeq);
 
-            void Run(
-                ProtocolSequence protSeq,
-                const std::vector<RpcInterfaceHandle> &interfaces,
-                const string &description);
+            static bool Start(const std::vector<RPC_IF_HANDLE> &interfaces,
+                              const string &description);
+
+            static bool Stop();
+
+            static bool Resume();
+
+            static bool Wait();
+
+            static void Finalize() noexcept;
         };
 
     }// end of namespace rpc
