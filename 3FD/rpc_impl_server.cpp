@@ -60,26 +60,9 @@ namespace _3fd
         /// <param name="protSeq">The protocol sequence to be used.</param>
         RpcServerImpl::RpcServerImpl(ProtocolSequence protSeq) :
             m_bindings(nullptr),
+            m_protSeqName(ToString(protSeq)),
             m_state(State::Instantiated)
         {
-            // What protocol sequence?
-            switch (protSeq)
-            {
-            case ProtocolSequence::Local:
-                m_protSeqName = L"ncalrpc";
-                break;
-            case ProtocolSequence::TCP:
-                m_protSeqName = L"ncacn_ip_tcp";
-                break;
-            case ProtocolSequence::UDP:
-                m_protSeqName = L"ncadg_ip_udp";
-                break;
-            default:
-                m_protSeqName = nullptr;
-                break;
-            }
-
-            _ASSERTE(m_protSeqName != nullptr);
         }
 
         /// <summary>

@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "preprocessing.h"
 #include "rpc_impl_util.h"
 #include "logger.h"
 
@@ -21,6 +22,37 @@ namespace _3fd
         void __RPC_USER midl_user_free(void __RPC_FAR * ptr)
         {
             free(ptr);
+        }
+
+        ////////////////////////////
+        // Translation of Types
+        ////////////////////////////
+
+        /// <summary>
+        /// Converts an enumerated protocol sequence option into
+        /// the corresponding string expected by the RPC API.
+        /// </summary>
+        /// <param name="protSeq">The protol sequence to convert.</param>
+        /// <returns>A string with the name of the protocol sequence
+        /// as expected by the system RPC API.</returns>
+        const wchar_t *ToString(ProtocolSequence protSeq)
+        {
+            // What protocol sequence?
+            switch (protSeq)
+            {
+            case ProtocolSequence::Local:
+                return L"ncalrpc";
+                
+            case ProtocolSequence::TCP:
+                return L"ncacn_ip_tcp";
+                
+            case ProtocolSequence::UDP:
+                return L"ncadg_ip_udp";
+                
+            default:
+                _ASSERTE(false);
+                return nullptr;
+            }
         }
 
         /////////////////////////
@@ -67,8 +99,12 @@ namespace _3fd
                 return core::AppException<std::runtime_error>(oss.str());
             }
         }
-
-        // Throws an exception for a system RPC error
+        
+        /// <summary>
+        /// Throws an exception for a system RPC error.
+        /// </summary>
+        /// <param name="status">The status returned by the RPC API.</param>
+        /// <param name="message">The main message for the error.</param>
         void ThrowIfError(RPC_STATUS status, const char *message)
         {
             if (status == RPC_S_OK)
@@ -77,7 +113,12 @@ namespace _3fd
             throw CreateException(status, message, "");
         }
 
-        // Throws an exception for a system RPC error
+        /// <summary>
+        /// Throws an exception for a system RPC error.
+        /// </summary>
+        /// <param name="status">The status returned by the RPC API.</param>
+        /// <param name="message">The main message for the error.</param>
+        /// <param name="details">The details for the error.</param>
         void ThrowIfError(
             RPC_STATUS status,
             const char *message,
@@ -89,7 +130,12 @@ namespace _3fd
             throw CreateException(status, message, details);
         }
 
-        // Logs a system RPC error
+        /// <summary>
+        /// Logs a system RPC error.
+        /// </summary>
+        /// <param name="status">The status returned by the RPC API.</param>
+        /// <param name="message">The main message for the error.</param>
+        /// <param name="prio">The priority for event to be logged.</param>
         void LogIfError(
             RPC_STATUS status,
             const char *message,
@@ -102,7 +148,13 @@ namespace _3fd
             core::Logger::Write(ex, prio);
         }
 
-        // Logs a system RPC error
+        /// <summary>
+        /// Logs a system RPC error.
+        /// </summary>
+        /// <param name="status">The status returned by the RPC API.</param>
+        /// <param name="message">The main message for the error.</param>
+        /// <param name="details">The details for the error.</param>
+        /// <param name="prio">The priority for event to be logged.</param>
         void LogIfError(
             RPC_STATUS status,
             const char *message,

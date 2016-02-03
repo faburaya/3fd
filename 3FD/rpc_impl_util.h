@@ -1,9 +1,9 @@
 #ifndef RPC_UTIL_IMPL_H // header guard
 #define RPC_UTIL_IMPL_H
 
+#include "rpc.h"
 #include "exceptions.h"
 #include <string>
-#include <rpc.h>
 
 namespace _3fd
 {
@@ -11,6 +11,8 @@ namespace _3fd
 
     namespace rpc
     {
+        const wchar_t *ToString(ProtocolSequence protSeq);
+
         void ThrowIfError(RPC_STATUS status, const char *message);
 
         void ThrowIfError(

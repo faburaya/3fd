@@ -66,7 +66,11 @@ namespace _3fd
 
         protected:
 
-            RPC_BINDING_HANDLE GetBindingHandle();
+            /// <summary>
+            /// Gets the binding handle.
+            /// </summary>
+            /// <returns>The explicit binding handle expected as parameter for RPC.</returns>
+            RPC_BINDING_HANDLE GetBindingHandle() const { return m_bindingHandle; }
 
         public:
 
