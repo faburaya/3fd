@@ -78,73 +78,90 @@ namespace _3fd
         /// should be used instead of local authentication.</param>
         RpcServerImpl::RpcServerImpl(ProtocolSequence protSeq,
                                      const string &serviceClass,
-                                     bool useActDirSec)
-        try :
+                                     bool useActDirSec) :
             m_bindings(nullptr),
             m_protSeqName(ToString(protSeq)),
             m_state(State::NotInitialized)
         {
-            std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
-            m_serviceClass = transcoder.from_bytes(serviceClass);
+            CALL_STACK_TRACE;
 
-            DWORD spnArraySize;
+            DWORD spnArraySize(0);
             LPWSTR *spnArray;
 
-            // Generate a list of SPN`s using the fully qualified DNS name of the local computer:
-            auto rc = DsGetSpnW(
-                useActDirSec ? DS_SPN_DN_HOST : DS_SPN_DNS_HOST,
-                m_serviceClass.c_str(),
-                nullptr, 0,
-                0, nullptr,
-                nullptr,
-                &spnArraySize,
-                &spnArray
-            );
-
-            if (rc != ERROR_SUCCESS)
+            try
             {
+                std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
+                m_serviceClass = transcoder.from_bytes(serviceClass);
+
+                // Generate a list of SPN`s using the fully qualified DNS name of the local computer:
+                auto rc = DsGetSpnW(
+                    useActDirSec ? DS_SPN_DN_HOST : DS_SPN_DNS_HOST,
+                    m_serviceClass.c_str(),
+                    nullptr, 0,
+                    0, nullptr,
+                    nullptr,
+                    &spnArraySize,
+                    &spnArray
+                    );
+
+                if (rc != ERROR_SUCCESS)
+                {
+                    std::ostringstream oss;
+                    oss << "Could not generate SPN for RPC server - ";
+                    core::WWAPI::AppendDWordErrorMessage(rc, "DsGetSpn", oss);
+                    throw core::AppException<std::runtime_error>(oss.str());
+                }
+
+                _ASSERTE(spnArraySize > 0);
+
+                // Register the SPN in the authentication service:
+                auto status = RpcServerRegisterAuthInfoW(
+                    (RPC_WSTR)spnArray[0],
+                    RPC_C_AUTHN_GSS_KERBEROS,
+                    nullptr,
+                    nullptr
+                );
+
+                string spn = transcoder.to_bytes(spnArray[0]);
+                ThrowIfError(status, "Could not register SPN with authentication service", spn);
+
                 std::ostringstream oss;
-                oss << "Could not generate SPN for RPC server - ";
-                core::WWAPI::AppendDWordErrorMessage(rc, "DsGetSpn", oss);
-                throw core::AppException<std::runtime_error>(oss.str());
+                oss << "RPC server \'" << serviceClass
+                    << "\' was registered with the authentication service using SPN = " << spn;
+
+                core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
+                oss.str("");
+
+                // Set the protocol sequence:
+                status = RpcServerUseProtseqW(
+                    (unsigned short *)m_protSeqName,
+                    RPC_C_PROTSEQ_MAX_REQS_DEFAULT,
+                    nullptr
+                );
+
+                ThrowIfError(status, "Could not set protocol sequence for RPC server");
+
+                // Inquire bindings:
+                status = RpcServerInqBindings(&m_bindings);
+                ThrowIfError(status, "Could not inquire bindings for RPC server");
+                m_state = State::BindingsAcquired;
+            }
+            catch (core::IAppException &ex)
+            {
+                if(spnArraySize > 0)
+                    DsFreeSpnArrayW(spnArraySize, spnArray);
+
+                throw core::AppException<std::runtime_error>("Failed to initialize RPC server", ex);
+            }
+            catch (std::exception &)
+            {
+                if (spnArraySize > 0)
+                    DsFreeSpnArrayW(spnArraySize, spnArray);
+
+                throw;
             }
 
-            // Register the SPN in the authentication service:
-            auto status = RpcServerRegisterAuthInfoW(
-                (RPC_WSTR)spnArray[0],
-                RPC_C_AUTHN_GSS_KERBEROS,
-                nullptr,
-                nullptr
-            );
-
-            string spn = transcoder.to_bytes(spnArray[0]);
-            ThrowIfError(status, "Could not register SPN with authentication service", spn);
-
-            std::ostringstream oss;
-            oss << "RPC server \'" << serviceClass
-                << "\' was registered with the authentication service using SPN = " << spn;
-
-            core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
-            oss.str("");
-
-            // Set the protocol sequence:
-            status = RpcServerUseProtseqW(
-                (unsigned short *)m_protSeqName,
-                RPC_C_PROTSEQ_MAX_REQS_DEFAULT,
-                nullptr
-            );
-
-            ThrowIfError(status, "Could not set protocol sequence for RPC server");
-
-            // Inquire bindings:
-            status = RpcServerInqBindings(&m_bindings);
-            ThrowIfError(status, "Could not inquire bindings for RPC server");
-            m_state = State::BindingsAcquired;
-        }
-        catch (core::IAppException &ex)
-        {
-            CALL_STACK_TRACE;
-            throw core::AppException<std::runtime_error>("Failed to initialize RPC server", ex);
+            DsFreeSpnArrayW(spnArraySize, spnArray);
         }
 
         /// <summary>
