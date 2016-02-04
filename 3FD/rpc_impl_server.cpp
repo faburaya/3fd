@@ -24,9 +24,17 @@ namespace _3fd
         /// Initializes the RPC server before running it.
         /// </summary>
         /// <param name="protSeq">The protocol sequence to be used.</param>
+        /// <param name="serviceName">A friendly name to identify this service. Such name will be
+        /// employed for both informational (will be displayed in admin tools that expose listening
+        /// servers, as a description) and security purposes (the "service class" in the SPN). Thus
+        /// it must be unique (in a way the generated SPN will not collide with another in the Windows
+        /// Active directory), and cannot contain characters such as '/', '&lt;' or '&gt;'.</param>
         /// <param name="useActDirSec">Whether Microsoft Active Directory security services
         /// should be used instead of local authentication.</param>
-        void RpcServer::Initialize(ProtocolSequence protSeq, bool useActDirSec)
+        void RpcServer::Initialize(
+            ProtocolSequence protSeq,
+            const string &serviceName,
+            bool useActDirSec)
         {
             CALL_STACK_TRACE;
 
@@ -35,7 +43,7 @@ namespace _3fd
                 std::lock_guard<std::mutex> lock(singletonAccessMutex);
 
                 _ASSERTE(uniqueObject.get() != nullptr); // cannot initialize RPC server twice
-                uniqueObject.reset(new RpcServerImpl(protSeq, useActDirSec));
+                uniqueObject.reset(new RpcServerImpl(protSeq, serviceName, useActDirSec));
             }
             catch (core::IAppException &)
             {
@@ -61,7 +69,7 @@ namespace _3fd
         /// Initializes a new instance of the <see cref="RpcServerImpl" /> class.
         /// </summary>
         /// <param name="protSeq">The protocol sequence to be used.</param>
-        /// <param name="serviceName">A friendly name to identify this service. Such name will be
+        /// <param name="serviceClass">A friendly name to identify this service. Such name will be
         /// employed for both informational (will be displayed in admin tools that expose listening
         /// servers, as a description) and security purposes (the "service class" in the SPN). Thus
         /// it must be unique (in a way the generated SPN will not collide with another in the Windows
@@ -69,34 +77,74 @@ namespace _3fd
         /// <param name="useActDirSec">Whether Microsoft Active Directory security services
         /// should be used instead of local authentication.</param>
         RpcServerImpl::RpcServerImpl(ProtocolSequence protSeq,
-                                     const string &serviceName,
-                                     bool useActDirSec) :
+                                     const string &serviceClass,
+                                     bool useActDirSec)
+        try :
             m_bindings(nullptr),
             m_protSeqName(ToString(protSeq)),
-            m_state(State::Instantiated)
+            m_state(State::NotInitialized)
         {
             std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
-            m_serviceName = transcoder.from_bytes(serviceName);
+            m_serviceClass = transcoder.from_bytes(serviceClass);
 
+            DWORD spnArraySize;
+            LPWSTR *spnArray;
+
+            // Generate a list of SPN`s using the fully qualified DNS name of the local computer:
             auto rc = DsGetSpnW(
                 useActDirSec ? DS_SPN_DN_HOST : DS_SPN_DNS_HOST,
-                m_serviceName.c_str(),
-
+                m_serviceClass.c_str(),
+                nullptr, 0,
+                0, nullptr,
+                nullptr,
+                &spnArraySize,
+                &spnArray
             );
 
+            if (rc != ERROR_SUCCESS)
+            {
+                std::ostringstream oss;
+                oss << "Could not generate SPN for RPC server - ";
+                core::WWAPI::AppendDWordErrorMessage(rc, "DsGetSpn", oss);
+                throw core::AppException<std::runtime_error>(oss.str());
+            }
+
+            // Register the SPN in the authentication service:
+            auto status = RpcServerRegisterAuthInfoW(
+                (RPC_WSTR)spnArray[0],
+                RPC_C_AUTHN_GSS_KERBEROS,
+                nullptr,
+                nullptr
+            );
+
+            string spn = transcoder.to_bytes(spnArray[0]);
+            ThrowIfError(status, "Could not register SPN with authentication service", spn);
+
+            std::ostringstream oss;
+            oss << "RPC server \'" << serviceClass
+                << "\' was registered with the authentication service using SPN = " << spn;
+
+            core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
+            oss.str("");
+
             // Set the protocol sequence:
-            auto status = RpcServerUseProtseqW(
+            status = RpcServerUseProtseqW(
                 (unsigned short *)m_protSeqName,
                 RPC_C_PROTSEQ_MAX_REQS_DEFAULT,
                 nullptr
             );
 
-            ThrowIfError(status, "Failed to set protocol sequence for RPC server");
+            ThrowIfError(status, "Could not set protocol sequence for RPC server");
 
             // Inquire bindings:
             status = RpcServerInqBindings(&m_bindings);
-            ThrowIfError(status, "Failed to inquire bindings for RPC server");
+            ThrowIfError(status, "Could not inquire bindings for RPC server");
             m_state = State::BindingsAcquired;
+        }
+        catch (core::IAppException &ex)
+        {
+            CALL_STACK_TRACE;
+            throw core::AppException<std::runtime_error>("Failed to initialize RPC server", ex);
         }
 
         /// <summary>
@@ -111,7 +159,7 @@ namespace _3fd
                 if (m_state == State::BindingsAcquired)
                 {
                     const int annStrMaxSize(64);
-                    auto annotation = m_serviceName.substr(0, annStrMaxSize - 1);
+                    auto annotation = m_serviceClass.substr(0, annStrMaxSize - 1);
 
                     // For each interface:
                     for (auto &intfHandle : interfaces)
@@ -144,7 +192,7 @@ namespace _3fd
                     return STATUS_FAIL; // nothing to do
                 else
                 {
-                    _ASSERTE(false); // unsupported state
+                    _ASSERTE(false); // unsupported or unexpected state
                     return STATUS_FAIL;
                 }
             }
@@ -157,8 +205,7 @@ namespace _3fd
                     LogIfError(status,
                         "RPC Server start request suffered a secondary failure "
                         "on attempt to unregister interfaces",
-                        core::Logger::PRIO_CRITICAL
-                    );
+                        core::Logger::PRIO_CRITICAL);
                 }
 
                 throw;
@@ -171,6 +218,10 @@ namespace _3fd
         /// </summary>
         /// <param name="interfaces">The handles for the interfaces implemented by this RPC server,
         /// as provided in the source compiled from the IDL.</param>
+        /// <return>
+        /// <see cref="STATUS_OKAY"/> whether successful, otherwise, <see cref="STATUS_FAIL"/>
+        /// (if the server was already listening or in an unexpected state).
+        /// </return>
         bool RpcServer::Start(const std::vector<RPC_IF_HANDLE> &interfaces)
         {
             CALL_STACK_TRACE;
@@ -180,7 +231,7 @@ namespace _3fd
                 std::lock_guard<std::mutex> lock(singletonAccessMutex);
 
                 _ASSERTE(uniqueObject.get() != nullptr); // singleton not instantiated
-                return uniqueObject->Start(interfaces, serviceName);
+                return uniqueObject->Start(interfaces);
             }
             catch (core::IAppException &)
             {
@@ -207,9 +258,6 @@ namespace _3fd
         /// </summary>
         RpcServerImpl::~RpcServerImpl()
         {
-            if (m_state == State::Instantiated)
-                return;
-
             CALL_STACK_TRACE;
 
             RPC_STATUS status;
@@ -242,10 +290,8 @@ namespace _3fd
                 status = RpcBindingVectorFree(&m_bindings);
                 LogIfError(status,
                     "Failed to release resources for RPC server bindings",
-                    core::Logger::PRIO_CRITICAL);
-
-            // FALLTHROUGH:
-            case State::Instantiated:
+                    core::Logger::PRIO_CRITICAL
+                );
                 break;
 
             default:
@@ -325,7 +371,6 @@ namespace _3fd
 
             switch (m_state)
             {
-            case State::Instantiated:
             case State::BindingsAcquired:
                 return STATUS_FAIL;
             

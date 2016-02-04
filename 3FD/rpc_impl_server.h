@@ -18,17 +18,17 @@ namespace _3fd
 
             const wchar_t *m_protSeqName;
 
-            std::wstring m_serviceName;
+            std::wstring m_serviceClass;
 
             /// <summary>
             /// Enumerates the possible states for the RPC server.
             /// </summary>
             enum class State
             {
-                Instantiated,
-                Listening,
+                NotInitialized,
+                BindingsAcquired,
                 InterfacesRegistered,
-                BindingsAcquired
+                Listening                
             };
 
             State m_state;
@@ -37,7 +37,7 @@ namespace _3fd
 
             RpcServerImpl(
                 ProtocolSequence protSeq,
-                const string &serviceName,
+                const string &serviceClass,
                 bool useActDirSec
             );
 
