@@ -69,7 +69,7 @@ namespace _3fd
         /// Private implementation for <see cref="RpcServer::Start"/>.
         /// </summary>
         bool RpcServerImpl::Start(const std::vector<RPC_IF_HANDLE> &interfaces,
-                                  const string &description)
+                                  const string &serviceName)
         {
             CALL_STACK_TRACE;
 
@@ -102,7 +102,7 @@ namespace _3fd
                         std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
                         const int annStrMaxSize(64);
                         std::wstring annotation =
-                            transcoder.from_bytes(description).substr(0, annStrMaxSize - 1);
+                            transcoder.from_bytes(serviceName).substr(0, annStrMaxSize - 1);
 
                         // For each interface:
                         for (auto &intfHandle : interfaces)
@@ -163,10 +163,14 @@ namespace _3fd
         /// </summary>
         /// <param name="interfaces">The handles for the interfaces implemented by this RPC server,
         /// as provided in the source compiled from the IDL.</param>
-        /// <param name="description">A description for this RPC server instance,
-        /// just for informational purposes.</param>
+        /// <param name="serviceName">A friendly name to identify this service. Such name will be
+        /// employed for both informational (will be displayed in admin tools that expose listening
+        /// servers, as a description) and security purposes (the "service class" in the SPN). Thus
+        /// it must be unique (in a way the generated SPN will not collide with another in the Windows
+        /// Active directory), cannot be larger than 63 characters, and cannot contain characters such
+        /// as '/', '&lt;' or '&gt;'.</param>
         bool RpcServer::Start(const std::vector<RPC_IF_HANDLE> &interfaces,
-                              const string &description)
+                              const string &serviceName)
         {
             CALL_STACK_TRACE;
 
@@ -175,7 +179,7 @@ namespace _3fd
                 std::lock_guard<std::mutex> lock(singletonAccessMutex);
 
                 _ASSERTE(uniqueObject.get() != nullptr); // singleton not instantiated
-                return uniqueObject->Start(interfaces, description);
+                return uniqueObject->Start(interfaces, serviceName);
             }
             catch (core::IAppException &)
             {

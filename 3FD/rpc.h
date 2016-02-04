@@ -41,7 +41,7 @@ namespace _3fd
             static void Initialize(ProtocolSequence protSeq);
 
             static bool Start(const std::vector<RPC_IF_HANDLE> &interfaces,
-                              const string &description);
+                              const string &serviceName);
 
             static bool Stop();
 
@@ -75,7 +75,7 @@ namespace _3fd
         public:
 
             RpcClient(
-                const string &objUUID,
+                const string &intfUUID,
                 ProtocolSequence protSeq,
                 const string &destination,
                 const string &endpoint

@@ -18,7 +18,7 @@ namespace _3fd
         /// <summary>
         /// Initializes a new instance of the <see cref="RpcClient"/> class.
         /// </summary>
-        /// <param name="objUUID">The UUID of the object in the RPC server.
+        /// <param name="intfUUID">The UUID of the interface in the RPC server.
         /// (Optional: an empty string is equivalent to a nil UUID.)</param>
         /// <param name="protSeq">The transport to use for RPC.</param>
         /// <param name="destination">The destination: local RPC requires the machine name,
@@ -27,7 +27,7 @@ namespace _3fd
         /// name, while for TCP or UDP this is the port number. Specifying the endpoint is
         /// optional if the server has registered its bindings with the endpoint mapper.</param>
         RpcClient::RpcClient(
-            const string &objUUID,
+            const string &intfUUID,
             ProtocolSequence protSeq,
             const string &destination,
             const string &endpoint)
@@ -38,15 +38,15 @@ namespace _3fd
             // Prepare text parameters encoded in UCS-2:
             std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
 
-            std::wstring ucs2ObjUuid;
-            RPC_WSTR paramObjUuid;
+            std::wstring ucs2IntfUuid;
+            RPC_WSTR paramObjTypeUuid;
 
-            if (objUUID.empty() || objUUID == "")
-                paramObjUuid = nullptr;
+            if (intfUUID.empty() || intfUUID == "")
+                paramObjTypeUuid = nullptr;
             else
             {
-                ucs2ObjUuid = transcoder.from_bytes(objUUID);
-                paramObjUuid = (RPC_WSTR)ucs2ObjUuid.c_str();
+                ucs2IntfUuid = transcoder.from_bytes(intfUUID);
+                paramObjTypeUuid = (RPC_WSTR)ucs2IntfUuid.c_str();
             }
 
             auto paramProtSeq = (RPC_WSTR)ToString(protSeq);
@@ -68,7 +68,7 @@ namespace _3fd
             // Compose the binding string:
             RPC_WSTR bindingString;
             auto status = RpcStringBindingComposeW(
-                paramObjUuid,
+                paramObjTypeUuid,
                 paramProtSeq,
                 paramDestination,
                 paramEndpoint,
