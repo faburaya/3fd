@@ -18,6 +18,8 @@ namespace _3fd
 
             const wchar_t *m_protSeqName;
 
+            std::wstring m_serviceName;
+
             /// <summary>
             /// Enumerates the possible states for the RPC server.
             /// </summary>
@@ -33,12 +35,15 @@ namespace _3fd
 
         public:
 
-            RpcServerImpl(ProtocolSequence protSeq);
+            RpcServerImpl(
+                ProtocolSequence protSeq,
+                const string &serviceName,
+                bool useActDirSec
+            );
 
             ~RpcServerImpl();
 
-            bool Start(const std::vector<RPC_IF_HANDLE> &interfaces,
-                       const string &description);
+            bool Start(const std::vector<RPC_IF_HANDLE> &interfaces);
 
             bool Stop();
 

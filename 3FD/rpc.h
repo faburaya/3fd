@@ -38,10 +38,11 @@ namespace _3fd
 
             ~RpcServer() {}
 
-            static void Initialize(ProtocolSequence protSeq);
+            static void Initialize(ProtocolSequence protSeq,
+                                   const string &serviceName,
+                                   bool useActDirSec = true);
 
-            static bool Start(const std::vector<RPC_IF_HANDLE> &interfaces,
-                              const string &serviceName);
+            static bool Start(const std::vector<RPC_IF_HANDLE> &interfaces);
 
             static bool Stop();
 

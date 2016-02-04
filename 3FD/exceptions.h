@@ -36,6 +36,8 @@ namespace _3fd
 
 			static string GetHResultLabel(HRESULT errCode);
 
+            static string GetDWordErrorMessage(DWORD errCode);
+
 #	ifdef _3FD_PLATFORM_WINRT
 			static string GetDetailsFromWinRTEx(Platform::Exception ^ex);
 #	endif

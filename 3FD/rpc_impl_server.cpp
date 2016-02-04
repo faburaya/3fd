@@ -4,6 +4,7 @@
 #include "callstacktracer.h"
 #include "logger.h"
 
+#include <NtDsAPI.h>
 #include <codecvt>
 #include <sstream>
 
@@ -23,7 +24,9 @@ namespace _3fd
         /// Initializes the RPC server before running it.
         /// </summary>
         /// <param name="protSeq">The protocol sequence to be used.</param>
-        void RpcServer::Initialize(ProtocolSequence protSeq)
+        /// <param name="useActDirSec">Whether Microsoft Active Directory security services
+        /// should be used instead of local authentication.</param>
+        void RpcServer::Initialize(ProtocolSequence protSeq, bool useActDirSec)
         {
             CALL_STACK_TRACE;
 
@@ -32,7 +35,7 @@ namespace _3fd
                 std::lock_guard<std::mutex> lock(singletonAccessMutex);
 
                 _ASSERTE(uniqueObject.get() != nullptr); // cannot initialize RPC server twice
-                uniqueObject.reset(new RpcServerImpl(protSeq));
+                uniqueObject.reset(new RpcServerImpl(protSeq, useActDirSec));
             }
             catch (core::IAppException &)
             {
@@ -58,84 +61,89 @@ namespace _3fd
         /// Initializes a new instance of the <see cref="RpcServerImpl" /> class.
         /// </summary>
         /// <param name="protSeq">The protocol sequence to be used.</param>
-        RpcServerImpl::RpcServerImpl(ProtocolSequence protSeq) :
+        /// <param name="serviceName">A friendly name to identify this service. Such name will be
+        /// employed for both informational (will be displayed in admin tools that expose listening
+        /// servers, as a description) and security purposes (the "service class" in the SPN). Thus
+        /// it must be unique (in a way the generated SPN will not collide with another in the Windows
+        /// Active directory), and cannot contain characters such as '/', '&lt;' or '&gt;'.</param>
+        /// <param name="useActDirSec">Whether Microsoft Active Directory security services
+        /// should be used instead of local authentication.</param>
+        RpcServerImpl::RpcServerImpl(ProtocolSequence protSeq,
+                                     const string &serviceName,
+                                     bool useActDirSec) :
             m_bindings(nullptr),
             m_protSeqName(ToString(protSeq)),
             m_state(State::Instantiated)
         {
+            std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
+            m_serviceName = transcoder.from_bytes(serviceName);
+
+            auto rc = DsGetSpnW(
+                useActDirSec ? DS_SPN_DN_HOST : DS_SPN_DNS_HOST,
+                m_serviceName.c_str(),
+
+            );
+
+            // Set the protocol sequence:
+            auto status = RpcServerUseProtseqW(
+                (unsigned short *)m_protSeqName,
+                RPC_C_PROTSEQ_MAX_REQS_DEFAULT,
+                nullptr
+            );
+
+            ThrowIfError(status, "Failed to set protocol sequence for RPC server");
+
+            // Inquire bindings:
+            status = RpcServerInqBindings(&m_bindings);
+            ThrowIfError(status, "Failed to inquire bindings for RPC server");
+            m_state = State::BindingsAcquired;
         }
 
         /// <summary>
         /// Private implementation for <see cref="RpcServer::Start"/>.
         /// </summary>
-        bool RpcServerImpl::Start(const std::vector<RPC_IF_HANDLE> &interfaces,
-                                  const string &serviceName)
+        bool RpcServerImpl::Start(const std::vector<RPC_IF_HANDLE> &interfaces)
         {
             CALL_STACK_TRACE;
 
             try
             {
-                RPC_STATUS status;
-
-                switch (m_state)
+                if (m_state == State::BindingsAcquired)
                 {
-                case State::Instantiated:
+                    const int annStrMaxSize(64);
+                    auto annotation = m_serviceName.substr(0, annStrMaxSize - 1);
 
-                    // Set the protocol sequence:
-                    status = RpcServerUseProtseqW(
-                        (unsigned short *)m_protSeqName,
-                        RPC_C_PROTSEQ_MAX_REQS_DEFAULT,
-                        nullptr
-                    );
-
-                    ThrowIfError(status, "Failed to set protocol sequence for RPC server");
-
-                    // Inquire bindings:
-                    status = RpcServerInqBindings(&m_bindings);
-                    ThrowIfError(status, "Failed to inquire bindings for RPC server");
-                    m_state = State::BindingsAcquired;
-
-                    // FALLTHROUGH:
-                    case State::BindingsAcquired:
+                    // For each interface:
+                    for (auto &intfHandle : interfaces)
                     {
-                        // Generate the annotation according the API doc:
-                        std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
-                        const int annStrMaxSize(64);
-                        std::wstring annotation =
-                            transcoder.from_bytes(serviceName).substr(0, annStrMaxSize - 1);
+                        // Register the interface:
+                        auto status = RpcServerRegisterIf(intfHandle, nullptr, nullptr);
+                        ThrowIfError(status, "Failed to register RPC interface");
 
-                        // For each interface:
-                        for (auto &intfHandle : interfaces)
-                        {
-                            // Register the interface:
-                            status = RpcServerRegisterIf(intfHandle, nullptr, nullptr);
-                            ThrowIfError(status, "Failed to register RPC interface");
+                        // if any interface has been registered, flag it...
+                        m_state = State::InterfacesRegistered;
 
-                            // if any interface has been registered, flag it...
-                            m_state = State::InterfacesRegistered;
+                        // Update server address information in the local endpoint-map database:
+                        status = RpcEpRegisterW(
+                            intfHandle,
+                            m_bindings,
+                            nullptr,
+                            (RPC_WSTR)annotation.c_str()
+                        );
 
-                            // Update server address information in the local endpoint-map database:
-                            status = RpcEpRegisterW(
-                                intfHandle,
-                                m_bindings,
-                                nullptr,
-                                (RPC_WSTR)annotation.c_str()
-                            );
-
-                            ThrowIfError(status, "Failed to register endpoints for RPC server");
-                        }
+                        ThrowIfError(status, "Failed to register endpoints for RPC server");
                     }
 
                     // Start listening requests (asynchronous call, returns immediately):
-                    status = RpcServerListen(1, RPC_C_LISTEN_MAX_CALLS_DEFAULT, 1);
+                    auto status = RpcServerListen(1, RPC_C_LISTEN_MAX_CALLS_DEFAULT, 1);
                     ThrowIfError(status, "Failed to start RPC server listeners");
                     m_state = State::Listening;
                     return STATUS_OKAY;
-
-                case State::Listening:
+                }
+                else if (m_state == State::Listening)
                     return STATUS_FAIL; // nothing to do
-
-                default:
+                else
+                {
                     _ASSERTE(false); // unsupported state
                     return STATUS_FAIL;
                 }
@@ -163,14 +171,7 @@ namespace _3fd
         /// </summary>
         /// <param name="interfaces">The handles for the interfaces implemented by this RPC server,
         /// as provided in the source compiled from the IDL.</param>
-        /// <param name="serviceName">A friendly name to identify this service. Such name will be
-        /// employed for both informational (will be displayed in admin tools that expose listening
-        /// servers, as a description) and security purposes (the "service class" in the SPN). Thus
-        /// it must be unique (in a way the generated SPN will not collide with another in the Windows
-        /// Active directory), cannot be larger than 63 characters, and cannot contain characters such
-        /// as '/', '&lt;' or '&gt;'.</param>
-        bool RpcServer::Start(const std::vector<RPC_IF_HANDLE> &interfaces,
-                              const string &serviceName)
+        bool RpcServer::Start(const std::vector<RPC_IF_HANDLE> &interfaces)
         {
             CALL_STACK_TRACE;
 

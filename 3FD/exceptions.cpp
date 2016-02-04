@@ -53,6 +53,35 @@ namespace _3fd
 			return oss.str();
 		}
 
+        string WWAPI::GetDWordErrorMessage(DWORD errCode)
+        {
+            wchar_t *wErrMsgPtr;
+            
+            auto rc = FormatMessageW(
+                FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+                nullptr,
+                errCode,
+                MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                (LPWSTR)&wErrMsgPtr, 0,
+                nullptr
+            );
+
+            if (rc)
+            {
+                std::ostringstream oss;
+                oss << "Error code " << errCode << " (secondary failure prevented retrieval of further details)";
+                return oss.str();
+            }
+            
+            std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
+            auto message = transcoder.to_bytes(wErrMsgPtr);
+
+            auto hnd = LocalFree(wErrMsgPtr);
+            _ASSERTE(hnd == NULL);
+
+            return message;
+        }
+
 #	ifdef _3FD_PLATFORM_WINRT // Store Apps only:
 		/// <summary>
 		/// Gets the details from a WinRT exception.
