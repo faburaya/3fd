@@ -4,9 +4,11 @@
 #include "callstacktracer.h"
 #include "logger.h"
 
-#include <NtDsAPI.h>
+#include <Poco\UUIDGenerator.h>
 #include <codecvt>
+#include <map>
 #include <sstream>
+#include <NtDsAPI.h>
 
 namespace _3fd
 {
@@ -29,11 +31,15 @@ namespace _3fd
         /// servers, as a description) and security purposes (the "service class" in the SPN). Thus
         /// it must be unique (in a way the generated SPN will not collide with another in the Windows
         /// Active directory), and cannot contain characters such as '/', '&lt;' or '&gt;'.</param>
+        /// <param name="callbackAuthz">A callback returning a boolean, which means whether the client
+        /// is authorized or not. The callback receives a context handle that is expected by Microsoft
+        /// authorization API.</param>
         /// <param name="useActDirSec">Whether Microsoft Active Directory security services
         /// should be used instead of local authentication.</param>
         void RpcServer::Initialize(
             ProtocolSequence protSeq,
             const string &serviceName,
+            const std::function<bool(AUTHZ_CLIENT_CONTEXT_HANDLE)> &callbackAuthz,
             bool useActDirSec)
         {
             CALL_STACK_TRACE;
@@ -43,7 +49,7 @@ namespace _3fd
                 std::lock_guard<std::mutex> lock(singletonAccessMutex);
 
                 _ASSERTE(uniqueObject.get() != nullptr); // cannot initialize RPC server twice
-                uniqueObject.reset(new RpcServerImpl(protSeq, serviceName, useActDirSec));
+                uniqueObject.reset(new RpcServerImpl(protSeq, serviceName, callbackAuthz, useActDirSec));
             }
             catch (core::IAppException &)
             {
@@ -74,13 +80,18 @@ namespace _3fd
         /// servers, as a description) and security purposes (the "service class" in the SPN). Thus
         /// it must be unique (in a way the generated SPN will not collide with another in the Windows
         /// Active directory), and cannot contain characters such as '/', '&lt;' or '&gt;'.</param>
+        /// <param name="callbackAuthz">A callback returning a boolean, which means whether the client
+        /// is authorized or not. The callback receives a context handle that is expected by Microsoft
+        /// authorization API.</param>
         /// <param name="useActDirSec">Whether Microsoft Active Directory security services
         /// should be used instead of local authentication.</param>
-        RpcServerImpl::RpcServerImpl(ProtocolSequence protSeq,
-                                     const string &serviceClass,
-                                     bool useActDirSec) :
+        RpcServerImpl::RpcServerImpl(
+            ProtocolSequence protSeq,
+            const string &serviceClass,
+            const std::function<bool(AUTHZ_CLIENT_CONTEXT_HANDLE)> &callbackAuthz,
+            bool useActDirSec)
+        :
             m_bindings(nullptr),
-            m_protSeqName(ToString(protSeq)),
             m_state(State::NotInitialized)
         {
             CALL_STACK_TRACE;
@@ -102,7 +113,7 @@ namespace _3fd
                     nullptr,
                     &spnArraySize,
                     &spnArray
-                    );
+                );
 
                 if (rc != ERROR_SUCCESS)
                 {
@@ -123,25 +134,40 @@ namespace _3fd
                 );
 
                 string spn = transcoder.to_bytes(spnArray[0]);
-                ThrowIfError(status, "Could not register SPN with authentication service", spn);
+                ThrowIfError(status,
+                    "Could not register SPN with Kerberos authentication service", spn);
 
+                // Notify registration in authentication service:
                 std::ostringstream oss;
                 oss << "RPC server \'" << serviceClass
-                    << "\' was registered with the authentication service using SPN = " << spn;
+                    << "\' has been registered with Kerberos "
+                       "authentication service using SPN = " << spn;
 
                 core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
                 oss.str("");
 
+                std::wstring protSeqName = transcoder.from_bytes(ToString(protSeq));
+
                 // Set the protocol sequence:
                 status = RpcServerUseProtseqW(
-                    (unsigned short *)m_protSeqName,
+                    (unsigned short *)protSeqName.c_str(),
                     RPC_C_PROTSEQ_MAX_REQS_DEFAULT,
                     nullptr
                 );
 
-                ThrowIfError(status, "Could not set protocol sequence for RPC server");
+                ThrowIfError(status,
+                    "Could not set protocol sequence for RPC server",
+                    ToString(protSeq));
 
-                // Inquire bindings:
+                // Notify setting of protocol sequence:
+                std::ostringstream oss;
+                oss << "RPC server \'" << serviceClass
+                    << "\' using protocol sequence \'" << ToString(protSeq) << '\'';
+
+                core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
+                oss.str("");
+
+                // Inquire bindings (dynamic endpoints):
                 status = RpcServerInqBindings(&m_bindings);
                 ThrowIfError(status, "Could not inquire bindings for RPC server");
                 m_state = State::BindingsAcquired;
@@ -164,48 +190,109 @@ namespace _3fd
             DsFreeSpnArrayW(spnArraySize, spnArray);
         }
 
+        // Callback for authorization evaluation, to be set during interface registration
+        static RPC_STATUS CALLBACK callbackIntfAuthz(
+            _In_ RPC_IF_HANDLE handle,
+            _In_ void *context)
+        {
+
+        }
+
         /// <summary>
         /// Private implementation for <see cref="RpcServer::Start"/>.
         /// </summary>
-        bool RpcServerImpl::Start(const std::vector<RPC_IF_HANDLE> &interfaces)
+        bool RpcServerImpl::Start(const std::vector<RpcSrvObject> &objects)
         {
             CALL_STACK_TRACE;
+
+            RPC_STATUS status;
 
             try
             {
                 if (m_state == State::BindingsAcquired)
                 {
+                    std::map<RPC_IF_HANDLE, std::vector<UUID>> objsByIntfHnd;
+
+                    Poco::UUIDGenerator uuidGntor;
+
+                    // For each object implementing a RPC interface:
+                    for (auto &obj : objects)
+                    {
+                        // Create an UUID on the fly for the EPV:
+                        UUID paramMgrTypeUuid;
+                        auto mgrTypeUuid = uuidGntor.createOne();
+                        mgrTypeUuid.copyTo(reinterpret_cast<char *> (&paramMgrTypeUuid));
+
+                        // Register the interface with the RPC runtime lib:
+                        status = RpcServerRegisterIfEx(
+                            obj.interfaceHandle,
+                            &paramMgrTypeUuid,
+                            obj.epv,
+                            0, // use default security flags
+                            RPC_C_LISTEN_MAX_CALLS_DEFAULT, // ignored because the interface is not auto-listen
+                            callbackIntfAuthz
+                        );
+
+                        ThrowIfError(status, "Failed to register interface with RPC runtime library");
+
+                        // if any interface has been registered, flag it...
+                        m_state = State::IntfRegRuntimeLib;
+
+                        /* Assign the object UUID (as known by the customer)
+                        to the EPV (particular interface implementation): */
+                        UUID paramObjUuid;
+                        obj.uuid.copyTo(reinterpret_cast<char *> (&paramObjUuid));
+                        status = RpcObjectSetType(&paramObjUuid, &paramMgrTypeUuid);
+
+                        ThrowIfError(status,
+                            "Failed to associate RPC object with EPV",
+                            obj.uuid.toString());
+
+                        // keep the UUID assigned to the EPV (object type UUID) for later...
+                        objsByIntfHnd[obj.interfaceHandle].push_back(paramMgrTypeUuid);
+                    }
+
                     const int annStrMaxSize(64);
                     auto annotation = m_serviceClass.substr(0, annStrMaxSize - 1);
 
-                    // For each interface:
-                    for (auto &intfHandle : interfaces)
+                    // For each RPC interface:
+                    for (auto &pair : objsByIntfHnd)
                     {
-                        // Register the interface:
-                        auto status = RpcServerRegisterIf(intfHandle, nullptr, nullptr);
-                        ThrowIfError(status, "Failed to register RPC interface");
+                        auto interfaceHandle = pair.first;
+                        auto &objects = pair.second;
 
-                        // if any interface has been registered, flag it...
-                        m_state = State::InterfacesRegistered;
+                        UUID_VECTOR objsUuidsVec{ objects.size(), objects.data() };
 
-                        // Update server address information in the local endpoint-map database:
+                        /* Complete binding of dynamic endpoints by registering
+                        these objects in the local endpoint-map database: */
                         status = RpcEpRegisterW(
-                            intfHandle,
+                            interfaceHandle,
                             m_bindings,
-                            nullptr,
+                            &objsUuidsVec,
                             (RPC_WSTR)annotation.c_str()
                         );
 
-                        ThrowIfError(status, "Failed to register endpoints for RPC server");
+                        ThrowIfError(status,
+                            "Failed to complete binding of dynamic endpoints for RPC server interface");
+
+                        // if any interface has been registered, flag it...
+                        m_state = State::IntfRegLocalEndptMap;
+
+                        /* Keep track of every successful registration in the local
+                        endpoint-map database. Later, for proper resource release
+                        this will be needed. */
+                        m_regObjsByIntfHnd[interfaceHandle] = std::move(objects);
                     }
 
+                    objsByIntfHnd.clear(); // release some memory
+
                     // Start listening requests (asynchronous call, returns immediately):
-                    auto status = RpcServerListen(1, RPC_C_LISTEN_MAX_CALLS_DEFAULT, 1);
+                    status = RpcServerListen(1, RPC_C_LISTEN_MAX_CALLS_DEFAULT, 1);
                     ThrowIfError(status, "Failed to start RPC server listeners");
                     m_state = State::Listening;
                     return STATUS_OKAY;
                 }
-                else if (m_state == State::Listening)
+                else if(m_state == State::Listening)
                     return STATUS_FAIL; // nothing to do
                 else
                 {
@@ -215,17 +302,38 @@ namespace _3fd
             }
             catch (std::exception &)
             {
-                if (m_state == State::InterfacesRegistered)
+                switch (m_state)
                 {
-                    auto status = RpcServerUnregisterIf(nullptr, nullptr, 1);
+                case State::IntfRegLocalEndptMap:
+
+                    for (auto &pair : m_regObjsByIntfHnd)
+                    {
+                        auto interfaceHandle = pair.first;
+                        auto &objects = pair.second;
+
+                        UUID_VECTOR objsUuidsVec{ objects.size(), objects.data() };
+                        status = RpcEpUnregister(interfaceHandle, m_bindings, &objsUuidsVec);
+
+                        LogIfError(status,
+                            "RPC Server start request suffered a secondary failure on attempt"
+                            "to unregister interface from local endpoint-map database",
+                            core::Logger::PRIO_CRITICAL);
+                    }
+
+                // FALLTROUGH
+                case State::IntfRegRuntimeLib:
+                
+                    status = RpcServerUnregisterIf(nullptr, nullptr, 1);
 
                     LogIfError(status,
                         "RPC Server start request suffered a secondary failure "
-                        "on attempt to unregister interfaces",
+                        "on attempt to unregister interfaces from runtime library",
                         core::Logger::PRIO_CRITICAL);
+                   
+                // FALLTROUGH
+                default:
+                    throw;
                 }
-
-                throw;
             }
         }
 
@@ -233,13 +341,13 @@ namespace _3fd
         /// If the server is not already running, registers the given interfaces
         /// and starts the RPC server listeners asynchronously (does not block).
         /// </summary>
-        /// <param name="interfaces">The handles for the interfaces implemented by this RPC server,
-        /// as provided in the source compiled from the IDL.</param>
+        /// <param name="objects">The objects are every particular implementation
+        /// of interface for this RPC server.</param>
         /// <return>
         /// <see cref="STATUS_OKAY"/> whether successful, otherwise, <see cref="STATUS_FAIL"/>
         /// (if the server was already listening or in an unexpected state).
         /// </return>
-        bool RpcServer::Start(const std::vector<RPC_IF_HANDLE> &interfaces)
+        bool RpcServer::Start(const std::vector<RpcSrvObject> &objects)
         {
             CALL_STACK_TRACE;
 
@@ -248,7 +356,7 @@ namespace _3fd
                 std::lock_guard<std::mutex> lock(singletonAccessMutex);
 
                 _ASSERTE(uniqueObject.get() != nullptr); // singleton not instantiated
-                return uniqueObject->Start(interfaces);
+                return uniqueObject->Start(objects);
             }
             catch (core::IAppException &)
             {
@@ -293,8 +401,24 @@ namespace _3fd
                     "Failed to await for RPC server stop",
                     core::Logger::PRIO_CRITICAL);
 
-            // FALLTHROUGH:
-            case State::InterfacesRegistered:
+            // FALLTHROUGH
+            case State::IntfRegLocalEndptMap:
+
+                for (auto &pair : m_regObjsByIntfHnd)
+                {
+                    auto interfaceHandle = pair.first;
+                    auto &objects = pair.second;
+
+                    UUID_VECTOR objsUuidsVec{ objects.size(), objects.data() };
+                    status = RpcEpUnregister(interfaceHandle, m_bindings, &objsUuidsVec);
+
+                    LogIfError(status,
+                        "Failed to unregister interface from local endpoint-map database",
+                        core::Logger::PRIO_CRITICAL);
+                }
+
+            // FALLTROUGH
+            case State::IntfRegRuntimeLib:
 
                 status = RpcServerUnregisterIf(nullptr, nullptr, 1);
                 LogIfError(status,
@@ -332,7 +456,7 @@ namespace _3fd
                 status = RpcMgmtWaitServerListen();
                 ThrowIfError(status, "Failed to await for RPC server stop");
 
-                m_state = State::InterfacesRegistered;
+                m_state = State::IntfRegLocalEndptMap;
                 return STATUS_OKAY;
             }
             else
@@ -389,9 +513,10 @@ namespace _3fd
             switch (m_state)
             {
             case State::BindingsAcquired:
+            case State::IntfRegRuntimeLib:
                 return STATUS_FAIL;
             
-            case State::InterfacesRegistered:
+            case State::IntfRegLocalEndptMap:
 
                 // Start listening requests (blocking call):
                 status = RpcServerListen(1, RPC_C_LISTEN_MAX_CALLS_DEFAULT, 1);
@@ -412,8 +537,9 @@ namespace _3fd
         /// Resumes the RPC server listening if previously stopped.
         /// </summary>
         /// <return>
-        /// <see cref="STATUS_OKAY"/> whether successful, otherwise,
-        /// <see cref="STATUS_FAIL"/> (if the server was not stopped after a previous run).
+        /// <see cref="STATUS_OKAY"/> whether successful or already running,
+        /// otherwise, <see cref="STATUS_FAIL"/> (if the binding was not completed
+        /// with interface registration in the local endpoint-map database).
         /// </return>
         bool RpcServer::Resume()
         {

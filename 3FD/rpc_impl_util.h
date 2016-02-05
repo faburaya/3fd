@@ -11,7 +11,7 @@ namespace _3fd
 
     namespace rpc
     {
-        const wchar_t *ToString(ProtocolSequence protSeq);
+        const char *ToString(ProtocolSequence protSeq);
 
         void ThrowIfError(RPC_STATUS status, const char *message);
 

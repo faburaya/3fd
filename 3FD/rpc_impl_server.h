@@ -16,7 +16,7 @@ namespace _3fd
 
             RPC_BINDING_VECTOR *m_bindings;
 
-            const wchar_t *m_protSeqName;
+            std::map<RPC_IF_HANDLE, std::vector<UUID>> m_regObjsByIntfHnd;
 
             std::wstring m_serviceClass;
 
@@ -25,10 +25,11 @@ namespace _3fd
             /// </summary>
             enum class State
             {
-                NotInitialized,
-                BindingsAcquired,
-                InterfacesRegistered,
-                Listening                
+                NotInitialized, // initial state: not fully instantiated
+                BindingsAcquired, // bindings acquired for dynamic endpoints & authentication service set
+                IntfRegRuntimeLib, // interfaces registered with RPC runtime library
+                IntfRegLocalEndptMap, // interfaces registered in the local endpoint-map database
+                Listening // server is listening
             };
 
             State m_state;
@@ -38,12 +39,13 @@ namespace _3fd
             RpcServerImpl(
                 ProtocolSequence protSeq,
                 const string &serviceClass,
+                const std::function<bool(AUTHZ_CLIENT_CONTEXT_HANDLE)> &callbackAuthz,
                 bool useActDirSec
             );
 
             ~RpcServerImpl();
 
-            bool Start(const std::vector<RPC_IF_HANDLE> &interfaces);
+            bool Start(const std::vector<RpcSrvObject> &objects);
 
             bool Stop();
 

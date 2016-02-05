@@ -35,23 +35,20 @@ namespace _3fd
         /// <param name="protSeq">The protol sequence to convert.</param>
         /// <returns>A string with the name of the protocol sequence
         /// as expected by the system RPC API.</returns>
-        const wchar_t *ToString(ProtocolSequence protSeq)
+        const char *ToString(ProtocolSequence protSeq)
         {
             // What protocol sequence?
             switch (protSeq)
             {
             case ProtocolSequence::Local:
-                return L"ncalrpc";
+                return "ncalrpc";
                 
             case ProtocolSequence::TCP:
-                return L"ncacn_ip_tcp";
-                
-            case ProtocolSequence::UDP:
-                return L"ncadg_ip_udp";
+                return "ncacn_ip_tcp";
                 
             default:
                 _ASSERTE(false);
-                return nullptr;
+                return "UNSUPPORTED";
             }
         }
 
