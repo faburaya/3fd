@@ -26,7 +26,7 @@ namespace _3fd
         /// Initializes the RPC server before running it.
         /// </summary>
         /// <param name="protSeq">The protocol sequence to be used.</param>
-        /// <param name="serviceName">A friendly name to identify this service. Such name will be
+        /// <param name="serviceClass">A friendly name to identify this service. Such name will be
         /// employed for both informational (will be displayed in admin tools that expose listening
         /// servers, as a description) and security purposes (the "service class" in the SPN). Thus
         /// it must be unique (in a way the generated SPN will not collide with another in the Windows
@@ -36,7 +36,7 @@ namespace _3fd
         /// should be used instead of local authentication.</param>
         void RpcServer::Initialize(
             ProtocolSequence protSeq,
-            const string &serviceName,
+            const string &serviceClass,
             AuthenticationLevel authLevel,
             bool useActDirSec)
         {
@@ -47,7 +47,10 @@ namespace _3fd
                 std::lock_guard<std::mutex> lock(singletonAccessMutex);
 
                 _ASSERTE(uniqueObject.get() != nullptr); // cannot initialize RPC server twice
-                uniqueObject.reset(new RpcServerImpl(protSeq, serviceName, useActDirSec));
+                
+                uniqueObject.reset(
+                    new RpcServerImpl(protSeq, serviceClass, authLevel, useActDirSec)
+                );
             }
             catch (core::IAppException &)
             {
@@ -88,6 +91,7 @@ namespace _3fd
             bool useActDirSec)
         :
             m_bindings(nullptr),
+            m_authLevel(authLevel),
             m_state(State::NotInitialized)
         {
             CALL_STACK_TRACE;
@@ -100,52 +104,55 @@ namespace _3fd
                 std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
                 m_serviceClass = transcoder.from_bytes(serviceClass);
 
-                // Generate a list of SPN`s using the fully qualified DNS name of the local computer:
-                auto rc = DsGetSpnW(
-                    useActDirSec ? DS_SPN_DN_HOST : DS_SPN_DNS_HOST,
-                    m_serviceClass.c_str(),
-                    nullptr, 0,
-                    0, nullptr,
-                    nullptr,
-                    &spnArraySize,
-                    &spnArray
-                );
-
-                if (rc != ERROR_SUCCESS)
+                if(authLevel != AuthenticationLevel::None)
                 {
+                    // Generate a list of SPN`s using the fully qualified DNS name of the local computer:
+                    auto rc = DsGetSpnW(
+                        useActDirSec ? DS_SPN_DN_HOST : DS_SPN_DNS_HOST,
+                        m_serviceClass.c_str(),
+                        nullptr, 0,
+                        0, nullptr,
+                        nullptr,
+                        &spnArraySize,
+                        &spnArray
+                    );
+
+                    if (rc != ERROR_SUCCESS)
+                    {
+                        std::ostringstream oss;
+                        oss << "Could not generate SPN for RPC server - ";
+                        core::WWAPI::AppendDWordErrorMessage(rc, "DsGetSpn", oss);
+                        throw core::AppException<std::runtime_error>(oss.str());
+                    }
+
+                    _ASSERTE(spnArraySize > 0);
+
+                    // Register the SPN in the authentication service:
+                    auto status = RpcServerRegisterAuthInfoW(
+                        (RPC_WSTR)spnArray[0],
+                        RPC_C_AUTHN_GSS_KERBEROS,
+                        nullptr,
+                        nullptr
+                    );
+
+                    string spn = transcoder.to_bytes(spnArray[0]);
+                    ThrowIfError(status,
+                        "Could not register SPN with Kerberos authentication service", spn);
+
+                    // Notify registration in authentication service:
                     std::ostringstream oss;
-                    oss << "Could not generate SPN for RPC server - ";
-                    core::WWAPI::AppendDWordErrorMessage(rc, "DsGetSpn", oss);
-                    throw core::AppException<std::runtime_error>(oss.str());
+                    oss << "RPC server \'" << serviceClass
+                        << "\' has been registered with Kerberos "
+                        "authentication service using SPN = " << spn;
+
+                    core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
+                    oss.str("");
                 }
-
-                _ASSERTE(spnArraySize > 0);
-
-                // Register the SPN in the authentication service:
-                auto status = RpcServerRegisterAuthInfoW(
-                    (RPC_WSTR)spnArray[0],
-                    RPC_C_AUTHN_GSS_KERBEROS,
-                    nullptr,
-                    nullptr
-                );
-
-                string spn = transcoder.to_bytes(spnArray[0]);
-                ThrowIfError(status,
-                    "Could not register SPN with Kerberos authentication service", spn);
-
-                // Notify registration in authentication service:
-                std::ostringstream oss;
-                oss << "RPC server \'" << serviceClass
-                    << "\' has been registered with Kerberos "
-                       "authentication service using SPN = " << spn;
-
-                core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
-                oss.str("");
 
                 std::wstring protSeqName = transcoder.from_bytes(ToString(protSeq));
 
                 // Set the protocol sequence:
-                status = RpcServerUseProtseqW(
+                auto status = RpcServerUseProtseqW(
                     (unsigned short *)protSeqName.c_str(),
                     RPC_C_PROTSEQ_MAX_REQS_DEFAULT,
                     nullptr
@@ -183,7 +190,19 @@ namespace _3fd
                 throw;
             }
 
-            DsFreeSpnArrayW(spnArraySize, spnArray);
+            if (spnArraySize > 0)
+                DsFreeSpnArrayW(spnArraySize, spnArray);
+        }
+
+        /// <summary>
+        /// Gets the required authentication level.
+        /// </summary>
+        /// <returns>The required authentication level for clients,
+        /// as defined upon initialization.</returns>
+        AuthenticationLevel RpcServer::GetRequiredAuthLevel()
+        {
+            _ASSERTE(uniqueObject.get() != nullptr); // singleton not instantiated
+            return uniqueObject->GetRequiredAuthLevel();
         }
 
         /* This callback is invoked by RPC runtime every time an RPC takes
@@ -202,11 +221,18 @@ namespace _3fd
                 &callAttributes
             );
 
-            LogIfError(status,
-                "Failed to inquire RPC attributes during authorization",
-                core::Logger::PRIO_ERROR);
+            if (status != RPC_S_OK)
+            {
+                LogIfError(status,
+                    "Failed to inquire RPC attributes during authorization",
+                    core::Logger::PRIO_ERROR);
 
-            if (callAttributes.AuthenticationLevel != RPC_C_AUTHN_LEVEL_PKT_INTEGRITY)
+                return RPC_S_ACCESS_DENIED;
+            }
+
+            // Reject call if client authentication level does not meet server requirements:
+            auto requiredAuthLevel = static_cast<unsigned long> (RpcServer::GetRequiredAuthLevel());
+            if (callAttributes.AuthenticationLevel != requiredAuthLevel)
                 return RPC_S_ACCESS_DENIED;
 
             return RPC_S_OK;
@@ -244,7 +270,7 @@ namespace _3fd
                             obj.epv,
                             0, // use default security flags
                             RPC_C_LISTEN_MAX_CALLS_DEFAULT, // ignored because the interface is not auto-listen
-                            callbackIntfAuthz
+                            (m_authLevel != AuthenticationLevel::None) ? callbackIntfAuthz : nullptr
                         );
 
                         ThrowIfError(status, "Failed to register interface with RPC runtime library");

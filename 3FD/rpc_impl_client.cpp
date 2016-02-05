@@ -5,7 +5,9 @@
 #include "logger.h"
 
 #include <codecvt>
+#include <memory>
 #include <sstream>
+#include <NtDsAPI.h>
 
 namespace _3fd
 {
@@ -22,14 +24,24 @@ namespace _3fd
         /// <param name="objUUID">The UUID of the object in the RPC server. An empty string
         /// is equivalent to a nil UUID, which is valid as long as the endpoint is specified.</param>
         /// <param name="destination">The destination: local RPC requires the machine name,
-        /// while for TCP or UDP this is the network address (IP or host name).</param>
+        /// while for TCP this is the network address (IP or host name).</param>
+        /// <param name="authLevel">The authentication level to use.</param>
+        /// <param name="impLevel">The level allowed for the RPC server to impersonate
+        /// the identity of an authorized client.This parameter is ignored if the
+        /// authentication level specifies that no authentication takes place.</param>
+        /// <param name="serviceClass">A friendly name used to compose the SPN and identify
+        /// the RPC server in the authentication service. This parameter is ignored if the
+        /// authentication level specifies that no authentication takes place.</param>
         /// <param name="endpoint">The endpoint: for local RPC is the application or service
-        /// name, while for TCP or UDP this is the port number. Specifying the endpoint is
-        /// optional if the server has registered its bindings with the endpoint mapper.</param>
+        /// name, while for TCP this is the port number. Specifying the endpoint is optional
+        /// if the server has registered its bindings with the endpoint mapper.</param>
         RpcClient::RpcClient(
             ProtocolSequence protSeq,
             const string &objUUID,
             const string &destination,
+            AuthenticationLevel authLevel,
+            ImpersonationLevel impLevel,
+            const string &serviceClass,
             const string &endpoint)
         try
         {
@@ -52,8 +64,8 @@ namespace _3fd
             std::wstring protSeqName = transcoder.from_bytes(ToString(protSeq));
             auto paramProtSeq = (RPC_WSTR)protSeqName.c_str();
 
-            auto ucs2Destination = transcoder.from_bytes(destination);
-            auto paramDestination = (RPC_WSTR)ucs2Destination.c_str();
+            std::wstring ucs2Destination = transcoder.from_bytes(destination);
+            auto paramNetwAddr = (RPC_WSTR)ucs2Destination.c_str();
 
             std::wstring ucs2Endpoint;
             RPC_WSTR paramEndpoint;
@@ -71,7 +83,7 @@ namespace _3fd
             auto status = RpcStringBindingComposeW(
                 paramObjUuid,
                 paramProtSeq,
-                paramDestination,
+                paramNetwAddr,
                 paramEndpoint,
                 nullptr,
                 &bindingString
@@ -86,6 +98,82 @@ namespace _3fd
             // Release the memory allocated for the binding string:
             status = RpcStringFreeW(&bindingString);
             ThrowIfError(status, "Failed to compose binding string for RPC client");
+
+            if (authLevel == AuthenticationLevel::None)
+                return;
+
+            // Prepare parameters to create the server SPN:
+            std::wstring ucs2ServiceClass = transcoder.from_bytes(serviceClass);
+            auto paramServiceClass = ucs2ServiceClass.c_str();
+            auto paramDestination = ucs2Destination.c_str();
+            auto paramPort = static_cast<USHORT> (atoi(endpoint.c_str());
+
+            DWORD spnStrSize(0);
+
+            // First assess the SPN string size...
+            auto rc = DsMakeSpnW(
+                paramServiceClass,
+                paramDestination,
+                nullptr,
+                paramPort,
+                nullptr,
+                &spnStrSize,
+                nullptr
+            );
+
+            if (rc != ERROR_SUCCESS)
+            {
+                std::ostringstream oss;
+                oss << "Could not generate SPN for RPC server - ";
+                core::WWAPI::AppendDWordErrorMessage(rc, "DsMakeSpn", oss);
+                throw core::AppException<std::runtime_error>(oss.str());
+            }
+
+            std::unique_ptr<wchar_t[]> spnStr(new wchar_t[spnStrSize]);
+
+            // ... then get the SPN:
+            DsMakeSpnW(
+                paramServiceClass,
+                paramDestination,
+                nullptr,
+                paramPort,
+                nullptr,
+                &spnStrSize,
+                spnStr.get()
+            );
+
+            _ASSERTE(rc != ERROR_SUCCESS);
+
+            /* Sets the client binding handle's authentication,
+            authorization, and security quality-of-service: */
+
+            RPC_SECURITY_QOS_V3_W secQOS = { 0 };
+            secQOS.Version = 3;
+            secQOS.ImpersonationType = static_cast<unsigned long> (impLevel);
+
+            // This client requires mutual auth (only Kerberos provides in TCP)
+            secQOS.Capabilities =
+                RPC_C_QOS_CAPABILITIES_MUTUAL_AUTH
+                | RPC_C_QOS_CAPABILITIES_LOCAL_MA_HINT;
+
+            /* Authentication impact on performance on identity tracking
+            is negligible unless a remote protocol is in use: */
+            secQOS.IdentityTracking =
+                (protSeq == ProtocolSequence::TCP)
+                    ? RPC_C_QOS_IDENTITY_STATIC
+                    : RPC_C_QOS_IDENTITY_DYNAMIC;
+
+            status = RpcBindingSetAuthInfoExW(
+                m_bindingHandle,
+                (RPC_WSTR)spnStr.get(),
+                static_cast<unsigned long> (authLevel),
+                (protSeq == ProtocolSequence::Local) ? RPC_C_AUTHN_WINNT : RPC_C_AUTHN_GSS_KERBEROS,
+                nullptr, // no explicit credentials, use context
+                RPC_C_AUTHZ_DEFAULT,
+                reinterpret_cast<RPC_SECURITY_QOS *> (&secQOS)
+            );
+
+            ThrowIfError(status, "Failed to set security for binding handle of RPC client");
         }
         catch (core::IAppException &)
         {

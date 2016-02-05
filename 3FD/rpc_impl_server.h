@@ -20,6 +20,8 @@ namespace _3fd
 
             std::wstring m_serviceClass;
 
+            AuthenticationLevel m_authLevel;
+
             /// <summary>
             /// Enumerates the possible states for the RPC server.
             /// </summary>
@@ -44,6 +46,13 @@ namespace _3fd
             );
 
             ~RpcServerImpl();
+
+            /// <summary>
+            /// Gets the required authentication level.
+            /// </summary>
+            /// <returns>The required authentication level for clients,
+            /// as defined upon initialization.</returns>
+            AuthenticationLevel GetRequiredAuthLevel() const { return m_authLevel; }
 
             bool Start(const std::vector<RpcSrvObject> &objects);
 

@@ -27,9 +27,20 @@ namespace _3fd
         /// </summary>
         enum class AuthenticationLevel : unsigned long
         {
-            None = RPC_C_AUTHN_LEVEL_NONE,
+            None = RPC_C_AUTHN_LEVEL_NONE, // no auth/security at all
             Integrity = RPC_C_AUTHN_LEVEL_PKT_INTEGRITY,
             Privacy = RPC_C_AUTHN_LEVEL_PKT_PRIVACY
+        };
+
+        /// <summary>
+        /// Enumerates the possible options for impersonation level.
+        /// </summary>
+        enum class ImpersonationLevel : unsigned long
+        {
+            Default = RPC_C_IMP_LEVEL_DEFAULT, // automatic
+            Identify = RPC_C_IMP_LEVEL_IDENTIFY,
+            Impersonate = RPC_C_IMP_LEVEL_IMPERSONATE,
+            Delegate = RPC_C_IMP_LEVEL_DELEGATE
         };
 
         /// <summary>
@@ -82,6 +93,8 @@ namespace _3fd
                 bool useActDirSec = true
             );
 
+            static AuthenticationLevel GetRequiredAuthLevel();
+
             static bool Start(const std::vector<RpcSrvObject> &objects);
 
             static bool Stop();
@@ -119,7 +132,10 @@ namespace _3fd
                 ProtocolSequence protSeq,
                 const string &objUUID,
                 const string &destination,
-                const string &endpoint
+                AuthenticationLevel authLevel,
+                ImpersonationLevel impLevel = ImpersonationLevel::Default,
+                const string &serviceClass = "",
+                const string &endpoint = ""
             );
 
             ~RpcClient();
