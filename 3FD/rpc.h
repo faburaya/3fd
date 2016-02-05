@@ -17,11 +17,20 @@ namespace _3fd
 
     namespace rpc
     {
-
         /// <summary>
         /// Enumerates the possible options for RPC transport.
         /// </summary>
         enum class ProtocolSequence { Local, TCP };
+
+        /// <summary>
+        /// Enumerates the possible options for authentication level.
+        /// </summary>
+        enum class AuthenticationLevel : unsigned long
+        {
+            None = RPC_C_AUTHN_LEVEL_NONE,
+            Integrity = RPC_C_AUTHN_LEVEL_PKT_INTEGRITY,
+            Privacy = RPC_C_AUTHN_LEVEL_PKT_PRIVACY
+        };
 
         /// <summary>
         /// Holds a definition for a particular RPC interface implementation.
@@ -69,7 +78,7 @@ namespace _3fd
             static void Initialize(
                 ProtocolSequence protSeq,
                 const string &serviceClass,
-                const std::function<bool (AUTHZ_CLIENT_CONTEXT_HANDLE)> &callbackAuthz,
+                AuthenticationLevel authLevel,
                 bool useActDirSec = true
             );
 

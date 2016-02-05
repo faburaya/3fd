@@ -39,7 +39,7 @@ namespace _3fd
             RpcServerImpl(
                 ProtocolSequence protSeq,
                 const string &serviceClass,
-                const std::function<bool(AUTHZ_CLIENT_CONTEXT_HANDLE)> &callbackAuthz,
+                AuthenticationLevel authLevel,
                 bool useActDirSec
             );
 

@@ -31,15 +31,13 @@ namespace _3fd
         /// servers, as a description) and security purposes (the "service class" in the SPN). Thus
         /// it must be unique (in a way the generated SPN will not collide with another in the Windows
         /// Active directory), and cannot contain characters such as '/', '&lt;' or '&gt;'.</param>
-        /// <param name="callbackAuthz">A callback returning a boolean, which means whether the client
-        /// is authorized or not. The callback receives a context handle that is expected by Microsoft
-        /// authorization API.</param>
+        /// <param name="authLevel">The authorization level required for the client.</param>
         /// <param name="useActDirSec">Whether Microsoft Active Directory security services
         /// should be used instead of local authentication.</param>
         void RpcServer::Initialize(
             ProtocolSequence protSeq,
             const string &serviceName,
-            const std::function<bool(AUTHZ_CLIENT_CONTEXT_HANDLE)> &callbackAuthz,
+            AuthenticationLevel authLevel,
             bool useActDirSec)
         {
             CALL_STACK_TRACE;
@@ -49,7 +47,7 @@ namespace _3fd
                 std::lock_guard<std::mutex> lock(singletonAccessMutex);
 
                 _ASSERTE(uniqueObject.get() != nullptr); // cannot initialize RPC server twice
-                uniqueObject.reset(new RpcServerImpl(protSeq, serviceName, callbackAuthz, useActDirSec));
+                uniqueObject.reset(new RpcServerImpl(protSeq, serviceName, useActDirSec));
             }
             catch (core::IAppException &)
             {
@@ -80,15 +78,13 @@ namespace _3fd
         /// servers, as a description) and security purposes (the "service class" in the SPN). Thus
         /// it must be unique (in a way the generated SPN will not collide with another in the Windows
         /// Active directory), and cannot contain characters such as '/', '&lt;' or '&gt;'.</param>
-        /// <param name="callbackAuthz">A callback returning a boolean, which means whether the client
-        /// is authorized or not. The callback receives a context handle that is expected by Microsoft
-        /// authorization API.</param>
+        /// <param name="authLevel">The authorization level required for the client.</param>
         /// <param name="useActDirSec">Whether Microsoft Active Directory security services
         /// should be used instead of local authentication.</param>
         RpcServerImpl::RpcServerImpl(
             ProtocolSequence protSeq,
             const string &serviceClass,
-            const std::function<bool(AUTHZ_CLIENT_CONTEXT_HANDLE)> &callbackAuthz,
+            AuthenticationLevel authLevel,
             bool useActDirSec)
         :
             m_bindings(nullptr),
@@ -190,12 +186,30 @@ namespace _3fd
             DsFreeSpnArrayW(spnArraySize, spnArray);
         }
 
-        // Callback for authorization evaluation, to be set during interface registration
-        static RPC_STATUS CALLBACK callbackIntfAuthz(
-            _In_ RPC_IF_HANDLE handle,
+        /* This callback is invoked by RPC runtime every time an RPC takes
+        place. At this point, the client is already authenticated.*/
+        RPC_STATUS CALLBACK callbackIntfAuthz(
+            _In_ RPC_IF_HANDLE interface,
             _In_ void *context)
         {
+            CALL_STACK_TRACE;
 
+            RPC_CALL_ATTRIBUTES_V2_W callAttributes = { 0 };
+            callAttributes.Version = 2;
+
+            auto status = RpcServerInqCallAttributesW(
+                static_cast<RPC_BINDING_HANDLE> (context),
+                &callAttributes
+            );
+
+            LogIfError(status,
+                "Failed to inquire RPC attributes during authorization",
+                core::Logger::PRIO_ERROR);
+
+            if (callAttributes.AuthenticationLevel != RPC_C_AUTHN_LEVEL_PKT_INTEGRITY)
+                return RPC_S_ACCESS_DENIED;
+
+            return RPC_S_OK;
         }
 
         /// <summary>
@@ -287,7 +301,7 @@ namespace _3fd
                     objsByIntfHnd.clear(); // release some memory
 
                     // Start listening requests (asynchronous call, returns immediately):
-                    status = RpcServerListen(1, RPC_C_LISTEN_MAX_CALLS_DEFAULT, 1);
+                    status = RpcServerListen(1, RPC_C_LISTEN_MAX_CALLS_DEFAULT, TRUE);
                     ThrowIfError(status, "Failed to start RPC server listeners");
                     m_state = State::Listening;
                     return STATUS_OKAY;
