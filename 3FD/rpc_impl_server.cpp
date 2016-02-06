@@ -30,7 +30,7 @@ namespace _3fd
         /// servers, as a description) and security purposes (the "service class" in the SPN). Thus
         /// it must be unique (in a way the generated SPN will not collide with another in the Windows
         /// Active directory), and cannot contain characters such as '/', '&lt;' or '&gt;'.</param>
-        /// <param name="authLevel">The authorization level required for the client.</param>
+        /// <param name="authLevel">The authentication level required for the client.</param>
         /// <param name="useActDirSec">Whether Microsoft Active Directory security services
         /// should be used instead of local authentication.</param>
         void RpcServer::Initialize(
@@ -80,7 +80,7 @@ namespace _3fd
         /// servers, as a description) and security purposes (the "service class" in the SPN). Thus
         /// it must be unique (in a way the generated SPN will not collide with another in the Windows
         /// Active directory), and cannot contain characters such as '/', '&lt;' or '&gt;'.</param>
-        /// <param name="authLevel">The authorization level required for the client.</param>
+        /// <param name="authLevel">The authentication level required for the client.</param>
         /// <param name="useActDirSec">Whether Microsoft Active Directory security services
         /// should be used instead of local authentication.</param>
         RpcServerImpl::RpcServerImpl(
