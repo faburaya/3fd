@@ -143,6 +143,21 @@ namespace _3fd
             void ResetBindings();
         };
 
+        /// <summary>
+        /// Uses RAII to define a scope where impersonation takes place.
+        /// </summary>
+        class ScopedImpersonation
+        {
+        private:
+
+            RPC_BINDING_HANDLE m_clientBindingHandle;
+
+        public:
+
+            ScopedImpersonation(RPC_BINDING_HANDLE clientBindingHandle);
+            ~ScopedImpersonation();
+        };
+
     }// end of namespace rpc
 }// end of namespace _3fd
 

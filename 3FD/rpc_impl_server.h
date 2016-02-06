@@ -2,6 +2,7 @@
 #define RPC_IMPL_H
 
 #include "rpc.h"
+#include <map>
 
 namespace _3fd
 {

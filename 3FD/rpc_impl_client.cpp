@@ -106,7 +106,7 @@ namespace _3fd
             std::wstring ucs2ServiceClass = transcoder.from_bytes(serviceClass);
             auto paramServiceClass = ucs2ServiceClass.c_str();
             auto paramDestination = ucs2Destination.c_str();
-            auto paramPort = static_cast<USHORT> (atoi(endpoint.c_str());
+            auto paramPort = static_cast<USHORT> (atoi(endpoint.c_str()));
 
             DWORD spnStrSize(0);
 
@@ -214,6 +214,35 @@ namespace _3fd
             CALL_STACK_TRACE;
             auto status = RpcBindingReset(m_bindingHandle);
             ThrowIfError(status, "Failed to reset binding handle of RPC client");
+        }
+
+        ////////////////////////////////
+        // ScopedImpersonation Class
+        ////////////////////////////////
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ScopedImpersonation"/> class.
+        /// </summary>
+        /// <param name="clientBindingHandle">The client binding handle
+        /// carrying the identity to impersonate.</param>
+        ScopedImpersonation::ScopedImpersonation(RPC_BINDING_HANDLE clientBindingHandle)
+            : m_clientBindingHandle(clientBindingHandle)
+        {
+            CALL_STACK_TRACE;
+            auto status = RpcImpersonateClient(clientBindingHandle);
+            ThrowIfError(status, "Failed to impersonate indentity of RPC client");
+        }
+
+        /// <summary>
+        /// Finalizes an instance of the <see cref="ScopedImpersonation"/> class.
+        /// </summary>
+        ScopedImpersonation::~ScopedImpersonation()
+        {
+            CALL_STACK_TRACE;
+            auto status = RpcRevertToSelfEx(m_clientBindingHandle);
+            LogIfError(status,
+                "Failed to revert impersonation of RPC client",
+                core::Logger::PRIO_CRITICAL);
         }
 
     }// end of namespace rpc

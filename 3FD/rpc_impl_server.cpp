@@ -6,7 +6,6 @@
 
 #include <Poco\UUIDGenerator.h>
 #include <codecvt>
-#include <map>
 #include <sstream>
 #include <NtDsAPI.h>
 
@@ -97,7 +96,7 @@ namespace _3fd
             CALL_STACK_TRACE;
 
             DWORD spnArraySize(0);
-            LPWSTR *spnArray;
+            LPWSTR *spnArray(nullptr);
 
             try
             {
@@ -681,9 +680,9 @@ namespace _3fd
                 _ASSERTE(uniqueObject.get() != nullptr); // cannot finalize uninitialized RPC server
                 uniqueObject.reset(nullptr);
             }
-            catch (core::IAppException &)
+            catch (core::IAppException &ex)
             {
-                throw; // just forward an exception regarding an error known to have been already handled
+                core::Logger::Write(ex, core::Logger::PRIO_CRITICAL);
             }
             catch (std::system_error &ex)
             {
@@ -691,13 +690,13 @@ namespace _3fd
                 oss << "System error prevented RPC server finalization: "
                     << core::StdLibExt::GetDetailsFromSystemError(ex);
 
-                throw core::AppException<std::runtime_error>(oss.str());
+                core::Logger::Write(oss.str(), core::Logger::PRIO_CRITICAL);
             }
             catch (std::exception &ex)
             {
                 std::ostringstream oss;
                 oss << "Generic failure prevented RPC server finalization: " << ex.what();
-                throw core::AppException<std::runtime_error>(oss.str());
+                core::Logger::Write(oss.str(), core::Logger::PRIO_CRITICAL);
             }
         }
 

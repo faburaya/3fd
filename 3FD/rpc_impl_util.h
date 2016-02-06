@@ -3,6 +3,8 @@
 
 #include "rpc.h"
 #include "exceptions.h"
+#include "logger.h"
+
 #include <string>
 
 namespace _3fd
@@ -12,6 +14,10 @@ namespace _3fd
     namespace rpc
     {
         const char *ToString(ProtocolSequence protSeq);
+
+        /////////////////////////
+        // Error Helpers
+        /////////////////////////
 
         void ThrowIfError(RPC_STATUS status, const char *message);
 
