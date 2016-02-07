@@ -86,7 +86,8 @@ namespace _3fd
                 RpcServer::Initialize(
                     GetParam().protocolSequence,
                     "TestClient3FD",
-                    GetParam().authenticationLevel
+                    GetParam().authenticationLevel,
+                    false
                 );
 
                 AcmeTesting_v1_0_epv_t defaultEPV;
@@ -117,7 +118,11 @@ namespace _3fd
             Framework_RPC_TestCase,
             ::testing::Values(
                 TestOptions(ProtocolSequence::Local, "BF7653EF-EB6D-4CF5-BEF0-B4D27864D750", AuthenticationLevel::None),
-                TestOptions(ProtocolSequence::TCP, "5C4E56F6-C92E-4268-BEFA-CC55A2FF833D", AuthenticationLevel::None)
+                TestOptions(ProtocolSequence::Local, "6642C890-14CF-4A9B-A35F-4C860A1DEBDE", AuthenticationLevel::Integrity),
+                TestOptions(ProtocolSequence::Local, "6442FFD6-1688-4DF0-B2CD-E1633CE30027", AuthenticationLevel::Privacy),
+                TestOptions(ProtocolSequence::TCP, "5C4E56F6-C92E-4268-BEFA-CC55A2FF833D", AuthenticationLevel::None),
+                TestOptions(ProtocolSequence::TCP, "B3CCEEFD-990B-462D-B919-DAC45ACD8230", AuthenticationLevel::Integrity),
+                TestOptions(ProtocolSequence::TCP, "D9D3881F-453F-48AC-A860-3B6AB31F8C6F", AuthenticationLevel::Privacy)
             )
         );
 
