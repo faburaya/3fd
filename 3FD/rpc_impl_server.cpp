@@ -4,7 +4,6 @@
 #include "callstacktracer.h"
 #include "logger.h"
 
-#include <Poco\UUIDGenerator.h>
 #include <codecvt>
 #include <sstream>
 #include <NtDsAPI.h>
@@ -250,17 +249,16 @@ namespace _3fd
             {
                 if (m_state == State::BindingsAcquired)
                 {
+                    std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
                     std::map<RPC_IF_HANDLE, std::vector<UUID>> objsByIntfHnd;
-
-                    Poco::UUIDGenerator uuidGntor;
 
                     // For each object implementing a RPC interface:
                     for (auto &obj : objects)
                     {
                         // Create an UUID on the fly for the EPV:
                         UUID paramMgrTypeUuid;
-                        auto mgrTypeUuid = uuidGntor.createOne();
-                        mgrTypeUuid.copyTo(reinterpret_cast<char *> (&paramMgrTypeUuid));
+                        status = UuidCreateSequential(&paramMgrTypeUuid);
+                        ThrowIfError(status, "Failed to generate UUID for EPV in RPC server");
 
                         // Register the interface with the RPC runtime lib:
                         status = RpcServerRegisterIfEx(
@@ -277,15 +275,15 @@ namespace _3fd
                         // if any interface has been registered, flag it...
                         m_state = State::IntfRegRuntimeLib;
 
+                        UUID paramObjUuid;
+                        std::wstring ucs2ObjUuid = transcoder.from_bytes(obj.uuid);
+                        status = UuidFromStringW((RPC_WSTR)ucs2ObjUuid.c_str(), &paramObjUuid);
+                        ThrowIfError(status, "Failed to parse UUID provided for object in RPC server", obj.uuid);
+
                         /* Assign the object UUID (as known by the customer)
                         to the EPV (particular interface implementation): */
-                        UUID paramObjUuid;
-                        obj.uuid.copyTo(reinterpret_cast<char *> (&paramObjUuid));
                         status = RpcObjectSetType(&paramObjUuid, &paramMgrTypeUuid);
-
-                        ThrowIfError(status,
-                            "Failed to associate RPC object with EPV",
-                            obj.uuid.toString());
+                        ThrowIfError(status, "Failed to associate RPC object with EPV", obj.uuid);
 
                         // keep the UUID assigned to the EPV (object type UUID) for later...
                         objsByIntfHnd[obj.interfaceHandle].push_back(paramMgrTypeUuid);
