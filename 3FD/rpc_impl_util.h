@@ -1,7 +1,7 @@
 #ifndef RPC_UTIL_IMPL_H // header guard
 #define RPC_UTIL_IMPL_H
 
-#include "rpc.h"
+#include "rpc_helpers.h"
 #include "exceptions.h"
 #include "logger.h"
 

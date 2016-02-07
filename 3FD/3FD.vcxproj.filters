@@ -182,13 +182,13 @@
     <ClInclude Include="utils_lockfreequeue.h">
       <Filter>Header Files\utilities</Filter>
     </ClInclude>
-    <ClInclude Include="rpc.h">
-      <Filter>Header Files\RPC</Filter>
-    </ClInclude>
     <ClInclude Include="rpc_impl_server.h">
       <Filter>Header Files\RPC</Filter>
     </ClInclude>
     <ClInclude Include="rpc_impl_util.h">
+      <Filter>Header Files\RPC</Filter>
+    </ClInclude>
+    <ClInclude Include="rpc_helpers.h">
       <Filter>Header Files\RPC</Filter>
     </ClInclude>
   </ItemGroup>

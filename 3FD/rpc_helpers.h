@@ -64,6 +64,16 @@ namespace _3fd
             /// by the inteface handle is used.
             /// </summary>
             RPC_MGR_EPV *epv;
+
+            RpcSrvObject(
+                const string &p_uuid,
+                RPC_IF_HANDLE p_interfaceHandle,
+                RPC_MGR_EPV *p_epv = nullptr)
+            :
+                uuid(p_uuid),
+                interfaceHandle(p_interfaceHandle),
+                epv(p_epv)
+            {}
         };
 
         class RpcServerImpl;

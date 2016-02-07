@@ -1,7 +1,7 @@
 #ifndef RPC_IMPL_H // header guard
 #define RPC_IMPL_H
 
-#include "rpc.h"
+#include "rpc_helpers.h"
 #include <map>
 
 namespace _3fd

@@ -44,8 +44,9 @@ namespace _3fd
             {
                 std::lock_guard<std::mutex> lock(singletonAccessMutex);
 
-                _ASSERTE(uniqueObject.get() != nullptr); // cannot initialize RPC server twice
-                
+                // cannot initialize RPC server twice, unless you stop it first
+                _ASSERTE(uniqueObject.get() == nullptr);
+
                 uniqueObject.reset(
                     new RpcServerImpl(protSeq, serviceClass, authLevel, useActDirSec)
                 );
@@ -286,7 +287,7 @@ namespace _3fd
                         ThrowIfError(status, "Failed to associate RPC object with EPV", obj.uuid);
 
                         // keep the UUID assigned to the EPV (object type UUID) for later...
-                        objsByIntfHnd[obj.interfaceHandle].push_back(paramMgrTypeUuid);
+                        objsByIntfHnd[obj.interfaceHandle].push_back(paramObjUuid);
                     }
 
                     const int annStrMaxSize(64);
@@ -356,6 +357,8 @@ namespace _3fd
                             "to unregister interface from local endpoint-map database",
                             core::Logger::PRIO_CRITICAL);
                     }
+
+                    m_regObjsByIntfHnd.clear();
 
                 // FALLTROUGH
                 case State::IntfRegRuntimeLib:
@@ -428,7 +431,7 @@ namespace _3fd
             {
             case State::Listening:
 
-                status = RpcMgmtStopServerListening(m_bindings);
+                status = RpcMgmtStopServerListening(nullptr);
                 LogIfError(status,
                     "Failed to stop RPC server listeners",
                     core::Logger::PRIO_CRITICAL);
@@ -487,7 +490,7 @@ namespace _3fd
             {
                 CALL_STACK_TRACE;
 
-                auto status = RpcMgmtStopServerListening(m_bindings);
+                auto status = RpcMgmtStopServerListening(nullptr);
                 ThrowIfError(status, "Failed to request RPC server stop");
 
                 status = RpcMgmtWaitServerListen();
