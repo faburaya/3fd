@@ -93,7 +93,7 @@ extern const MIDL_STUB_DESC AcmeTesting_StubDesc;
 static RPC_BINDING_HANDLE AcmeTesting__MIDL_AutoBindHandle;
 
 
-void Multiply( 
+void Operate( 
     /* [in] */ handle_t IDL_handle,
     /* [in] */ double left,
     /* [in] */ double right,
@@ -111,7 +111,7 @@ void Multiply(
 }
 
 
-void ToUpperCase( 
+void ChangeCase( 
     /* [in] */ handle_t IDL_handle,
     /* [string][in] */ unsigned char *input,
     /* [out] */ cstring *output)
@@ -148,7 +148,7 @@ static const AcmeTesting_MIDL_PROC_FORMAT_STRING AcmeTesting__MIDL_ProcFormatStr
         0,
         {
 
-	/* Procedure Multiply */
+	/* Procedure Operate */
 
 			0x0,		/* 0 */
 			0x4a,		/* Old Flags:  DCE mem package, */
@@ -190,7 +190,7 @@ static const AcmeTesting_MIDL_PROC_FORMAT_STRING AcmeTesting__MIDL_ProcFormatStr
 /* 46 */	0xc,		/* FC_DOUBLE */
 			0x0,		/* 0 */
 
-	/* Procedure ToUpperCase */
+	/* Procedure ChangeCase */
 
 /* 48 */	0x0,		/* 0 */
 			0x4b,		/* Old Flags:  full ptr, DCE mem package, */

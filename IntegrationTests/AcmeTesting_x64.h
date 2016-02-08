@@ -52,7 +52,7 @@ extern "C"{
 /* interface AcmeTesting */
 /* [version][uuid] */ 
 
-void Multiply( 
+void Operate( 
     /* [in] */ handle_t IDL_handle,
     /* [in] */ double left,
     /* [in] */ double right,
@@ -64,7 +64,7 @@ typedef /* [public][public] */ struct __MIDL_AcmeTesting_0001
     /* [size_is][string] */ unsigned char *data;
     } 	cstring;
 
-void ToUpperCase( 
+void ChangeCase( 
     /* [in] */ handle_t IDL_handle,
     /* [string][in] */ unsigned char *input,
     /* [out] */ cstring *output);
@@ -76,12 +76,12 @@ void Shutdown(
 
 typedef struct _AcmeTesting_v1_0_epv_t
 {
-    void ( *Multiply )( 
+    void ( *Operate )( 
         /* [in] */ handle_t IDL_handle,
         /* [in] */ double left,
         /* [in] */ double right,
         /* [out] */ double *result);
-    void ( *ToUpperCase )( 
+    void ( *ChangeCase )( 
         /* [in] */ handle_t IDL_handle,
         /* [string][in] */ unsigned char *input,
         /* [out] */ cstring *output);

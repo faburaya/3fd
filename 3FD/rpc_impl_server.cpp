@@ -251,7 +251,7 @@ namespace _3fd
                 if (m_state == State::BindingsAcquired)
                 {
                     std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
-                    std::map<RPC_IF_HANDLE, std::vector<UUID>> objsByIntfHnd;
+                    std::map<RPC_IF_HANDLE, VectorOfUuids> objsByIntfHnd;
 
                     // For each object implementing a RPC interface:
                     for (auto &obj : objects)
@@ -259,7 +259,7 @@ namespace _3fd
                         // Create an UUID on the fly for the EPV:
                         UUID paramMgrTypeUuid;
                         status = UuidCreateSequential(&paramMgrTypeUuid);
-                        ThrowIfError(status, "Failed to generate UUID for EPV in RPC server");
+                        ThrowIfError(status, "Could not generate UUID for EPV in RPC server");
 
                         // Register the interface with the RPC runtime lib:
                         status = RpcServerRegisterIfEx(
@@ -271,7 +271,7 @@ namespace _3fd
                             (m_authLevel != AuthenticationLevel::None) ? callbackIntfAuthz : nullptr
                         );
 
-                        ThrowIfError(status, "Failed to register interface with RPC runtime library");
+                        ThrowIfError(status, "Could not register interface with RPC runtime library");
 
                         // if any interface has been registered, flag it...
                         m_state = State::IntfRegRuntimeLib;
@@ -279,15 +279,15 @@ namespace _3fd
                         UUID paramObjUuid;
                         std::wstring ucs2ObjUuid = transcoder.from_bytes(obj.uuid);
                         status = UuidFromStringW((RPC_WSTR)ucs2ObjUuid.c_str(), &paramObjUuid);
-                        ThrowIfError(status, "Failed to parse UUID provided for object in RPC server", obj.uuid);
+                        ThrowIfError(status, "Could not parse UUID provided for object in RPC server", obj.uuid);
 
                         /* Assign the object UUID (as known by the customer)
                         to the EPV (particular interface implementation): */
                         status = RpcObjectSetType(&paramObjUuid, &paramMgrTypeUuid);
-                        ThrowIfError(status, "Failed to associate RPC object with EPV", obj.uuid);
+                        ThrowIfError(status, "Could not associate RPC object with EPV", obj.uuid);
 
                         // keep the UUID assigned to the EPV (object type UUID) for later...
-                        objsByIntfHnd[obj.interfaceHandle].push_back(paramObjUuid);
+                        objsByIntfHnd[obj.interfaceHandle].Add(paramObjUuid);
                     }
 
                     const int annStrMaxSize(64);
@@ -299,19 +299,19 @@ namespace _3fd
                         auto interfaceHandle = pair.first;
                         auto &objects = pair.second;
 
-                        UUID_VECTOR objsUuidsVec{ objects.size(), objects.data() };
+                        UuidVectorFix objsUuidsVec;
 
                         /* Complete binding of dynamic endpoints by registering
                         these objects in the local endpoint-map database: */
                         status = RpcEpRegisterW(
                             interfaceHandle,
                             m_bindings,
-                            &objsUuidsVec,
+                            objects.CopyTo(objsUuidsVec), // use the fix for UUID_VECTOR...
                             (RPC_WSTR)annotation.c_str()
                         );
 
                         ThrowIfError(status,
-                            "Failed to complete binding of dynamic endpoints for RPC server interface");
+                            "Could not complete binding of dynamic endpoints for RPC server interface");
 
                         // if any interface has been registered, flag it...
                         m_state = State::IntfRegLocalEndptMap;
@@ -326,7 +326,7 @@ namespace _3fd
 
                     // Start listening requests (asynchronous call, returns immediately):
                     status = RpcServerListen(1, RPC_C_LISTEN_MAX_CALLS_DEFAULT, TRUE);
-                    ThrowIfError(status, "Failed to start RPC server listeners");
+                    ThrowIfError(status, "Could not start RPC server listeners");
                     m_state = State::Listening;
                     return STATUS_OKAY;
                 }
@@ -338,42 +338,67 @@ namespace _3fd
                     return STATUS_FAIL;
                 }
             }
-            catch (std::exception &)
+            catch (core::IAppException &ex)
             {
-                switch (m_state)
+                OnStartFailureRollbackIntfReg();
+                throw core::AppException<std::runtime_error>("Failed to start RPC server", ex);
+            }
+            catch (std::exception &ex)
+            {
+                OnStartFailureRollbackIntfReg();
+                std::ostringstream oss;
+                oss << "Generic failure prevented starting the RPC server: " << ex.what();
+                throw core::AppException<std::runtime_error>(oss.str());
+            }
+        }
+
+        /// <summary>
+        /// Executes the rollback of interfaces registration (in runtime
+        /// library and local enpoint-map database) upon failure.
+        /// </summary>
+        void RpcServerImpl::OnStartFailureRollbackIntfReg() noexcept
+        {
+            CALL_STACK_TRACE;
+
+            RPC_STATUS status;
+
+            switch (m_state)
+            {
+            case State::IntfRegLocalEndptMap:
+
+                for (auto &pair : m_regObjsByIntfHnd)
                 {
-                case State::IntfRegLocalEndptMap:
+                    auto interfaceHandle = pair.first;
+                    auto &objects = pair.second;
 
-                    for (auto &pair : m_regObjsByIntfHnd)
-                    {
-                        auto interfaceHandle = pair.first;
-                        auto &objects = pair.second;
-
-                        UUID_VECTOR objsUuidsVec{ objects.size(), objects.data() };
-                        status = RpcEpUnregister(interfaceHandle, m_bindings, &objsUuidsVec);
-
-                        LogIfError(status,
-                            "RPC Server start request suffered a secondary failure on attempt"
-                            "to unregister interface from local endpoint-map database",
-                            core::Logger::PRIO_CRITICAL);
-                    }
-
-                    m_regObjsByIntfHnd.clear();
-
-                // FALLTROUGH
-                case State::IntfRegRuntimeLib:
-                
-                    status = RpcServerUnregisterIf(nullptr, nullptr, 1);
+                    UuidVectorFix objsUuidsVec;
+                    status = RpcEpUnregister(
+                        interfaceHandle,
+                        m_bindings,
+                        objects.CopyTo(objsUuidsVec) // use the fix for UUID_VECTOR...
+                    );
 
                     LogIfError(status,
-                        "RPC Server start request suffered a secondary failure "
-                        "on attempt to unregister interfaces from runtime library",
+                        "RPC server start request suffered a secondary failure upon rollback of state - "
+                        "Could not unregister interface from local endpoint-map database",
                         core::Logger::PRIO_CRITICAL);
-                   
-                // FALLTROUGH
-                default:
-                    throw;
                 }
+
+                m_regObjsByIntfHnd.clear();
+
+                // FALLTROUGH
+            case State::IntfRegRuntimeLib:
+
+                status = RpcServerUnregisterIf(nullptr, nullptr, 1);
+
+                LogIfError(status,
+                    "RPC server start request suffered a secondary failure upon rollback of state - "
+                    "Could not unregister interfaces from runtime library",
+                    core::Logger::PRIO_CRITICAL);
+
+            // FALLTROUGH
+            default:
+                return;
             }
         }
 
@@ -449,8 +474,12 @@ namespace _3fd
                     auto interfaceHandle = pair.first;
                     auto &objects = pair.second;
 
-                    UUID_VECTOR objsUuidsVec{ objects.size(), objects.data() };
-                    status = RpcEpUnregister(interfaceHandle, m_bindings, &objsUuidsVec);
+                    UuidVectorFix objsUuidsVec;
+                    status = RpcEpUnregister(
+                        interfaceHandle,
+                        m_bindings,
+                        objects.CopyTo(objsUuidsVec) // use the fix for UUID_VECTOR...
+                    );
 
                     LogIfError(status,
                         "Failed to unregister interface from local endpoint-map database",

@@ -52,6 +52,42 @@ namespace _3fd
             }
         }
 
+        //////////////////////
+        // UUID_VECTOR Fix
+        //////////////////////
+
+        VectorOfUuids::~VectorOfUuids()
+        {
+            for (auto ptr : m_ptrs2Uuids)
+                delete ptr;
+        }
+
+        void VectorOfUuids::Add(const UUID &uuid)
+        {
+            if (m_ptrs2Uuids.size() < UUID_VECTOR_MAX_SIZE)
+                m_ptrs2Uuids.push_back(new UUID(uuid));
+            else
+            {
+                std::ostringstream oss;
+                oss << "Could not copy object UUID because "
+                       "the amount of implementations for the RPC interface "
+                       "exceeded a practical limit of " << UUID_VECTOR_MAX_SIZE;
+
+                throw core::AppException<std::runtime_error>(oss.str());
+            }
+        }
+
+        UUID_VECTOR * VectorOfUuids::CopyTo(UuidVectorFix &vec) noexcept
+        {
+            _ASSERTE(m_ptrs2Uuids.size() <= UUID_VECTOR_MAX_SIZE);
+
+            for (unsigned long idx = 0; idx < m_ptrs2Uuids.size(); ++idx)
+                vec.data[idx] = m_ptrs2Uuids[idx];
+
+            vec.size = m_ptrs2Uuids.size();
+            return reinterpret_cast<UUID_VECTOR *> (&vec);
+        }
+
         /////////////////////////
         // Error Helpers
         /////////////////////////

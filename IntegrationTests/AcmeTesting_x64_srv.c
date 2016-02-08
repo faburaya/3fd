@@ -99,7 +99,7 @@ static const AcmeTesting_MIDL_PROC_FORMAT_STRING AcmeTesting__MIDL_ProcFormatStr
         0,
         {
 
-	/* Procedure Multiply */
+	/* Procedure Operate */
 
 			0x0,		/* 0 */
 			0x4a,		/* Old Flags:  DCE mem package, */
@@ -141,7 +141,7 @@ static const AcmeTesting_MIDL_PROC_FORMAT_STRING AcmeTesting__MIDL_ProcFormatStr
 /* 46 */	0xc,		/* FC_DOUBLE */
 			0x0,		/* 0 */
 
-	/* Procedure ToUpperCase */
+	/* Procedure ChangeCase */
 
 /* 48 */	0x0,		/* 0 */
 			0x4b,		/* Old Flags:  full ptr, DCE mem package, */
@@ -288,15 +288,15 @@ static const RPC_DISPATCH_TABLE AcmeTesting_v1_0_DispatchTable =
 
 static const AcmeTesting_v1_0_epv_t DEFAULT_EPV = 
     {
-    Multiply,
-    ToUpperCase,
+    Operate,
+    ChangeCase,
     Shutdown
     };
 
 static const SERVER_ROUTINE AcmeTesting_ServerRoutineTable[] = 
     {
-    (SERVER_ROUTINE)Multiply,
-    (SERVER_ROUTINE)ToUpperCase,
+    (SERVER_ROUTINE)Operate,
+    (SERVER_ROUTINE)ChangeCase,
     (SERVER_ROUTINE)Shutdown
     };
 

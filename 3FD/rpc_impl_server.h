@@ -2,6 +2,7 @@
 #define RPC_IMPL_H
 
 #include "rpc_helpers.h"
+#include "rpc_impl_util.h"
 #include <map>
 
 namespace _3fd
@@ -17,7 +18,7 @@ namespace _3fd
 
             RPC_BINDING_VECTOR *m_bindings;
 
-            std::map<RPC_IF_HANDLE, std::vector<UUID>> m_regObjsByIntfHnd;
+            std::map<RPC_IF_HANDLE, VectorOfUuids> m_regObjsByIntfHnd;
 
             std::wstring m_serviceClass;
 
@@ -36,6 +37,8 @@ namespace _3fd
             };
 
             State m_state;
+
+            void OnStartFailureRollbackIntfReg() noexcept;
 
         public:
 

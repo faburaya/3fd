@@ -4,7 +4,7 @@
 ]
 interface AcmeTesting
 {
-    void Multiply([in] double left, [in] double right, [out] double *result);
+    void Operate([in] double left, [in] double right, [out] double *result);
 
     typedef struct
     {
@@ -12,7 +12,7 @@ interface AcmeTesting
         [string, size_is(size)] char *data;
     } cstring;
 
-    void ToUpperCase([in, string] char *input, [out] cstring *output);
+    void ChangeCase([in, string] char *input, [out] cstring *output);
 
     void Shutdown(void);
 }
