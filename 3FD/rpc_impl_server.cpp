@@ -163,16 +163,14 @@ namespace _3fd
             if (authLevel == AuthenticationLevel::None)
                 return;
 
-            bool useActDirSec = (!actDirDomainName.empty() && actDirDomainName != "");
-
-            // Generate a list of SPN`s using the fully qualified DNS name of the local computer:
+            // Generate a list of SPN's using the fully qualified DNS name of the local computer:
             ArrayOfSpn rpcSvcSpnArray;
             auto rc = DsGetSpnW(
-                useActDirSec ? DS_SPN_DN_HOST : DS_SPN_DNS_HOST,
+                DS_SPN_DN_HOST,
                 m_serviceClass.c_str(),
-                nullptr, 0,
-                0, nullptr,
                 nullptr,
+                0, // no port specified
+                0, nullptr, nullptr, // no extra instance names
                 &rpcSvcSpnArray.size,
                 &rpcSvcSpnArray.data
             );
@@ -186,7 +184,7 @@ namespace _3fd
 
             _ASSERTE(rpcSvcSpnArray.size > 0);
 
-            if (useActDirSec)
+            if (!actDirDomainName.empty() && actDirDomainName != "")
             {
                 /* Now create a generic SPN for this host, to be used as ID for the local computer
                 account. According to http://msdn.microsoft.com/en-us/library/windows/desktop/ms676056,
@@ -195,9 +193,9 @@ namespace _3fd
                 in the local computer account and is relative to its computer name. */
                 ArrayOfSpn localCompSpnArray;
                 auto rc = DsGetSpnW(
-                    DS_SPN_DNS_HOST,
+                    DS_SPN_DN_HOST,
                     L"host",
-                    nullptr, 0,
+                    nullptr, 0, // no service name or port specified
                     0, nullptr, nullptr, // no extra instances
                     &localCompSpnArray.size,
                     &localCompSpnArray.data
@@ -216,7 +214,7 @@ namespace _3fd
 
                 // Bind to domain:
                 DirSvcBinding dirSvcBinding;
-                rc = DsBindW(nullptr, ucs2DomainName.c_str(), &dirSvcBinding.handle);
+                rc = DsBindW(nullptr, nullptr, &dirSvcBinding.handle);
 
                 if (rc != ERROR_SUCCESS)
                 {
@@ -229,7 +227,7 @@ namespace _3fd
                 rc = DsWriteAccountSpnW(
                     dirSvcBinding.handle,
                     DS_SPN_ADD_SPN_OP,
-                    L"host/BR00200256",
+                    rpcSvcSpnArray.data[0],
                     rpcSvcSpnArray.size,
                     (LPCWSTR *)rpcSvcSpnArray.data
                 );
