@@ -225,8 +225,8 @@ namespace _3fd
                 RpcServer::Initialize(
                     ProtocolSequence::TCP,
                     "TestClient3FD",
-                    AuthenticationLevel::None,
-                    false
+                    AuthenticationLevel::Integrity,
+                    true
                 );
 
                 // RPC interface implementation 1:

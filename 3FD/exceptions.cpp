@@ -80,7 +80,7 @@ namespace _3fd
             else
                 oss << "code " << errCode;
 
-            if (rc)
+            if (!rc)
             {
                 oss << " (secondary failure prevented retrieval of further details)";
                 return;

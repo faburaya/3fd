@@ -280,7 +280,7 @@ namespace _3fd
 
             // Reject call if client authentication level does not meet server requirements:
             auto requiredAuthLevel = static_cast<unsigned long> (RpcServer::GetRequiredAuthLevel());
-            if (callAttributes.AuthenticationLevel != requiredAuthLevel)
+            if (callAttributes.AuthenticationLevel < requiredAuthLevel)
                 return RPC_S_ACCESS_DENIED;
 
             return RPC_S_OK;

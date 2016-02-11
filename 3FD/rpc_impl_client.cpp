@@ -142,7 +142,7 @@ namespace _3fd
                 spnStr.get()
             );
 
-            _ASSERTE(rc != ERROR_SUCCESS);
+            _ASSERTE(rc == ERROR_SUCCESS);
 
             /* Sets the client binding handle's authentication,
             authorization, and security quality-of-service: */

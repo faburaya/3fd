@@ -99,8 +99,8 @@ namespace _3fd
                 AcmeSvcProxy client1(
                     ProtocolSequence::TCP,
                     objectsUuidsImpl1[6],
-                    "127.0.0.1",
-                    AuthenticationLevel::None
+                    "BR00200256.ERICSSON.SE",
+                    AuthenticationLevel::Integrity
                 );
 
                 EXPECT_EQ(696.0, client1.Operate(6.0, 116.0));
@@ -109,8 +109,8 @@ namespace _3fd
                 AcmeSvcProxy client2(
                     ProtocolSequence::TCP,
                     objectsUuidsImpl2[6],
-                    "127.0.0.1",
-                    AuthenticationLevel::None
+                    "BR00200256.ERICSSON.SE",
+                    AuthenticationLevel::Integrity
                 );
 
                 EXPECT_EQ(696.0, client2.Operate(606.0, 90.0));
