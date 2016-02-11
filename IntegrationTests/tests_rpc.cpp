@@ -120,8 +120,7 @@ namespace _3fd
                 RpcServer::Initialize(
                     GetParam().protocolSequence,
                     "TestClient3FD",
-                    GetParam().authenticationLevel,
-                    false
+                    GetParam().authenticationLevel
                 );
 
                 // RPC interface implementation 1:
@@ -226,7 +225,7 @@ namespace _3fd
                     ProtocolSequence::TCP,
                     "TestClient3FD",
                     AuthenticationLevel::Integrity,
-                    true
+                    "ericsson.se"
                 );
 
                 // RPC interface implementation 1:

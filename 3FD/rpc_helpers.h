@@ -102,7 +102,7 @@ namespace _3fd
                 ProtocolSequence protSeq,
                 const string &serviceClass,
                 AuthenticationLevel authLevel,
-                bool useActDirSec
+                const string &actDirDomainName = ""
             );
 
             static AuthenticationLevel GetRequiredAuthLevel();

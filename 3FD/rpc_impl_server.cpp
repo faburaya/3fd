@@ -36,7 +36,7 @@ namespace _3fd
             ProtocolSequence protSeq,
             const string &serviceClass,
             AuthenticationLevel authLevel,
-            bool useActDirSec)
+            const string &actDirDomainName)
         {
             CALL_STACK_TRACE;
 
@@ -48,7 +48,7 @@ namespace _3fd
                 _ASSERTE(uniqueObject.get() == nullptr);
 
                 uniqueObject.reset(
-                    new RpcServerImpl(protSeq, serviceClass, authLevel, useActDirSec)
+                    new RpcServerImpl(protSeq, serviceClass, authLevel, actDirDomainName)
                 );
             }
             catch (core::IAppException &)
@@ -116,13 +116,14 @@ namespace _3fd
         /// it must be unique (in a way the generated SPN will not collide with another in the Windows
         /// Active directory), and cannot contain characters such as '/', '&lt;' or '&gt;'.</param>
         /// <param name="authLevel">The authentication level required for the client.</param>
-        /// <param name="useActDirSec">Whether Microsoft Active Directory security services
-        /// should be used instead of local authentication.</param>
+        /// <param name="actDirDomainName">Name of the domain in Microsoft Active Directory. This
+        /// parameter should only be specified when AD security services are to be used instead
+        /// of local authentication.</param>
         RpcServerImpl::RpcServerImpl(
             ProtocolSequence protSeq,
             const string &serviceClass,
             AuthenticationLevel authLevel,
-            bool useActDirSec)
+            const string &actDirDomainName)
         try :
             m_bindings(nullptr),
             m_authLevel(authLevel),
@@ -162,16 +163,18 @@ namespace _3fd
             if (authLevel == AuthenticationLevel::None)
                 return;
 
+            bool useActDirSec = (!actDirDomainName.empty() && actDirDomainName != "");
+
             // Generate a list of SPN`s using the fully qualified DNS name of the local computer:
-            ArrayOfSpn spnArray;
+            ArrayOfSpn rpcSvcSpnArray;
             auto rc = DsGetSpnW(
                 useActDirSec ? DS_SPN_DN_HOST : DS_SPN_DNS_HOST,
                 m_serviceClass.c_str(),
                 nullptr, 0,
                 0, nullptr,
                 nullptr,
-                &spnArray.size,
-                &spnArray.data
+                &rpcSvcSpnArray.size,
+                &rpcSvcSpnArray.data
             );
 
             if (rc != ERROR_SUCCESS)
@@ -181,17 +184,43 @@ namespace _3fd
                 throw core::AppException<std::runtime_error>(oss.str());
             }
 
-            _ASSERTE(spnArray.size > 0);
+            _ASSERTE(rpcSvcSpnArray.size > 0);
 
             if (useActDirSec)
             {
-                // Bind to domain:
-                DirSvcBinding dirSvcBinding;
-                rc = DsBindW(nullptr, nullptr, &dirSvcBinding.handle);
+                /* Now create a generic SPN for this host, to be used as ID for the local computer
+                account. According to http://msdn.microsoft.com/en-us/library/windows/desktop/ms676056,
+                DsWriteAccountSpn is allowed to register an SPN with a domain controller even when
+                not running with privileges of domain administrator, as long as the SPN is registered
+                in the local computer account and is relative to its computer name. */
+                ArrayOfSpn localCompSpnArray;
+                auto rc = DsGetSpnW(
+                    DS_SPN_DNS_HOST,
+                    L"host",
+                    nullptr, 0,
+                    0, nullptr, nullptr, // no extra instances
+                    &localCompSpnArray.size,
+                    &localCompSpnArray.data
+                );
 
                 if (rc != ERROR_SUCCESS)
                 {
-                    oss << "Could not bind to global catalog server - ";
+                    oss << "Could not generate SPN for local computer account - ";
+                    core::WWAPI::AppendDWordErrorMessage(rc, "DsGetSpn", oss);
+                    throw core::AppException<std::runtime_error>(oss.str());
+                }
+
+                _ASSERTE(localCompSpnArray.size > 0);
+
+                std::wstring ucs2DomainName = transcoder.from_bytes(actDirDomainName);
+
+                // Bind to domain:
+                DirSvcBinding dirSvcBinding;
+                rc = DsBindW(nullptr, ucs2DomainName.c_str(), &dirSvcBinding.handle);
+
+                if (rc != ERROR_SUCCESS)
+                {
+                    oss << "Could not bind to a domain controller - ";
                     core::WWAPI::AppendDWordErrorMessage(rc, "DsBind", oss);
                     throw core::AppException<std::runtime_error>(oss.str());
                 }
@@ -200,9 +229,9 @@ namespace _3fd
                 rc = DsWriteAccountSpnW(
                     dirSvcBinding.handle,
                     DS_SPN_ADD_SPN_OP,
-                    spnArray.data[0],
-                    spnArray.size,
-                    (LPCWSTR *)spnArray.data
+                    L"host/BR00200256",
+                    rpcSvcSpnArray.size,
+                    (LPCWSTR *)rpcSvcSpnArray.data
                 );
                 
                 if (rc != ERROR_SUCCESS)
@@ -212,10 +241,12 @@ namespace _3fd
                     string message = oss.str();
                     oss.str("");
 
-                    oss << "List of SPN's: " << transcoder.to_bytes(spnArray.data[0]);
+                    oss << "Attempted to register [" << transcoder.to_bytes(rpcSvcSpnArray.data[0]);
 
-                    for (int idx = 1; idx < spnArray.size; ++idx)
-                        oss << "; " << transcoder.to_bytes(spnArray.data[idx]);
+                    for (int idx = 1; idx < rpcSvcSpnArray.size; ++idx)
+                        oss << "; " << transcoder.to_bytes(rpcSvcSpnArray.data[idx]);
+
+                    oss << "] in account " << transcoder.to_bytes(localCompSpnArray.data[0]);
 
                     throw core::AppException<std::runtime_error>(message, oss.str());
                 }
@@ -223,13 +254,13 @@ namespace _3fd
 
             // Register the SPN in the authentication service:
             status = RpcServerRegisterAuthInfoW(
-                (RPC_WSTR)spnArray.data[0],
+                (RPC_WSTR)rpcSvcSpnArray.data[0],
                 RPC_C_AUTHN_GSS_KERBEROS,
                 nullptr,
                 nullptr
             );
 
-            string spn = transcoder.to_bytes(spnArray.data[0]);
+            string spn = transcoder.to_bytes(rpcSvcSpnArray.data[0]);
             ThrowIfError(status,
                 "Could not register SPN with Kerberos authentication service", spn);
 
