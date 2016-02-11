@@ -46,7 +46,7 @@ namespace _3fd
                 ProtocolSequence protSeq,
                 const string &serviceClass,
                 AuthenticationLevel authLevel,
-                const string &actDirDomainName
+                bool useActDirSec
             );
 
             ~RpcServerImpl();

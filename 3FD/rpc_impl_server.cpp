@@ -36,7 +36,7 @@ namespace _3fd
             ProtocolSequence protSeq,
             const string &serviceClass,
             AuthenticationLevel authLevel,
-            const string &actDirDomainName)
+            bool useActDirSec)
         {
             CALL_STACK_TRACE;
 
@@ -48,7 +48,7 @@ namespace _3fd
                 _ASSERTE(uniqueObject.get() == nullptr);
 
                 uniqueObject.reset(
-                    new RpcServerImpl(protSeq, serviceClass, authLevel, actDirDomainName)
+                    new RpcServerImpl(protSeq, serviceClass, authLevel, useActDirSec)
                 );
             }
             catch (core::IAppException &)
@@ -116,14 +116,13 @@ namespace _3fd
         /// it must be unique (in a way the generated SPN will not collide with another in the Windows
         /// Active directory), and cannot contain characters such as '/', '&lt;' or '&gt;'.</param>
         /// <param name="authLevel">The authentication level required for the client.</param>
-        /// <param name="actDirDomainName">Name of the domain in Microsoft Active Directory. This
-        /// parameter should only be specified when AD security services are to be used instead
-        /// of local authentication.</param>
+        /// <param name="useActDirSec">Whether Microsoft Active Directory security services
+        /// should be used instead of local authentication.</param>
         RpcServerImpl::RpcServerImpl(
             ProtocolSequence protSeq,
             const string &serviceClass,
             AuthenticationLevel authLevel,
-            const string &actDirDomainName)
+            bool useActDirSec)
         try :
             m_bindings(nullptr),
             m_authLevel(authLevel),
@@ -166,10 +165,9 @@ namespace _3fd
             // Generate a list of SPN's using the fully qualified DNS name of the local computer:
             ArrayOfSpn rpcSvcSpnArray;
             auto rc = DsGetSpnW(
-                DS_SPN_DN_HOST,
+                DS_SPN_DNS_HOST,
                 m_serviceClass.c_str(),
-                nullptr,
-                0, // no port specified
+                nullptr, 0, // no service name or port specified
                 0, nullptr, nullptr, // no extra instance names
                 &rpcSvcSpnArray.size,
                 &rpcSvcSpnArray.data
@@ -184,7 +182,7 @@ namespace _3fd
 
             _ASSERTE(rpcSvcSpnArray.size > 0);
 
-            if (!actDirDomainName.empty() && actDirDomainName != "")
+            if (useActDirSec)
             {
                 /* Now create a generic SPN for this host, to be used as ID for the local computer
                 account. According to http://msdn.microsoft.com/en-us/library/windows/desktop/ms676056,
@@ -210,8 +208,6 @@ namespace _3fd
 
                 _ASSERTE(localCompSpnArray.size > 0);
 
-                std::wstring ucs2DomainName = transcoder.from_bytes(actDirDomainName);
-
                 // Bind to domain:
                 DirSvcBinding dirSvcBinding;
                 rc = DsBindW(nullptr, nullptr, &dirSvcBinding.handle);
@@ -227,7 +223,7 @@ namespace _3fd
                 rc = DsWriteAccountSpnW(
                     dirSvcBinding.handle,
                     DS_SPN_ADD_SPN_OP,
-                    rpcSvcSpnArray.data[0],
+                    localCompSpnArray.data[0],
                     rpcSvcSpnArray.size,
                     (LPCWSTR *)rpcSvcSpnArray.data
                 );
