@@ -188,7 +188,7 @@ namespace _3fd
 #			endif
 #			ifdef ENABLE_3FD_CST
 				if(m_cst.empty() == false)
-					oss << " - Call Stack: { " << m_cst << " }";
+                    oss << "\r\n\r\n### CALL STACK TRACE ###\r\n" << m_cst;
 #			endif	
 
 				return oss.str();

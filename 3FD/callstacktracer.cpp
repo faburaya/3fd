@@ -46,6 +46,24 @@ namespace _3fd
 			return m_stackFrames.empty();
 		}
 
+        // From path+fileName, gets only the file name
+        static const char *GetFileName(const char *fullFileName)
+        {
+#       ifdef _WIN32
+            const char filePathSeparator('\\');
+#       else
+            const char filePathSeparator('/');
+#       endif
+            auto fileNameSubstr = strrchr(fullFileName, filePathSeparator);
+
+            if (fileNameSubstr != nullptr)
+                ++fileNameSubstr;
+            else
+                fileNameSubstr = fullFileName;
+
+            return fileNameSubstr;
+        }
+
 		/// <summary>
 		/// Gets the call stack trace report.
 		/// </summary>
@@ -57,12 +75,10 @@ namespace _3fd
 			for(int index = 0 ; index < m_stackFrames.size() ; ++index)
 			{
 				auto &frame = m_stackFrames[index];
-				oss << frame.file << " (" << frame.line << ") @ " << frame.function;
 
-				if(index + 1 != m_stackFrames.size())
-					oss << "; ";
-				else
-					oss << ';';
+				oss << "$ " << GetFileName(frame.file)
+                    << " (" << frame.line << ") @ " << frame.function
+                    << "\r\n";
 			}
 
 			return oss.str();
