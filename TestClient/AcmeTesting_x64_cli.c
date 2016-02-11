@@ -6,7 +6,7 @@
  /* File created by MIDL compiler version 8.00.0613 */
 /* at Tue Jan 19 01:14:07 2038
  */
-/* Compiler settings for ..\IntegrationTests\AcmeTesting.idl:
+/* Compiler settings for TestShared\AcmeTesting.idl:
     Oicf, W1, Zp8, env=Win64 (32b run), target_arch=AMD64 8.00.0613 
     protocol : dce , robust
     error checks: allocation ref bounds_check enum stub_data , use_epv
@@ -113,7 +113,7 @@ void Operate(
 
 void ChangeCase( 
     /* [in] */ handle_t IDL_handle,
-    /* [string][in] */ unsigned char *input,
+    /* [in] */ cstring *input,
     /* [out] */ cstring *output)
 {
 
@@ -205,9 +205,9 @@ static const AcmeTesting_MIDL_PROC_FORMAT_STRING AcmeTesting__MIDL_ProcFormatStr
 /* 66 */	0x43,		/* Oi2 Flags:  srv must size, clt must size, has ext, */
 			0x2,		/* 2 */
 /* 68 */	0xa,		/* 10 */
-			0x3,		/* Ext Flags:  new corr desc, clt corr check, */
+			0x7,		/* Ext Flags:  new corr desc, clt corr check, srv corr check, */
 /* 70 */	NdrFcShort( 0x1 ),	/* 1 */
-/* 72 */	NdrFcShort( 0x0 ),	/* 0 */
+/* 72 */	NdrFcShort( 0x1 ),	/* 1 */
 /* 74 */	NdrFcShort( 0x0 ),	/* 0 */
 /* 76 */	NdrFcShort( 0x0 ),	/* 0 */
 
@@ -215,13 +215,13 @@ static const AcmeTesting_MIDL_PROC_FORMAT_STRING AcmeTesting__MIDL_ProcFormatStr
 
 /* 78 */	NdrFcShort( 0x10b ),	/* Flags:  must size, must free, in, simple ref, */
 /* 80 */	NdrFcShort( 0x8 ),	/* X64 Stack size/offset = 8 */
-/* 82 */	NdrFcShort( 0x8 ),	/* Type Offset=8 */
+/* 82 */	NdrFcShort( 0x12 ),	/* Type Offset=18 */
 
 	/* Parameter output */
 
 /* 84 */	NdrFcShort( 0x4113 ),	/* Flags:  must size, must free, out, simple ref, srv alloc size=16 */
 /* 86 */	NdrFcShort( 0x10 ),	/* X64 Stack size/offset = 16 */
-/* 88 */	NdrFcShort( 0x16 ),	/* Type Offset=22 */
+/* 88 */	NdrFcShort( 0x12 ),	/* Type Offset=18 */
 
 	/* Procedure Shutdown */
 
@@ -258,33 +258,31 @@ static const AcmeTesting_MIDL_TYPE_FORMAT_STRING AcmeTesting__MIDL_TypeFormatStr
 /*  4 */	0xc,		/* FC_DOUBLE */
 			0x5c,		/* FC_PAD */
 /*  6 */	
-			0x11, 0x8,	/* FC_RP [simple_pointer] */
-/*  8 */	
-			0x22,		/* FC_C_CSTRING */
-			0x5c,		/* FC_PAD */
+			0x11, 0x0,	/* FC_RP */
+/*  8 */	NdrFcShort( 0xa ),	/* Offset= 10 (18) */
 /* 10 */	
-			0x11, 0x4,	/* FC_RP [alloced_on_stack] */
-/* 12 */	NdrFcShort( 0xa ),	/* Offset= 10 (22) */
-/* 14 */	
 			0x22,		/* FC_C_CSTRING */
 			0x44,		/* FC_STRING_SIZED */
-/* 16 */	0x17,		/* Corr desc:  field pointer, FC_USHORT */
+/* 12 */	0x17,		/* Corr desc:  field pointer, FC_USHORT */
 			0x0,		/*  */
-/* 18 */	NdrFcShort( 0x0 ),	/* 0 */
-/* 20 */	NdrFcShort( 0x1 ),	/* Corr flags:  early, */
-/* 22 */	
+/* 14 */	NdrFcShort( 0x0 ),	/* 0 */
+/* 16 */	NdrFcShort( 0x1 ),	/* Corr flags:  early, */
+/* 18 */	
 			0x1a,		/* FC_BOGUS_STRUCT */
 			0x3,		/* 3 */
-/* 24 */	NdrFcShort( 0x10 ),	/* 16 */
-/* 26 */	NdrFcShort( 0x0 ),	/* 0 */
-/* 28 */	NdrFcShort( 0x6 ),	/* Offset= 6 (34) */
-/* 30 */	0x6,		/* FC_SHORT */
+/* 20 */	NdrFcShort( 0x10 ),	/* 16 */
+/* 22 */	NdrFcShort( 0x0 ),	/* 0 */
+/* 24 */	NdrFcShort( 0x6 ),	/* Offset= 6 (30) */
+/* 26 */	0x6,		/* FC_SHORT */
 			0x42,		/* FC_STRUCTPAD6 */
-/* 32 */	0x36,		/* FC_POINTER */
+/* 28 */	0x36,		/* FC_POINTER */
 			0x5b,		/* FC_END */
-/* 34 */	
+/* 30 */	
 			0x14, 0x0,	/* FC_FP */
-/* 36 */	NdrFcShort( 0xffea ),	/* Offset= -22 (14) */
+/* 32 */	NdrFcShort( 0xffea ),	/* Offset= -22 (10) */
+/* 34 */	
+			0x11, 0x4,	/* FC_RP [alloced_on_stack] */
+/* 36 */	NdrFcShort( 0xffee ),	/* Offset= -18 (18) */
 
 			0x0
         }

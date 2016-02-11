@@ -97,7 +97,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>ENABLE_3FD_ERR_IMPL_DETAILS;ENABLE_3FD_CST;TESTING;WIN32;_SCL_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)3FD;$(SolutionDir)\OpenCL;$(SolutionDir)gtest\include;$(SolutionDir)btree;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)3FD;$(SolutionDir)TestShared;$(SolutionDir)OpenCL;$(SolutionDir)gtest\include;$(SolutionDir)btree;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/D POCO_STATIC /D _VARIADIC_MAX=10 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -117,7 +117,7 @@ copy "$(ProjectDir)calculator.wsdl" "$(TargetDir)"</Command>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>ENABLE_3FD_ERR_IMPL_DETAILS;ENABLE_3FD_CST;TESTING;WIN32;_SCL_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)3FD;$(SolutionDir)\OpenCL;$(SolutionDir)gtest\include;$(SolutionDir)btree;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)3FD;$(SolutionDir)TestShared;$(SolutionDir)OpenCL;$(SolutionDir)gtest\include;$(SolutionDir)btree;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/D POCO_STATIC /D _VARIADIC_MAX=10 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -139,7 +139,7 @@ copy "$(ProjectDir)calculator.wsdl" "$(TargetDir)"</Command>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>ENABLE_3FD_ERR_IMPL_DETAILS;ENABLE_3FD_CST;TESTING;WIN32;_SCL_SECURE_NO_WARNINGS;NDEBUG;_CONSOLE;%(PreprocessorDefinitions);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)3FD;$(SolutionDir)\OpenCL;$(SolutionDir)gtest\include;$(SolutionDir)btree;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)3FD;$(SolutionDir)TestShared;$(SolutionDir)OpenCL;$(SolutionDir)gtest\include;$(SolutionDir)btree;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/D POCO_STATIC /D _VARIADIC_MAX=10 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -163,7 +163,7 @@ copy "$(ProjectDir)calculator.wsdl" "$(TargetDir)"</Command>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>ENABLE_3FD_ERR_IMPL_DETAILS;ENABLE_3FD_CST;TESTING;WIN32;_SCL_SECURE_NO_WARNINGS;NDEBUG;_CONSOLE;%(PreprocessorDefinitions);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)3FD;$(SolutionDir)\OpenCL;$(SolutionDir)gtest\include;$(SolutionDir)btree;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)3FD;$(SolutionDir)TestShared;$(SolutionDir)OpenCL;$(SolutionDir)gtest\include;$(SolutionDir)btree;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/D POCO_STATIC /D _VARIADIC_MAX=10 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -184,6 +184,12 @@ copy "$(ProjectDir)calculator.wsdl" "$(TargetDir)"</Command>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\TestShared\rpc_test_shared.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="AcmeTesting_w32_srv.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
@@ -228,6 +234,7 @@ copy "$(ProjectDir)calculator.wsdl" "$(TargetDir)"</Command>
   <ItemGroup>
     <ClInclude Include="..\3FD\stdafx.h" />
     <ClInclude Include="..\3FD\targetver.h" />
+    <ClInclude Include="..\TestShared\rpc_test_shared.h" />
     <ClInclude Include="AcmeTesting_w32.h" />
     <ClInclude Include="AcmeTesting_x64.h" />
     <ClInclude Include="calculator.wsdl.h" />
@@ -239,7 +246,7 @@ copy "$(ProjectDir)calculator.wsdl" "$(TargetDir)"</Command>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <Midl Include="AcmeTesting.idl" />
+    <Midl Include="..\TestShared\AcmeTesting.idl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

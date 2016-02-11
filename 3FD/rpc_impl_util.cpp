@@ -101,19 +101,20 @@ namespace _3fd
         {
             try
             {
-                unsigned short apiMsgUCS2[DCE_C_ERROR_STRING_LEN];
-
-                // Get error message from API:
-                auto status = DceErrorInqTextW(errCode, apiMsgUCS2);
-                _ASSERTE(status == RPC_S_OK);
-
-                // Transcode from UCS2 to UTF8:
-                std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
-                string apiMsgUTF8 = transcoder.to_bytes(reinterpret_cast<wchar_t *> (apiMsgUCS2));
-
                 // Assemble the message:
                 std::ostringstream oss;
-                oss << message << " - System RPC API reported an error: " << apiMsgUTF8;
+                oss << message << " - System RPC API reported an error: ";
+
+                // Get error message from API:
+                unsigned short apiMsgUCS2[DCE_C_ERROR_STRING_LEN];
+                auto status = DceErrorInqTextW(errCode, apiMsgUCS2);
+
+                std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
+
+                if (status == RPC_S_OK)
+                    oss << transcoder.to_bytes(reinterpret_cast<wchar_t *> (apiMsgUCS2));
+                else
+                    core::WWAPI::AppendDWordErrorMessage(status, nullptr, oss);
 
                 // Create the exception:
                 if (details.empty() || details == "")

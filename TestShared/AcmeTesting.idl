@@ -12,7 +12,7 @@ interface AcmeTesting
         [string, size_is(size)] char *data;
     } cstring;
 
-    void ChangeCase([in, string] char *input, [out] cstring *output);
+    void ChangeCase([in] cstring *input, [out] cstring *output);
 
     void Shutdown(void);
 }

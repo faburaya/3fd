@@ -6,7 +6,7 @@
  /* File created by MIDL compiler version 8.00.0613 */
 /* at Tue Jan 19 01:14:07 2038
  */
-/* Compiler settings for ..\IntegrationTests\AcmeTesting.idl:
+/* Compiler settings for TestShared\AcmeTesting.idl:
     Oicf, W1, Zp8, env=Win32 (32b run), target_arch=X86 8.00.0613 
     protocol : dce , robust
     error checks: allocation ref bounds_check enum stub_data , use_epv
@@ -58,7 +58,7 @@ void Operate(
     /* [in] */ double right,
     /* [out] */ double *result);
 
-typedef /* [public][public] */ struct __MIDL_AcmeTesting_0001
+typedef /* [public][public][public] */ struct __MIDL_AcmeTesting_0001
     {
     unsigned short size;
     /* [size_is][string] */ unsigned char *data;
@@ -66,7 +66,7 @@ typedef /* [public][public] */ struct __MIDL_AcmeTesting_0001
 
 void ChangeCase( 
     /* [in] */ handle_t IDL_handle,
-    /* [string][in] */ unsigned char *input,
+    /* [in] */ cstring *input,
     /* [out] */ cstring *output);
 
 void Shutdown( 
@@ -83,7 +83,7 @@ typedef struct _AcmeTesting_v1_0_epv_t
         /* [out] */ double *result);
     void ( *ChangeCase )( 
         /* [in] */ handle_t IDL_handle,
-        /* [string][in] */ unsigned char *input,
+        /* [in] */ cstring *input,
         /* [out] */ cstring *output);
     void ( *Shutdown )( 
         /* [in] */ handle_t IDL_handle);

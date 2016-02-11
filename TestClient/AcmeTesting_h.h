@@ -3,13 +3,13 @@
 /* this ALWAYS GENERATED file contains the definitions for the interfaces */
 
 
- /* File created by MIDL compiler version 8.00.0613 */
-/* at Tue Jan 19 01:14:07 2038
+ /* File created by MIDL compiler version 8.00.0603 */
+/* at Mon Feb 08 22:47:10 2016
  */
-/* Compiler settings for TestShared\AcmeTesting.idl:
-    Oicf, W1, Zp8, env=Win64 (32b run), target_arch=AMD64 8.00.0613 
-    protocol : dce , robust
-    error checks: allocation ref bounds_check enum stub_data , use_epv
+/* Compiler settings for ..\TestShared\AcmeTesting.idl:
+    Oicf, W1, Zp8, env=Win64 (32b run), target_arch=AMD64 8.00.0603 
+    protocol : dce , ms_ext, c_ext, robust
+    error checks: allocation ref bounds_check enum stub_data 
     VC __declspec() decoration level: 
          __declspec(uuid()), __declspec(selectany), __declspec(novtable)
          DECLSPEC_UUID(), MIDL_INTERFACE()
@@ -29,11 +29,11 @@
 
 #ifndef __RPCNDR_H_VERSION__
 #error this stub requires an updated version of <rpcndr.h>
-#endif /* __RPCNDR_H_VERSION__ */
+#endif // __RPCNDR_H_VERSION__
 
 
-#ifndef __AcmeTesting_x64_h__
-#define __AcmeTesting_x64_h__
+#ifndef __AcmeTesting_h_h__
+#define __AcmeTesting_h_h__
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1020)
 #pragma once
@@ -73,22 +73,6 @@ void Shutdown(
     /* [in] */ handle_t IDL_handle);
 
 
-
-typedef struct _AcmeTesting_v1_0_epv_t
-{
-    void ( *Operate )( 
-        /* [in] */ handle_t IDL_handle,
-        /* [in] */ double left,
-        /* [in] */ double right,
-        /* [out] */ double *result);
-    void ( *ChangeCase )( 
-        /* [in] */ handle_t IDL_handle,
-        /* [in] */ cstring *input,
-        /* [out] */ cstring *output);
-    void ( *Shutdown )( 
-        /* [in] */ handle_t IDL_handle);
-    
-    } AcmeTesting_v1_0_epv_t;
 
 extern RPC_IF_HANDLE AcmeTesting_v1_0_c_ifspec;
 extern RPC_IF_HANDLE AcmeTesting_v1_0_s_ifspec;

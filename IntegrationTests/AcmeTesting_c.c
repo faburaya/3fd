@@ -1,15 +1,15 @@
 
 
-/* this ALWAYS GENERATED file contains the RPC server stubs */
+/* this ALWAYS GENERATED file contains the RPC client stubs */
 
 
- /* File created by MIDL compiler version 8.00.0613 */
-/* at Tue Jan 19 01:14:07 2038
+ /* File created by MIDL compiler version 8.00.0603 */
+/* at Mon Feb 08 22:43:05 2016
  */
-/* Compiler settings for TestShared\AcmeTesting.idl:
-    Oicf, W1, Zp8, env=Win64 (32b run), target_arch=AMD64 8.00.0613 
-    protocol : dce , robust
-    error checks: allocation ref bounds_check enum stub_data , use_epv
+/* Compiler settings for ..\TestShared\AcmeTesting.idl:
+    Oicf, W1, Zp8, env=Win64 (32b run), target_arch=AMD64 8.00.0603 
+    protocol : dce , ms_ext, c_ext, robust
+    error checks: allocation ref bounds_check enum stub_data 
     VC __declspec() decoration level: 
          __declspec(uuid()), __declspec(selectany), __declspec(novtable)
          DECLSPEC_UUID(), MIDL_INTERFACE()
@@ -29,7 +29,8 @@
 #pragma warning( disable: 4024 )  /* array to pointer mapping*/
 
 #include <string.h>
-#include "AcmeTesting_x64.h"
+
+#include "AcmeTesting_h.h"
 
 #define TYPE_FORMAT_STRING_SIZE   39                                
 #define PROC_FORMAT_STRING_SIZE   121                               
@@ -59,35 +60,82 @@ typedef struct _AcmeTesting_MIDL_EXPR_FORMAT_STRING
 static const RPC_SYNTAX_IDENTIFIER  _RpcTransferSyntax = 
 {{0x8A885D04,0x1CEB,0x11C9,{0x9F,0xE8,0x08,0x00,0x2B,0x10,0x48,0x60}},{2,0}};
 
+
 extern const AcmeTesting_MIDL_TYPE_FORMAT_STRING AcmeTesting__MIDL_TypeFormatString;
 extern const AcmeTesting_MIDL_PROC_FORMAT_STRING AcmeTesting__MIDL_ProcFormatString;
 extern const AcmeTesting_MIDL_EXPR_FORMAT_STRING AcmeTesting__MIDL_ExprFormatString;
+
+#define GENERIC_BINDING_TABLE_SIZE   0            
+
 
 /* Standard interface: AcmeTesting, ver. 1.0,
    GUID={0xba209999,0x0c6c,0x11d2,{0x97,0xcf,0x00,0xc0,0x4f,0x8e,0xea,0x45}} */
 
 
-extern const MIDL_SERVER_INFO AcmeTesting_ServerInfo;
 
-extern const RPC_DISPATCH_TABLE AcmeTesting_v1_0_DispatchTable;
-
-extern const AcmeTesting_v1_0_epv_t DEFAULT_EPV;
-
-static const RPC_SERVER_INTERFACE AcmeTesting___RpcServerInterface =
+static const RPC_CLIENT_INTERFACE AcmeTesting___RpcClientInterface =
     {
-    sizeof(RPC_SERVER_INTERFACE),
+    sizeof(RPC_CLIENT_INTERFACE),
     {{0xba209999,0x0c6c,0x11d2,{0x97,0xcf,0x00,0xc0,0x4f,0x8e,0xea,0x45}},{1,0}},
     {{0x8A885D04,0x1CEB,0x11C9,{0x9F,0xE8,0x08,0x00,0x2B,0x10,0x48,0x60}},{2,0}},
-    (RPC_DISPATCH_TABLE*)&AcmeTesting_v1_0_DispatchTable,
     0,
     0,
-    (RPC_MGR_EPV*)&DEFAULT_EPV,
-    &AcmeTesting_ServerInfo,
-    0x04000000
+    0,
+    0,
+    0,
+    0x00000000
     };
-RPC_IF_HANDLE AcmeTesting_v1_0_s_ifspec = (RPC_IF_HANDLE)& AcmeTesting___RpcServerInterface;
+RPC_IF_HANDLE AcmeTesting_v1_0_c_ifspec = (RPC_IF_HANDLE)& AcmeTesting___RpcClientInterface;
 
 extern const MIDL_STUB_DESC AcmeTesting_StubDesc;
+
+static RPC_BINDING_HANDLE AcmeTesting__MIDL_AutoBindHandle;
+
+
+void Operate( 
+    /* [in] */ handle_t IDL_handle,
+    /* [in] */ double left,
+    /* [in] */ double right,
+    /* [out] */ double *result)
+{
+
+    NdrClientCall2(
+                  ( PMIDL_STUB_DESC  )&AcmeTesting_StubDesc,
+                  (PFORMAT_STRING) &AcmeTesting__MIDL_ProcFormatString.Format[0],
+                  IDL_handle,
+                  left,
+                  right,
+                  result);
+    
+}
+
+
+void ChangeCase( 
+    /* [in] */ handle_t IDL_handle,
+    /* [in] */ cstring *input,
+    /* [out] */ cstring *output)
+{
+
+    NdrClientCall2(
+                  ( PMIDL_STUB_DESC  )&AcmeTesting_StubDesc,
+                  (PFORMAT_STRING) &AcmeTesting__MIDL_ProcFormatString.Format[48],
+                  IDL_handle,
+                  input,
+                  output);
+    
+}
+
+
+void Shutdown( 
+    /* [in] */ handle_t IDL_handle)
+{
+
+    NdrClientCall2(
+                  ( PMIDL_STUB_DESC  )&AcmeTesting_StubDesc,
+                  (PFORMAT_STRING) &AcmeTesting__MIDL_ProcFormatString.Format[90],
+                  IDL_handle);
+    
+}
 
 
 #if !defined(__RPC_WIN64__)
@@ -102,7 +150,7 @@ static const AcmeTesting_MIDL_PROC_FORMAT_STRING AcmeTesting__MIDL_ProcFormatStr
 	/* Procedure Operate */
 
 			0x0,		/* 0 */
-			0x4a,		/* Old Flags:  DCE mem package, */
+			0x48,		/* Old Flags:  */
 /*  2 */	NdrFcLong( 0x0 ),	/* 0 */
 /*  6 */	NdrFcShort( 0x0 ),	/* 0 */
 /*  8 */	NdrFcShort( 0x20 ),	/* X64 Stack size/offset = 32 */
@@ -120,21 +168,21 @@ static const AcmeTesting_MIDL_PROC_FORMAT_STRING AcmeTesting__MIDL_ProcFormatStr
 /* 26 */	NdrFcShort( 0x0 ),	/* 0 */
 /* 28 */	NdrFcShort( 0x28 ),	/* 40 */
 
-	/* Parameter left */
+	/* Parameter IDL_handle */
 
 /* 30 */	NdrFcShort( 0x48 ),	/* Flags:  in, base type, */
 /* 32 */	NdrFcShort( 0x8 ),	/* X64 Stack size/offset = 8 */
 /* 34 */	0xc,		/* FC_DOUBLE */
 			0x0,		/* 0 */
 
-	/* Parameter right */
+	/* Parameter left */
 
 /* 36 */	NdrFcShort( 0x48 ),	/* Flags:  in, base type, */
 /* 38 */	NdrFcShort( 0x10 ),	/* X64 Stack size/offset = 16 */
 /* 40 */	0xc,		/* FC_DOUBLE */
 			0x0,		/* 0 */
 
-	/* Parameter result */
+	/* Parameter right */
 
 /* 42 */	NdrFcShort( 0x2150 ),	/* Flags:  out, base type, simple ref, srv alloc size=8 */
 /* 44 */	NdrFcShort( 0x18 ),	/* X64 Stack size/offset = 24 */
@@ -143,8 +191,11 @@ static const AcmeTesting_MIDL_PROC_FORMAT_STRING AcmeTesting__MIDL_ProcFormatStr
 
 	/* Procedure ChangeCase */
 
+
+	/* Parameter result */
+
 /* 48 */	0x0,		/* 0 */
-			0x4b,		/* Old Flags:  full ptr, DCE mem package, */
+			0x48,		/* Old Flags:  */
 /* 50 */	NdrFcLong( 0x0 ),	/* 0 */
 /* 54 */	NdrFcShort( 0x1 ),	/* 1 */
 /* 56 */	NdrFcShort( 0x18 ),	/* X64 Stack size/offset = 24 */
@@ -162,13 +213,13 @@ static const AcmeTesting_MIDL_PROC_FORMAT_STRING AcmeTesting__MIDL_ProcFormatStr
 /* 74 */	NdrFcShort( 0x0 ),	/* 0 */
 /* 76 */	NdrFcShort( 0x0 ),	/* 0 */
 
-	/* Parameter input */
+	/* Parameter IDL_handle */
 
 /* 78 */	NdrFcShort( 0x10b ),	/* Flags:  must size, must free, in, simple ref, */
 /* 80 */	NdrFcShort( 0x8 ),	/* X64 Stack size/offset = 8 */
 /* 82 */	NdrFcShort( 0x12 ),	/* Type Offset=18 */
 
-	/* Parameter output */
+	/* Parameter input */
 
 /* 84 */	NdrFcShort( 0x4113 ),	/* Flags:  must size, must free, out, simple ref, srv alloc size=16 */
 /* 86 */	NdrFcShort( 0x10 ),	/* X64 Stack size/offset = 16 */
@@ -176,8 +227,11 @@ static const AcmeTesting_MIDL_PROC_FORMAT_STRING AcmeTesting__MIDL_ProcFormatStr
 
 	/* Procedure Shutdown */
 
+
+	/* Parameter output */
+
 /* 90 */	0x0,		/* 0 */
-			0x4a,		/* Old Flags:  DCE mem package, */
+			0x48,		/* Old Flags:  */
 /* 92 */	NdrFcLong( 0x0 ),	/* 0 */
 /* 96 */	NdrFcShort( 0x2 ),	/* 2 */
 /* 98 */	NdrFcShort( 0x8 ),	/* X64 Stack size/offset = 8 */
@@ -229,7 +283,7 @@ static const AcmeTesting_MIDL_TYPE_FORMAT_STRING AcmeTesting__MIDL_TypeFormatStr
 /* 28 */	0x36,		/* FC_POINTER */
 			0x5b,		/* FC_END */
 /* 30 */	
-			0x14, 0x0,	/* FC_FP */
+			0x12, 0x0,	/* FC_UP */
 /* 32 */	NdrFcShort( 0xffea ),	/* Offset= -22 (10) */
 /* 34 */	
 			0x11, 0x4,	/* FC_RP [alloced_on_stack] */
@@ -249,10 +303,10 @@ static const unsigned short AcmeTesting_FormatStringOffsetTable[] =
 
 static const MIDL_STUB_DESC AcmeTesting_StubDesc = 
     {
-    (void *)& AcmeTesting___RpcServerInterface,
-    NdrRpcSsDefaultAllocate,
-    NdrRpcSsDefaultFree,
-    0,
+    (void *)& AcmeTesting___RpcClientInterface,
+    MIDL_user_allocate,
+    MIDL_user_free,
+    &AcmeTesting__MIDL_AutoBindHandle,
     0,
     0,
     0,
@@ -261,7 +315,7 @@ static const MIDL_STUB_DESC AcmeTesting_StubDesc =
     1, /* -error bounds_check flag */
     0x50002, /* Ndr library version */
     0,
-    0x8000265, /* MIDL Version 8.0.613 */
+    0x800025b, /* MIDL Version 8.0.603 */
     0,
     0,
     0,  /* notify & notify_flag routine table */
@@ -270,44 +324,6 @@ static const MIDL_STUB_DESC AcmeTesting_StubDesc =
     0,   /* proxy/server info */
     0
     };
-
-static const RPC_DISPATCH_FUNCTION AcmeTesting_table[] =
-    {
-    NdrServerCall2,
-    NdrServerCall2,
-    NdrServerCall2,
-    0
-    };
-static const RPC_DISPATCH_TABLE AcmeTesting_v1_0_DispatchTable = 
-    {
-    3,
-    (RPC_DISPATCH_FUNCTION*)AcmeTesting_table
-    };
-
-static const AcmeTesting_v1_0_epv_t DEFAULT_EPV = 
-    {
-    Operate,
-    ChangeCase,
-    Shutdown
-    };
-
-static const SERVER_ROUTINE AcmeTesting_ServerRoutineTable[] = 
-    {
-    (SERVER_ROUTINE)Operate,
-    (SERVER_ROUTINE)ChangeCase,
-    (SERVER_ROUTINE)Shutdown
-    };
-
-static const MIDL_SERVER_INFO AcmeTesting_ServerInfo = 
-    {
-    &AcmeTesting_StubDesc,
-    AcmeTesting_ServerRoutineTable,
-    AcmeTesting__MIDL_ProcFormatString.Format,
-    AcmeTesting_FormatStringOffsetTable,
-    0,
-    0,
-    0,
-    0};
 #if _MSC_VER >= 1200
 #pragma warning(pop)
 #endif

@@ -75,7 +75,10 @@ namespace _3fd
                 nullptr
             );
 
-            oss << funcName << " returned error code " << errCode;
+            if(funcName != nullptr && funcName[0] != 0)
+                oss << funcName << " returned error code " << errCode;
+            else
+                oss << "code " << errCode;
 
             if (rc)
             {

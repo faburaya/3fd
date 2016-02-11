@@ -1,6 +1,9 @@
 #ifndef RPC_H // header guard
 #define RPC_H
 
+#include "exceptions.h"
+#include "logger.h"
+
 #include <functional>
 #include <memory>
 #include <mutex>
@@ -112,7 +115,7 @@ namespace _3fd
 
             static bool Wait();
 
-            static void Finalize() noexcept;
+            static bool Finalize() noexcept;
         };
 
         /// <summary>
@@ -166,6 +169,31 @@ namespace _3fd
             ScopedImpersonation(RPC_BINDING_HANDLE clientBindingHandle);
             ~ScopedImpersonation();
         };
+
+        /////////////////////////
+        // Error Helpers
+        /////////////////////////
+
+        void ThrowIfError(RPC_STATUS status, const char *message);
+
+        void ThrowIfError(
+            RPC_STATUS status,
+            const char *message,
+            const string &details
+        );
+
+        void LogIfError(
+            RPC_STATUS status,
+            const char *message,
+            core::Logger::Priority prio
+        ) noexcept;
+
+        void LogIfError(
+            RPC_STATUS status,
+            const char *message,
+            const string &details,
+            core::Logger::Priority prio
+        ) noexcept;
 
     }// end of namespace rpc
 }// end of namespace _3fd
