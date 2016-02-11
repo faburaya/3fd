@@ -209,7 +209,15 @@ namespace _3fd
                 {
                     oss << "Could not register SPN in local computer account - ";
                     core::WWAPI::AppendDWordErrorMessage(rc, "DsWriteAccountSpn", oss);
-                    throw core::AppException<std::runtime_error>(oss.str());
+                    string message = oss.str();
+                    oss.str("");
+
+                    oss << "List of SPN's: " << transcoder.to_bytes(spnArray.data[0]);
+
+                    for (int idx = 1; idx < spnArray.size; ++idx)
+                        oss << "; " << transcoder.to_bytes(spnArray.data[idx]);
+
+                    throw core::AppException<std::runtime_error>(message, oss.str());
                 }
             }
 
