@@ -99,7 +99,7 @@ namespace _3fd
                 AcmeSvcProxy client1(
                     ProtocolSequence::TCP,
                     objectsUuidsImpl1[6],
-                    "BR00200256.ERICSSON.SE",
+                    "BR00200256.ericsson.se",
                     AuthenticationLevel::Integrity
                 );
 
@@ -109,7 +109,7 @@ namespace _3fd
                 AcmeSvcProxy client2(
                     ProtocolSequence::TCP,
                     objectsUuidsImpl2[6],
-                    "BR00200256.ERICSSON.SE",
+                    "BR00200256.ericsson.se",
                     AuthenticationLevel::Integrity
                 );
 

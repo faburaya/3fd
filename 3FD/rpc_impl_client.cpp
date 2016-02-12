@@ -112,7 +112,7 @@ namespace _3fd
 
             // First assess the SPN string size...
             auto rc = DsMakeSpnW(
-                paramServiceClass,
+                L"host",
                 paramDestination,
                 nullptr,
                 paramPort,
@@ -121,7 +121,7 @@ namespace _3fd
                 nullptr
             );
 
-            if (rc != ERROR_SUCCESS)
+            if (rc != ERROR_BUFFER_OVERFLOW) // expected return when assessing string size
             {
                 std::ostringstream oss;
                 oss << "Could not generate SPN for RPC server - ";
@@ -133,7 +133,7 @@ namespace _3fd
 
             // ... then get the SPN:
             DsMakeSpnW(
-                paramServiceClass,
+                L"host",
                 paramDestination,
                 nullptr,
                 paramPort,

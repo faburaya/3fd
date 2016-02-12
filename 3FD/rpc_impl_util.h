@@ -4,6 +4,7 @@
 #include "rpc_helpers.h"
 
 #include <string>
+#include <NtDsAPI.h>
 
 namespace _3fd
 {
@@ -12,6 +13,8 @@ namespace _3fd
     namespace rpc
     {
         const char *ToString(ProtocolSequence protSeq);
+
+        const char *ToString(DS_NAME_ERROR error);
 
         const unsigned long UUID_VECTOR_MAX_SIZE(32);
 
@@ -56,6 +59,58 @@ namespace _3fd
             void Add(const UUID &uuid);
 
             UUID_VECTOR *CopyTo(UuidVectorFix &vec) noexcept;
+        };
+
+        /// <summary>
+        /// RAII for name result from 'DsCrackNames'.
+        /// </summary>
+        struct NameResult
+        {
+            DS_NAME_RESULTW *data;
+
+            NameResult()
+                : data(nullptr) {}
+
+            ~NameResult()
+            {
+                if (data != nullptr)
+                    DsFreeNameResultW(data);
+            }
+        };
+
+        /// <summary>
+        /// RAII for Directory Service binding handle.
+        /// </summary>
+        struct DirSvcBinding
+        {
+            HANDLE handle;
+
+            DirSvcBinding()
+                : handle(nullptr) {}
+
+            ~DirSvcBinding()
+            {
+                if (handle != nullptr)
+                    DsUnBindW(&handle);
+            }
+        };
+
+        /// <summary>
+        /// RAII for array of SPN's.
+        /// </summary>
+        struct ArrayOfSpn
+        {
+            DWORD size;
+            LPWSTR *data;
+
+            ArrayOfSpn()
+                : size(0), data(nullptr) {}
+
+            ~ArrayOfSpn()
+            {
+                if (data != nullptr)
+                    DsFreeSpnArrayW(size, data);
+            }
         };
 
     }// end of namespace rpc

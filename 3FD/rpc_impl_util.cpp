@@ -52,6 +52,51 @@ namespace _3fd
             }
         }
 
+        /// <summary>
+        /// Converts an enumerated error code for name
+        /// handling in AD into a friendly error message.
+        /// </summary>
+        /// <param name="errorCode">The enumerated error code.</param>
+        /// <returns>
+        /// A friendly error message corresponding the given error code,
+        /// extracted from http://msdn.microsoft.com/en-us/library/windows/desktop/ms676061
+        /// </returns>
+        const char *ToString(DS_NAME_ERROR error)
+        {
+            switch (error)
+            {
+            case DS_NAME_ERROR_RESOLVING:
+                return "A generic processing error occurred";
+
+            case DS_NAME_ERROR_NOT_FOUND:
+                return "The name cannot be found or the caller "
+                       "does not have permission to access the name";
+
+            case DS_NAME_ERROR_NOT_UNIQUE:
+                return "The input name is mapped to more than one output "
+                       "name or the desired format did not have a single, "
+                       "unique value for the object found";
+
+            case DS_NAME_ERROR_NO_MAPPING:
+                return "The input name was found, but the associated output "
+                       "format cannot be found. This can occur if the object "
+                       "does not have all the required attributes";
+
+            case DS_NAME_ERROR_DOMAIN_ONLY:
+                return "Domain is determined, but was unable to resolve entire name";
+
+            case DS_NAME_ERROR_NO_SYNTACTICAL_MAPPING:
+                return "A syntactical mapping cannot be performed on the client "
+                       "without transmitting over the network";
+
+            case DS_NAME_ERROR_TRUST_REFERRAL:
+                return "The name is from an external trusted forest";
+
+            default:
+                return "Unknown error";
+            }
+        }
+
         //////////////////////
         // UUID_VECTOR Fix
         //////////////////////

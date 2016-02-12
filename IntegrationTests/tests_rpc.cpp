@@ -226,7 +226,7 @@ namespace _3fd
                     ProtocolSequence::TCP,
                     "TestClient3FD",
                     AuthenticationLevel::Integrity,
-                    false
+                    true
                 );
 
                 // RPC interface implementation 1:
