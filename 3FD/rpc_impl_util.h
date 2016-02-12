@@ -14,8 +14,6 @@ namespace _3fd
     {
         const char *ToString(ProtocolSequence protSeq);
 
-        const char *ToString(DS_NAME_ERROR error);
-
         const unsigned long UUID_VECTOR_MAX_SIZE(32);
 
         /// <summary>
@@ -59,23 +57,6 @@ namespace _3fd
             void Add(const UUID &uuid);
 
             UUID_VECTOR *CopyTo(UuidVectorFix &vec) noexcept;
-        };
-
-        /// <summary>
-        /// RAII for name result from 'DsCrackNames'.
-        /// </summary>
-        struct NameResult
-        {
-            DS_NAME_RESULTW *data;
-
-            NameResult()
-                : data(nullptr) {}
-
-            ~NameResult()
-            {
-                if (data != nullptr)
-                    DsFreeNameResultW(data);
-            }
         };
 
         /// <summary>

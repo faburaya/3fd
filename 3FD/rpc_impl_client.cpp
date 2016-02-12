@@ -121,7 +121,8 @@ namespace _3fd
                 nullptr
             );
 
-            if (rc != ERROR_BUFFER_OVERFLOW) // expected return when assessing string size
+            // Check for expected returns when assessing string size:
+            if (rc != ERROR_SUCCESS && rc != ERROR_BUFFER_OVERFLOW)
             {
                 std::ostringstream oss;
                 oss << "Could not generate SPN for RPC server - ";

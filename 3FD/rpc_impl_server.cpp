@@ -6,6 +6,7 @@
 
 #include <codecvt>
 #include <sstream>
+#include <security.h>
 #include <NtDsAPI.h>
 
 namespace _3fd
@@ -150,6 +151,26 @@ namespace _3fd
 
             if (useActDirSec)
             {
+                /* Creates an LDAP distinguished name (DN) for this host, to be used as ID for
+                the local computer account.
+                (According to http://msdn.microsoft.com/en-us/library/windows/desktop/ms676056,
+                DsWriteAccountSpn is allowed to register an SPN with a domain controller even
+                when not running with privileges of domain administrator, as long as the SPN is
+                registered in the local computer account and is relative to its computer name.) */
+
+                ULONG localCompDnStrSize(0UL);
+                auto rv = GetComputerObjectNameW(NameFullyQualifiedDN, nullptr, &localCompDnStrSize);
+                if (rv == FALSE && GetLastError() != ERROR_INSUFFICIENT_BUFFER)
+                {
+                    oss << "Could not retrieve DN for local computer - ";
+                    core::WWAPI::AppendDWordErrorMessage(GetLastError(), "GetComputerObjectName", oss);
+                    throw core::AppException<std::runtime_error>(oss.str());
+                }
+
+                std::unique_ptr<wchar_t[]> localCompDnCStr(new wchar_t [localCompDnStrSize]);
+                rv = GetComputerObjectNameW(NameFullyQualifiedDN, localCompDnCStr.get(), &localCompDnStrSize);
+                _ASSERTE(rv == TRUE);
+
                 // Bind to domain:
                 DirSvcBinding dirSvcBinding;
                 rc = DsBindW(nullptr, nullptr, &dirSvcBinding.handle);
@@ -161,63 +182,11 @@ namespace _3fd
                     throw core::AppException<std::runtime_error>(oss.str());
                 }
 
-                /* Now creates an LDAP distinguished name (DN) for this host, to be used as ID for the
-                local computer account. It first creates an SPN for this host, then converts it to DN.
-                (According to http://msdn.microsoft.com/en-us/library/windows/desktop/ms676056,
-                DsWriteAccountSpn is allowed to register an SPN with a domain controller even when not
-                running with privileges of domain administrator, as long as the SPN is registered in the
-                local computer account and is relative to its computer name.) */
-
-                ArrayOfSpn localCompSpnArray;
-                rc = DsGetSpnW(
-                    DS_SPN_DNS_HOST,
-                    L"host",
-                    nullptr, 0, // no service name or port specified
-                    0, nullptr, nullptr, // no extra instances
-                    &localCompSpnArray.size,
-                    &localCompSpnArray.data
-                );
-
-                if (rc != ERROR_SUCCESS)
-                {
-                    oss << "Could not generate SPN for local computer - ";
-                    core::WWAPI::AppendDWordErrorMessage(rc, "DsGetSpn", oss);
-                    throw core::AppException<std::runtime_error>(oss.str());
-                }
-
-                _ASSERTE(localCompSpnArray.size > 0);
-
-                NameResult localCompDN;
-                rc = DsCrackNamesW(
-                    dirSvcBinding.handle,
-                    DS_NAME_NO_FLAGS,
-                    DS_SERVICE_PRINCIPAL_NAME,
-                    DS_FQDN_1779_NAME,
-                    localCompSpnArray.size,
-                    localCompSpnArray.data,
-                    &localCompDN.data
-                );
-
-                auto nameResultItem = localCompDN.data->rItems[0];
-
-                if (rc != NO_ERROR)
-                {
-                    oss << "Could not convert SPN of local computer into DN - ";
-                    core::WWAPI::AppendDWordErrorMessage(rc, "DsCrackNames", oss);
-                    throw core::AppException<std::runtime_error>(oss.str());
-                }
-                else if (nameResultItem.status != DS_NAME_NO_ERROR)
-                {
-                    oss << "Could not convert SPN of local computer into DN: "
-                        << ToString(static_cast<DS_NAME_ERROR> (nameResultItem.status));
-                    throw core::AppException<std::runtime_error>(oss.str());
-                }
-
                 // Register SPN with domain on computer account:
                 rc = DsWriteAccountSpnW(
                     dirSvcBinding.handle,
                     DS_SPN_ADD_SPN_OP,
-                    nameResultItem.pName,
+                    localCompDnCStr.get(),
                     rpcSvcSpnArray.size,
                     (LPCWSTR *)rpcSvcSpnArray.data
                 );
@@ -230,7 +199,7 @@ namespace _3fd
                     oss.str("");
 
                     oss << "Attempted to register \'" << transcoder.to_bytes(rpcSvcSpnArray.data[0])
-                        << "\' in account \'" << transcoder.to_bytes(nameResultItem.pName) << '\'';
+                        << "\' in account \'" << transcoder.to_bytes(localCompDnCStr.get()) << '\'';
 
                     throw core::AppException<std::runtime_error>(message, oss.str());
                 }
