@@ -26,23 +26,23 @@ namespace _3fd
         /// <param name="destination">The destination: local RPC requires the machine name,
         /// while for TCP this is the network address (IP or host name).</param>
         /// <param name="authLevel">The authentication level to use.</param>
-        /// <param name="impLevel">The level allowed for the RPC server to impersonate
-        /// the identity of an authorized client.This parameter is ignored if the
-        /// authentication level specifies that no authentication takes place.</param>
-        /// <param name="serviceClass">A friendly name used to compose the SPN and identify
+        /// <param name="serviceName">A friendly name used to compose the SPN and identify
         /// the RPC server in the authentication service. This parameter is ignored if the
         /// authentication level specifies that no authentication takes place.</param>
         /// <param name="endpoint">The endpoint: for local RPC is the application or service
         /// name, while for TCP this is the port number. Specifying the endpoint is optional
         /// if the server has registered its bindings with the endpoint mapper.</param>
+        /// <param name="impLevel">The level allowed for the RPC server to impersonate
+        /// the identity of an authorized client.This parameter is ignored if the
+        /// authentication level specifies that no authentication takes place.</param>
         RpcClient::RpcClient(
             ProtocolSequence protSeq,
             const string &objUUID,
             const string &destination,
             AuthenticationLevel authLevel,
-            ImpersonationLevel impLevel,
-            const string &serviceClass,
-            const string &endpoint)
+            const string &serviceName,
+            const string &endpoint,
+            ImpersonationLevel impLevel)
         try
         {
             CALL_STACK_TRACE;
@@ -103,8 +103,8 @@ namespace _3fd
                 return;
 
             // Prepare parameters to create the server SPN:
-            std::wstring ucs2ServiceClass = transcoder.from_bytes(serviceClass);
-            auto paramServiceClass = ucs2ServiceClass.c_str();
+            std::wstring ucs2ServiceName = transcoder.from_bytes(serviceName);
+            auto paramServiceName = ucs2ServiceName.c_str();
             auto paramDestination = ucs2Destination.c_str();
             auto paramPort = static_cast<USHORT> (atoi(endpoint.c_str()));
 
@@ -113,8 +113,8 @@ namespace _3fd
             // First assess the SPN string size...
             auto rc = DsMakeSpnW(
                 L"host",
+                paramServiceName,
                 paramDestination,
-                nullptr,
                 paramPort,
                 nullptr,
                 &spnStrSize,
@@ -133,10 +133,10 @@ namespace _3fd
             std::unique_ptr<wchar_t[]> spnStr(new wchar_t[spnStrSize]);
 
             // ... then get the SPN:
-            DsMakeSpnW(
+            rc = DsMakeSpnW(
                 L"host",
+                paramServiceName,
                 paramDestination,
-                nullptr,
                 paramPort,
                 nullptr,
                 &spnStrSize,
@@ -153,9 +153,9 @@ namespace _3fd
             secQOS.ImpersonationType = static_cast<unsigned long> (impLevel);
 
             // This client requires mutual auth (only Kerberos provides in TCP)
-            secQOS.Capabilities =
+            secQOS.Capabilities = 0/*
                 RPC_C_QOS_CAPABILITIES_MUTUAL_AUTH
-                | RPC_C_QOS_CAPABILITIES_LOCAL_MA_HINT;
+                | RPC_C_QOS_CAPABILITIES_LOCAL_MA_HINT*/;
 
             /* Authentication impact on performance on identity tracking
             is negligible unless a remote protocol is in use: */
@@ -174,7 +174,9 @@ namespace _3fd
                 reinterpret_cast<RPC_SECURITY_QOS *> (&secQOS)
             );
 
-            ThrowIfError(status, "Failed to set security for binding handle of RPC client");
+            ThrowIfError(status,
+                "Failed to set security for binding handle of RPC client",
+                transcoder.to_bytes(spnStr.get()));
         }
         catch (core::IAppException &)
         {

@@ -25,17 +25,17 @@ namespace _3fd
         /// Initializes the RPC server before running it.
         /// </summary>
         /// <param name="protSeq">The protocol sequence to be used.</param>
-        /// <param name="serviceClass">A friendly name to identify this service. Such name will be
+        /// <param name="serviceName">A friendly name to identify this service. Such name will be
         /// employed for both informational (will be displayed in admin tools that expose listening
-        /// servers, as a description) and security purposes (the "service class" in the SPN). Thus
+        /// servers, as a description) and security purposes (the "service name" in the SPN). Thus
         /// it must be unique (in a way the generated SPN will not collide with another in the Windows
-        /// Active directory), and cannot contain characters such as '/', '&lt;' or '&gt;'.</param>
+        /// Active Directory), and cannot contain characters such as '/', '&lt;' or '&gt;'.</param>
         /// <param name="authLevel">The authentication level required for the client.</param>
         /// <param name="useActDirSec">Whether Microsoft Active Directory security services
         /// should be used instead of local authentication.</param>
         void RpcServer::Initialize(
             ProtocolSequence protSeq,
-            const string &serviceClass,
+            const string &serviceName,
             AuthenticationLevel authLevel,
             bool useActDirSec)
         {
@@ -49,7 +49,7 @@ namespace _3fd
                 _ASSERTE(uniqueObject.get() == nullptr);
 
                 uniqueObject.reset(
-                    new RpcServerImpl(protSeq, serviceClass, authLevel, useActDirSec)
+                    new RpcServerImpl(protSeq, serviceName, authLevel, useActDirSec)
                 );
             }
             catch (core::IAppException &)
@@ -76,17 +76,17 @@ namespace _3fd
         /// Initializes a new instance of the <see cref="RpcServerImpl" /> class.
         /// </summary>
         /// <param name="protSeq">The protocol sequence to be used.</param>
-        /// <param name="serviceClass">A friendly name to identify this service. Such name will be
+        /// <param name="serviceName">A friendly name to identify this service. Such name will be
         /// employed for both informational (will be displayed in admin tools that expose listening
         /// servers, as a description) and security purposes (the "service class" in the SPN). Thus
         /// it must be unique (in a way the generated SPN will not collide with another in the Windows
-        /// Active directory), and cannot contain characters such as '/', '&lt;' or '&gt;'.</param>
+        /// Active Directory), and cannot contain characters such as '/', '&lt;' or '&gt;'.</param>
         /// <param name="authLevel">The authentication level required for the client.</param>
         /// <param name="useActDirSec">Whether Microsoft Active Directory security services
         /// should be used instead of local authentication.</param>
         RpcServerImpl::RpcServerImpl(
             ProtocolSequence protSeq,
-            const string &serviceClass,
+            const string &serviceName,
             AuthenticationLevel authLevel,
             bool useActDirSec)
         try :
@@ -97,7 +97,7 @@ namespace _3fd
             CALL_STACK_TRACE;
 
             std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
-            m_serviceClass = transcoder.from_bytes(serviceClass);
+            m_serviceName = transcoder.from_bytes(serviceName);
 
             std::wstring protSeqName = transcoder.from_bytes(ToString(protSeq));
 
@@ -114,7 +114,7 @@ namespace _3fd
 
             // Notify setting of protocol sequence:
             std::ostringstream oss;
-            oss << "RPC server \'" << serviceClass
+            oss << "RPC server \'" << serviceName
                 << "\' using protocol sequence \'" << ToString(protSeq) << '\'';
 
             core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
@@ -133,7 +133,7 @@ namespace _3fd
             auto rc = DsGetSpnW(
                 DS_SPN_SERVICE,
                 L"host",
-                m_serviceClass.c_str(),
+                m_serviceName.c_str(),
                 0, // no port specified
                 0, nullptr, nullptr, // no extra instance names
                 &rpcSvcSpnArray.size,
@@ -160,7 +160,7 @@ namespace _3fd
 
                 ULONG localCompDnStrSize(0UL);
                 auto rv = GetComputerObjectNameW(NameFullyQualifiedDN, nullptr, &localCompDnStrSize);
-                if (rv == FALSE && GetLastError() != ERROR_INSUFFICIENT_BUFFER)
+                if (rv == TRUE && GetLastError() != ERROR_INSUFFICIENT_BUFFER)
                 {
                     oss << "Could not retrieve DN for local computer - ";
                     core::WWAPI::AppendDWordErrorMessage(GetLastError(), "GetComputerObjectName", oss);
@@ -169,7 +169,7 @@ namespace _3fd
 
                 std::unique_ptr<wchar_t[]> localCompDnCStr(new wchar_t [localCompDnStrSize]);
                 rv = GetComputerObjectNameW(NameFullyQualifiedDN, localCompDnCStr.get(), &localCompDnStrSize);
-                _ASSERTE(rv == TRUE);
+                _ASSERTE(rv == FALSE);
 
                 // Bind to domain:
                 DirSvcBinding dirSvcBinding;
@@ -203,24 +203,23 @@ namespace _3fd
 
                     throw core::AppException<std::runtime_error>(message, oss.str());
                 }
-            }
+            }// end if using AD
 
             // Register the SPN in the authentication service:
             status = RpcServerRegisterAuthInfoW(
                 (RPC_WSTR)rpcSvcSpnArray.data[0],
-                RPC_C_AUTHN_GSS_KERBEROS,
+                (protSeq == ProtocolSequence::Local) ? RPC_C_AUTHN_WINNT : RPC_C_AUTHN_GSS_KERBEROS,
                 nullptr,
                 nullptr
             );
 
             string spn = transcoder.to_bytes(rpcSvcSpnArray.data[0]);
             ThrowIfError(status,
-                "Could not register SPN with Kerberos authentication service", spn);
+                "Could not register SPN with authentication service", spn);
 
             // Notify registration in authentication service:
-            oss << "RPC server \'" << serviceClass
-                << "\' has been registered with Kerberos "
-                   "authentication service using SPN = " << spn;
+            oss << "RPC server \'" << serviceName
+                << "\' has been registered with authentication service using SPN = " << spn;
 
             core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
             oss.str("");
@@ -332,7 +331,7 @@ namespace _3fd
                     }
 
                     const int annStrMaxSize(64);
-                    auto annotation = m_serviceClass.substr(0, annStrMaxSize - 1);
+                    auto annotation = m_serviceName.substr(0, annStrMaxSize - 1);
 
                     // For each RPC interface:
                     for (auto &pair : objsByIntfHnd)

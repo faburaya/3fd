@@ -223,10 +223,10 @@ namespace _3fd
             {
                 // Initialize the RPC server (authn svc reg & resource allocation takes place)
                 RpcServer::Initialize(
-                    ProtocolSequence::TCP,
+                    ProtocolSequence::Local,
                     "TestClient3FD",
                     AuthenticationLevel::Integrity,
-                    true
+                    false
                 );
 
                 // RPC interface implementation 1:

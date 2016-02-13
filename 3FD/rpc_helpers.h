@@ -100,7 +100,7 @@ namespace _3fd
 
             static void Initialize(
                 ProtocolSequence protSeq,
-                const string &serviceClass,
+                const string &serviceName,
                 AuthenticationLevel authLevel,
                 bool useActDirSec
             );
@@ -145,9 +145,9 @@ namespace _3fd
                 const string &objUUID,
                 const string &destination,
                 AuthenticationLevel authLevel,
-                ImpersonationLevel impLevel = ImpersonationLevel::Default,
-                const string &serviceClass = "",
-                const string &endpoint = ""
+                const string &serviceName = "",
+                const string &endpoint = "",
+                ImpersonationLevel impLevel = ImpersonationLevel::Default
             );
 
             ~RpcClient();

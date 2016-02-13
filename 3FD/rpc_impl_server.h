@@ -20,7 +20,7 @@ namespace _3fd
 
             std::map<RPC_IF_HANDLE, VectorOfUuids> m_regObjsByIntfHnd;
 
-            std::wstring m_serviceClass;
+            std::wstring m_serviceName;
 
             AuthenticationLevel m_authLevel;
 
@@ -44,7 +44,7 @@ namespace _3fd
 
             RpcServerImpl(
                 ProtocolSequence protSeq,
-                const string &serviceClass,
+                const string &serviceName,
                 AuthenticationLevel authLevel,
                 bool useActDirSec
             );

@@ -22,7 +22,6 @@ namespace _3fd
         RPC_STATUS OperateImpl(RPC_BINDING_HANDLE handle, double left, double right, double &result)
         {
         RpcTryExcept
-            double result;
             Operate(handle, left, right, &result);
             return RPC_S_OK;
         RpcExcept(RpcExceptionFilter(RpcExceptionCode()))
@@ -97,20 +96,22 @@ namespace _3fd
             try
             {
                 AcmeSvcProxy client1(
-                    ProtocolSequence::TCP,
+                    ProtocolSequence::Local,
                     objectsUuidsImpl1[6],
-                    "BR00200256.ericsson.se",
-                    AuthenticationLevel::Integrity
+                    "TARS",
+                    AuthenticationLevel::Integrity,
+                    "TestClient3FD"
                 );
 
                 EXPECT_EQ(696.0, client1.Operate(6.0, 116.0));
                 EXPECT_EQ("SQUIRREL", client1.ChangeCase("squirrel"));
 
                 AcmeSvcProxy client2(
-                    ProtocolSequence::TCP,
+                    ProtocolSequence::Local,
                     objectsUuidsImpl2[6],
-                    "BR00200256.ericsson.se",
-                    AuthenticationLevel::Integrity
+                    "TARS",
+                    AuthenticationLevel::Integrity,
+                    "TestClient3FD"
                 );
 
                 EXPECT_EQ(696.0, client2.Operate(606.0, 90.0));
