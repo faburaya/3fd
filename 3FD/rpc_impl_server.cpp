@@ -31,13 +31,10 @@ namespace _3fd
         /// it must be unique (in a way the generated SPN will not collide with another in the Windows
         /// Active Directory), and cannot contain characters such as '/', '&lt;' or '&gt;'.</param>
         /// <param name="authLevel">The authentication level required for the client.</param>
-        /// <param name="useActDirSec">Whether Microsoft Active Directory security services
-        /// should be used instead of local authentication.</param>
         void RpcServer::Initialize(
             ProtocolSequence protSeq,
             const string &serviceName,
-            AuthenticationLevel authLevel,
-            bool useActDirSec)
+            AuthenticationLevel authLevel)
         {
             CALL_STACK_TRACE;
 
@@ -49,7 +46,7 @@ namespace _3fd
                 _ASSERTE(uniqueObject.get() == nullptr);
 
                 uniqueObject.reset(
-                    new RpcServerImpl(protSeq, serviceName, authLevel, useActDirSec)
+                    new RpcServerImpl(protSeq, serviceName, authLevel)
                 );
             }
             catch (core::IAppException &)
@@ -82,13 +79,10 @@ namespace _3fd
         /// it must be unique (in a way the generated SPN will not collide with another in the Windows
         /// Active Directory), and cannot contain characters such as '/', '&lt;' or '&gt;'.</param>
         /// <param name="authLevel">The authentication level required for the client.</param>
-        /// <param name="useActDirSec">Whether Microsoft Active Directory security services
-        /// should be used instead of local authentication.</param>
         RpcServerImpl::RpcServerImpl(
             ProtocolSequence protSeq,
             const string &serviceName,
-            AuthenticationLevel authLevel,
-            bool useActDirSec)
+            AuthenticationLevel authLevel)
         try :
             m_bindings(nullptr),
             m_authLevel(authLevel),
@@ -128,29 +122,45 @@ namespace _3fd
             if (authLevel == AuthenticationLevel::None)
                 return;
 
-            // Generate a list of SPN's using the fully qualified DNS name of the local computer:
+            /* Kerberos security package is preferable over NTLM, however, Kerberos require
+            SPN registration, which is only available with Microsoft Active Directory services.
+            Moreover, because RPC local transport does not support Kerberos anyway, do not event
+            take the time to detect AD when that is the protocol sequence: */
+
             ArrayOfSpn rpcSvcSpnArray;
-            auto rc = DsGetSpnW(
-                DS_SPN_SERVICE,
-                L"host",
-                m_serviceName.c_str(),
-                0, // no port specified
-                0, nullptr, nullptr, // no extra instance names
-                &rpcSvcSpnArray.size,
-                &rpcSvcSpnArray.data
-            );
+            DirSvcBinding dirSvcBinding;
+            bool useActDirSec(false);
+            if(protSeq != ProtocolSequence::Local)
+                useActDirSec = DetectActiveDirectoryServices(dirSvcBinding, false);
 
-            if (rc != ERROR_SUCCESS)
+            if (!useActDirSec)
             {
-                oss << "Could not generate SPN for RPC server - ";
-                core::WWAPI::AppendDWordErrorMessage(rc, "DsGetSpn", oss);
-                throw core::AppException<std::runtime_error>(oss.str());
+                // Register the SPN in the NTLM authentication service:
+                status = RpcServerRegisterAuthInfoW(nullptr, RPC_C_AUTHN_WINNT, nullptr, nullptr);
+                ThrowIfError(status, "Could not set RPC server authentication to use NTLM security package");
             }
-
-            _ASSERTE(rpcSvcSpnArray.size > 0);
-
-            if (useActDirSec)
+            else
             {
+                // Generate a list of SPN's using the fully qualified DNS name of the local computer:
+                auto rc = DsGetSpnW(
+                    DS_SPN_SERVICE,
+                    L"host",
+                    m_serviceName.c_str(),
+                    0, // no port specified
+                    0, nullptr, nullptr, // no extra instance names
+                    &rpcSvcSpnArray.size,
+                    &rpcSvcSpnArray.data
+                );
+
+                if (rc != ERROR_SUCCESS)
+                {
+                    oss << "Could not generate SPN for RPC server - ";
+                    core::WWAPI::AppendDWordErrorMessage(rc, "DsGetSpn", oss);
+                    throw core::AppException<std::runtime_error>(oss.str());
+                }
+
+                _ASSERTE(rpcSvcSpnArray.size > 0);
+
                 /* Creates an LDAP distinguished name (DN) for this host, to be used as ID for
                 the local computer account.
                 (According to http://msdn.microsoft.com/en-us/library/windows/desktop/ms676056,
@@ -170,17 +180,6 @@ namespace _3fd
                 std::unique_ptr<wchar_t[]> localCompDnCStr(new wchar_t [localCompDnStrSize]);
                 rv = GetComputerObjectNameW(NameFullyQualifiedDN, localCompDnCStr.get(), &localCompDnStrSize);
                 _ASSERTE(rv == FALSE);
-
-                // Bind to domain:
-                DirSvcBinding dirSvcBinding;
-                rc = DsBindW(nullptr, nullptr, &dirSvcBinding.handle);
-
-                if (rc != ERROR_SUCCESS)
-                {
-                    oss << "Could not bind to a domain controller - ";
-                    core::WWAPI::AppendDWordErrorMessage(rc, "DsBind", oss);
-                    throw core::AppException<std::runtime_error>(oss.str());
-                }
 
                 // Register SPN with domain on computer account:
                 rc = DsWriteAccountSpnW(
@@ -203,26 +202,26 @@ namespace _3fd
 
                     throw core::AppException<std::runtime_error>(message, oss.str());
                 }
+
+                // Register the SPN in the Kerberos authentication service:
+                status = RpcServerRegisterAuthInfoW(
+                    (RPC_WSTR)rpcSvcSpnArray.data[0],
+                    RPC_C_AUTHN_GSS_KERBEROS,
+                    nullptr,
+                    nullptr
+                );
+
+                string spn = transcoder.to_bytes(rpcSvcSpnArray.data[0]);
+                ThrowIfError(status,
+                    "Could not register SPN with Kerberos authentication service", spn);
+
+                // Notify registration in authentication service:
+                oss << "RPC server \'" << serviceName
+                    << "\' has been registered with Kerberos authentication service using SPN = " << spn;
+
+                core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
+                oss.str("");
             }// end if using AD
-
-            // Register the SPN in the authentication service:
-            status = RpcServerRegisterAuthInfoW(
-                (RPC_WSTR)rpcSvcSpnArray.data[0],
-                (protSeq == ProtocolSequence::Local) ? RPC_C_AUTHN_WINNT : RPC_C_AUTHN_GSS_KERBEROS,
-                nullptr,
-                nullptr
-            );
-
-            string spn = transcoder.to_bytes(rpcSvcSpnArray.data[0]);
-            ThrowIfError(status,
-                "Could not register SPN with authentication service", spn);
-
-            // Notify registration in authentication service:
-            oss << "RPC server \'" << serviceName
-                << "\' has been registered with authentication service using SPN = " << spn;
-
-            core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
-            oss.str("");
         }
         catch (core::IAppException &ex)
         {

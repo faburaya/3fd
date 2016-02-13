@@ -10,6 +10,8 @@
 #   include "AcmeTesting_w32.h"
 #endif
 
+#include <thread>
+
 namespace _3fd
 {
     namespace integration_tests
@@ -84,9 +86,10 @@ namespace _3fd
             public ::testing::TestWithParam<TestOptions> {};
 
         /// <summary>
-        /// 
+        /// Tests RPC client issuing requests for several scenarios of
+        /// protocol sequence and authentication level.
         /// </summary>
-        TEST(Framework_RPC_TestCase, ClientRun_LocalRequestTest)
+        TEST_P(Framework_RPC_TestCase, ClientRun_RequestTest)
         {
             // Ensures proper initialization/finalization of the framework
             FrameworkInstance _framework;
@@ -95,11 +98,14 @@ namespace _3fd
 
             try
             {
+                // Wait for RPC server to become available
+                std::this_thread::sleep_for(std::chrono::seconds(1));
+
                 AcmeSvcProxy client1(
-                    ProtocolSequence::Local,
-                    objectsUuidsImpl1[6],
+                    GetParam().protocolSequence,
+                    GetParam().objectUUID1,
                     "TARS",
-                    AuthenticationLevel::Integrity,
+                    GetParam().authenticationLevel,
                     "TestClient3FD"
                 );
 
@@ -107,10 +113,10 @@ namespace _3fd
                 EXPECT_EQ("SQUIRREL", client1.ChangeCase("squirrel"));
 
                 AcmeSvcProxy client2(
-                    ProtocolSequence::Local,
-                    objectsUuidsImpl2[6],
+                    GetParam().protocolSequence,
+                    GetParam().objectUUID2,
                     "TARS",
-                    AuthenticationLevel::Integrity,
+                    GetParam().authenticationLevel,
                     "TestClient3FD"
                 );
 
@@ -124,6 +130,45 @@ namespace _3fd
                 HandleException();
             }
         }
+
+        /* Implementation of test template takes care of switching
+        protocol sequences and authentication level: */
+        INSTANTIATE_TEST_CASE_P(
+            SwitchProtAndAuthLevel,
+            Framework_RPC_TestCase,
+            ::testing::Values(
+                TestOptions{
+                    ProtocolSequence::Local,
+                    objectsUuidsImpl1[6],
+                    objectsUuidsImpl2[6],
+                    AuthenticationLevel::None
+                },
+                TestOptions{
+                    ProtocolSequence::Local,
+                    objectsUuidsImpl1[7],
+                    objectsUuidsImpl2[7],
+                    AuthenticationLevel::Integrity
+                },
+                TestOptions{
+                    ProtocolSequence::Local,
+                    objectsUuidsImpl1[8],
+                    objectsUuidsImpl2[8],
+                    AuthenticationLevel::Privacy
+                },
+                TestOptions{
+                    ProtocolSequence::TCP,
+                    objectsUuidsImpl1[9],
+                    objectsUuidsImpl2[9],
+                    AuthenticationLevel::Integrity
+                },
+                TestOptions{
+                    ProtocolSequence::TCP,
+                    objectsUuidsImpl1[10],
+                    objectsUuidsImpl2[10],
+                    AuthenticationLevel::Privacy
+                }
+            )
+        );
 
     }// end of namespace integration_tests
 }// end of namespace _3fd

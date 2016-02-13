@@ -76,6 +76,8 @@ namespace _3fd
             }
         };
 
+        bool DetectActiveDirectoryServices(DirSvcBinding &dirSvcBinding, bool isClient);
+
         /// <summary>
         /// RAII for array of SPN's.
         /// </summary>

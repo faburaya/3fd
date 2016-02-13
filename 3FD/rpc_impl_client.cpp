@@ -16,7 +16,7 @@ namespace _3fd
         /////////////////////////
         // RpcClient Class
         /////////////////////////
-        
+
         /// <summary>
         /// Initializes a new instance of the <see cref="RpcClient"/> class.
         /// </summary>
@@ -102,48 +102,62 @@ namespace _3fd
             if (authLevel == AuthenticationLevel::None)
                 return;
 
-            // Prepare parameters to create the server SPN:
-            std::wstring ucs2ServiceName = transcoder.from_bytes(serviceName);
-            auto paramServiceName = ucs2ServiceName.c_str();
-            auto paramDestination = ucs2Destination.c_str();
-            auto paramPort = static_cast<USHORT> (atoi(endpoint.c_str()));
+            /* Kerberos security package is preferable over NTLM, however, Kerberos require
+            SPN registration, which is only available with Microsoft Active Directory services.
+            Moreover, because RPC local transport does not support Kerberos anyway, do not event
+            take the time to detect AD when that is the protocol sequence: */
 
-            DWORD spnStrSize(0);
+            std::unique_ptr<wchar_t[]> spnStr;
+            DirSvcBinding dirSvcBinding;
+            bool useActDirSec(false);
+            if (protSeq != ProtocolSequence::Local)
+                useActDirSec = DetectActiveDirectoryServices(dirSvcBinding, true);
 
-            // First assess the SPN string size...
-            auto rc = DsMakeSpnW(
-                L"host",
-                paramServiceName,
-                paramDestination,
-                paramPort,
-                nullptr,
-                &spnStrSize,
-                nullptr
-            );
-
-            // Check for expected returns when assessing string size:
-            if (rc != ERROR_SUCCESS && rc != ERROR_BUFFER_OVERFLOW)
+            if (useActDirSec)
             {
-                std::ostringstream oss;
-                oss << "Could not generate SPN for RPC server - ";
-                core::WWAPI::AppendDWordErrorMessage(rc, "DsMakeSpn", oss);
-                throw core::AppException<std::runtime_error>(oss.str());
+                // Prepare parameters to create the server SPN:
+                std::wstring ucs2ServiceName = transcoder.from_bytes(serviceName);
+                auto paramServiceName = ucs2ServiceName.c_str();
+                auto paramDestination = ucs2Destination.c_str();
+                auto paramPort = static_cast<USHORT> (atoi(endpoint.c_str()));
+
+                DWORD spnStrSize(0);
+
+                // First assess the SPN string size...
+                auto rc = DsMakeSpnW(
+                    L"host",
+                    paramServiceName,
+                    paramDestination,
+                    paramPort,
+                    nullptr,
+                    &spnStrSize,
+                    nullptr
+                );
+
+                // Check for expected returns when assessing string size:
+                if (rc != ERROR_SUCCESS && rc != ERROR_BUFFER_OVERFLOW)
+                {
+                    std::ostringstream oss;
+                    oss << "Could not generate SPN for RPC server - ";
+                    core::WWAPI::AppendDWordErrorMessage(rc, "DsMakeSpn", oss);
+                    throw core::AppException<std::runtime_error>(oss.str());
+                }
+
+                spnStr.reset(new wchar_t[spnStrSize]);
+
+                // ... then get the SPN:
+                rc = DsMakeSpnW(
+                    L"host",
+                    paramServiceName,
+                    paramDestination,
+                    paramPort,
+                    nullptr,
+                    &spnStrSize,
+                    spnStr.get()
+                );
+
+                _ASSERTE(rc == ERROR_SUCCESS);
             }
-
-            std::unique_ptr<wchar_t[]> spnStr(new wchar_t[spnStrSize]);
-
-            // ... then get the SPN:
-            rc = DsMakeSpnW(
-                L"host",
-                paramServiceName,
-                paramDestination,
-                paramPort,
-                nullptr,
-                &spnStrSize,
-                spnStr.get()
-            );
-
-            _ASSERTE(rc == ERROR_SUCCESS);
 
             /* Sets the client binding handle's authentication,
             authorization, and security quality-of-service: */
@@ -152,10 +166,14 @@ namespace _3fd
             secQOS.Version = 3;
             secQOS.ImpersonationType = static_cast<unsigned long> (impLevel);
 
-            // This client requires mutual auth (only Kerberos provides in TCP)
-            secQOS.Capabilities = 0/*
-                RPC_C_QOS_CAPABILITIES_MUTUAL_AUTH
-                | RPC_C_QOS_CAPABILITIES_LOCAL_MA_HINT*/;
+            /* Mutual authentication requires SPN registration,
+            hence can only be used when AD is present: */
+            if (useActDirSec)
+            {
+                secQOS.Capabilities =
+                    RPC_C_QOS_CAPABILITIES_MUTUAL_AUTH
+                    | RPC_C_QOS_CAPABILITIES_LOCAL_MA_HINT;
+            }
 
             /* Authentication impact on performance on identity tracking
             is negligible unless a remote protocol is in use: */
@@ -168,15 +186,13 @@ namespace _3fd
                 m_bindingHandle,
                 (RPC_WSTR)spnStr.get(),
                 static_cast<unsigned long> (authLevel),
-                (protSeq == ProtocolSequence::Local) ? RPC_C_AUTHN_WINNT : RPC_C_AUTHN_GSS_KERBEROS,
+                (useActDirSec) ? RPC_C_AUTHN_GSS_KERBEROS : RPC_C_AUTHN_WINNT,
                 nullptr, // no explicit credentials, use context
                 RPC_C_AUTHZ_DEFAULT,
                 reinterpret_cast<RPC_SECURITY_QOS *> (&secQOS)
             );
 
-            ThrowIfError(status,
-                "Failed to set security for binding handle of RPC client",
-                transcoder.to_bytes(spnStr.get()));
+            ThrowIfError(status, "Failed to set security for binding handle of RPC client");
         }
         catch (core::IAppException &)
         {

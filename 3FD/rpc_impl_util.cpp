@@ -88,6 +88,50 @@ namespace _3fd
             return reinterpret_cast<UUID_VECTOR *> (&vec);
         }
 
+        /// <summary>
+        /// Detects the presence of Microsoft Active Directory services.
+        /// </summary>
+        /// <param name="dirSvcBinding">A wrapper for the AD binding handle.</param>
+        /// <param name="isClient">Set to <c>true</c> if this call is made by an RPC client.</param>
+        /// <returns>
+        /// Whether AD services is present.
+        /// </returns>
+        bool DetectActiveDirectoryServices(DirSvcBinding &dirSvcBinding, bool isClient)
+        {
+            CALL_STACK_TRACE;
+
+            std::ostringstream oss;
+
+            // Attempt to bind to a domain in Active Directory:
+            auto rc = DsBindW(nullptr, nullptr, &dirSvcBinding.handle);
+
+            if (rc == ERROR_SUCCESS)
+            {
+                oss << "Microsoft Active Directory is available and RPC "
+                    << (isClient ? "client " : "server ")
+                    << "will attempt to use Kerberos authentication service";
+
+                core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
+                return true;
+            }
+            else if (rc == ERROR_NO_SUCH_DOMAIN)
+            {
+                oss << "Because of a failure to bind to the global catalog server, the RPC "
+                    << (isClient ? "client " : "server ")
+                    << "will assume Microsoft Active Directory unavailable "
+                       "and NTLM security package will be used";
+
+                core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
+                return false;
+            }
+            else
+            {
+                oss << "Could not bind to a domain controller - ";
+                core::WWAPI::AppendDWordErrorMessage(rc, "DsBind", oss);
+                throw core::AppException<std::runtime_error>(oss.str());
+            }
+        }
+
         /////////////////////////
         // Error Helpers
         /////////////////////////

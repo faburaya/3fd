@@ -101,8 +101,7 @@ namespace _3fd
             static void Initialize(
                 ProtocolSequence protSeq,
                 const string &serviceName,
-                AuthenticationLevel authLevel,
-                bool useActDirSec
+                AuthenticationLevel authLevel
             );
 
             static AuthenticationLevel GetRequiredAuthLevel();

@@ -100,14 +100,14 @@ namespace _3fd
             AuthenticationLevel authenticationLevel;
         };
 
-        class Framework_RPC_TestCase :
+        class Framework_RPC_TestCase1 :
             public ::testing::TestWithParam<TestOptions> {};
 
         /// <summary>
         /// Tests the cycle init/start/stop/resume/stop/finalize of the RPC server,
         /// for several combinations of protocol sequence and authentication level.
         /// </summary>
-        TEST_P(Framework_RPC_TestCase, ServerRun_StatesCycleTest)
+        TEST_P(Framework_RPC_TestCase1, ServerRun_StatesCycleTest)
         {
             // Ensures proper initialization/finalization of the framework
             FrameworkInstance _framework;
@@ -120,8 +120,7 @@ namespace _3fd
                 RpcServer::Initialize(
                     GetParam().protocolSequence,
                     "TestClient3FD",
-                    GetParam().authenticationLevel,
-                    false
+                    GetParam().authenticationLevel
                 );
 
                 // RPC interface implementation 1:
@@ -167,7 +166,7 @@ namespace _3fd
         protocol sequences and authentication level: */
         INSTANTIATE_TEST_CASE_P(
             SwitchProtAndAuthLevel,
-            Framework_RPC_TestCase,
+            Framework_RPC_TestCase1,
             ::testing::Values(
                 TestOptions {
                     ProtocolSequence::Local,
@@ -208,11 +207,14 @@ namespace _3fd
             )
         );
 
+        class Framework_RPC_TestCase2 :
+            public ::testing::TestWithParam<TestOptions> {};
+
         /// <summary>
-        /// Tests the cycle init/start/stop/resume/stop/finalize of the RPC server,
-        /// for several combinations of protocol sequence and authentication level.
+        /// Tests the RPC server normal operation (responding requests), trying
+        /// several combinations of protocol sequence and authentication level.
         /// </summary>
-        TEST(Framework_RPC_TestCase, ServerRun_ResponseTest)
+        TEST_P(Framework_RPC_TestCase2, ServerRun_ResponseTest)
         {
             // Ensures proper initialization/finalization of the framework
             FrameworkInstance _framework;
@@ -223,10 +225,9 @@ namespace _3fd
             {
                 // Initialize the RPC server (authn svc reg & resource allocation takes place)
                 RpcServer::Initialize(
-                    ProtocolSequence::Local,
+                    GetParam().protocolSequence,
                     "TestClient3FD",
-                    AuthenticationLevel::Integrity,
-                    false
+                    GetParam().authenticationLevel
                 );
 
                 // RPC interface implementation 1:
@@ -240,14 +241,14 @@ namespace _3fd
 
                 // This object will run impl 1:
                 objects.emplace_back(
-                    objectsUuidsImpl1[6],
+                    GetParam().objectUUID1,
                     AcmeTesting_v1_0_s_ifspec, // this is the interface (generated from IDL)
                     &intfImplFuncTable1
                 );
 
                 // This object will run impl 2:
                 objects.emplace_back(
-                    objectsUuidsImpl2[6],
+                    GetParam().objectUUID2,
                     AcmeTesting_v1_0_s_ifspec, // this is the interface (generated from IDL)
                     &intfImplFuncTable2
                 );
@@ -265,6 +266,45 @@ namespace _3fd
                 HandleException();
             }
         }
+
+        /* Implementation of test template takes care of switching
+        protocol sequences and authentication level: */
+        INSTANTIATE_TEST_CASE_P(
+            SwitchProtAndAuthLevel,
+            Framework_RPC_TestCase2,
+            ::testing::Values(
+                TestOptions{
+                    ProtocolSequence::Local,
+                    objectsUuidsImpl1[6],
+                    objectsUuidsImpl2[6],
+                    AuthenticationLevel::None
+                },
+                TestOptions{
+                    ProtocolSequence::Local,
+                    objectsUuidsImpl1[7],
+                    objectsUuidsImpl2[7],
+                    AuthenticationLevel::Integrity
+                },
+                TestOptions{
+                    ProtocolSequence::Local,
+                    objectsUuidsImpl1[8],
+                    objectsUuidsImpl2[8],
+                    AuthenticationLevel::Privacy
+                },
+                TestOptions{
+                    ProtocolSequence::TCP,
+                    objectsUuidsImpl1[9],
+                    objectsUuidsImpl2[9],
+                    AuthenticationLevel::Integrity
+                },
+                TestOptions{
+                    ProtocolSequence::TCP,
+                    objectsUuidsImpl1[10],
+                    objectsUuidsImpl2[10],
+                    AuthenticationLevel::Privacy
+                }
+            )
+        );
 
     }// end of namespace integration_tests
 }// end of namespace _3fd
