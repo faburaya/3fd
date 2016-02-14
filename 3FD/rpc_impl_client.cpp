@@ -157,7 +157,11 @@ namespace _3fd
                 );
 
                 _ASSERTE(rc == ERROR_SUCCESS);
-            }
+
+                std::ostringstream oss;
+                oss << "RPC client has to authenticate server \'" << transcoder.to_bytes(spnStr.get()) << '\'';
+                core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
+            }// end if use AD
 
             /* Sets the client binding handle's authentication,
             authorization, and security quality-of-service: */

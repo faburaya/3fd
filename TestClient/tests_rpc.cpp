@@ -104,7 +104,7 @@ namespace _3fd
                 AcmeSvcProxy client1(
                     GetParam().protocolSequence,
                     GetParam().objectUUID1,
-                    "TARS",
+                    "MyVirtualServer.MyDomain.local",
                     GetParam().authenticationLevel,
                     "TestClient3FD"
                 );
@@ -115,7 +115,7 @@ namespace _3fd
                 AcmeSvcProxy client2(
                     GetParam().protocolSequence,
                     GetParam().objectUUID2,
-                    "TARS",
+                    "MyVirtualServer.MyDomain.local",
                     GetParam().authenticationLevel,
                     "TestClient3FD"
                 );

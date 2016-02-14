@@ -170,7 +170,7 @@ namespace _3fd
 
                 ULONG localCompDnStrSize(0UL);
                 auto rv = GetComputerObjectNameW(NameFullyQualifiedDN, nullptr, &localCompDnStrSize);
-                if (rv == TRUE && GetLastError() != ERROR_INSUFFICIENT_BUFFER)
+                if (rv == FALSE && GetLastError() != ERROR_INSUFFICIENT_BUFFER)
                 {
                     oss << "Could not retrieve DN for local computer - ";
                     core::WWAPI::AppendDWordErrorMessage(GetLastError(), "GetComputerObjectName", oss);
@@ -179,7 +179,7 @@ namespace _3fd
 
                 std::unique_ptr<wchar_t[]> localCompDnCStr(new wchar_t [localCompDnStrSize]);
                 rv = GetComputerObjectNameW(NameFullyQualifiedDN, localCompDnCStr.get(), &localCompDnStrSize);
-                _ASSERTE(rv == FALSE);
+                _ASSERTE(rv == TRUE);
 
                 // Register SPN with domain on computer account:
                 rc = DsWriteAccountSpnW(

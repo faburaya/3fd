@@ -156,7 +156,14 @@ namespace _3fd
                 std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
 
                 if (status == RPC_S_OK)
+                {
+                    // Remove the CRLF at the end of the error message:
+                    auto lastCharPos = wcslen(reinterpret_cast<wchar_t *> (apiMsgUCS2)) - 1;
+                    if (apiMsgUCS2[lastCharPos] == '\n' && apiMsgUCS2[lastCharPos - 1] == '\r')
+                        apiMsgUCS2[lastCharPos] = apiMsgUCS2[lastCharPos - 1] = 0;
+
                     oss << transcoder.to_bytes(reinterpret_cast<wchar_t *> (apiMsgUCS2));
+                }
                 else
                     core::WWAPI::AppendDWordErrorMessage(status, nullptr, oss);
 

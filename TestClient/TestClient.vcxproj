@@ -73,6 +73,8 @@
     <LinkIncremental>true</LinkIncremental>
     <LibraryPath>$(BOOST_HOME)\stage\lib\desktop\Win32;$(POCO_ROOT)\lib;C:\Program Files (x86)\Visual Leak Detector\lib\Win32;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86</LibraryPath>
     <IncludePath>$(BOOST_HOME);$(POCO_ROOT)\Foundation\include;$(POCO_ROOT)\XML\include;$(POCO_ROOT)\Util\include;C:\Program Files (x86)\Visual Leak Detector\include;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
@@ -83,6 +85,8 @@
     <LinkIncremental>false</LinkIncremental>
     <LibraryPath>$(BOOST_HOME)\stage\lib\desktop\Win32;$(POCO_ROOT)\lib;C:\Program Files (x86)\Visual Leak Detector\lib\Win32;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86</LibraryPath>
     <IncludePath>$(BOOST_HOME);$(POCO_ROOT)\Foundation\include;$(POCO_ROOT)\XML\include;$(POCO_ROOT)\Util\include;C:\Program Files (x86)\Visual Leak Detector\include;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
