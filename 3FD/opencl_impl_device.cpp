@@ -966,6 +966,8 @@ namespace _3fd
             }
 
             openclErrors.RaiseExceptionWhen(status, "OpenCL API: clEnqueueMapBuffer");
+
+            return ptr;
         }
 
 		/// <summary>
@@ -1049,8 +1051,9 @@ namespace _3fd
 					FlushCommandQueue();
 
 					if (how == MemResourceUse::Output || how == MemResourceUse::InputAndOutput)
-					{/* If the unmap command is to issue a write operation, then get the events from previous commands that 
-						read from the buffer being mapped, but also keep track of the resources blocked because of the unmaping: */
+					{/* If the unmap command is to issue a write operation, then get the events from previous
+                        commands that read from the buffer being mapped, but also keep track of the resources
+                        blocked because of the unmaping: */
 						std::vector<CommandEvent> unmapBlockerEvents;
 						unmapBlockerEvents.push_back(callbackDoneEvent); // the unmap command must wait for callback completion
 						m_blockerCommands.GetDistinct(&buffer, MemResourceUse::Input, unmapBlockerEvents);
