@@ -26,7 +26,12 @@ namespace _3fd
         /// <param name="destination">The destination: local RPC requires the machine name,
         /// while for TCP this is the network address (IP or host name).</param>
         /// <param name="authLevel">The authentication level to use.</param>
-        /// <param name="serviceName">A friendly name used to compose the SPN and identify
+        /// <param name="authSecurity">The authentication security package to use. Because
+        /// local RPC does not support Kerberos, the requirement of such security package will
+        /// cause NTLM to be used with mutual authentication (via SPN's registered in AD).
+        /// This parameter is ignored if the authentication level specifies that no
+        /// authentication takes place.</param>
+        /// <param name="serviceClass">A short name used to compose the SPN and identify
         /// the RPC server in the authentication service. This parameter is ignored if the
         /// authentication level specifies that no authentication takes place.</param>
         /// <param name="endpoint">The endpoint: for local RPC is the application or service
@@ -40,7 +45,8 @@ namespace _3fd
             const string &objUUID,
             const string &destination,
             AuthenticationLevel authLevel,
-            const string &serviceName,
+            AuthenticationSecurity authSecurity,
+            const string &serviceClass,
             const string &endpoint,
             ImpersonationLevel impLevel)
         try
@@ -102,22 +108,28 @@ namespace _3fd
             if (authLevel == AuthenticationLevel::None)
                 return;
 
-            /* Kerberos security package is preferable over NTLM, however, Kerberos require
-            SPN registration, which is only available with Microsoft Active Directory services.
-            Moreover, because RPC local transport does not support Kerberos anyway, do not event
-            take the time to detect AD when that is the protocol sequence: */
+            /* Kerberos security package is preferable over NTLM, however, Kerberos is not
+            supported in local RPC, and it requires SPN registration, which is only available
+            with Microsoft Active Directory services:*/
 
             std::unique_ptr<wchar_t[]> spnStr;
             DirSvcBinding dirSvcBinding;
             bool useActDirSec(false);
-            if (protSeq != ProtocolSequence::Local)
+
+            /* Only try to detect AD...
+               + if RPC over TCP and Kerberos is preferable or required, because AD is needed for that
+               + if local RPC and Kerberos was required, because there  */
+            if ((protSeq == ProtocolSequence::TCP && authSecurity != AuthenticationSecurity::NTLM)
+                || (protSeq == ProtocolSequence::Local && authSecurity == AuthenticationSecurity::RequireKerberos))
+            {
                 useActDirSec = DetectActiveDirectoryServices(dirSvcBinding, true);
+            }
 
             if (useActDirSec)
             {
                 // Prepare parameters to create the server SPN:
-                std::wstring ucs2ServiceName = transcoder.from_bytes(serviceName);
-                auto paramServiceName = ucs2ServiceName.c_str();
+                std::wstring ucs2ServiceClass = transcoder.from_bytes(serviceClass);
+                auto paramServiceClass = ucs2ServiceClass.c_str();
                 auto paramDestination = ucs2Destination.c_str();
                 auto paramPort = static_cast<USHORT> (atoi(endpoint.c_str()));
 
@@ -125,9 +137,9 @@ namespace _3fd
 
                 // First assess the SPN string size...
                 auto rc = DsMakeSpnW(
-                    L"host",
-                    paramServiceName,
+                    paramServiceClass,
                     paramDestination,
+                    nullptr,
                     paramPort,
                     nullptr,
                     &spnStrSize,
@@ -147,9 +159,9 @@ namespace _3fd
 
                 // ... then get the SPN:
                 rc = DsMakeSpnW(
-                    L"host",
-                    paramServiceName,
+                    paramServiceClass,
                     paramDestination,
+                    nullptr,
                     paramPort,
                     nullptr,
                     &spnStrSize,
@@ -159,9 +171,15 @@ namespace _3fd
                 _ASSERTE(rc == ERROR_SUCCESS);
 
                 std::ostringstream oss;
-                oss << "RPC client has to authenticate server \'" << transcoder.to_bytes(spnStr.get()) << '\'';
+                oss << "RPC client will try to authenticate server \'" << transcoder.to_bytes(spnStr.get()) << '\'';
                 core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
-            }// end if use AD
+            }
+            else
+            {
+                core::Logger::Write(
+                    "Kerberos security package is not available and NTLM will be used instead",
+                    core::Logger::PRIO_NOTICE);
+            }
 
             /* Sets the client binding handle's authentication,
             authorization, and security quality-of-service: */
@@ -172,7 +190,7 @@ namespace _3fd
 
             /* Mutual authentication requires SPN registration,
             hence can only be used when AD is present: */
-            if (useActDirSec)
+            if (useActDirSec && authSecurity == AuthenticationSecurity::RequireKerberos)
             {
                 secQOS.Capabilities =
                     RPC_C_QOS_CAPABILITIES_MUTUAL_AUTH
@@ -181,16 +199,26 @@ namespace _3fd
 
             /* Authentication impact on performance on identity tracking
             is negligible unless a remote protocol is in use: */
-            secQOS.IdentityTracking =
-                (protSeq == ProtocolSequence::TCP)
-                    ? RPC_C_QOS_IDENTITY_STATIC
-                    : RPC_C_QOS_IDENTITY_DYNAMIC;
+            if (protSeq == ProtocolSequence::TCP)
+                secQOS.IdentityTracking = RPC_C_QOS_IDENTITY_STATIC;
+            else
+                secQOS.IdentityTracking = RPC_C_QOS_IDENTITY_DYNAMIC;
+
+            /* This client negotiates to use Kerberos if such security package is
+            available. When RPC is local, Kerberos is not supported disregarding
+            AD availability, so NTLM is used: */
+
+            unsigned long authService;
+            if (useActDirSec && protSeq != ProtocolSequence::Local)
+                authService = RPC_C_AUTHN_GSS_NEGOTIATE;
+            else
+                authService = RPC_C_AUTHN_WINNT;
 
             status = RpcBindingSetAuthInfoExW(
                 m_bindingHandle,
                 (RPC_WSTR)spnStr.get(),
                 static_cast<unsigned long> (authLevel),
-                (useActDirSec) ? RPC_C_AUTHN_GSS_KERBEROS : RPC_C_AUTHN_WINNT,
+                authService,
                 nullptr, // no explicit credentials, use context
                 RPC_C_AUTHZ_DEFAULT,
                 reinterpret_cast<RPC_SECURITY_QOS *> (&secQOS)

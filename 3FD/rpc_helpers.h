@@ -35,6 +35,16 @@ namespace _3fd
         };
 
         /// <summary>
+        /// Enumerates the possible options for authentication security (packages).
+        /// </summary>
+        enum AuthenticationSecurity : unsigned long
+        {
+            NTLM = RPC_C_AUTHN_WINNT, // Microsoft NT LAN Manager SSP
+            TryKerberos = RPC_C_AUTHN_GSS_NEGOTIATE, // Microsoft Negotiate SSP
+            RequireKerberos = RPC_C_AUTHN_GSS_KERBEROS // Microsoft Kerberos SSP
+        };
+
+        /// <summary>
         /// Enumerates the possible options for impersonation level.
         /// </summary>
         enum class ImpersonationLevel : unsigned long
@@ -144,7 +154,8 @@ namespace _3fd
                 const string &objUUID,
                 const string &destination,
                 AuthenticationLevel authLevel,
-                const string &serviceName = "",
+                AuthenticationSecurity authSec = AuthenticationSecurity::TryKerberos,
+                const string &serviceClass = "",
                 const string &endpoint = "",
                 ImpersonationLevel impLevel = ImpersonationLevel::Default
             );

@@ -124,7 +124,7 @@ namespace _3fd
 
             /* Kerberos security package is preferable over NTLM, however, Kerberos require
             SPN registration, which is only available with Microsoft Active Directory services.
-            Moreover, because RPC local transport does not support Kerberos anyway, do not event
+            Moreover, because RPC local transport does not support Kerberos anyway, do not even
             take the time to detect AD when that is the protocol sequence: */
 
             ArrayOfSpn rpcSvcSpnArray;
@@ -135,7 +135,7 @@ namespace _3fd
 
             if (!useActDirSec)
             {
-                // Register the SPN in the NTLM authentication service:
+                // Use Microsoft NTLM SSP
                 status = RpcServerRegisterAuthInfoW(nullptr, RPC_C_AUTHN_WINNT, nullptr, nullptr);
                 ThrowIfError(status, "Could not set RPC server authentication to use NTLM security package");
             }
@@ -143,9 +143,9 @@ namespace _3fd
             {
                 // Generate a list of SPN's using the fully qualified DNS name of the local computer:
                 auto rc = DsGetSpnW(
-                    DS_SPN_SERVICE,
-                    L"host",
+                    DS_SPN_DNS_HOST,
                     m_serviceName.c_str(),
+                    nullptr,
                     0, // no port specified
                     0, nullptr, nullptr, // no extra instance names
                     &rpcSvcSpnArray.size,
@@ -161,63 +161,22 @@ namespace _3fd
 
                 _ASSERTE(rpcSvcSpnArray.size > 0);
 
-                /* Creates an LDAP distinguished name (DN) for this host, to be used as ID for
-                the local computer account.
-                (According to http://msdn.microsoft.com/en-us/library/windows/desktop/ms676056,
-                DsWriteAccountSpn is allowed to register an SPN with a domain controller even
-                when not running with privileges of domain administrator, as long as the SPN is
-                registered in the local computer account and is relative to its computer name.) */
-
-                ULONG localCompDnStrSize(0UL);
-                auto rv = GetComputerObjectNameW(NameFullyQualifiedDN, nullptr, &localCompDnStrSize);
-                if (rv == FALSE && GetLastError() != ERROR_INSUFFICIENT_BUFFER)
-                {
-                    oss << "Could not retrieve DN for local computer - ";
-                    core::WWAPI::AppendDWordErrorMessage(GetLastError(), "GetComputerObjectName", oss);
-                    throw core::AppException<std::runtime_error>(oss.str());
-                }
-
-                std::unique_ptr<wchar_t[]> localCompDnCStr(new wchar_t [localCompDnStrSize]);
-                rv = GetComputerObjectNameW(NameFullyQualifiedDN, localCompDnCStr.get(), &localCompDnStrSize);
-                _ASSERTE(rv == TRUE);
-
-                // Register SPN with domain on computer account:
-                rc = DsWriteAccountSpnW(
-                    dirSvcBinding.handle,
-                    DS_SPN_ADD_SPN_OP,
-                    localCompDnCStr.get(),
-                    rpcSvcSpnArray.size,
-                    (LPCWSTR *)rpcSvcSpnArray.data
-                );
-                
-                if (rc != ERROR_SUCCESS)
-                {
-                    oss << "Could not register SPN in local computer account - ";
-                    core::WWAPI::AppendDWordErrorMessage(rc, "DsWriteAccountSpn", oss);
-                    string message = oss.str();
-                    oss.str("");
-
-                    oss << "Attempted to register \'" << transcoder.to_bytes(rpcSvcSpnArray.data[0])
-                        << "\' in account \'" << transcoder.to_bytes(localCompDnCStr.get()) << '\'';
-
-                    throw core::AppException<std::runtime_error>(message, oss.str());
-                }
-
-                // Register the SPN in the Kerberos authentication service:
+                // Use Microsoft SSP Negotiate, but provide the SPN in case Kerberos is used:
                 status = RpcServerRegisterAuthInfoW(
                     (RPC_WSTR)rpcSvcSpnArray.data[0],
-                    RPC_C_AUTHN_GSS_KERBEROS,
+                    RPC_C_AUTHN_GSS_NEGOTIATE,
                     nullptr,
                     nullptr
                 );
 
                 string spn = transcoder.to_bytes(rpcSvcSpnArray.data[0]);
                 ThrowIfError(status,
-                    "Could not register SPN with Kerberos authentication service", spn);
+                    "Could not register authentication information with Microsoft Negotiate SSP", spn);
 
                 // Notify registration in authentication service:
                 oss << "RPC server \'" << serviceName
-                    << "\' has been registered with Kerberos authentication service using SPN = " << spn;
+                    << "\' has been registered with Microsoft Negotiate SSP "
+                       "[SPN = " << spn << "]";
 
                 core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
                 oss.str("");
