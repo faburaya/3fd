@@ -118,11 +118,20 @@ namespace _3fd
 
             /* Only try to detect AD...
                + if RPC over TCP and Kerberos is preferable or required, because AD is needed for that
-               + if local RPC and Kerberos was required, because there  */
+               OR
+               + if local RPC and Kerberos was required, because the protocol does not support Kerberos,
+                 but there is mutual authentication for NTLM via SPN's */
             if ((protSeq == ProtocolSequence::TCP && authSecurity != AuthenticationSecurity::NTLM)
                 || (protSeq == ProtocolSequence::Local && authSecurity == AuthenticationSecurity::RequireKerberos))
             {
                 useActDirSec = DetectActiveDirectoryServices(dirSvcBinding, true);
+
+                if(!useActDirSec)
+                {
+                    core::Logger::Write(
+                        "Kerberos security package is not available and NTLM will be used instead",
+                        core::Logger::PRIO_NOTICE);
+                }
             }
 
             if (useActDirSec)
@@ -174,12 +183,6 @@ namespace _3fd
                 oss << "RPC client will try to authenticate server \'" << transcoder.to_bytes(spnStr.get()) << '\'';
                 core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
             }
-            else
-            {
-                core::Logger::Write(
-                    "Kerberos security package is not available and NTLM will be used instead",
-                    core::Logger::PRIO_NOTICE);
-            }
 
             /* Sets the client binding handle's authentication,
             authorization, and security quality-of-service: */
@@ -190,7 +193,7 @@ namespace _3fd
 
             /* Mutual authentication requires SPN registration,
             hence can only be used when AD is present: */
-            if (useActDirSec && authSecurity == AuthenticationSecurity::RequireKerberos)
+            if (useActDirSec && authSecurity != AuthenticationSecurity::NTLM)
             {
                 secQOS.Capabilities =
                     RPC_C_QOS_CAPABILITIES_MUTUAL_AUTH
@@ -210,7 +213,23 @@ namespace _3fd
 
             unsigned long authService;
             if (useActDirSec && protSeq != ProtocolSequence::Local)
-                authService = RPC_C_AUTHN_GSS_NEGOTIATE;
+            {
+                switch (authSecurity)
+                {
+                case _3fd::rpc::NTLM:
+                    authService = RPC_C_AUTHN_WINNT;
+                    break;
+                case _3fd::rpc::TryKerberos:
+                    authService = RPC_C_AUTHN_GSS_NEGOTIATE;
+                    break;
+                case _3fd::rpc::RequireKerberos:
+                    authService = RPC_C_AUTHN_GSS_KERBEROS;
+                    break;
+                default:
+                    _ASSERTE(false); // unsupported option
+                    break;
+                }   
+            }
             else
                 authService = RPC_C_AUTHN_WINNT;
 

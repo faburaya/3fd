@@ -41,7 +41,7 @@ namespace _3fd
         {
             NTLM = RPC_C_AUTHN_WINNT, // Microsoft NT LAN Manager SSP
             TryKerberos = RPC_C_AUTHN_GSS_NEGOTIATE, // Microsoft Negotiate SSP
-            RequireKerberos = RPC_C_AUTHN_GSS_KERBEROS // Microsoft Kerberos SSP
+            RequireKerberos = RPC_C_AUTHN_GSS_KERBEROS // Microsoft Kerberos SSP (or NTLM with mutual authentication)
         };
 
         /// <summary>
