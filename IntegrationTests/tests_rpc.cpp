@@ -290,7 +290,7 @@ namespace _3fd
                     objectsUuidsImpl1[8],
                     objectsUuidsImpl2[8],
                     AuthenticationLevel::Privacy
-                },
+                }/*,
                 TestOptions{
                     ProtocolSequence::TCP,
                     objectsUuidsImpl1[9],
@@ -302,7 +302,7 @@ namespace _3fd
                     objectsUuidsImpl1[10],
                     objectsUuidsImpl2[10],
                     AuthenticationLevel::Privacy
-                }
+                }*/
             )
         );
 

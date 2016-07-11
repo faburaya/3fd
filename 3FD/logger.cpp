@@ -8,6 +8,10 @@ namespace _3fd
 {
 	namespace core
 	{
+        //////////////////////////////
+        // Logger Class
+        //////////////////////////////
+
 		Logger * Logger::uniqueObjectPtr(nullptr);
 
 		std::mutex Logger::singleInstanceCreationMutex;

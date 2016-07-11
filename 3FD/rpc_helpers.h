@@ -1,6 +1,7 @@
 #ifndef RPC_H // header guard
 #define RPC_H
 
+#include "base.h"
 #include "exceptions.h"
 #include "logger.h"
 
@@ -9,6 +10,8 @@
 #include <mutex>
 #include <string>
 #include <vector>
+
+#define RPC_USE_NATIVE_WCHAR
 
 #include <AuthZ.h>
 #include <rpc.h>
@@ -41,7 +44,7 @@ namespace _3fd
         {
             NTLM = RPC_C_AUTHN_WINNT, // Microsoft NT LAN Manager SSP
             TryKerberos = RPC_C_AUTHN_GSS_NEGOTIATE, // Microsoft Negotiate SSP
-            RequireKerberos = RPC_C_AUTHN_GSS_KERBEROS // Microsoft Kerberos SSP (or NTLM with mutual authentication)
+            RequireMutualAuthn = RPC_C_AUTHN_GSS_KERBEROS // Microsoft Kerberos SSP (or NTLM with mutual authentication)
         };
 
         /// <summary>
@@ -94,7 +97,7 @@ namespace _3fd
         /// <summary>
         /// Represents the RPC server that runs inside the application process.
         /// </summary>
-        class RpcServer
+        class RpcServer : notcopiable
         {
         private:
 
@@ -111,10 +114,10 @@ namespace _3fd
             static void Initialize(
                 ProtocolSequence protSeq,
                 const string &serviceName,
-                AuthenticationLevel authLevel
+                AuthenticationLevel authnLevel
             );
 
-            static AuthenticationLevel GetRequiredAuthLevel();
+            static AuthenticationLevel GetRequiredAuthnLevel();
 
             static bool Start(const std::vector<RpcSrvObject> &objects);
 
@@ -133,7 +136,7 @@ namespace _3fd
         /// Client code is expected to derive from this class and call <see cref="RpcClient::GetBindingHandle"/>
         /// in order to obtain an explicit binding handle.
         /// </summary>
-        class RpcClient
+        class RpcClient : notcopiable
         {
         private:
 
@@ -153,7 +156,7 @@ namespace _3fd
                 ProtocolSequence protSeq,
                 const string &objUUID,
                 const string &destination,
-                AuthenticationLevel authLevel,
+                AuthenticationLevel authnLevel,
                 AuthenticationSecurity authSec = AuthenticationSecurity::TryKerberos,
                 const string &serviceClass = "",
                 const string &endpoint = "",
@@ -168,7 +171,7 @@ namespace _3fd
         /// <summary>
         /// Uses RAII to define a scope where impersonation takes place.
         /// </summary>
-        class ScopedImpersonation
+        class ScopedImpersonation : notcopiable
         {
         private:
 

@@ -30,11 +30,11 @@ namespace _3fd
         /// servers, as a description) and security purposes (the "service name" in the SPN). Thus
         /// it must be unique (in a way the generated SPN will not collide with another in the Windows
         /// Active Directory), and cannot contain characters such as '/', '&lt;' or '&gt;'.</param>
-        /// <param name="authLevel">The authentication level required for the client.</param>
+        /// <param name="authnLevel">The authentication level required for the client.</param>
         void RpcServer::Initialize(
             ProtocolSequence protSeq,
             const string &serviceName,
-            AuthenticationLevel authLevel)
+            AuthenticationLevel authnLevel)
         {
             CALL_STACK_TRACE;
 
@@ -46,7 +46,7 @@ namespace _3fd
                 _ASSERTE(uniqueObject.get() == nullptr);
 
                 uniqueObject.reset(
-                    new RpcServerImpl(protSeq, serviceName, authLevel)
+                    new RpcServerImpl(protSeq, serviceName, authnLevel)
                 );
             }
             catch (core::IAppException &)
@@ -78,14 +78,14 @@ namespace _3fd
         /// servers, as a description) and security purposes (the "service class" in the SPN). Thus
         /// it must be unique (in a way the generated SPN will not collide with another in the Windows
         /// Active Directory), and cannot contain characters such as '/', '&lt;' or '&gt;'.</param>
-        /// <param name="authLevel">The authentication level required for the client.</param>
+        /// <param name="authnLevel">The authentication level required for the client.</param>
         RpcServerImpl::RpcServerImpl(
             ProtocolSequence protSeq,
             const string &serviceName,
-            AuthenticationLevel authLevel)
+            AuthenticationLevel authnLevel)
         try :
             m_bindings(nullptr),
-            m_authLevel(authLevel),
+            m_authLevel(authnLevel),
             m_state(State::NotInitialized)
         {
             CALL_STACK_TRACE;
@@ -97,7 +97,7 @@ namespace _3fd
 
             // Set the protocol sequence:
             auto status = RpcServerUseProtseqW(
-                (unsigned short *)protSeqName.c_str(),
+                const_cast<wchar_t *> (protSeqName.c_str()),
                 RPC_C_PROTSEQ_MAX_REQS_DEFAULT,
                 nullptr
             );
@@ -109,7 +109,7 @@ namespace _3fd
             // Notify setting of protocol sequence:
             std::ostringstream oss;
             oss << "RPC server \'" << serviceName
-                << "\' using protocol sequence \'" << ToString(protSeq) << '\'';
+                << "\' will use protocol sequence \'" << ToString(protSeq) << '\'';
 
             core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
             oss.str("");
@@ -119,19 +119,16 @@ namespace _3fd
             ThrowIfError(status, "Could not inquire bindings for RPC server");
             m_state = State::BindingsAcquired;
 
-            if (authLevel == AuthenticationLevel::None)
+            if (authnLevel == AuthenticationLevel::None)
                 return;
 
-            /* Kerberos security package is preferable over NTLM, however, Kerberos require
-            SPN registration, which is only available with Microsoft Active Directory services.
-            Moreover, because RPC local transport does not support Kerberos anyway, do not even
-            take the time to detect AD when that is the protocol sequence: */
+            /* Kerberos security package is preferable over NTLM because it offers mutual
+            authentication, however, that requires SPN registration, which is only available
+            with Microsoft Active Directory services. */
 
             ArrayOfSpn rpcSvcSpnArray;
             DirSvcBinding dirSvcBinding;
-            bool useActDirSec(false);
-            if(protSeq != ProtocolSequence::Local)
-                useActDirSec = DetectActiveDirectoryServices(dirSvcBinding, false);
+            bool useActDirSec = DetectActiveDirectoryServices(dirSvcBinding, false);
 
             if (!useActDirSec)
             {
@@ -161,22 +158,24 @@ namespace _3fd
 
                 _ASSERTE(rpcSvcSpnArray.size > 0);
 
-                // Use Microsoft SSP Negotiate, but provide the SPN in case Kerberos is used:
+                string utf8spn = transcoder.to_bytes(rpcSvcSpnArray.data[0]);
+
+                // Use Microsoft SSP Negotiate, so provide the SPN in case Kerberos is used:
                 status = RpcServerRegisterAuthInfoW(
-                    (RPC_WSTR)rpcSvcSpnArray.data[0],
+                    rpcSvcSpnArray.data[0],
                     RPC_C_AUTHN_GSS_NEGOTIATE,
                     nullptr,
                     nullptr
                 );
 
-                string spn = transcoder.to_bytes(rpcSvcSpnArray.data[0]);
                 ThrowIfError(status,
-                    "Could not register authentication information with Microsoft Negotiate SSP", spn);
+                    "Could not register authentication information with Microsoft Negotiate SSP",
+                    utf8spn);
 
                 // Notify registration in authentication service:
                 oss << "RPC server \'" << serviceName
                     << "\' has been registered with Microsoft Negotiate SSP "
-                       "[SPN = " << spn << "]";
+                       "[SPN = " << utf8spn << "]";
 
                 core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
                 oss.str("");
@@ -196,10 +195,10 @@ namespace _3fd
         /// </summary>
         /// <returns>The required authentication level for clients,
         /// as defined upon initialization.</returns>
-        AuthenticationLevel RpcServer::GetRequiredAuthLevel()
+        AuthenticationLevel RpcServer::GetRequiredAuthnLevel()
         {
             _ASSERTE(uniqueObject.get() != nullptr); // singleton not instantiated
-            return uniqueObject->GetRequiredAuthLevel();
+            return uniqueObject->GetRequiredAuthnLevel();
         }
 
         /* This callback is invoked by RPC runtime every time an RPC takes
@@ -228,7 +227,7 @@ namespace _3fd
             }
 
             // Reject call if client authentication level does not meet server requirements:
-            auto requiredAuthLevel = static_cast<unsigned long> (RpcServer::GetRequiredAuthLevel());
+            auto requiredAuthLevel = static_cast<unsigned long> (RpcServer::GetRequiredAuthnLevel());
             if (callAttributes.AuthenticationLevel < requiredAuthLevel)
                 return RPC_S_ACCESS_DENIED;
 
@@ -246,18 +245,32 @@ namespace _3fd
 
             try
             {
+                core::Logger::Write("Starting RPC server...", core::Logger::PRIO_NOTICE);
+
                 if (m_state == State::BindingsAcquired)
                 {
                     std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
+                    std::ostringstream oss;
+
                     std::map<RPC_IF_HANDLE, VectorOfUuids> objsByIntfHnd;
 
                     // For each object implementing a RPC interface:
                     for (auto &obj : objects)
                     {
+                        oss << "Registering RPC server object " << obj.uuid << "... ";
+
+                        core::ScopedLogWrite scope(
+                            oss.str(),
+                            core::Logger::PRIO_INFORMATION, "done",
+                            core::Logger::PRIO_ERROR, "failed"
+                        );
+
+                        oss.str("");
+
                         // Create an UUID on the fly for the EPV:
                         UUID paramMgrTypeUuid;
                         status = UuidCreateSequential(&paramMgrTypeUuid);
-                        ThrowIfError(status, "Could not generate UUID for EPV in RPC server");
+                        ThrowIfError(status, "Could not generate UUID for EPV of RPC server");
 
                         // Register the interface with the RPC runtime lib:
                         status = RpcServerRegisterIfEx(
@@ -286,16 +299,31 @@ namespace _3fd
 
                         // keep the UUID assigned to the EPV (object type UUID) for later...
                         objsByIntfHnd[obj.interfaceHandle].Add(paramObjUuid);
+
+                        scope.LogSuccess();
                     }
 
                     const int annStrMaxSize(64);
                     auto annotation = m_serviceName.substr(0, annStrMaxSize - 1);
+
+                    int intfCount(0);
 
                     // For each RPC interface:
                     for (auto &pair : objsByIntfHnd)
                     {
                         auto interfaceHandle = pair.first;
                         auto &objects = pair.second;
+
+                        oss << "Registering RPC interface " << ++intfCount
+                            << " with " << objects.Size() << " objects... ";
+
+                        core::ScopedLogWrite scope(
+                            oss.str(),
+                            core::Logger::PRIO_INFORMATION, "done",
+                            core::Logger::PRIO_ERROR, "failed"
+                        );
+
+                        oss.str("");
 
                         UuidVectorFix objsUuidsVec;
 
@@ -305,7 +333,7 @@ namespace _3fd
                             interfaceHandle,
                             m_bindings,
                             objects.CopyTo(objsUuidsVec), // use the fix for UUID_VECTOR...
-                            (RPC_WSTR)annotation.c_str()
+                            const_cast<RPC_WSTR> (annotation.c_str())
                         );
 
                         ThrowIfError(status,
@@ -318,6 +346,8 @@ namespace _3fd
                         endpoint-map database. Later, for proper resource release
                         this will be needed. */
                         m_regObjsByIntfHnd[interfaceHandle] = std::move(objects);
+
+                        scope.LogSuccess();
                     }
 
                     objsByIntfHnd.clear(); // release some memory
@@ -325,6 +355,9 @@ namespace _3fd
                     // Start listening requests (asynchronous call, returns immediately):
                     status = RpcServerListen(1, RPC_C_LISTEN_MAX_CALLS_DEFAULT, TRUE);
                     ThrowIfError(status, "Could not start RPC server listeners");
+
+                    core::Logger::Write("RPC server is listening", core::Logger::PRIO_NOTICE);
+
                     m_state = State::Listening;
                     return STATUS_OKAY;
                 }
@@ -358,6 +391,10 @@ namespace _3fd
         {
             CALL_STACK_TRACE;
 
+            core::Logger::Write(
+                "RPC server will rollback its state to after initialization",
+                core::Logger::PRIO_INFORMATION);
+
             RPC_STATUS status;
 
             switch (m_state)
@@ -384,7 +421,7 @@ namespace _3fd
 
                 m_regObjsByIntfHnd.clear();
 
-                // FALLTROUGH
+            // FALLTROUGH
             case State::IntfRegRuntimeLib:
 
                 status = RpcServerUnregisterIf(nullptr, nullptr, TRUE);
@@ -448,6 +485,8 @@ namespace _3fd
         {
             CALL_STACK_TRACE;
 
+            core::Logger::Write("Shutting down RPC server...", core::Logger::PRIO_NOTICE);
+
             RPC_STATUS status;
 
             switch (m_state)
@@ -455,14 +494,19 @@ namespace _3fd
             case State::Listening:
 
                 status = RpcMgmtStopServerListening(nullptr);
-                LogIfError(status,
-                    "Failed to stop RPC server listeners",
-                    core::Logger::PRIO_CRITICAL);
 
-                status = RpcMgmtWaitServerListen();
-                LogIfError(status,
-                    "Failed to await for RPC server stop",
-                    core::Logger::PRIO_CRITICAL);
+                // Still listening? (there was no stop request from a client)
+                if (status != RPC_S_NOT_LISTENING)
+                {
+                    LogIfError(status,
+                        "Failed to stop RPC server listeners",
+                        core::Logger::PRIO_CRITICAL);
+
+                    status = RpcMgmtWaitServerListen();
+                    LogIfError(status,
+                        "Failed to await for RPC server stop",
+                        core::Logger::PRIO_CRITICAL);
+                }
 
             // FALLTHROUGH
             case State::IntfRegLocalEndptMap:
@@ -498,14 +542,16 @@ namespace _3fd
                 status = RpcBindingVectorFree(&m_bindings);
                 LogIfError(status,
                     "Failed to release resources for RPC server bindings",
-                    core::Logger::PRIO_CRITICAL
-                );
+                    core::Logger::PRIO_CRITICAL);
+
                 break;
 
             default:
                 _ASSERTE(false); // unsupported state
                 break;
             }
+
+            core::Logger::Write("RPC server was successfully shut down", core::Logger::PRIO_NOTICE);
         }
 
         /// <summary>
@@ -513,21 +559,32 @@ namespace _3fd
         /// </summary>
         bool RpcServerImpl::Stop()
         {
-            if (m_state == State::Listening)
-            {
-                CALL_STACK_TRACE;
+            if (m_state != State::Listening)
+                return STATUS_FAIL;
 
-                auto status = RpcMgmtStopServerListening(nullptr);
+            CALL_STACK_TRACE;
+
+            core::ScopedLogWrite scope(
+                "Stopping RPC server... ",
+                core::Logger::PRIO_NOTICE, "done",
+                core::Logger::PRIO_ERROR, "failed"
+            );
+
+            auto status = RpcMgmtStopServerListening(nullptr);
+
+            // Still listening? (there was no stop request from a client)
+            if (status != RPC_S_NOT_LISTENING)
+            {
                 ThrowIfError(status, "Failed to request RPC server stop");
 
                 status = RpcMgmtWaitServerListen();
                 ThrowIfError(status, "Failed to await for RPC server stop");
-
-                m_state = State::IntfRegLocalEndptMap;
-                return STATUS_OKAY;
             }
-            else
-                return STATUS_FAIL;
+
+            scope.LogSuccess();
+
+            m_state = State::IntfRegLocalEndptMap;
+            return STATUS_OKAY;
         }
 
         /// <summary>
@@ -589,6 +646,8 @@ namespace _3fd
                 status = RpcServerListen(1, RPC_C_LISTEN_MAX_CALLS_DEFAULT, 1);
                 ThrowIfError(status, "Failed to start RPC server listeners");
                 m_state = State::Listening;
+
+                core::Logger::Write("RPC server is listening", core::Logger::PRIO_NOTICE);
 
             // FALLTHROUGH:
             case State::Listening:

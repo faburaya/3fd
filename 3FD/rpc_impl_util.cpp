@@ -52,6 +52,31 @@ namespace _3fd
             }
         }
 
+        /// <summary>
+        /// Converts an enumerated authentication level option
+        /// into a descriptive label for it.
+        /// </summary>
+        /// <param name="protSeq">The authentication level to convert.</param>
+        /// <returns>A string with a label for the authentication.</returns>
+        const char *ToString(AuthenticationLevel authnLevel)
+        {
+            switch (authnLevel)
+            {
+            case AuthenticationLevel::None:
+                return "no authentication";
+
+            case AuthenticationLevel::Integrity:
+                return R"(authentication level "integrity")";
+
+            case AuthenticationLevel::Privacy:
+                return R"(authentication level "privacy")";
+
+            default:
+                _ASSERTE(false);
+                return "UNSUPPORTED";
+            }
+        }
+
         //////////////////////
         // UUID_VECTOR Fix
         //////////////////////
@@ -118,8 +143,7 @@ namespace _3fd
             {
                 oss << "Because of a failure to bind to the global catalog server, the RPC "
                     << (isClient ? "client " : "server ")
-                    << "will assume Microsoft Active Directory unavailable "
-                       "and NTLM security package will be used";
+                    << "will assume Microsoft Active Directory unavailable";
 
                 core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
                 return false;
@@ -150,7 +174,7 @@ namespace _3fd
                 oss << message << " - System RPC API reported an error: ";
 
                 // Get error message from API:
-                unsigned short apiMsgUCS2[DCE_C_ERROR_STRING_LEN];
+                wchar_t apiMsgUCS2[DCE_C_ERROR_STRING_LEN];
                 auto status = DceErrorInqTextW(errCode, apiMsgUCS2);
 
                 std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
@@ -158,11 +182,11 @@ namespace _3fd
                 if (status == RPC_S_OK)
                 {
                     // Remove the CRLF at the end of the error message:
-                    auto lastCharPos = wcslen(reinterpret_cast<wchar_t *> (apiMsgUCS2)) - 1;
+                    auto lastCharPos = wcslen(apiMsgUCS2) - 1;
                     if (apiMsgUCS2[lastCharPos] == '\n' && apiMsgUCS2[lastCharPos - 1] == '\r')
                         apiMsgUCS2[lastCharPos] = apiMsgUCS2[lastCharPos - 1] = 0;
 
-                    oss << transcoder.to_bytes(reinterpret_cast<wchar_t *> (apiMsgUCS2));
+                    oss << transcoder.to_bytes(apiMsgUCS2);
                 }
                 else
                     core::WWAPI::AppendDWordErrorMessage(status, nullptr, oss);

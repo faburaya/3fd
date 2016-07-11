@@ -18,6 +18,21 @@ namespace _3fd
         /////////////////////////
 
         /// <summary>
+        /// Releases resources of a RPC client binding handle.
+        /// </summary>
+        /// <param name="bindingHandle">The given RPC binding handle.</param>
+        static void HelpFreeBindingHandle(RPC_BINDING_HANDLE *bindingHandle)
+        {
+            if (*bindingHandle == nullptr)
+                return;
+
+            auto status = RpcBindingFree(bindingHandle);
+            LogIfError(status,
+                "Failed to release resources from binding handle of RPC client",
+                core::Logger::Priority::PRIO_CRITICAL);
+        }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="RpcClient"/> class.
         /// </summary>
         /// <param name="protSeq">The transport to use for RPC.</param>
@@ -25,10 +40,10 @@ namespace _3fd
         /// is equivalent to a nil UUID, which is valid as long as the endpoint is specified.</param>
         /// <param name="destination">The destination: local RPC requires the machine name,
         /// while for TCP this is the network address (IP or host name).</param>
-        /// <param name="authLevel">The authentication level to use.</param>
-        /// <param name="authSecurity">The authentication security package to use. Because
-        /// local RPC does not support Kerberos, the requirement of such security package will
-        /// cause NTLM to be used with mutual authentication (via SPN's registered in AD).
+        /// <param name="authnLevel">The authentication level to use.</param>
+        /// <param name="authnSecurity">The authentication security package to use. Because
+        /// local RPC does not support Kerberos, the requirement of mutual authentication will
+        /// cause NTLM to use SPN's registered in AD.
         /// This parameter is ignored if the authentication level specifies that no
         /// authentication takes place.</param>
         /// <param name="serviceClass">A short name used to compose the SPN and identify
@@ -44,12 +59,13 @@ namespace _3fd
             ProtocolSequence protSeq,
             const string &objUUID,
             const string &destination,
-            AuthenticationLevel authLevel,
-            AuthenticationSecurity authSecurity,
+            AuthenticationLevel authnLevel,
+            AuthenticationSecurity authnSecurity,
             const string &serviceClass,
             const string &endpoint,
             ImpersonationLevel impLevel)
-        try
+        try :
+            m_bindingHandle(nullptr)
         {
             CALL_STACK_TRACE;
 
@@ -64,14 +80,14 @@ namespace _3fd
             else
             {
                 ucs2objUuid = transcoder.from_bytes(objUUID);
-                paramObjUuid = (RPC_WSTR)ucs2objUuid.c_str();
+                paramObjUuid = const_cast<RPC_WSTR> (ucs2objUuid.c_str());
             }
 
             std::wstring protSeqName = transcoder.from_bytes(ToString(protSeq));
-            auto paramProtSeq = (RPC_WSTR)protSeqName.c_str();
+            auto paramProtSeq = const_cast<RPC_WSTR> (protSeqName.c_str());
 
             std::wstring ucs2Destination = transcoder.from_bytes(destination);
-            auto paramNetwAddr = (RPC_WSTR)ucs2Destination.c_str();
+            auto paramNetwAddr = const_cast<RPC_WSTR> (ucs2Destination.c_str());
 
             std::wstring ucs2Endpoint;
             RPC_WSTR paramEndpoint;
@@ -81,7 +97,7 @@ namespace _3fd
             else
             {
                 ucs2Endpoint = transcoder.from_bytes(endpoint);
-                paramEndpoint = (RPC_WSTR)ucs2Endpoint.c_str();
+                paramEndpoint = const_cast<RPC_WSTR> (ucs2Endpoint.c_str());
             }
             
             // Compose the binding string:
@@ -99,20 +115,35 @@ namespace _3fd
 
             // Create a binding handle from the composed string:
             status = RpcBindingFromStringBindingW(bindingString, &m_bindingHandle);
-            ThrowIfError(status, "Failed to create binding handle for RPC client");
 
             // Release the memory allocated for the binding string:
-            status = RpcStringFreeW(&bindingString);
-            ThrowIfError(status, "Failed to compose binding string for RPC client");
+            LogIfError(
+                RpcStringFreeW(&bindingString),
+                "Failed to release resources of binding string for RPC client",
+                core::Logger::Priority::PRIO_CRITICAL
+            );
 
-            if (authLevel == AuthenticationLevel::None)
+            ThrowIfError(status, "Failed to create binding handle for RPC client");
+
+            // Notify establishment of binding with this protocol sequence:
+            std::ostringstream oss;
+            oss << "RPC client for object " << objUUID
+                << " in " << destination
+                << " will use protocol sequence \'" << ToString(protSeq)
+                << "\' and " << ToString(authnLevel);
+
+            core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
+            oss.str("");
+
+            if (authnLevel == AuthenticationLevel::None)
                 return;
 
             /* Kerberos security package is preferable over NTLM, however, Kerberos is not
             supported in local RPC, and it requires SPN registration, which is only available
-            with Microsoft Active Directory services:*/
+            with Microsoft Active Directory services: */
 
-            std::unique_ptr<wchar_t[]> spnStr;
+            string utf8spn;
+            std::unique_ptr<wchar_t[]> ucs2spnStr;
             DirSvcBinding dirSvcBinding;
             bool useActDirSec(false);
 
@@ -120,18 +151,11 @@ namespace _3fd
                + if RPC over TCP and Kerberos is preferable or required, because AD is needed for that
                OR
                + if local RPC and Kerberos was required, because the protocol does not support Kerberos,
-                 but there is mutual authentication for NTLM via SPN's */
-            if ((protSeq == ProtocolSequence::TCP && authSecurity != AuthenticationSecurity::NTLM)
-                || (protSeq == ProtocolSequence::Local && authSecurity == AuthenticationSecurity::RequireKerberos))
+                 but there is mutual authentication for NTLM using SPN's */
+            if ((protSeq == ProtocolSequence::TCP && authnSecurity != AuthenticationSecurity::NTLM)
+                || (protSeq == ProtocolSequence::Local && authnSecurity == AuthenticationSecurity::RequireMutualAuthn))
             {
                 useActDirSec = DetectActiveDirectoryServices(dirSvcBinding, true);
-
-                if(!useActDirSec)
-                {
-                    core::Logger::Write(
-                        "Kerberos security package is not available and NTLM will be used instead",
-                        core::Logger::PRIO_NOTICE);
-                }
             }
 
             if (useActDirSec)
@@ -142,9 +166,8 @@ namespace _3fd
                 auto paramDestination = ucs2Destination.c_str();
                 auto paramPort = static_cast<USHORT> (atoi(endpoint.c_str()));
 
-                DWORD spnStrSize(0);
-
                 // First assess the SPN string size...
+                DWORD spnStrSize(0);
                 auto rc = DsMakeSpnW(
                     paramServiceClass,
                     paramDestination,
@@ -158,13 +181,12 @@ namespace _3fd
                 // Check for expected returns when assessing string size:
                 if (rc != ERROR_SUCCESS && rc != ERROR_BUFFER_OVERFLOW)
                 {
-                    std::ostringstream oss;
                     oss << "Could not generate SPN for RPC server - ";
                     core::WWAPI::AppendDWordErrorMessage(rc, "DsMakeSpn", oss);
                     throw core::AppException<std::runtime_error>(oss.str());
                 }
 
-                spnStr.reset(new wchar_t[spnStrSize]);
+                ucs2spnStr.reset(new wchar_t[spnStrSize]);
 
                 // ... then get the SPN:
                 rc = DsMakeSpnW(
@@ -174,26 +196,37 @@ namespace _3fd
                     paramPort,
                     nullptr,
                     &spnStrSize,
-                    spnStr.get()
+                    ucs2spnStr.get()
                 );
 
                 _ASSERTE(rc == ERROR_SUCCESS);
 
-                std::ostringstream oss;
-                oss << "RPC client will try to authenticate server \'" << transcoder.to_bytes(spnStr.get()) << '\'';
+                // Convert the UCS2 encoded SPN into UTF-8
+                utf8spn = transcoder.to_bytes(ucs2spnStr.get());
+                oss << "RPC client has to authenticate server \'" << utf8spn << '\'';
                 core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
+                oss.str("");
+            }
+            // AD not available, but mutual authentication was required:
+            else if (authnSecurity == AuthenticationSecurity::RequireMutualAuthn)
+            {
+                oss << "Could not fulfill mutual authentication requirement of"
+                       " RPC client for object " << objUUID << " in " << destination
+                    << " because Microsoft Active Directory services are not available";
+
+                throw core::AppException<std::runtime_error>(oss.str());
             }
 
             /* Sets the client binding handle's authentication,
             authorization, and security quality-of-service: */
 
-            RPC_SECURITY_QOS_V3_W secQOS = { 0 };
+            RPC_SECURITY_QOS_V3 secQOS = { 0 };
             secQOS.Version = 3;
             secQOS.ImpersonationType = static_cast<unsigned long> (impLevel);
 
             /* Mutual authentication requires SPN registration,
             hence can only be used when AD is present: */
-            if (useActDirSec && authSecurity != AuthenticationSecurity::NTLM)
+            if (useActDirSec && authnSecurity != AuthenticationSecurity::NTLM)
             {
                 secQOS.Capabilities =
                     RPC_C_QOS_CAPABILITIES_MUTUAL_AUTH
@@ -211,33 +244,18 @@ namespace _3fd
             available. When RPC is local, Kerberos is not supported disregarding
             AD availability, so NTLM is used: */
 
-            unsigned long authService;
-            if (useActDirSec && protSeq != ProtocolSequence::Local)
-            {
-                switch (authSecurity)
-                {
-                case _3fd::rpc::NTLM:
-                    authService = RPC_C_AUTHN_WINNT;
-                    break;
-                case _3fd::rpc::TryKerberos:
-                    authService = RPC_C_AUTHN_GSS_NEGOTIATE;
-                    break;
-                case _3fd::rpc::RequireKerberos:
-                    authService = RPC_C_AUTHN_GSS_KERBEROS;
-                    break;
-                default:
-                    _ASSERTE(false); // unsupported option
-                    break;
-                }   
-            }
+            unsigned long authnService;
+
+            if (protSeq != ProtocolSequence::Local)
+                authnService = static_cast<unsigned long> (authnSecurity);
             else
-                authService = RPC_C_AUTHN_WINNT;
+                authnService = RPC_C_AUTHN_WINNT;
 
             status = RpcBindingSetAuthInfoExW(
                 m_bindingHandle,
-                (RPC_WSTR)spnStr.get(),
-                static_cast<unsigned long> (authLevel),
-                authService,
+                ucs2spnStr.get(),
+                static_cast<unsigned long> (authnLevel),
+                authnService,
                 nullptr, // no explicit credentials, use context
                 RPC_C_AUTHZ_DEFAULT,
                 reinterpret_cast<RPC_SECURITY_QOS *> (&secQOS)
@@ -247,11 +265,15 @@ namespace _3fd
         }
         catch (core::IAppException &)
         {
+            CALL_STACK_TRACE;
+            HelpFreeBindingHandle(&m_bindingHandle);
             throw; // just forward an exception regarding an error known to have been already handled
         }
         catch (std::exception &ex)
         {
             CALL_STACK_TRACE;
+            HelpFreeBindingHandle(&m_bindingHandle);
+
             std::ostringstream oss;
             oss << "Generic failure when creating RPC client: " << ex.what();
             throw core::AppException<std::runtime_error>(oss.str());
@@ -263,10 +285,7 @@ namespace _3fd
         RpcClient::~RpcClient()
         {
             CALL_STACK_TRACE;
-            auto status = RpcBindingFree(&m_bindingHandle);
-            LogIfError(status,
-                "Failed to release resources from binding handle of RPC client",
-                core::Logger::Priority::PRIO_CRITICAL);
+            HelpFreeBindingHandle(&m_bindingHandle);
         }
 
         /// <summary>

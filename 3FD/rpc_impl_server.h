@@ -45,7 +45,7 @@ namespace _3fd
             RpcServerImpl(
                 ProtocolSequence protSeq,
                 const string &serviceName,
-                AuthenticationLevel authLevel
+                AuthenticationLevel authnLevel
             );
 
             ~RpcServerImpl();
@@ -55,7 +55,7 @@ namespace _3fd
             /// </summary>
             /// <returns>The required authentication level for clients,
             /// as defined upon initialization.</returns>
-            AuthenticationLevel GetRequiredAuthLevel() const { return m_authLevel; }
+            AuthenticationLevel GetRequiredAuthnLevel() const { return m_authLevel; }
 
             bool Start(const std::vector<RpcSrvObject> &objects);
 

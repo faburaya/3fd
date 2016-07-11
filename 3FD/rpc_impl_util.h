@@ -14,6 +14,8 @@ namespace _3fd
     {
         const char *ToString(ProtocolSequence protSeq);
 
+        const char *ToString(AuthenticationLevel authnLevel);
+
         const unsigned long UUID_VECTOR_MAX_SIZE(32);
 
         /// <summary>
@@ -53,6 +55,8 @@ namespace _3fd
             }
 
             ~VectorOfUuids();
+
+            size_t Size() const { return m_ptrs2Uuids.size(); }
 
             void Add(const UUID &uuid);
 
