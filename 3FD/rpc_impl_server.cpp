@@ -108,8 +108,8 @@ namespace _3fd
 
             // Notify setting of protocol sequence:
             std::ostringstream oss;
-            oss << "RPC server \'" << serviceName
-                << "\' will use protocol sequence \'" << ToString(protSeq) << '\'';
+            oss << "RPC server '" << serviceName
+                << "' will use protocol sequence '" << ToString(protSeq) << '\'';
 
             core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
             oss.str("");
@@ -173,8 +173,8 @@ namespace _3fd
                     utf8spn);
 
                 // Notify registration in authentication service:
-                oss << "RPC server \'" << serviceName
-                    << "\' has been registered with Microsoft Negotiate SSP "
+                oss << "RPC server '" << serviceName
+                    << "' has been registered with Microsoft Negotiate SSP "
                        "[SPN = " << utf8spn << "]";
 
                 core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);

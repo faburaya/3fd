@@ -129,8 +129,8 @@ namespace _3fd
             std::ostringstream oss;
             oss << "RPC client for object " << objUUID
                 << " in " << destination
-                << " will use protocol sequence \'" << ToString(protSeq)
-                << "\' and " << ToString(authnLevel);
+                << " will use protocol sequence '" << ToString(protSeq)
+                << "' and " << ToString(authnLevel);
 
             core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
             oss.str("");
@@ -203,7 +203,7 @@ namespace _3fd
 
                 // Convert the UCS2 encoded SPN into UTF-8
                 utf8spn = transcoder.to_bytes(ucs2spnStr.get());
-                oss << "RPC client has to authenticate server \'" << utf8spn << '\'';
+                oss << "RPC client has to authenticate server '" << utf8spn << '\'';
                 core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
                 oss.str("");
             }

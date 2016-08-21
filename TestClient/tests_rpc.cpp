@@ -104,7 +104,7 @@ namespace _3fd
                 AcmeSvcProxy client1(
                     GetParam().protocolSequence,
                     GetParam().objectUUID1,
-                    "TARS",//"MyVirtualServer.MyDomain.local",
+                    "MyVirtualServer.MyDomain.local",
                     GetParam().authenticationLevel,
                     AuthenticationSecurity::RequireMutualAuthn,
                     "TestClient3FD"
@@ -116,7 +116,7 @@ namespace _3fd
                 AcmeSvcProxy client2(
                     GetParam().protocolSequence,
                     GetParam().objectUUID2,
-                    "TARS",//"MyVirtualServer.MyDomain.local",
+                    "MyVirtualServer.MyDomain.local",
                     GetParam().authenticationLevel,
                     AuthenticationSecurity::RequireMutualAuthn,
                     "TestClient3FD"
@@ -138,7 +138,7 @@ namespace _3fd
         INSTANTIATE_TEST_CASE_P(
             SwitchProtAndAuthLevel,
             Framework_RPC_TestCase,
-            ::testing::Values(
+            ::testing::Values(/*
                 TestOptions{
                     ProtocolSequence::Local,
                     objectsUuidsImpl1[6],
@@ -156,7 +156,7 @@ namespace _3fd
                     objectsUuidsImpl1[8],
                     objectsUuidsImpl2[8],
                     AuthenticationLevel::Privacy
-                }/*,
+                },*/
                 TestOptions{
                     ProtocolSequence::TCP,
                     objectsUuidsImpl1[9],
@@ -168,7 +168,7 @@ namespace _3fd
                     objectsUuidsImpl1[10],
                     objectsUuidsImpl2[10],
                     AuthenticationLevel::Privacy
-                }*/
+                }
             )
         );
 
