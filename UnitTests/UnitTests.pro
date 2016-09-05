@@ -73,50 +73,50 @@ else:unix:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../gtest/lib
 # POCO C++ Libraries
 #=======================
 
-INCLUDEPATH += /opt/Poco-1.4.7/include
-DEPENDPATH += /opt/Poco-1.4.7/include
+INCLUDEPATH += /opt/poco-1.7.5/include
+DEPENDPATH += /opt/poco-1.7.5/include
 
 # PocoUtil (static library):
 
-win32:CONFIG(release, debug|release): LIBS += -L/opt/Poco-1.4.7/lib/ -lPocoUtil
-else:win32:CONFIG(debug, debug|release): LIBS += -L/opt/Poco-1.4.7/lib/ -lPocoUtild
-else:unix:CONFIG(release, debug|release): LIBS += -L/opt/Poco-1.4.7/lib/ -lPocoUtil
-else:unix:CONFIG(debug, debug|release): LIBS += -L/opt/Poco-1.4.7/lib/ -lPocoUtild
+win32:CONFIG(release, debug|release): LIBS += -L/opt/poco-1.7.5/lib/ -lPocoUtil
+else:win32:CONFIG(debug, debug|release): LIBS += -L/opt/poco-1.7.5/lib/ -lPocoUtild
+else:unix:CONFIG(release, debug|release): LIBS += -L/opt/poco-1.7.5/lib/ -lPocoUtil
+else:unix:CONFIG(debug, debug|release): LIBS += -L/opt/poco-1.7.5/lib/ -lPocoUtild
 
-win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += /opt/Poco-1.4.7/lib/libPocoUtil.a
-else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += /opt/Poco-1.4.7/lib/libPocoUtild.a
-else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += /opt/Poco-1.4.7/lib/PocoUtil.lib
-else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += /opt/Poco-1.4.7/lib/PocoUtild.lib
-else:unix:CONFIG(release, debug|release): PRE_TARGETDEPS += /opt/Poco-1.4.7/lib/libPocoUtil.a
-else:unix:CONFIG(debug, debug|release): PRE_TARGETDEPS += /opt/Poco-1.4.7/lib/libPocoUtild.a
+win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += /opt/poco-1.7.5/lib/libPocoUtil.a
+else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += /opt/poco-1.7.5/lib/libPocoUtild.a
+else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += /opt/poco-1.7.5/lib/PocoUtil.lib
+else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += /opt/poco-1.7.5/lib/PocoUtild.lib
+else:unix:CONFIG(release, debug|release): PRE_TARGETDEPS += /opt/poco-1.7.5/lib/libPocoUtil.a
+else:unix:CONFIG(debug, debug|release): PRE_TARGETDEPS += /opt/poco-1.7.5/lib/libPocoUtild.a
 
 # PocoXML (static library):
 
-win32:CONFIG(release, debug|release): LIBS += -L/opt/Poco-1.4.7/lib/ -lPocoXML
-else:win32:CONFIG(debug, debug|release): LIBS += -L/opt/Poco-1.4.7/lib/ -lPocoXMLd
-else:unix:!macx:CONFIG(release, debug|release): LIBS += -L/opt/Poco-1.4.7/lib/ -lPocoXML
-else:unix:!macx:CONFIG(debug, debug|release): LIBS += -L/opt/Poco-1.4.7/lib/ -lPocoXMLd
+win32:CONFIG(release, debug|release): LIBS += -L/opt/poco-1.7.5/lib/ -lPocoXML
+else:win32:CONFIG(debug, debug|release): LIBS += -L/opt/poco-1.7.5/lib/ -lPocoXMLd
+else:unix:!macx:CONFIG(release, debug|release): LIBS += -L/opt/poco-1.7.5/lib/ -lPocoXML
+else:unix:!macx:CONFIG(debug, debug|release): LIBS += -L/opt/poco-1.7.5/lib/ -lPocoXMLd
 
-win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += /opt/Poco-1.4.7/lib/libPocoXML.a
-else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += /opt/Poco-1.4.7/lib/libPocoXMLd.a
-else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += /opt/Poco-1.4.7/lib/PocoXML.lib
-else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += /opt/Poco-1.4.7/lib/PocoXMLd.lib
-else:unix:CONFIG(release, debug|release): PRE_TARGETDEPS += /opt/Poco-1.4.7/lib/libPocoXML.a
-else:unix:CONFIG(debug, debug|release): PRE_TARGETDEPS += /opt/Poco-1.4.7/lib/libPocoXMLd.a
+win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += /opt/poco-1.7.5/lib/libPocoXML.a
+else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += /opt/poco-1.7.5/lib/libPocoXMLd.a
+else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += /opt/poco-1.7.5/lib/PocoXML.lib
+else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += /opt/poco-1.7.5/lib/PocoXMLd.lib
+else:unix:CONFIG(release, debug|release): PRE_TARGETDEPS += /opt/poco-1.7.5/lib/libPocoXML.a
+else:unix:CONFIG(debug, debug|release): PRE_TARGETDEPS += /opt/poco-1.7.5/lib/libPocoXMLd.a
 
 # PocoFoundation (static library):
 
-win32:CONFIG(release, debug|release): LIBS += -L/opt/Poco-1.4.7/lib/ -lPocoFoundation
-else:win32:CONFIG(debug, debug|release): LIBS += -L/opt/Poco-1.4.7/lib/ -lPocoFoundationd
-else:unix:CONFIG(release, debug|release): LIBS += -L/opt/Poco-1.4.7/lib/ -lPocoFoundation
-else:unix:CONFIG(debug, debug|release): LIBS += -L/opt/Poco-1.4.7/lib/ -lPocoFoundationd
+win32:CONFIG(release, debug|release): LIBS += -L/opt/poco-1.7.5/lib/ -lPocoFoundation
+else:win32:CONFIG(debug, debug|release): LIBS += -L/opt/poco-1.7.5/lib/ -lPocoFoundationd
+else:unix:CONFIG(release, debug|release): LIBS += -L/opt/poco-1.7.5/lib/ -lPocoFoundation
+else:unix:CONFIG(debug, debug|release): LIBS += -L/opt/poco-1.7.5/lib/ -lPocoFoundationd
 
-win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += /opt/Poco-1.4.7/lib/libPocoFoundation.a
-else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += /opt/Poco-1.4.7/lib/libPocoFoundationd.a
-else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += /opt/Poco-1.4.7/lib/PocoFoundation.lib
-else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += /opt/Poco-1.4.7/lib/PocoFoundationd.lib
-else:unix:CONFIG(release, debug|release): PRE_TARGETDEPS += /opt/Poco-1.4.7/lib/libPocoFoundation.a
-else:unix:CONFIG(debug, debug|release): PRE_TARGETDEPS += /opt/Poco-1.4.7/lib/libPocoFoundationd.a
+win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += /opt/poco-1.7.5/lib/libPocoFoundation.a
+else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += /opt/poco-1.7.5/lib/libPocoFoundationd.a
+else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += /opt/poco-1.7.5/lib/PocoFoundation.lib
+else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += /opt/poco-1.7.5/lib/PocoFoundationd.lib
+else:unix:CONFIG(release, debug|release): PRE_TARGETDEPS += /opt/poco-1.7.5/lib/libPocoFoundation.a
+else:unix:CONFIG(debug, debug|release): PRE_TARGETDEPS += /opt/poco-1.7.5/lib/libPocoFoundationd.a
 
 #=======================
 # Boost C++ Libraries

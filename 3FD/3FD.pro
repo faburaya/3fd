@@ -86,7 +86,7 @@ OTHER_FILES += \
 INCLUDEPATH += \
     ../btree \
     ../OpenCL \
-    /opt/Poco-1.4.7/include \
+    /opt/poco-1.7.5/include \
     /opt/boost-1.55/include
 
-DEPENDPATH += /opt/Poco-1.4.7/include
+DEPENDPATH += /opt/poco-1.7.5/include

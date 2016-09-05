@@ -18,7 +18,7 @@ if(buildType STREQUAL release)
     add_definitions(-DNDEBUG)
 endif()
 
-set(POCO_ROOT "/opt/Poco-1.6.1")
+set(POCO_ROOT "/opt/poco-1.7.5")
 set(BOOST_HOME "/opt/boost-1.60")
 
 # Include directories:
@@ -32,8 +32,8 @@ include_directories(
 
 # Static library source files:
 add_library(3FD STATIC
-	callstacktracer.cpp
-	configuration.cpp
+    callstacktracer.cpp
+    configuration.cpp
     dependencies.cpp
     exceptions.cpp
     gc_addresseshashtable.cpp

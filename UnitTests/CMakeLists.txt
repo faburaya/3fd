@@ -16,7 +16,7 @@ add_definitions(
     -DTESTING
 )
 
-set(POCO_ROOT "/opt/Poco-1.6.1")
+set(POCO_ROOT "/opt/poco-1.7.5")
 set(BOOST_HOME "/opt/boost-1.60")
 
 ########################
