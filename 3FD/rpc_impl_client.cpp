@@ -7,7 +7,7 @@
 #include <codecvt>
 #include <memory>
 #include <sstream>
-#include <NtDsAPI.h>
+//#include <NtDsAPI.h>
 
 namespace _3fd
 {
@@ -40,30 +40,27 @@ namespace _3fd
         /// is equivalent to a nil UUID, which is valid as long as the endpoint is specified.</param>
         /// <param name="destination">The destination: local RPC requires the machine name,
         /// while for TCP this is the network address (IP or host name).</param>
-        /// <param name="authnLevel">The authentication level to use.</param>
-        /// <param name="authnSecurity">The authentication security package to use. Because
-        /// local RPC does not support Kerberos, the requirement of mutual authentication will
-        /// cause NTLM to use SPN's registered in AD.
-        /// This parameter is ignored if the authentication level specifies that no
-        /// authentication takes place.</param>
-        /// <param name="serviceClass">A short name used to compose the SPN and identify
-        /// the RPC server in the authentication service. This parameter is ignored if the
-        /// authentication level specifies that no authentication takes place.</param>
         /// <param name="endpoint">The endpoint: for local RPC is the application or service
         /// name, while for TCP this is the port number. Specifying the endpoint is optional
         /// if the server has registered its bindings with the endpoint mapper.</param>
+        /// <param name="spn">The SPN as registered in AD.</param>
+        /// <param name="authnLevel">The authentication level to use.</param>
+        /// <param name="authnSecurity">The authentication security package to use. Because
+        /// local RPC does not support Kerberos, the requirement of mutual authentication will
+        /// cause NTLM to use SPN's registered in AD. This parameter is ignored if the
+        /// authentication level specifies that no authentication takes place.</param>
         /// <param name="impLevel">The level allowed for the RPC server to impersonate
-        /// the identity of an authorized client.This parameter is ignored if the
+        /// the identity of an authorized client. This parameter is ignored if the
         /// authentication level specifies that no authentication takes place.</param>
         RpcClient::RpcClient(
             ProtocolSequence protSeq,
             const string &objUUID,
             const string &destination,
             AuthenticationLevel authnLevel,
+            const string &spn,
             AuthenticationSecurity authnSecurity,
-            const string &serviceClass,
-            const string &endpoint,
-            ImpersonationLevel impLevel)
+            ImpersonationLevel impLevel,
+            const string &endpoint)
         try :
             m_bindingHandle(nullptr)
         {
@@ -142,68 +139,43 @@ namespace _3fd
             supported in local RPC, and it requires SPN registration, which is only available
             with Microsoft Active Directory services: */
 
-            string utf8spn;
-            std::unique_ptr<wchar_t[]> ucs2spnStr;
             DirSvcBinding dirSvcBinding;
             bool useActDirSec(false);
 
             /* Only try to detect AD...
-               + if RPC over TCP and Kerberos is preferable or required, because AD is needed for that
+               + if RPC over TCP and mutual authentication is preferable or required,
+                 because AD is needed for that
                OR
-               + if local RPC and Kerberos was required, because the protocol does not support Kerberos,
+               + if local RPC and mutual authentication was required,
+                 because the protocol does not support Kerberos,
                  but there is mutual authentication for NTLM using SPN's */
+
             if ((protSeq == ProtocolSequence::TCP && authnSecurity != AuthenticationSecurity::NTLM)
                 || (protSeq == ProtocolSequence::Local && authnSecurity == AuthenticationSecurity::RequireMutualAuthn))
             {
                 useActDirSec = DetectActiveDirectoryServices(dirSvcBinding, true);
             }
 
+            std::unique_ptr<wchar_t[]> ucs2spn;
+
             if (useActDirSec)
             {
-                // Prepare parameters to create the server SPN:
-                std::wstring ucs2ServiceClass = transcoder.from_bytes(serviceClass);
-                auto paramServiceClass = ucs2ServiceClass.c_str();
-                auto paramDestination = ucs2Destination.c_str();
-                auto paramPort = static_cast<USHORT> (atoi(endpoint.c_str()));
-
-                // First assess the SPN string size...
-                DWORD spnStrSize(0);
-                auto rc = DsMakeSpnW(
-                    paramServiceClass,
-                    paramDestination,
-                    nullptr,
-                    paramPort,
-                    nullptr,
-                    &spnStrSize,
-                    nullptr
-                );
-
-                // Check for expected returns when assessing string size:
-                if (rc != ERROR_SUCCESS && rc != ERROR_BUFFER_OVERFLOW)
+                if (spn == "")
                 {
-                    oss << "Could not generate SPN for RPC server - ";
-                    core::WWAPI::AppendDWordErrorMessage(rc, "DsMakeSpn", oss);
-                    throw core::AppException<std::runtime_error>(oss.str());
+                    throw core::AppException<std::runtime_error>(
+                        "No SPN was provided to RPC client for mutual authentication"
+                    );
                 }
 
-                ucs2spnStr.reset(new wchar_t[spnStrSize]);
+                /* Transcodes the UTF-8 encoded SPN into a null-terminated
+                UCS-2 string kept in the heap. (RPC authentication needs
+                that string to outlive the client.) */
+                auto temp = transcoder.from_bytes(spn);
+                ucs2spn.reset(new wchar_t[temp.size() + 1]);
+                wmemcpy(ucs2spn.get(), temp.data(), temp.size());
+                ucs2spn.get()[temp.size()] = L'\0';
 
-                // ... then get the SPN:
-                rc = DsMakeSpnW(
-                    paramServiceClass,
-                    paramDestination,
-                    nullptr,
-                    paramPort,
-                    nullptr,
-                    &spnStrSize,
-                    ucs2spnStr.get()
-                );
-
-                _ASSERTE(rc == ERROR_SUCCESS);
-
-                // Convert the UCS2 encoded SPN into UTF-8
-                utf8spn = transcoder.to_bytes(ucs2spnStr.get());
-                oss << "RPC client has to authenticate server '" << utf8spn << '\'';
+                oss << "RPC client has to authenticate server '" << spn << '\'';
                 core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
                 oss.str("");
             }
@@ -253,7 +225,7 @@ namespace _3fd
 
             status = RpcBindingSetAuthInfoExW(
                 m_bindingHandle,
-                ucs2spnStr.get(),
+                ucs2spn.get(),
                 static_cast<unsigned long> (authnLevel),
                 authnService,
                 nullptr, // no explicit credentials, use context

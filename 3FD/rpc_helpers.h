@@ -156,11 +156,11 @@ namespace _3fd
                 ProtocolSequence protSeq,
                 const string &objUUID,
                 const string &destination,
-                AuthenticationLevel authnLevel,
+                AuthenticationLevel authnLevel = AuthenticationLevel::None,
+                const string &spn = "",
                 AuthenticationSecurity authSec = AuthenticationSecurity::TryKerberos,
-                const string &serviceClass = "",
-                const string &endpoint = "",
-                ImpersonationLevel impLevel = ImpersonationLevel::Default
+                ImpersonationLevel impLevel = ImpersonationLevel::Default,
+                const string &endpoint = ""
             );
 
             ~RpcClient();

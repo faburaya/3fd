@@ -8,7 +8,7 @@
  */
 /* Compiler settings for TestShared\AcmeTesting.idl:
     Oicf, W1, Zp8, env=Win64 (32b run), target_arch=AMD64 8.00.0613 
-    protocol : dce , robust
+    protocol : dce , ms_ext, c_ext, robust
     error checks: allocation ref bounds_check enum stub_data , use_epv
     VC __declspec() decoration level: 
          __declspec(uuid()), __declspec(selectany), __declspec(novtable)
@@ -30,7 +30,6 @@
 
 #include <string.h>
 
-#include <malloc.h>
 #include "AcmeTesting_x64.h"
 
 #define TYPE_FORMAT_STRING_SIZE   39                                
@@ -151,7 +150,7 @@ static const AcmeTesting_MIDL_PROC_FORMAT_STRING AcmeTesting__MIDL_ProcFormatStr
 	/* Procedure Operate */
 
 			0x0,		/* 0 */
-			0x4a,		/* Old Flags:  DCE mem package, */
+			0x48,		/* Old Flags:  */
 /*  2 */	NdrFcLong( 0x0 ),	/* 0 */
 /*  6 */	NdrFcShort( 0x0 ),	/* 0 */
 /*  8 */	NdrFcShort( 0x20 ),	/* X64 Stack size/offset = 32 */
@@ -193,7 +192,7 @@ static const AcmeTesting_MIDL_PROC_FORMAT_STRING AcmeTesting__MIDL_ProcFormatStr
 	/* Procedure ChangeCase */
 
 /* 48 */	0x0,		/* 0 */
-			0x4b,		/* Old Flags:  full ptr, DCE mem package, */
+			0x48,		/* Old Flags:  */
 /* 50 */	NdrFcLong( 0x0 ),	/* 0 */
 /* 54 */	NdrFcShort( 0x1 ),	/* 1 */
 /* 56 */	NdrFcShort( 0x18 ),	/* X64 Stack size/offset = 24 */
@@ -226,7 +225,7 @@ static const AcmeTesting_MIDL_PROC_FORMAT_STRING AcmeTesting__MIDL_ProcFormatStr
 	/* Procedure Shutdown */
 
 /* 90 */	0x0,		/* 0 */
-			0x4a,		/* Old Flags:  DCE mem package, */
+			0x48,		/* Old Flags:  */
 /* 92 */	NdrFcLong( 0x0 ),	/* 0 */
 /* 96 */	NdrFcShort( 0x2 ),	/* 2 */
 /* 98 */	NdrFcShort( 0x8 ),	/* X64 Stack size/offset = 8 */
@@ -278,7 +277,7 @@ static const AcmeTesting_MIDL_TYPE_FORMAT_STRING AcmeTesting__MIDL_TypeFormatStr
 /* 28 */	0x36,		/* FC_POINTER */
 			0x5b,		/* FC_END */
 /* 30 */	
-			0x14, 0x0,	/* FC_FP */
+			0x12, 0x0,	/* FC_UP */
 /* 32 */	NdrFcShort( 0xffea ),	/* Offset= -22 (10) */
 /* 34 */	
 			0x11, 0x4,	/* FC_RP [alloced_on_stack] */
@@ -287,24 +286,6 @@ static const AcmeTesting_MIDL_TYPE_FORMAT_STRING AcmeTesting__MIDL_TypeFormatStr
 			0x0
         }
     };
-
-static void * __RPC_USER
-AcmeTesting_malloc_wrapper( size_t _Size )
-{
-    return( malloc( _Size ) );
-}
-
-static void  __RPC_USER
-AcmeTesting_free_wrapper( void * _p )
-{
-    free( _p );
-}
-
-static const MALLOC_FREE_STRUCT _MallocFreeStruct = 
-{
-    AcmeTesting_malloc_wrapper,
-    AcmeTesting_free_wrapper
-};
 
 static const unsigned short AcmeTesting_FormatStringOffsetTable[] =
     {
@@ -317,8 +298,8 @@ static const unsigned short AcmeTesting_FormatStringOffsetTable[] =
 static const MIDL_STUB_DESC AcmeTesting_StubDesc = 
     {
     (void *)& AcmeTesting___RpcClientInterface,
-    NdrRpcSmClientAllocate,
-    NdrRpcSmClientFree,
+    MIDL_user_allocate,
+    MIDL_user_free,
     &AcmeTesting__MIDL_AutoBindHandle,
     0,
     0,
@@ -327,7 +308,7 @@ static const MIDL_STUB_DESC AcmeTesting_StubDesc =
     AcmeTesting__MIDL_TypeFormatString.Format,
     1, /* -error bounds_check flag */
     0x50002, /* Ndr library version */
-    (MALLOC_FREE_STRUCT*)&_MallocFreeStruct,
+    0,
     0x8000265, /* MIDL Version 8.0.613 */
     0,
     0,

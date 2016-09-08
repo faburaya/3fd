@@ -12,6 +12,20 @@
 
 #include <thread>
 
+////////////////////////////
+// RPC Memory Allocation
+////////////////////////////
+
+void * __RPC_USER MIDL_user_allocate(size_t qtBytes)
+{
+    return (void __RPC_FAR *)malloc(qtBytes);
+}
+
+void __RPC_USER MIDL_user_free(void *ptr)
+{
+    free(ptr);
+}
+
 namespace _3fd
 {
     namespace integration_tests
@@ -106,8 +120,8 @@ namespace _3fd
                     GetParam().objectUUID1,
                     "MyVirtualServer.MyDomain.local",
                     GetParam().authenticationLevel,
-                    AuthenticationSecurity::RequireMutualAuthn,
-                    "TestClient3FD"
+                    "Felipe@MyDomain.local",
+                    AuthenticationSecurity::RequireMutualAuthn
                 );
 
                 EXPECT_EQ(696.0, client1.Operate(6.0, 116.0));
@@ -118,8 +132,8 @@ namespace _3fd
                     GetParam().objectUUID2,
                     "MyVirtualServer.MyDomain.local",
                     GetParam().authenticationLevel,
-                    AuthenticationSecurity::RequireMutualAuthn,
-                    "TestClient3FD"
+                    "Felipe@MyDomain.local",
+                    AuthenticationSecurity::RequireMutualAuthn
                 );
 
                 EXPECT_EQ(696.0, client2.Operate(606.0, 90.0));

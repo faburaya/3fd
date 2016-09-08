@@ -100,6 +100,23 @@ namespace _3fd
             }
         };
 
+        /// <summary>
+        /// RAII for RPC lib C-style strings.
+        /// </summary>
+        struct RpcString
+        {
+            RPC_WSTR data;
+
+            RpcString()
+                : data(nullptr) {}
+
+            ~RpcString()
+            {
+                if (data != nullptr)
+                    RpcStringFreeW(&data);
+            }
+        };
+
     }// end of namespace rpc
 }// end of namespace _3fd
 

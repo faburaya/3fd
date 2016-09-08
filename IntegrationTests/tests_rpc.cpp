@@ -43,10 +43,12 @@ void ChangeCase(
     /* [in] */ cstring *input,
     /* [out] */ cstring *output)
 {
-    /* Because the stubs have been generated for OSF compliance, RpcSs/RpcSm procs
+    /* When the stubs have been generated for OSF compliance, RpcSs/RpcSm procs
     are to be used for dynamic allocation, instead of midl_user_allocate/free. This
-    memory gets automatically released once this RPC returns to the caller. */
-    output->data = (unsigned char *)RpcSsAllocate(input->size);
+    memory gets automatically released once this RPC returns to the caller.
+
+    output->data = static_cast<unsigned char *> (RpcSsAllocate(input->size)) */
+    output->data = static_cast<unsigned char *> (midl_user_allocate(input->size));
     output->size = input->size;
 
     const auto length = input->size - 1;
@@ -62,10 +64,12 @@ void ChangeCase2(
     /* [in] */ cstring *input,
     /* [out] */ cstring *output)
 {
-    /* Because the stubs have been generated for OSF compliance, RpcSs/RpcSm procs
+    /* When the stubs have been generated for OSF compliance, RpcSs/RpcSm procs
     are to be used for dynamic allocation, instead of midl_user_allocate/free. This
-    memory gets automatically released once this RPC returns to the caller. */
-    output->data = (unsigned char *)RpcSsAllocate(input->size);
+    memory gets automatically released once this RPC returns to the caller.
+
+    output->data = static_cast<unsigned char *> (RpcSsAllocate(input->size)) */
+    output->data = static_cast<unsigned char *> (midl_user_allocate(input->size));
     output->size = input->size;
 
     const auto length = input->size - 1;
@@ -80,6 +84,20 @@ void Shutdown(
     /* [in] */ handle_t IDL_handle)
 {
     RpcMgmtStopServerListening(nullptr);
+}
+
+////////////////////////////
+// RPC Memory Allocation
+////////////////////////////
+
+void * __RPC_USER MIDL_user_allocate(size_t qtBytes)
+{
+    return (void __RPC_FAR *)malloc(qtBytes);
+}
+
+void __RPC_USER MIDL_user_free(void *ptr)
+{
+    free(ptr);
 }
 
 namespace _3fd

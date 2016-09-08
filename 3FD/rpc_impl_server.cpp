@@ -6,8 +6,8 @@
 
 #include <codecvt>
 #include <sstream>
-#include <security.h>
-#include <NtDsAPI.h>
+//#include <security.h>
+//#include <NtDsAPI.h>
 
 namespace _3fd
 {
@@ -126,7 +126,6 @@ namespace _3fd
             authentication, however, that requires SPN registration, which is only available
             with Microsoft Active Directory services. */
 
-            ArrayOfSpn rpcSvcSpnArray;
             DirSvcBinding dirSvcBinding;
             bool useActDirSec = DetectActiveDirectoryServices(dirSvcBinding, false);
 
@@ -138,31 +137,16 @@ namespace _3fd
             }
             else
             {
-                // Generate a list of SPN's using the fully qualified DNS name of the local computer:
-                auto rc = DsGetSpnW(
-                    DS_SPN_DNS_HOST,
-                    m_serviceName.c_str(),
-                    nullptr,
-                    0, // no port specified
-                    0, nullptr, nullptr, // no extra instance names
-                    &rpcSvcSpnArray.size,
-                    &rpcSvcSpnArray.data
-                );
+                // Get the default principal name for this server:
+                RpcString spn;
+                status = RpcServerInqDefaultPrincNameW(RPC_C_AUTHN_GSS_KERBEROS, &spn.data);
+                ThrowIfError(status, "Could not get default SPN for RPC server");
 
-                if (rc != ERROR_SUCCESS)
-                {
-                    oss << "Could not generate SPN for RPC server - ";
-                    core::WWAPI::AppendDWordErrorMessage(rc, "DsGetSpn", oss);
-                    throw core::AppException<std::runtime_error>(oss.str());
-                }
-
-                _ASSERTE(rpcSvcSpnArray.size > 0);
-
-                string utf8spn = transcoder.to_bytes(rpcSvcSpnArray.data[0]);
+                string utf8spn = transcoder.to_bytes(spn.data);
 
                 // Use Microsoft SSP Negotiate, so provide the SPN in case Kerberos is used:
                 status = RpcServerRegisterAuthInfoW(
-                    rpcSvcSpnArray.data[0],
+                    spn.data,
                     RPC_C_AUTHN_GSS_NEGOTIATE,
                     nullptr,
                     nullptr
