@@ -105,7 +105,7 @@ namespace _3fd
         /// </summary>
         struct RpcString
         {
-            RPC_WSTR data;
+            RPC_CSTR data;
 
             RpcString()
                 : data(nullptr) {}
@@ -113,7 +113,7 @@ namespace _3fd
             ~RpcString()
             {
                 if (data != nullptr)
-                    RpcStringFreeW(&data);
+                    RpcStringFreeA(&data);
             }
         };
 
