@@ -22,6 +22,8 @@ namespace _3fd
 
             std::wstring m_serviceName;
 
+            RpcString m_spn;
+
             AuthenticationLevel m_authLevel;
 
             /// <summary>

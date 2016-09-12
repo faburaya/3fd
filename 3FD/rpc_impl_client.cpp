@@ -165,6 +165,15 @@ namespace _3fd
                     );
                 }
 
+                /* Transcodes the UTF-8 encoded SPN into a null-terminated
+                UCS-2 string kept in the heap. (RPC authentication needs
+                that string to outlive the client.) */
+
+                auto temp = transcoder.from_bytes(spn);
+                m_serverSpn.reset(new wchar_t[temp.size() + 1]);
+                wmemcpy(m_serverSpn.get(), temp.data(), temp.size());
+                m_serverSpn.get()[temp.size()] = L'\0';
+
                 oss << "RPC client has to authenticate server '" << spn << '\'';
                 core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
                 oss.str("");
@@ -213,9 +222,9 @@ namespace _3fd
             else
                 authnService = RPC_C_AUTHN_WINNT;
 
-            status = RpcBindingSetAuthInfoExA(
+            status = RpcBindingSetAuthInfoExW(
                 m_bindingHandle,
-                (RPC_CSTR)spn.c_str(),
+                m_serverSpn.get(),
                 static_cast<unsigned long> (authnLevel),
                 authnService,
                 nullptr, // no explicit credentials, use context

@@ -138,26 +138,27 @@ namespace _3fd
             else
             {
                 // Get the default principal name for this server:
-                RpcString spn;
-                status = RpcServerInqDefaultPrincNameA(RPC_C_AUTHN_GSS_KERBEROS, &spn.data);
+                status = RpcServerInqDefaultPrincNameW(RPC_C_AUTHN_GSS_KERBEROS, &m_spn.data);
                 ThrowIfError(status, "Could not get default SPN for RPC server");
 
                 // Use Microsoft SSP Negotiate, so provide the SPN in case Kerberos is used:
-                status = RpcServerRegisterAuthInfoA(
-                    spn.data,
+                status = RpcServerRegisterAuthInfoW(
+                    m_spn.data,
                     RPC_C_AUTHN_GSS_NEGOTIATE,
                     nullptr,
                     nullptr
                 );
 
+                string utf8spn = transcoder.to_bytes(m_spn.data);
+
                 ThrowIfError(status,
                     "Could not register authentication information with Microsoft Negotiate SSP",
-                    (const char *)spn.data);
+                    utf8spn);
 
                 // Notify registration in authentication service:
                 oss << "RPC server '" << serviceName
                     << "' has been registered with Microsoft Negotiate SSP "
-                       "[SPN = " << (const char *)spn.data << "]";
+                       "[SPN = " << utf8spn << "]";
 
                 core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
                 oss.str("");
