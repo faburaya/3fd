@@ -191,8 +191,8 @@ namespace _3fd
             /* Sets the client binding handle's authentication,
             authorization, and security quality-of-service: */
 
-            RPC_SECURITY_QOS_V3 secQOS = { 0 };
-            secQOS.Version = 3;
+            RPC_SECURITY_QOS secQOS = { 0 };
+            secQOS.Version = 1;
             secQOS.ImpersonationType = static_cast<unsigned long> (impLevel);
 
             /* Mutual authentication requires SPN registration,
