@@ -194,15 +194,16 @@ namespace _3fd
             RPC_SECURITY_QOS secQOS = { 0 };
             secQOS.Version = 1;
             secQOS.ImpersonationType = static_cast<unsigned long> (impLevel);
+            secQOS.Capabilities = RPC_C_QOS_CAPABILITIES_DEFAULT;
 
             /* Mutual authentication requires SPN registration,
-            hence can only be used when AD is present: */
+            hence can only be used when AD is present: 
             if (useActDirSec && authnSecurity != AuthenticationSecurity::NTLM)
             {
                 secQOS.Capabilities =
                     RPC_C_QOS_CAPABILITIES_MUTUAL_AUTH
                     | RPC_C_QOS_CAPABILITIES_LOCAL_MA_HINT;
-            }
+            }*/
 
             /* Authentication impact on performance on identity tracking
             is negligible unless a remote protocol is in use: */
