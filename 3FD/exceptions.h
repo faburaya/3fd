@@ -41,11 +41,13 @@ namespace _3fd
 
 			static string GetHResultLabel(HRESULT errCode);
 
+#   ifdef _3FD_PLATFORM_WIN32API
             static void AppendDWordErrorMessage(
                 DWORD errCode,
                 const char *funcName,
                 std::ostringstream &oss
             );
+#   endif
 
 #	ifdef _3FD_PLATFORM_WINRT
 			static string GetDetailsFromWinRTEx(Platform::Exception ^ex);

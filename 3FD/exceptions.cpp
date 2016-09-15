@@ -53,6 +53,7 @@ namespace _3fd
 			return oss.str();
 		}
 
+#   ifdef _3FD_PLATFORM_WIN32API // only for classic desktop apps:
         /// <summary>
         /// Generates an error message for a DWORD error code.
         /// </summary>
@@ -92,6 +93,7 @@ namespace _3fd
             auto hnd = LocalFree(wErrMsgPtr);
             _ASSERTE(hnd == NULL);
         }
+#   endif
 
 #	ifdef _3FD_PLATFORM_WINRT // Store Apps only:
 		/// <summary>
