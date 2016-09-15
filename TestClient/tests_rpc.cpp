@@ -75,7 +75,8 @@ namespace _3fd
 
             string ChangeCase(const char *text)
             {
-                cstring output;
+                unsigned char buffer[128];
+                cstring output { sizeof buffer, buffer };
                 auto status = ChangeCaseImpl(GetBindingHandle(), text, output);
                 ThrowIfError(status, "Failed to invoke RPC client stub routine \'ChangeCase\'");
                 return string(output.data, output.data + output.size - 1);

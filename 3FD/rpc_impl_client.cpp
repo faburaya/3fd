@@ -229,7 +229,7 @@ namespace _3fd
                 authnService,
                 nullptr, // no explicit credentials, use context
                 RPC_C_AUTHZ_DEFAULT,
-                reinterpret_cast<RPC_SECURITY_QOS *> (&secQOS)
+                &secQOS
             );
 
             ThrowIfError(status, "Failed to set security for binding handle of RPC client");

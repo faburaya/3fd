@@ -313,13 +313,13 @@ namespace _3fd
                     ProtocolSequence::TCP,
                     objectsUuidsImpl1[9],
                     objectsUuidsImpl2[9],
-                    AuthenticationLevel::Integrity
+                    AuthenticationLevel::None
                 },
                 TestOptions{
                     ProtocolSequence::TCP,
                     objectsUuidsImpl1[10],
                     objectsUuidsImpl2[10],
-                    AuthenticationLevel::Privacy
+                    AuthenticationLevel::None
                 }
             )
         );
