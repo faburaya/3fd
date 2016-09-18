@@ -194,16 +194,6 @@ namespace _3fd
             RPC_SECURITY_QOS secQOS = { 0 };
             secQOS.Version = 1;
             secQOS.ImpersonationType = static_cast<unsigned long> (impLevel);
-            secQOS.Capabilities = RPC_C_QOS_CAPABILITIES_DEFAULT;
-
-            /* Mutual authentication requires SPN registration,
-            hence can only be used when AD is present: 
-            if (useActDirSec && authnSecurity != AuthenticationSecurity::NTLM)
-            {
-                secQOS.Capabilities =
-                    RPC_C_QOS_CAPABILITIES_MUTUAL_AUTH
-                    | RPC_C_QOS_CAPABILITIES_LOCAL_MA_HINT;
-            }*/
 
             /* Authentication impact on performance on identity tracking
             is negligible unless a remote protocol is in use: */
@@ -214,14 +204,30 @@ namespace _3fd
 
             /* This client negotiates to use Kerberos if such security package is
             available. When RPC is local, Kerberos is not supported disregarding
-            AD availability, so NTLM is used: */
+            AD availability, so NTLM is used. Regarding the support for mutual
+            authentication, both Kerberos and NTLM (only for local RPC) support
+            it, but it requires SPN registration, hence can only be used when AD
+            is present: */
 
             unsigned long authnService;
 
             if (protSeq != ProtocolSequence::Local)
+            {
                 authnService = static_cast<unsigned long> (authnSecurity);
+
+                if (useActDirSec && authnSecurity != AuthenticationSecurity::NTLM)
+                    secQOS.Capabilities = RPC_C_QOS_CAPABILITIES_MUTUAL_AUTH;
+            }
             else
+            {
                 authnService = RPC_C_AUTHN_WINNT;
+
+                if (useActDirSec && authnSecurity == AuthenticationSecurity::RequireMutualAuthn)
+                {
+                    secQOS.Capabilities =
+                        RPC_C_QOS_CAPABILITIES_MUTUAL_AUTH | RPC_C_QOS_CAPABILITIES_LOCAL_MA_HINT;
+                }
+            }
 
             status = RpcBindingSetAuthInfoExW(
                 m_bindingHandle,
