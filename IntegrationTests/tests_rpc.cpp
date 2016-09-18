@@ -308,18 +308,66 @@ namespace _3fd
                     objectsUuidsImpl1[8],
                     objectsUuidsImpl2[8],
                     AuthenticationLevel::Privacy
+                },
+                TestOptions{
+                    ProtocolSequence::Local,
+                    objectsUuidsImpl1[9],
+                    objectsUuidsImpl2[9],
+                    AuthenticationLevel::Integrity
+                },
+                TestOptions{
+                    ProtocolSequence::Local,
+                    objectsUuidsImpl1[10],
+                    objectsUuidsImpl2[10],
+                    AuthenticationLevel::Privacy
+                },
+                TestOptions{
+                    ProtocolSequence::Local,
+                    objectsUuidsImpl1[11],
+                    objectsUuidsImpl2[11],
+                    AuthenticationLevel::Integrity
+                },
+                TestOptions{
+                    ProtocolSequence::Local,
+                    objectsUuidsImpl1[12],
+                    objectsUuidsImpl2[12],
+                    AuthenticationLevel::Privacy
                 },*/
+                TestOptions{
+                    ProtocolSequence::TCP,
+                    objectsUuidsImpl1[6],
+                    objectsUuidsImpl2[6],
+                    AuthenticationLevel::Integrity
+                },
+                TestOptions{
+                    ProtocolSequence::TCP,
+                    objectsUuidsImpl1[7],
+                    objectsUuidsImpl2[7],
+                    AuthenticationLevel::Privacy
+                },
+                TestOptions{
+                    ProtocolSequence::TCP,
+                    objectsUuidsImpl1[8],
+                    objectsUuidsImpl2[8],
+                    AuthenticationLevel::Integrity
+                },
                 TestOptions{
                     ProtocolSequence::TCP,
                     objectsUuidsImpl1[9],
                     objectsUuidsImpl2[9],
-                    AuthenticationLevel::None
+                    AuthenticationLevel::Privacy
                 },
                 TestOptions{
                     ProtocolSequence::TCP,
                     objectsUuidsImpl1[10],
                     objectsUuidsImpl2[10],
-                    AuthenticationLevel::None
+                    AuthenticationLevel::Integrity
+                },
+                TestOptions{
+                    ProtocolSequence::TCP,
+                    objectsUuidsImpl1[11],
+                    objectsUuidsImpl2[11],
+                    AuthenticationLevel::Privacy
                 }
             )
         );
