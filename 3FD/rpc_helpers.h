@@ -142,8 +142,6 @@ namespace _3fd
 
             RPC_BINDING_HANDLE m_bindingHandle;
 
-            std::unique_ptr<wchar_t[]> m_serverSpn;
-
         protected:
 
             /// <summary>

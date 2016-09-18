@@ -156,6 +156,8 @@ namespace _3fd
                 useActDirSec = DetectActiveDirectoryServices(dirSvcBinding, true);
             }
 
+            std::wstring ucs2spn;
+
             if (useActDirSec)
             {
                 if (spn == "")
@@ -165,14 +167,7 @@ namespace _3fd
                     );
                 }
 
-                /* Transcodes the UTF-8 encoded SPN into a null-terminated
-                UCS-2 string kept in the heap. (RPC authentication needs
-                that string to outlive the client.) */
-
-                auto temp = transcoder.from_bytes(spn);
-                m_serverSpn.reset(new wchar_t[temp.size() + 1]);
-                wmemcpy(m_serverSpn.get(), temp.data(), temp.size());
-                m_serverSpn.get()[temp.size()] = L'\0';
+                ucs2spn = transcoder.from_bytes(spn);
 
                 oss << "RPC client has to authenticate server '" << spn << '\'';
                 core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
@@ -231,7 +226,7 @@ namespace _3fd
 
             status = RpcBindingSetAuthInfoExW(
                 m_bindingHandle,
-                m_serverSpn.get(),
+                const_cast<RPC_WSTR> (ucs2spn.empty() ? nullptr : ucs2spn.c_str()),
                 static_cast<unsigned long> (authnLevel),
                 authnService,
                 nullptr, // no explicit credentials, use context
