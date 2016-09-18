@@ -75,8 +75,13 @@ namespace _3fd
 
             string ChangeCase(const char *text)
             {
+                /* When the stubs have been generated for OSF compliance
+                the output string parameter must fulfill the memory allocation
+                of the buffer carrying the text:
+
                 unsigned char buffer[128];
-                cstring output { sizeof buffer, buffer };
+                cstring output { sizeof buffer, buffer }; */
+                cstring output;
                 auto status = ChangeCaseImpl(GetBindingHandle(), text, output);
                 ThrowIfError(status, "Failed to invoke RPC client stub routine \'ChangeCase\'");
                 return string(output.data, output.data + output.size - 1);

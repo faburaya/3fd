@@ -45,10 +45,10 @@ void ChangeCase(
 {
     /* When the stubs have been generated for OSF compliance, RpcSs/RpcSm procs
     are to be used for dynamic allocation, instead of midl_user_allocate/free. This
-    memory gets automatically released once this RPC returns to the caller.
+    memory gets automatically released once this RPC returns to the caller. */
 
-    output->data = static_cast<unsigned char *> (RpcSsAllocate(input->size)) */
-    output->data = static_cast<unsigned char *> (midl_user_allocate(input->size));
+    output->data = static_cast<unsigned char *> (RpcSsAllocate(input->size));
+    //output->data = static_cast<unsigned char *> (midl_user_allocate(input->size));
     output->size = input->size;
 
     const auto length = input->size - 1;
@@ -66,10 +66,10 @@ void ChangeCase2(
 {
     /* When the stubs have been generated for OSF compliance, RpcSs/RpcSm procs
     are to be used for dynamic allocation, instead of midl_user_allocate/free. This
-    memory gets automatically released once this RPC returns to the caller.
+    memory gets automatically released once this RPC returns to the caller. */
 
-    output->data = static_cast<unsigned char *> (RpcSsAllocate(input->size)) */
-    output->data = static_cast<unsigned char *> (midl_user_allocate(input->size));
+    output->data = static_cast<unsigned char *> (RpcSsAllocate(input->size));
+    //output->data = static_cast<unsigned char *> (midl_user_allocate(input->size));
     output->size = input->size;
 
     const auto length = input->size - 1;
