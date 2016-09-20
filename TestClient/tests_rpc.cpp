@@ -101,6 +101,7 @@ namespace _3fd
             const char *objectUUID2;
             AuthenticationLevel authenticationLevel;
             AuthenticationSecurity authenticationSecurity;
+            ImpersonationLevel impersonationLevel;
         };
 
         class Framework_RPC_TestCase :
@@ -128,7 +129,8 @@ namespace _3fd
                     "MyVirtualServer.MyDomain.local",
                     GetParam().authenticationLevel,
                     "Felipe@MyDomain.local",
-                    GetParam().authenticationSecurity
+                    GetParam().authenticationSecurity,
+                    GetParam().impersonationLevel
                 );
 
                 EXPECT_EQ(696.0, client1.Operate(6.0, 116.0));
@@ -140,7 +142,8 @@ namespace _3fd
                     "MyVirtualServer.MyDomain.local",
                     GetParam().authenticationLevel,
                     "Felipe@MyDomain.local",
-                    GetParam().authenticationSecurity
+                    GetParam().authenticationSecurity,
+                    GetParam().impersonationLevel
                 );
 
                 EXPECT_EQ(696.0, client2.Operate(606.0, 90.0));
@@ -165,91 +168,104 @@ namespace _3fd
                     objectsUuidsImpl1[6],
                     objectsUuidsImpl2[6],
                     AuthenticationLevel::None,
-                    AuthenticationSecurity::NTLM // ignored
+                    AuthenticationSecurity::NTLM, // ignored
+                    ImpersonationLevel::Impersonate
                 },
                 TestOptions{
                     ProtocolSequence::Local,
                     objectsUuidsImpl1[7],
                     objectsUuidsImpl2[7],
                     AuthenticationLevel::Integrity,
-                    AuthenticationSecurity::NTLM
+                    AuthenticationSecurity::NTLM,
+                    ImpersonationLevel::Impersonate
                 },
                 TestOptions{
                     ProtocolSequence::Local,
                     objectsUuidsImpl1[8],
                     objectsUuidsImpl2[8],
                     AuthenticationLevel::Privacy,
-                    AuthenticationSecurity::NTLM
+                    AuthenticationSecurity::NTLM,
+                    ImpersonationLevel::Impersonate
                 },
                 TestOptions{
                     ProtocolSequence::Local,
                     objectsUuidsImpl1[9],
                     objectsUuidsImpl2[9],
                     AuthenticationLevel::Integrity,
-                    AuthenticationSecurity::TryKerberos
+                    AuthenticationSecurity::TryKerberos,
+                    ImpersonationLevel::Impersonate
                 },
                 TestOptions{
                     ProtocolSequence::Local,
                     objectsUuidsImpl1[10],
                     objectsUuidsImpl2[10],
                     AuthenticationLevel::Privacy,
-                    AuthenticationSecurity::TryKerberos
+                    AuthenticationSecurity::TryKerberos,
+                    ImpersonationLevel::Impersonate
                 },
                 TestOptions{
                     ProtocolSequence::Local,
                     objectsUuidsImpl1[11],
                     objectsUuidsImpl2[11],
                     AuthenticationLevel::Integrity,
-                    AuthenticationSecurity::RequireMutualAuthn
+                    AuthenticationSecurity::RequireMutualAuthn,
+                    ImpersonationLevel::Impersonate
                 },
                 TestOptions{
                     ProtocolSequence::Local,
                     objectsUuidsImpl1[12],
                     objectsUuidsImpl2[12],
                     AuthenticationLevel::Privacy,
-                    AuthenticationSecurity::RequireMutualAuthn
+                    AuthenticationSecurity::RequireMutualAuthn,
+                    ImpersonationLevel::Impersonate
                 },*/
                 TestOptions{
                     ProtocolSequence::TCP,
                     objectsUuidsImpl1[6],
                     objectsUuidsImpl2[6],
                     AuthenticationLevel::Integrity,
-                    AuthenticationSecurity::NTLM
+                    AuthenticationSecurity::NTLM,
+                    ImpersonationLevel::Impersonate
                 },
                 TestOptions{
                     ProtocolSequence::TCP,
                     objectsUuidsImpl1[7],
                     objectsUuidsImpl2[7],
                     AuthenticationLevel::Privacy,
-                    AuthenticationSecurity::NTLM
+                    AuthenticationSecurity::NTLM,
+                    ImpersonationLevel::Impersonate
                 },
                 TestOptions{
                     ProtocolSequence::TCP,
                     objectsUuidsImpl1[8],
                     objectsUuidsImpl2[8],
                     AuthenticationLevel::Integrity,
-                    AuthenticationSecurity::TryKerberos
+                    AuthenticationSecurity::TryKerberos,
+                    ImpersonationLevel::Impersonate
                 },
                 TestOptions{
                     ProtocolSequence::TCP,
                     objectsUuidsImpl1[9],
                     objectsUuidsImpl2[9],
                     AuthenticationLevel::Privacy,
-                    AuthenticationSecurity::TryKerberos
+                    AuthenticationSecurity::TryKerberos,
+                    ImpersonationLevel::Impersonate
                 },
                 TestOptions{
                     ProtocolSequence::TCP,
                     objectsUuidsImpl1[10],
                     objectsUuidsImpl2[10],
                     AuthenticationLevel::Integrity,
-                    AuthenticationSecurity::RequireMutualAuthn
+                    AuthenticationSecurity::RequireMutualAuthn,
+                    ImpersonationLevel::Impersonate
                 },
                 TestOptions{
                     ProtocolSequence::TCP,
                     objectsUuidsImpl1[11],
                     objectsUuidsImpl2[11],
                     AuthenticationLevel::Privacy,
-                    AuthenticationSecurity::RequireMutualAuthn
+                    AuthenticationSecurity::RequireMutualAuthn,
+                    ImpersonationLevel::Impersonate
                 }
             )
         );

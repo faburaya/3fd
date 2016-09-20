@@ -11,11 +11,56 @@
 #endif
 
 #include <vector>
+#include <fstream>>
 #include <cstring>
 
 //////////////////////////////////////
 // RPC Server Stubs Implementation
 //////////////////////////////////////
+
+/// <summary>
+/// Impersonates the client and creates a file.
+/// </summary>
+/// <param name="clientBindingHandle">The client binding handle.</param>
+static void ImpersonateClientAndCreateFile(handle_t clientBindingHandle)
+{
+    CALL_STACK_TRACE;
+
+    using namespace _3fd::core;
+
+    try
+    {
+        _3fd::rpc::ScopedImpersonation scopedCliImp(clientBindingHandle);
+
+        std::ofstream outFileStream("createdByRpcServerProc.txt", std::ios::out | std::ios::trunc | std::ios::binary);
+
+        if (!outFileStream.is_open())
+        {
+            throw AppException<std::runtime_error>(
+                "Implementation of RPC server procedure could not create file as impersonated client"
+            );
+        }
+
+        outFileStream << "This file has been created by RPC server procedure impersonated as the client." << std::flush;
+
+        if (outFileStream.bad())
+        {
+            throw AppException<std::runtime_error>(
+                "Implementation of RPC server procedure could not write to file as impersonated client"
+            );
+        }
+    }
+    catch (IAppException &appEx)
+    {
+        Logger::Write(appEx, Logger::PRIO_ERROR);
+    }
+    catch (std::exception &ex)
+    {
+        std::ostringstream oss;
+        oss << "Generic failure in RPC server procedure: " << ex.what();
+        Logger::Write(oss.str(), Logger::PRIO_ERROR);
+    }
+}
 
 // 1st implementation for 'Operate'
 void Operate(
@@ -24,7 +69,11 @@ void Operate(
     /* [in] */ double right,
     /* [out] */ double *result)
 {
+    CALL_STACK_TRACE;
+
     *result = left * right;
+
+    ImpersonateClientAndCreateFile(IDL_handle);
 }
 
 // 2nd implementation for 'Operate'
@@ -34,7 +83,11 @@ void Operate2(
     /* [in] */ double right,
     /* [out] */ double *result)
 {
+    CALL_STACK_TRACE;
+
     *result = left + right;
+
+    ImpersonateClientAndCreateFile(IDL_handle);
 }
 
 // 1st implementation for 'ChangeCase'
@@ -43,6 +96,8 @@ void ChangeCase(
     /* [in] */ cstring *input,
     /* [out] */ cstring *output)
 {
+    CALL_STACK_TRACE;
+
     /* When the stubs have been generated for OSF compliance, RpcSs/RpcSm procs
     are to be used for dynamic allocation, instead of midl_user_allocate/free. This
     memory gets automatically released once this RPC returns to the caller. */
@@ -56,6 +111,8 @@ void ChangeCase(
         output->data[idx] = toupper(input->data[idx]);
 
     output->data[length] = 0;
+
+    ImpersonateClientAndCreateFile(IDL_handle);
 }
 
 // 2nd implementation for 'ChangeCase'
@@ -64,6 +121,8 @@ void ChangeCase2(
     /* [in] */ cstring *input,
     /* [out] */ cstring *output)
 {
+    CALL_STACK_TRACE;
+
     /* When the stubs have been generated for OSF compliance, RpcSs/RpcSm procs
     are to be used for dynamic allocation, instead of midl_user_allocate/free. This
     memory gets automatically released once this RPC returns to the caller. */
@@ -77,6 +136,8 @@ void ChangeCase2(
         output->data[idx] = tolower(input->data[idx]);
 
     output->data[length] = 0;
+
+    ImpersonateClientAndCreateFile(IDL_handle);
 }
 
 // Common shutdown procedure
