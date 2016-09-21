@@ -16,6 +16,12 @@ namespace _3fd
 
         const char *ToString(AuthenticationLevel authnLevel);
 
+        const char *ToString(ImpersonationLevel impersonationLevel);
+
+        const char *ConvertAuthnSvcOptToString(unsigned long authnService);
+
+        void AppendSecQosOptsDescription(const RPC_SECURITY_QOS &secQOS, std::ostringstream &oss);
+
         const unsigned long UUID_VECTOR_MAX_SIZE(32);
 
         /// <summary>

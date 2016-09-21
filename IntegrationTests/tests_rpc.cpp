@@ -32,7 +32,7 @@ static void ImpersonateClientAndCreateFile(handle_t clientBindingHandle)
     {
         _3fd::rpc::ScopedImpersonation scopedCliImp(clientBindingHandle);
 
-        std::ofstream outFileStream("createdByRpcServerProc.txt", std::ios::out | std::ios::trunc | std::ios::binary);
+        std::ofstream outFileStream("createdByRpcServerProc.txt", std::ios::trunc);
 
         if (!outFileStream.is_open())
         {

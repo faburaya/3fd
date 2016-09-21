@@ -235,6 +235,16 @@ namespace _3fd
             );
 
             ThrowIfError(status, "Failed to set security for binding handle of RPC client");
+
+            oss << "RPC client binding security was set to use "
+                << ConvertAuthnSvcOptToString(authnService)
+                << " ";
+
+            AppendSecQosOptsDescription(secQOS, oss);
+
+            oss << " and " << ToString(impLevel);
+
+            core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
         }
         catch (core::IAppException &)
         {

@@ -40,7 +40,7 @@ namespace _3fd
         /// <summary>
         /// Enumerates the possible options for authentication security (packages).
         /// </summary>
-        enum AuthenticationSecurity : unsigned long
+        enum class AuthenticationSecurity : unsigned long
         {
             NTLM = RPC_C_AUTHN_WINNT, // Microsoft NT LAN Manager SSP
             TryKerberos = RPC_C_AUTHN_GSS_NEGOTIATE, // Microsoft Negotiate SSP

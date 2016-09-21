@@ -42,8 +42,8 @@ namespace _3fd
         /// Converts an enumerated authentication level option
         /// into a descriptive label for it.
         /// </summary>
-        /// <param name="protSeq">The authentication level to convert.</param>
-        /// <returns>A string with a label for the authentication.</returns>
+        /// <param name="authnLevel">The authentication level option to convert.</param>
+        /// <returns>A string with a label for the authentication level.</returns>
         const char *ToString(AuthenticationLevel authnLevel)
         {
             switch (authnLevel)
@@ -59,7 +59,90 @@ namespace _3fd
 
             default:
                 _ASSERTE(false);
-                return "UNSUPPORTED";
+                return "UNRECOGNIZED AUTHENTICATION LEVEL";
+            }
+        }
+
+        /// <summary>
+        /// Converts an enumerated impersonation level option
+        /// into a descriptive label for it.
+        /// </summary>
+        /// <param name="impersonationLevel">The impersonation level option to convert.</param>
+        /// <returns>A string with a label for the impersonation level.</returns>
+        const char *ToString(ImpersonationLevel impersonationLevel)
+        {
+            switch (impersonationLevel)
+            {
+            case ImpersonationLevel::Default:
+                return R"(impersonation level "default")";
+
+            case ImpersonationLevel::Identify:
+                return R"(impersonation level "identify")";
+
+            case ImpersonationLevel::Impersonate:
+                return R"(impersonation level "impersonate")";
+
+            case ImpersonationLevel::Delegate:
+                return R"(impersonation level "delegate")";
+
+            default:
+                _ASSERTE(false);
+                return "UNRECOGNIZED IMPERSONATION LEVEL";
+            }
+        }
+
+        /// <summary>
+        /// Converts an authentication service option from
+        /// Win32 API into a descriptive label for it.
+        /// </summary>
+        /// <param name="impersonationLevel">The authentication service option to convert.</param>
+        /// <returns>A string with a label for the authentication service.</returns>
+        const char *ConvertAuthnSvcOptToString(unsigned long authnService)
+        {
+            switch (authnService)
+            {
+            case RPC_C_AUTHN_WINNT:
+                return R"(authentication service "Microsoft NTLM SSP")";
+
+            case RPC_C_AUTHN_GSS_NEGOTIATE:
+                return R"(authentication service "Microsoft Negotiate SSP")";
+
+            case RPC_C_AUTHN_GSS_KERBEROS:
+                return R"(authentication service "Microsoft Kerberos SSP")";
+
+            default:
+                _ASSERTE(false);
+                return "UNRECOGNIZED AUTHENTICATION SERVICE";
+            }
+        }
+
+        /// <summary>
+        /// Gets a structure with security QOS options for Microsoft RPC,
+        /// generates a text description for it and append to output stream.
+        /// </summary>
+        /// <param name="secQOS">An structure used by Microsoft RPC implementation to hold security QOS options.</param>
+        /// <param name="oss">The output string stream.</param>
+        void AppendSecQosOptsDescription(const RPC_SECURITY_QOS &secQOS, std::ostringstream &oss)
+        {
+            if (secQOS.Capabilities & RPC_C_QOS_CAPABILITIES_MUTUAL_AUTH != 0)
+                oss << "with mutual authentication, ";
+            else
+                oss << "with NO mutual authentication, ";
+
+            switch (secQOS.IdentityTracking)
+            {
+            case RPC_C_QOS_IDENTITY_STATIC:
+                oss << "static identity tracking";
+                break;
+
+            case RPC_C_QOS_IDENTITY_DYNAMIC:
+                oss << "dynamic identity tracking";
+                break;
+
+            default:
+                _ASSERTE(false);
+                oss << "UNRECOGNIZED ID TRACKING MODE";
+                break;
             }
         }
 
