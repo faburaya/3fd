@@ -126,7 +126,7 @@ namespace _3fd
                 AcmeSvcProxy client1(
                     GetParam().protocolSequence,
                     GetParam().objectUUID1,
-                    "MyVirtualServer.MyDomain.local",
+                    "TARS",//"MyVirtualServer.MyDomain.local",
                     GetParam().authenticationLevel,
                     "Felipe@MyDomain.local",
                     GetParam().authenticationSecurity,
@@ -139,7 +139,7 @@ namespace _3fd
                 AcmeSvcProxy client2(
                     GetParam().protocolSequence,
                     GetParam().objectUUID2,
-                    "MyVirtualServer.MyDomain.local",
+                    "TARS",//"MyVirtualServer.MyDomain.local",
                     GetParam().authenticationLevel,
                     "Felipe@MyDomain.local",
                     GetParam().authenticationSecurity,
@@ -162,7 +162,7 @@ namespace _3fd
         INSTANTIATE_TEST_CASE_P(
             SwitchProtAndAuthLevel,
             Framework_RPC_TestCase,
-            ::testing::Values(/*
+            ::testing::Values(
                 TestOptions{
                     ProtocolSequence::Local,
                     objectsUuidsImpl1[6],
@@ -202,7 +202,7 @@ namespace _3fd
                     AuthenticationLevel::Privacy,
                     AuthenticationSecurity::TryKerberos,
                     ImpersonationLevel::Impersonate
-                },
+                }/*,
                 TestOptions{
                     ProtocolSequence::Local,
                     objectsUuidsImpl1[11],
@@ -218,7 +218,7 @@ namespace _3fd
                     AuthenticationLevel::Privacy,
                     AuthenticationSecurity::RequireMutualAuthn,
                     ImpersonationLevel::Impersonate
-                },*/
+                },*//*
                 TestOptions{
                     ProtocolSequence::TCP,
                     objectsUuidsImpl1[6],
@@ -250,7 +250,7 @@ namespace _3fd
                     AuthenticationLevel::Privacy,
                     AuthenticationSecurity::TryKerberos,
                     ImpersonationLevel::Impersonate
-                },
+                }*//*,
                 TestOptions{
                     ProtocolSequence::TCP,
                     objectsUuidsImpl1[10],
@@ -266,7 +266,7 @@ namespace _3fd
                     AuthenticationLevel::Privacy,
                     AuthenticationSecurity::RequireMutualAuthn,
                     ImpersonationLevel::Impersonate
-                }
+                }*/
             )
         );
 

@@ -206,14 +206,7 @@ namespace _3fd
 
             unsigned long authnService;
 
-            if (protSeq != ProtocolSequence::Local)
-            {
-                authnService = static_cast<unsigned long> (authnSecurity);
-
-                if (useActDirSec && authnSecurity != AuthenticationSecurity::NTLM)
-                    secQOS.Capabilities = RPC_C_QOS_CAPABILITIES_MUTUAL_AUTH;
-            }
-            else
+            if (protSeq == ProtocolSequence::Local)
             {
                 authnService = RPC_C_AUTHN_WINNT;
 
@@ -223,6 +216,19 @@ namespace _3fd
                         RPC_C_QOS_CAPABILITIES_MUTUAL_AUTH | RPC_C_QOS_CAPABILITIES_LOCAL_MA_HINT;
                 }
             }
+            else
+            {
+                if (useActDirSec)
+                {
+                    authnService = static_cast<unsigned long> (authnSecurity);
+
+                    if (authnSecurity != AuthenticationSecurity::NTLM)
+                        secQOS.Capabilities = RPC_C_QOS_CAPABILITIES_MUTUAL_AUTH;
+                }
+                else
+                    authnService = RPC_C_AUTHN_WINNT;
+            }
+            
 
             status = RpcBindingSetAuthInfoExW(
                 m_bindingHandle,

@@ -351,7 +351,7 @@ namespace _3fd
         INSTANTIATE_TEST_CASE_P(
             SwitchProtAndAuthLevel,
             Framework_RPC_TestCase2,
-            ::testing::Values(/*
+            ::testing::Values(
                 TestOptions{
                     ProtocolSequence::Local,
                     objectsUuidsImpl1[6],
@@ -381,7 +381,7 @@ namespace _3fd
                     objectsUuidsImpl1[10],
                     objectsUuidsImpl2[10],
                     AuthenticationLevel::Privacy
-                },
+                }/*,
                 TestOptions{
                     ProtocolSequence::Local,
                     objectsUuidsImpl1[11],
@@ -393,7 +393,7 @@ namespace _3fd
                     objectsUuidsImpl1[12],
                     objectsUuidsImpl2[12],
                     AuthenticationLevel::Privacy
-                },*/
+                },*//*
                 TestOptions{
                     ProtocolSequence::TCP,
                     objectsUuidsImpl1[6],
@@ -417,7 +417,7 @@ namespace _3fd
                     objectsUuidsImpl1[9],
                     objectsUuidsImpl2[9],
                     AuthenticationLevel::Privacy
-                },
+                }*//*,
                 TestOptions{
                     ProtocolSequence::TCP,
                     objectsUuidsImpl1[10],
@@ -429,7 +429,7 @@ namespace _3fd
                     objectsUuidsImpl1[11],
                     objectsUuidsImpl2[11],
                     AuthenticationLevel::Privacy
-                }
+                }*/
             )
         );
 
