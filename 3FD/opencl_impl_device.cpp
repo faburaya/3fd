@@ -788,7 +788,7 @@ namespace _3fd
 
 				cl_int status;
 				OPENCL_IMPORT(clEnqueueUnmapMemObject);
-				OPENCL_IMPORT(clEnqueueMapBuffer);
+                OPENCL_IMPORT(clEnqueueMapBuffer);
 
 				if (m_oooExecEnabled)
 				{/* If the command queue has Out-Of-Order execution enabled, there is no guarantee the memory resources will be read 
@@ -920,6 +920,56 @@ namespace _3fd
 			}
 		}
 
+        // Implements a safe call to 'clEnqueueMapBuffer'
+        static void *safeClEnqueueMapBuffer(
+            cl_command_queue cmdQueueHandle,
+            Buffer &buffer,
+            cl_bool isBlocking,
+            cl_map_flags mapFlags,
+            size_t offset,
+            size_t size,
+            std::vector<CommandEvent> *evWaitList,
+            cl_event *eventHandle)
+        {
+            CALL_STACK_TRACE;
+
+            OPENCL_IMPORT(clEnqueueMapBuffer);
+
+            _ASSERTE(eventHandle != nullptr);
+            auto evHndValBefore = *eventHandle;
+
+            cl_int status;
+            void *ptr = clEnqueueMapBuffer(
+                cmdQueueHandle,
+                buffer.GetHandle(),
+                isBlocking,
+                mapFlags,
+                offset,
+                size,
+                evWaitList != nullptr ? evWaitList->size() : 0,
+                (evWaitList != nullptr && !evWaitList->empty()) ? reinterpret_cast<cl_event *> (evWaitList->data()) : nullptr,
+                eventHandle,
+                &status);
+
+            /* Intel implementation of 'clEnqueueMapBuffer' has shown to produce an uncompliant
+            result for this call, where an event is not allocated and possibly nothing happens.
+            The runtime check below will avoid memory access violation when trying to use the
+            handle for the event hereby created: */
+            auto evHndValAfter = *eventHandle;
+            if (evHndValBefore == evHndValAfter)
+            {
+                throw core::AppException<std::runtime_error>(
+                    "Failed to enqueue buffer mapping operation in command queue of OpenCL device: "
+                    "uncompliant value of output parameter indicates that OpenCL implementation is "
+                    "unreliable or not existent for this feature"
+                );
+            }
+
+            openclErrors.RaiseExceptionWhen(status, "OpenCL API: clEnqueueMapBuffer");
+
+            return ptr;
+        }
+
 		/// <summary>
 		/// Enqueues an asynchronous map command for the given buffer.
 		/// </summary>
@@ -961,7 +1011,6 @@ namespace _3fd
 
 				cl_int status;
 				OPENCL_IMPORT(clEnqueueUnmapMemObject);
-				OPENCL_IMPORT(clEnqueueMapBuffer);
 
 				if (m_oooExecEnabled)
 				{/* If the command queue has Out-Of-Order execution enabled, there is no guarantee the memory resources will be read 
@@ -977,19 +1026,15 @@ namespace _3fd
 						m_blockerCommands.GetDistinct(&buffer, MemResourceUse::Output, mapBlockerEvents);
 
 					// Map the buffer to CPU visible memory:
-					void *ptr = clEnqueueMapBuffer(
+					void *ptr = safeClEnqueueMapBuffer(
 						m_commandQueue,
-						buffer.GetHandle(),
+						buffer,
 						CL_FALSE,
 						mapFlags,
 						offset,
 						nBytes,
-						mapBlockerEvents.size(),
-						mapBlockerEvents.empty() ? nullptr : reinterpret_cast<cl_event *> (mapBlockerEvents.data()),
-						&cmdMapEventHandle,
-						&status);
-
-					openclErrors.RaiseExceptionWhen(status, "OpenCL API: clEnqueueMapBuffer");
+						&mapBlockerEvents,
+						&cmdMapEventHandle);
 
 					// The callback provided by client code is going to be invoked when the map command completes:
 					CommandEvent callbackDoneEvent(m_context);
@@ -1006,8 +1051,9 @@ namespace _3fd
 					FlushCommandQueue();
 
 					if (how == MemResourceUse::Output || how == MemResourceUse::InputAndOutput)
-					{/* If the unmap command is to issue a write operation, then get the events from previous commands that 
-						read from the buffer being mapped, but also keep track of the resources blocked because of the unmaping: */
+					{/* If the unmap command is to issue a write operation, then get the events from previous
+                        commands that read from the buffer being mapped, but also keep track of the resources
+                        blocked because of the unmaping: */
 						std::vector<CommandEvent> unmapBlockerEvents;
 						unmapBlockerEvents.push_back(callbackDoneEvent); // the unmap command must wait for callback completion
 						m_blockerCommands.GetDistinct(&buffer, MemResourceUse::Input, unmapBlockerEvents);
@@ -1058,17 +1104,14 @@ namespace _3fd
 				{
 					// Map the buffer to CPU visible memory:
 					cl_event cmdMapEventHandle;
-					void *ptr = clEnqueueMapBuffer(
+					void *ptr = safeClEnqueueMapBuffer(
 						m_commandQueue,
-						buffer.GetHandle(),
+						buffer,
 						CL_FALSE,
 						mapFlags,
 						offset, nBytes,
-						0, nullptr, 
-						&cmdMapEventHandle,
-						&status);
-
-					openclErrors.RaiseExceptionWhen(status, "OpenCL API: clEnqueueMapBuffer");
+						nullptr, 
+						&cmdMapEventHandle);
 
 					// The callback provided by client code is going to be invoked when the map command completes:
 					CommandEvent cmdMapEvent(cmdMapEventHandle);
