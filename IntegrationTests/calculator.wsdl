@@ -3,6 +3,7 @@
   xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
   xmlns:wsp="http://schemas.xmlsoap.org/ws/2004/09/policy"
   xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd"
+  xmlns:wsaw="http://www.w3.org/2006/05/addressing/wsdl"
   xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap12/"
   xmlns:xsd="http://www.w3.org/2001/XMLSchema"
   xmlns:tns="http://calculator.example.org/"
@@ -33,7 +34,7 @@
       </sp:TransportBinding>
     </wsp:ExactlyOne>
   </wsp:Policy>
-  
+
   <!-- Types of requests: -->
   <wsdl:types>
     <xsd:schema elementFormDefault="qualified" targetNamespace="http://calculator.example.org/">
@@ -80,101 +81,71 @@
 
   <!-- The web service interface: -->
   <wsdl:portType name="CalculatorInterface">
-    
     <wsdl:operation name="Add">
       <wsdl:input message="tns:AdditionRequestMessage" />
       <wsdl:output message="tns:AdditionResponseMessage" />
     </wsdl:operation>
-
     <wsdl:operation name="Multiplication">
       <wsdl:input message="tns:MultiplicationRequestMessage" />
       <wsdl:output message="tns:MultiplicationResponseMessage" />
     </wsdl:operation>
-    
   </wsdl:portType>
 
   <!-- Interface binding: SSL over HTTP -->
   <wsdl:binding name="CalcBindingSSL" type="tns:CalculatorInterface">
-    
     <soap:binding transport="http://schemas.xmlsoap.org/soap/http"/>
     <wsp:PolicyReference URI="#sslpol" />
-    
     <wsdl:operation name="Add">
-      
       <soap:operation soapAction="http://calculator.example.org/Add" style="document"/>
-      
       <wsdl:input>
         <soap:body use="literal"/>
       </wsdl:input>
-      
       <wsdl:output>
         <soap:body use="literal"/>
       </wsdl:output>
-      
     </wsdl:operation>
-
     <wsdl:operation name="Multiplication">
-
       <soap:operation soapAction="http://calculator.example.org/Multiply" style="document"/>
-
       <wsdl:input>
         <soap:body use="literal"/>
       </wsdl:input>
-
       <wsdl:output>
         <soap:body use="literal"/>
       </wsdl:output>
-
     </wsdl:operation>
-
   </wsdl:binding>
 
   <!-- Interface binding: HTTP without security -->
   <wsdl:binding name="CalcBindingUnsecure" type="tns:CalculatorInterface">
-
     <soap:binding transport="http://schemas.xmlsoap.org/soap/http"/>
-
     <wsdl:operation name="Add">
-
       <soap:operation soapAction="http://calculator.example.org/Add" style="document"/>
-
       <wsdl:input>
         <soap:body use="literal"/>
       </wsdl:input>
-
       <wsdl:output>
         <soap:body use="literal"/>
       </wsdl:output>
-
     </wsdl:operation>
-
     <wsdl:operation name="Multiplication">
-
       <soap:operation soapAction="http://calculator.example.org/Multiply" style="document"/>
-
       <wsdl:input>
         <soap:body use="literal"/>
       </wsdl:input>
-
       <wsdl:output>
         <soap:body use="literal"/>
       </wsdl:output>
-
     </wsdl:operation>
-
   </wsdl:binding>
   
   <!-- The service endpoints: -->
   <wsdl:service name="CalculatorService">
-    
     <wsdl:port name="CalculatorEndpointSSL" binding="tns:CalcBindingSSL">
       <soap:address location="https://localhost:8989/calculator"/>
     </wsdl:port>
-
     <wsdl:port name="CalculatorEndpointUnsecure" binding="tns:CalcBindingUnsecure">
       <soap:address location="http://tars:81/calculator"/>
     </wsdl:port>
-    
   </wsdl:service>
 
 </wsdl:definitions>

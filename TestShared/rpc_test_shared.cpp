@@ -1,0 +1,42 @@
+#include "rpc_test_shared.h"
+
+namespace _3fd
+{
+    namespace rpc
+    {
+        const std::array<const char *, 13> objectsUuidsImpl1 =
+        {
+            "BF7653EF-EB6D-4CF5-BEF0-B4D27864D750",
+            "6642C890-14CF-4A9B-A35F-4C860A1DEBDE",
+            "6442FFD6-1688-4DF0-B2CD-E1633CE30027",
+            "5C4E56F6-C92E-4268-BEFA-CC55A2FF833D",
+            "B3CCEEFD-990B-462D-B919-DAC45ACD8230",
+            "D9D3881F-453F-48AC-A860-3B6AB31F8C6F",
+            "232C45E2-8E6C-41C0-9917-D534F8CDE969",
+            "6991C2E3-A969-4D81-B4B6-649770D97C62",
+            "15334E7D-6408-4339-8464-45F29B14E2A9",
+            "7633B429-F11E-4976-9A2D-8F7CD5A5C3E7",
+            "A334E4CB-31CA-4C57-9B82-61720AE8EE83",
+            "2E8D4583-6713-4320-9329-E7D51DD776C2",
+            "B9887CE8-D721-432E-997E-6567F6123818"
+        };
+
+        const std::array<const char *, 13> objectsUuidsImpl2 =
+        {
+            "684F4A12-FF51-4E7C-8611-CD4F54E5D042",
+            "70A02E35-223C-47D4-8690-09AB0AF43B54",
+            "22588C8D-12F4-49DE-BFA7-FD27E8AAF53D",
+            "94BBCAE5-E3C3-4899-BDE0-6889CBF441A2",
+            "37277527-6CE7-4FC4-B4D2-E44676C2E256",
+            "FA263BF8-C883-4478-B873-053077DF6093",
+            "255301C0-3FC5-4AF8-8BEF-33B6D17EA977",
+            "FFC6B0EC-3486-4D04-91CF-8E63048545B6",
+            "153C2AE0-1B9C-4CC5-A83C-8B40EC8B832F",
+            "334E8550-5F3B-4EDF-935C-B0CD42B6ED33",
+            "3296A63C-D419-49C7-89E4-12F7247D2A72",
+            "2C091B97-C83A-43F4-B8A9-3FCF5EDE123A",
+            "CF14569A-DC76-48C4-A640-CEB014D9125A"
+        };
+
+    }// end of namespace rpc
+}// end of namespace _3fd

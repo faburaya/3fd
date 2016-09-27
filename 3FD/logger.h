@@ -169,6 +169,68 @@ namespace _3fd
 					singleton->WriteImpl(std::move(what), std::move(details), prio, cst);
 			}
 		};
+        
+        /// <summary>
+        /// Writes a message to the log upon end of scope, appending a
+        /// given suffix for success or failure depending on the situation.
+        /// </summary>
+        class ScopedLogWrite : notcopiable
+        {
+        private:
+
+            string m_message;
+
+            Logger::Priority m_prioWhenSuccess;
+            Logger::Priority m_prioWhenFailure;
+
+            const char *m_suffixWhenSuccess;
+            const char *m_suffixWhenFailure;
+
+            bool m_wasFailure;
+
+        public:
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="ScopedLogWrite"/> class.
+            /// </summary>
+            /// <param name="oss">The string buffer containing the message (prefix).</param>
+            /// <param name="prioWhenSuccess">The log priority when success.</param>
+            /// <param name="suffixWhenSuccess">The suffix to append when success.</param>
+            /// <param name="prioWhenFailure">The log priority when failure.</param>
+            /// <param name="suffixWhenFailure">The suffix to append when failure.</param>
+            ScopedLogWrite(
+                const string &message,
+                Logger::Priority prioWhenSuccess,
+                const char *suffixWhenSuccess,
+                Logger::Priority prioWhenFailure,
+                const char *suffixWhenFailure
+            ) :
+                m_message(message),
+                m_prioWhenSuccess(prioWhenSuccess),
+                m_suffixWhenSuccess(suffixWhenSuccess),
+                m_prioWhenFailure(prioWhenFailure),
+                m_suffixWhenFailure(suffixWhenFailure),
+                m_wasFailure(true)
+            {};
+
+            /// <summary>
+            /// Finalizes an instance of the <see cref="ScopedLogWrite"/> class.
+            /// </summary>
+            ~ScopedLogWrite()
+            {
+                if (m_wasFailure)
+                    Logger::Write(m_message.append(m_suffixWhenFailure), m_prioWhenFailure);
+            }
+
+            /// <summary>
+            /// Writes the message to the log with the suffix for success.
+            /// </summary>
+            void LogSuccess()
+            {
+                Logger::Write(m_message.append(m_suffixWhenSuccess), m_prioWhenSuccess);
+                m_wasFailure = false;
+            }
+        };
 
 	}// end of namespace core
 }// end of namespace _3fd

@@ -8,6 +8,11 @@
 #include <memory>
 #include <future>
 
+#ifdef _WIN32
+#	define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
+#   include <windows.h>
+#endif
+
 namespace _3fd
 {
 	using std::string;
@@ -35,6 +40,14 @@ namespace _3fd
 		public:
 
 			static string GetHResultLabel(HRESULT errCode);
+
+#   ifdef _3FD_PLATFORM_WIN32API
+            static void AppendDWordErrorMessage(
+                DWORD errCode,
+                const char *funcName,
+                std::ostringstream &oss
+            );
+#   endif
 
 #	ifdef _3FD_PLATFORM_WINRT
 			static string GetDetailsFromWinRTEx(Platform::Exception ^ex);
@@ -182,7 +195,7 @@ namespace _3fd
 #			endif
 #			ifdef ENABLE_3FD_CST
 				if(m_cst.empty() == false)
-					oss << " - Call Stack: { " << m_cst << " }";
+                    oss << "\r\n\r\n### CALL STACK TRACE ###\r\n" << m_cst;
 #			endif	
 
 				return oss.str();

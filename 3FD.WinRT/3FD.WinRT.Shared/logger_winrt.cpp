@@ -137,9 +137,6 @@ namespace _3fd
 
 			OpenTextLogStream(txtLogFile->Path, ofs);
 
-			// Await for completion of reading operation:
-			auto readBuffer = utils::WinRTExt::WaitForAsync(asyncOperReadLogToBuffer);
-
 			// Create the file which will contain the previous log compressed:
 			std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
 			auto now = system_clock::to_time_t(system_clock::now());
@@ -156,6 +153,9 @@ namespace _3fd
 			auto outputStream = utils::WinRTExt::WaitForAsync(
 				compressedLogFile->OpenAsync(FileAccessMode::ReadWrite)
 			);
+
+            // Await for completion of reading operation:
+            auto readBuffer = utils::WinRTExt::WaitForAsync(asyncOperReadLogToBuffer);
 
 			// Compress the text content of the previous log file:
 			auto compressor = ref new Compression::Compressor(outputStream);

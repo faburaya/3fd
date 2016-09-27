@@ -53,6 +53,48 @@ namespace _3fd
 			return oss.str();
 		}
 
+#   ifdef _3FD_PLATFORM_WIN32API // only for classic desktop apps:
+        /// <summary>
+        /// Generates an error message for a DWORD error code.
+        /// </summary>
+        /// <param name="errCode">The error code.</param>
+        /// <param name="funcName">Name of the function from Win32 API.</param>
+        /// <param name="oss">The string stream where the error message will be appended to.</param>
+        void WWAPI::AppendDWordErrorMessage(
+            DWORD errCode,
+            const char *funcName,
+            std::ostringstream &oss)
+        {
+            wchar_t *wErrMsgPtr;
+            
+            auto rc = FormatMessageW(
+                FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+                nullptr,
+                errCode,
+                MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                (LPWSTR)&wErrMsgPtr, 0,
+                nullptr
+            );
+
+            if(funcName != nullptr && funcName[0] != 0)
+                oss << funcName << " returned error code " << errCode;
+            else
+                oss << "code " << errCode;
+
+            if (!rc)
+            {
+                oss << " (secondary failure prevented retrieval of further details)";
+                return;
+            }
+            
+            std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
+            oss << ": " << transcoder.to_bytes(wErrMsgPtr);
+
+            auto hnd = LocalFree(wErrMsgPtr);
+            _ASSERTE(hnd == NULL);
+        }
+#   endif
+
 #	ifdef _3FD_PLATFORM_WINRT // Store Apps only:
 		/// <summary>
 		/// Gets the details from a WinRT exception.

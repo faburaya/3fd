@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.40629.0
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "3FD", "3FD\3FD.vcxproj", "{CCC4A0A2-15FD-4A6E-AC6C-094AAAAEC80B}"
 EndProject
@@ -57,20 +57,22 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "IntegrationTestsApp.WinRT.W
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "IntegrationTestsApp.WinRT.WindowsPhone", "IntegrationTestsApp.WinRT\IntegrationTestsApp.WinRT.WindowsPhone\IntegrationTestsApp.WinRT.WindowsPhone.vcxproj", "{CEB9F9FD-5E2A-49FB-AC14-2DEF01DC80B8}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestClient", "TestClient\TestClient.vcxproj", "{6ADF3A4B-1E22-41BA-9293-96593E6A45BE}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
-		3FD.WinRT\3FD.WinRT.Shared\3FD.WinRT.Shared.vcxitems*{857dc1c8-d5d4-471c-bcbe-c29e5f7dd49c}*SharedItemsImports = 9
-		IntegrationTestsApp.WinRT\IntegrationTestsApp.WinRT.Shared\IntegrationTestsApp.WinRT.Shared.vcxitems*{ceb9f9fd-5e2a-49fb-ac14-2def01dc80b8}*SharedItemsImports = 4
-		UnitTestsApp.WinRT\UnitTestsApp.WinRT.Shared\UnitTestsApp.WinRT.Shared.vcxitems*{a4c17041-161f-41d0-9e4e-60cf9d752152}*SharedItemsImports = 9
-		gtest.WinRT\gtest.WinRT.Shared\gtest.WinRT.Shared.vcxitems*{db9a7788-5840-496c-af13-6100450d9c32}*SharedItemsImports = 9
-		gtest.WinRT\gtest.WinRT.Shared\gtest.WinRT.Shared.vcxitems*{fc5f4bf1-6c86-45dc-93da-78e380e20cd8}*SharedItemsImports = 4
 		IntegrationTestsApp.WinRT\IntegrationTestsApp.WinRT.Shared\IntegrationTestsApp.WinRT.Shared.vcxitems*{09ed5b36-d345-4d62-9f01-dc41168bcb35}*SharedItemsImports = 4
-		3FD.WinRT\3FD.WinRT.Shared\3FD.WinRT.Shared.vcxitems*{ed6b839d-3ee6-46de-80dc-de2090a059c3}*SharedItemsImports = 4
-		UnitTestsApp.WinRT\UnitTestsApp.WinRT.Shared\UnitTestsApp.WinRT.Shared.vcxitems*{47155299-1b16-46e9-8c5c-7974558e4ccd}*SharedItemsImports = 4
 		UnitTestsApp.WinRT\UnitTestsApp.WinRT.Shared\UnitTestsApp.WinRT.Shared.vcxitems*{0ef226c5-847e-48b1-b1ec-af09067db12f}*SharedItemsImports = 4
-		gtest.WinRT\gtest.WinRT.Shared\gtest.WinRT.Shared.vcxitems*{492f5223-5828-4d61-aebb-2c6241bf84f9}*SharedItemsImports = 4
 		IntegrationTestsApp.WinRT\IntegrationTestsApp.WinRT.Shared\IntegrationTestsApp.WinRT.Shared.vcxitems*{4532b9cc-1245-486d-acfb-0d190bb4ea2a}*SharedItemsImports = 9
+		UnitTestsApp.WinRT\UnitTestsApp.WinRT.Shared\UnitTestsApp.WinRT.Shared.vcxitems*{47155299-1b16-46e9-8c5c-7974558e4ccd}*SharedItemsImports = 4
+		gtest.WinRT\gtest.WinRT.Shared\gtest.WinRT.Shared.vcxitems*{492f5223-5828-4d61-aebb-2c6241bf84f9}*SharedItemsImports = 4
+		3FD.WinRT\3FD.WinRT.Shared\3FD.WinRT.Shared.vcxitems*{857dc1c8-d5d4-471c-bcbe-c29e5f7dd49c}*SharedItemsImports = 9
+		UnitTestsApp.WinRT\UnitTestsApp.WinRT.Shared\UnitTestsApp.WinRT.Shared.vcxitems*{a4c17041-161f-41d0-9e4e-60cf9d752152}*SharedItemsImports = 9
+		IntegrationTestsApp.WinRT\IntegrationTestsApp.WinRT.Shared\IntegrationTestsApp.WinRT.Shared.vcxitems*{ceb9f9fd-5e2a-49fb-ac14-2def01dc80b8}*SharedItemsImports = 4
 		3FD.WinRT\3FD.WinRT.Shared\3FD.WinRT.Shared.vcxitems*{d4d1d2d5-7594-49bb-9427-ff7d770f5ae8}*SharedItemsImports = 4
+		gtest.WinRT\gtest.WinRT.Shared\gtest.WinRT.Shared.vcxitems*{db9a7788-5840-496c-af13-6100450d9c32}*SharedItemsImports = 9
+		3FD.WinRT\3FD.WinRT.Shared\3FD.WinRT.Shared.vcxitems*{ed6b839d-3ee6-46de-80dc-de2090a059c3}*SharedItemsImports = 4
+		gtest.WinRT\gtest.WinRT.Shared\gtest.WinRT.Shared.vcxitems*{fc5f4bf1-6c86-45dc-93da-78e380e20cd8}*SharedItemsImports = 4
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|ARM = Debug|ARM
@@ -275,6 +277,20 @@ Global
 		{CEB9F9FD-5E2A-49FB-AC14-2DEF01DC80B8}.Release|Win32.Build.0 = Release|Win32
 		{CEB9F9FD-5E2A-49FB-AC14-2DEF01DC80B8}.Release|Win32.Deploy.0 = Release|Win32
 		{CEB9F9FD-5E2A-49FB-AC14-2DEF01DC80B8}.Release|x64.ActiveCfg = Release|Win32
+		{6ADF3A4B-1E22-41BA-9293-96593E6A45BE}.Debug|ARM.ActiveCfg = Debug|Win32
+		{6ADF3A4B-1E22-41BA-9293-96593E6A45BE}.Debug|Mixed Platforms.ActiveCfg = Debug|Win32
+		{6ADF3A4B-1E22-41BA-9293-96593E6A45BE}.Debug|Mixed Platforms.Build.0 = Debug|Win32
+		{6ADF3A4B-1E22-41BA-9293-96593E6A45BE}.Debug|Win32.ActiveCfg = Debug|Win32
+		{6ADF3A4B-1E22-41BA-9293-96593E6A45BE}.Debug|Win32.Build.0 = Debug|Win32
+		{6ADF3A4B-1E22-41BA-9293-96593E6A45BE}.Debug|x64.ActiveCfg = Debug|x64
+		{6ADF3A4B-1E22-41BA-9293-96593E6A45BE}.Debug|x64.Build.0 = Debug|x64
+		{6ADF3A4B-1E22-41BA-9293-96593E6A45BE}.Release|ARM.ActiveCfg = Release|Win32
+		{6ADF3A4B-1E22-41BA-9293-96593E6A45BE}.Release|Mixed Platforms.ActiveCfg = Release|Win32
+		{6ADF3A4B-1E22-41BA-9293-96593E6A45BE}.Release|Mixed Platforms.Build.0 = Release|Win32
+		{6ADF3A4B-1E22-41BA-9293-96593E6A45BE}.Release|Win32.ActiveCfg = Release|Win32
+		{6ADF3A4B-1E22-41BA-9293-96593E6A45BE}.Release|Win32.Build.0 = Release|Win32
+		{6ADF3A4B-1E22-41BA-9293-96593E6A45BE}.Release|x64.ActiveCfg = Release|x64
+		{6ADF3A4B-1E22-41BA-9293-96593E6A45BE}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -298,6 +314,7 @@ Global
 		{35A12F43-25FF-406A-8CCF-B203F688A791} = {8E00B911-43B2-49D5-9B4A-AB6E1ED097A1}
 		{09ED5B36-D345-4D62-9F01-DC41168BCB35} = {35A12F43-25FF-406A-8CCF-B203F688A791}
 		{CEB9F9FD-5E2A-49FB-AC14-2DEF01DC80B8} = {35A12F43-25FF-406A-8CCF-B203F688A791}
+		{6ADF3A4B-1E22-41BA-9293-96593E6A45BE} = {8E00B911-43B2-49D5-9B4A-AB6E1ED097A1}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		VisualSVNWorkingCopyRoot = .

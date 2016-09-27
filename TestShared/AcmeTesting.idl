@@ -1,0 +1,18 @@
+[
+    uuid(ba209999-0c6c-11d2-97cf-00c04f8eea45),
+    version(1.0)
+]
+interface AcmeTesting
+{
+    void Operate([in] double left, [in] double right, [out] double *result);
+
+    typedef struct
+    {
+        unsigned short size;
+        [string, size_is(size)] char *data;
+    } cstring;
+
+    void ChangeCase([in] cstring *input, [out] cstring *output);
+
+    void Shutdown(void);
+}

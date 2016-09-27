@@ -491,6 +491,10 @@ namespace _3fd
 					new Device(m_devices[index], m_context, properties)
 				);
 			}
+            catch (core::IAppException &)
+            {
+                throw; // just forward the exceptions referring to error know to have been previously handled
+            }
 			catch (std::exception &ex)
 			{
 				std::ostringstream oss;

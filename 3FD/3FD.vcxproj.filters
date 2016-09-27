@@ -64,6 +64,12 @@
     <Filter Include="MORE\pch">
       <UniqueIdentifier>{9dd1a655-8f07-4b3d-807f-d5f7640be150}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\RPC">
+      <UniqueIdentifier>{46c1cbcb-27e2-4a26-8271-7f727fbf35c8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\RPC">
+      <UniqueIdentifier>{e13956f3-68a6-4fc3-a593-3e87142105bc}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt">
@@ -175,6 +181,15 @@
     </ClInclude>
     <ClInclude Include="utils_lockfreequeue.h">
       <Filter>Header Files\utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="rpc_impl_server.h">
+      <Filter>Header Files\RPC</Filter>
+    </ClInclude>
+    <ClInclude Include="rpc_impl_util.h">
+      <Filter>Header Files\RPC</Filter>
+    </ClInclude>
+    <ClInclude Include="rpc_helpers.h">
+      <Filter>Header Files\RPC</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -321,6 +336,15 @@
     </ClCompile>
     <ClCompile Include="web_wws_utils_xml.cpp">
       <Filter>Source Files\WWS</Filter>
+    </ClCompile>
+    <ClCompile Include="rpc_impl_client.cpp">
+      <Filter>Source Files\RPC</Filter>
+    </ClCompile>
+    <ClCompile Include="rpc_impl_server.cpp">
+      <Filter>Source Files\RPC</Filter>
+    </ClCompile>
+    <ClCompile Include="rpc_impl_util.cpp">
+      <Filter>Source Files\RPC</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
