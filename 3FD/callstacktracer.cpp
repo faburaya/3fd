@@ -54,7 +54,7 @@ namespace _3fd
 #       else
             const char filePathSeparator('/');
 #       endif
-            auto fileNameSubstr = strrchr(fullFileName, filePathSeparator);
+            const char *fileNameSubstr = strrchr(fullFileName, filePathSeparator);
 
             if (fileNameSubstr != nullptr)
                 ++fileNameSubstr;
