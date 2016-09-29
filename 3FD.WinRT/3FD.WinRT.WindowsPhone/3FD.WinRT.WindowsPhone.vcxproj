@@ -113,6 +113,7 @@
       <CompileAsManaged>
       </CompileAsManaged>
       <AdditionalIncludeDirectories>$(SolutionDir)3FD;$(SolutionDir)btree;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <DisableSpecificWarnings>4703</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -147,6 +148,7 @@
       <CompileAsManaged>
       </CompileAsManaged>
       <AdditionalIncludeDirectories>$(SolutionDir)3FD;$(SolutionDir)btree;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <DisableSpecificWarnings>4703</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

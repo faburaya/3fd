@@ -182,7 +182,7 @@ namespace _3fd
 
 			/// <summary>
 			/// Gets the exception content, including the details and stack trace (when present)
-			/// if in debug mode, serialized to text in a single line.
+			/// if in debug mode, serialized to a text format compatible with POCO logger.
 			/// </summary>
 			virtual string ToString() const override
 			{
