@@ -31,9 +31,8 @@ namespace _3fd
 						int purgeAge;
 						int purgeCount;
 						bool writeToConsole;
-#elif defined _3FD_PLATFORM_WINRT
-						int sizeLimit;
 #endif
+						int sizeLimit;
 					} log;
 				} common;
 

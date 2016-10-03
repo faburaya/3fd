@@ -88,7 +88,7 @@ namespace _3fd
 
 			CalcSvcProxyUnsecure(const SvcProxyConfig &config) :
 				WebServiceProxy(
-					"http://tars:81/calculator",
+					"http://BR00200256:81/calculator",
 					config,
 					&CreateWSProxy<WS_HTTP_BINDING_TEMPLATE, CalcBindingUnsecure_CreateServiceProxy>
 				)
@@ -324,7 +324,7 @@ namespace _3fd
 			// Ctor for proxy without client certificate
 			CalcSvcProxySSL(const SvcProxyConfig &config) :
 				WebServiceProxy(
-					"https://localhost:8989/calculator",
+					"https://BR00200256:8989/calculator",
 					config,
 					&CreateWSProxy<WS_HTTP_SSL_BINDING_TEMPLATE, CalcBindingSSL_CreateServiceProxy>
 				)
@@ -333,7 +333,7 @@ namespace _3fd
 			// Ctor for proxy using a client certificate
 			CalcSvcProxySSL(const SvcProxyConfig &config, const SvcProxyCertInfo &certInfo) :
 				WebServiceProxy(
-					"https://localhost:8989/calculator",
+					"https://BR00200256:8989/calculator",
 					config,
 					certInfo,
 					CalcBindingSSL_CreateServiceProxy
@@ -415,7 +415,7 @@ namespace _3fd
 		};
 
 		// Thumbprint of client side certificate for transport security
-		const char *clientCertificateThumbprint = "fa6040bc28b9b50ec77c2f40b94125c2f775087f";
+		const char *clientCertificateThumbprint = "38d74846663e060dc480c66a2cc0641235fa22ed";
 
 		/// <summary>
 		/// Tests synchronous web service access
@@ -509,7 +509,7 @@ namespace _3fd
 					"CalcBindingSSL",
 					&funcTableSvcSSL,
 					CalcBindingSSL_CreateServiceEndpoint
-					);
+				);
 
 				// Create the service host:
 				WebServiceHost host(2048);

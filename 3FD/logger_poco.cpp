@@ -90,17 +90,21 @@ namespace _3fd
 				if (logToConsole == false)
 				{
 					channel = new Poco::FileChannel(id + ".log");
-					channel->setProperty("archive", "timestamp");
-					channel->setProperty("rotation", "never");
-					channel->setProperty("times", "local");
+					
+                    std::ostringstream oss;
+                    oss << AppConfig::GetSettings().common.log.sizeLimit << "K";
+					channel->setProperty(Poco::FileChannel::PROP_ROTATION, oss.str());
+                    channel->setProperty(Poco::FileChannel::PROP_ARCHIVE, "timestamp");
+					channel->setProperty(Poco::FileChannel::PROP_TIMES, "local");
+                    channel->setProperty(Poco::FileChannel::PROP_COMPRESS, "true");
 
-					std::ostringstream oss;
-					oss << AppConfig::GetSettings().common.log.purgeAge << " days";
-					channel->setProperty("purgeAge", oss.str());
+                    oss.str("");
+					oss << AppConfig::GetSettings().common.log.purgeAge << "days";
+					channel->setProperty(Poco::FileChannel::PROP_PURGEAGE, oss.str());
 
 					oss.str("");
 					oss << AppConfig::GetSettings().common.log.purgeCount;
-					channel->setProperty("purgeCount", oss.str());
+					channel->setProperty(Poco::FileChannel::PROP_PURGECOUNT, oss.str());
 
 					/* Create an asynchronous channel, so the log will be recorded in a parallel thread,
 					preventing the other threads from waiting for disk flushes. */
@@ -111,8 +115,8 @@ namespace _3fd
 
 				// Create a message formatter for the exceptions' informations:
 				AutoPtr<Poco::PatternFormatter> formatter(new Poco::PatternFormatter());
-				formatter->setProperty("times", "local");
-				formatter->setProperty("pattern", "%Y-%b-%d %H:%M:%S [process %P] - %t");
+				formatter->setProperty(Poco::PatternFormatter::PROP_TIMES, "local");
+				formatter->setProperty(Poco::PatternFormatter::PROP_PATTERN, "%Y-%b-%d %H:%M:%S [process %P] - %t");
 
 				// Perform formatting before passing the messages to the asynchronous channel
 				AutoPtr<Poco::FormattingChannel> formattingChannel(new Poco::FormattingChannel(formatter, channel));
@@ -179,7 +183,7 @@ namespace _3fd
 #	endif
 #	ifdef ENABLE_3FD_CST
 			if (cst && CallStackTracer::IsReady())
-				oss << " - Call Stack: { " << CallStackTracer::GetInstance().GetStackReport() << " }";
+                oss << "\r\n\r\n### CALL STACK TRACE ###\r\n" << CallStackTracer::GetInstance().GetStackReport();
 #	endif
 		}
 

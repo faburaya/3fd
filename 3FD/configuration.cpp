@@ -199,6 +199,7 @@ namespace _3fd
 
 				settings.common.log.purgeAge = config->getInt("common.log.purgeAge", 30);
 				settings.common.log.purgeCount = config->getInt("common.log.purgeCount", 16);
+                settings.common.log.sizeLimit = config->getInt("common.log.sizeLimit", 1024);
 				settings.common.log.writeToConsole = config->getBool("common.log.writeToConsole", false);
 
 				settings.framework.dependencies.opencl = config->getBool("framework.dependencies.opencl", false);
