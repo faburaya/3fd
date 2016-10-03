@@ -141,10 +141,10 @@
   <!-- The service endpoints: -->
   <wsdl:service name="CalculatorService">
     <wsdl:port name="CalculatorEndpointSSL" binding="tns:CalcBindingSSL">
-      <soap:address location="https://BR00200256:8989/calculator"/>
+      <soap:address location="https://localhost:8989/calculator"/>
     </wsdl:port>
     <wsdl:port name="CalculatorEndpointUnsecure" binding="tns:CalcBindingUnsecure">
-      <soap:address location="http://BR00200256:81/calculator"/>
+      <soap:address location="http://tars:81/calculator"/>
     </wsdl:port>
   </wsdl:service>
 

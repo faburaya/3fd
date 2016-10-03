@@ -126,9 +126,9 @@ namespace _3fd
                 AcmeSvcProxy client1(
                     GetParam().protocolSequence,
                     GetParam().objectUUID1,
-                    "BR00200256",//"MyVirtualServer.MyDomain.local",
+                    "TARS",//"MyVirtualServer.MyDomain.local",
                     GetParam().authenticationLevel,
-                    "efelabu@ericsson.se",
+                    "Felipe@MyDomain.local",
                     GetParam().authenticationSecurity,
                     GetParam().impersonationLevel
                 );
@@ -139,9 +139,9 @@ namespace _3fd
                 AcmeSvcProxy client2(
                     GetParam().protocolSequence,
                     GetParam().objectUUID2,
-                    "BR00200256",//"MyVirtualServer.MyDomain.local",
+                    "TARS",//"MyVirtualServer.MyDomain.local",
                     GetParam().authenticationLevel,
-                    "efelabu@ericsson.se",
+                    "Felipe@MyDomain.local",
                     GetParam().authenticationSecurity,
                     GetParam().impersonationLevel
                 );
@@ -192,7 +192,7 @@ namespace _3fd
                     objectsUuidsImpl1[9],
                     objectsUuidsImpl2[9],
                     AuthenticationLevel::Integrity,
-                    AuthenticationSecurity::RequireMutualAuthn,
+                    AuthenticationSecurity::TryKerberos,
                     ImpersonationLevel::Impersonate
                 },
                 TestOptions{
@@ -200,7 +200,7 @@ namespace _3fd
                     objectsUuidsImpl1[10],
                     objectsUuidsImpl2[10],
                     AuthenticationLevel::Privacy,
-                    AuthenticationSecurity::RequireMutualAuthn,
+                    AuthenticationSecurity::TryKerberos,
                     ImpersonationLevel::Impersonate
                 }/*,
                 TestOptions{
