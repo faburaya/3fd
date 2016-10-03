@@ -355,6 +355,7 @@
     <ClCompile Include="utils_event.cpp" />
     <ClCompile Include="gc_arrayofedges.cpp" />
     <ClCompile Include="utils_memorypool.cpp" />
+    <ClCompile Include="utils_sharedmutex.cpp" />
     <ClCompile Include="web_wws_utils.cpp" />
     <ClCompile Include="web_wws_utils_wserror.cpp" />
     <ClCompile Include="web_wws_utils_xml.cpp" />

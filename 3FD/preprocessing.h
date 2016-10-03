@@ -12,13 +12,22 @@
 #ifdef _MSC_VER
 // Microsoft Visual Studio:
 #   define INTFOPT              __declspec(novtable) // CHANGE THIS DEFINITION ACCORDING TO YOUR COMPILER (or leave it blank)
-#   define thread_local_decl    __declspec(thread)
-#   define thread_local_def
+
+#   if _MSC_VER < 19000
+#       define NOEXCEPT             throw()
+#       define thread_local_decl    __declspec(thread)
+#       define thread_local_def
+#   else
+#       define NOEXCEPT             noexcept
+#       define thread_local_decl    thread_local
+#       define thread_local_def     thread_local
+#   endif
 #else
 // Other Compilers:
 #   define INTFOPT
 #   define _ASSERTE             assert
 #   include <cassert>
+#   define NOEXCEPT             noexcept
 #   define thread_local_decl    thread_local
 #   define thread_local_def     thread_local
 #endif

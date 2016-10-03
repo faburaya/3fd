@@ -346,6 +346,9 @@
     <ClCompile Include="rpc_impl_util.cpp">
       <Filter>Source Files\RPC</Filter>
     </ClCompile>
+    <ClCompile Include="utils_sharedmutex.cpp">
+      <Filter>Source Files\utilities</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Xml Include="config3fd-template.xml">

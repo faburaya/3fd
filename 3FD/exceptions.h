@@ -186,6 +186,11 @@ namespace _3fd
 			/// </summary>
 			virtual string ToString() const override
 			{
+#       ifdef _3FD_PLATFORM_WINRT
+                const char *newLine = "\n";
+#       else
+                const char *newLine = "\r\n";
+#       endif
 				std::ostringstream oss;
 				oss << StdExType::what();
 
@@ -195,7 +200,7 @@ namespace _3fd
 #			endif
 #			ifdef ENABLE_3FD_CST
 				if(m_cst.empty() == false)
-                    oss << "\r\n\r\n### CALL STACK TRACE ###\r\n" << m_cst;
+                    oss << newLine << newLine << "### CALL STACK TRACE ###" << newLine << m_cst;
 #			endif	
 
 				return oss.str();

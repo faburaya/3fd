@@ -217,27 +217,25 @@ namespace _3fd
 					terminate = m_terminationEvent.WaitFor(250);
 
 					// Write the queued messages in the text log file:
-					Event *ev;
-					while (m_eventsQueue.pop(ev))
+
+                    m_eventsQueue.ForEach([&estimateRoomForLogEvents, &ofs](const LogEvent &ev)
 					{
-						PrepareEventString(ofs, ev->time, ev->prio) << ev->what; // add the main details and message
+						PrepareEventString(ofs, ev.time, ev.prio) << ev.what; // add the main details and message
 #ifdef ENABLE_3FD_ERR_IMPL_DETAILS
-						if (ev->details.empty() == false) // add the details
-							ofs << " - " << ev->details;
+						if (ev.details.empty() == false) // add the details
+							ofs << " - " << ev.details;
 #endif
 #ifdef ENABLE_3FD_CST
-						if (ev->cst.empty() == false) // add the call stack trace
-							ofs << " - Call Stack: { " << ev->cst << " }";
+						if (ev.cst.empty() == false) // add the call stack trace
+							ofs << "\n\n### CALL STACK ###\n" << ev.cst;
 #endif
-						delete ev;
-
 						ofs << std::endl << std::flush; // flush the content to the file
 
 						if (ofs.bad())
 							throw AppException<std::runtime_error>("Failed to write in the text log output file stream");
 
 						--estimateRoomForLogEvents;
-					}
+					});
 
 					// If the log file was supposed to reach its size limit now:
 					if (estimateRoomForLogEvents <= 0)
@@ -270,7 +268,7 @@ namespace _3fd
 		Logger::Logger(const string &id, bool logToConsole) : 
 			m_logWriterThread(), 
 			m_terminationEvent(), 
-			m_eventsQueue(32), 
+			m_eventsQueue(), 
 			m_txtLogFile(nullptr) 
 		{
 			try
@@ -307,11 +305,7 @@ namespace _3fd
 				if (m_logWriterThread.joinable())
 					m_logWriterThread.join();
 
-				_ASSERTE(m_eventsQueue.empty());
-
-				Event *ev;
-				while (m_eventsQueue.unsynchronized_pop(ev))
-					delete ev;
+                _ASSERTE(!m_eventsQueue.ForEach([](const LogEvent &) {}));
 			}
 			catch (...)
 			{
@@ -336,7 +330,7 @@ namespace _3fd
 				using namespace std::chrono;
 				auto now = system_clock::to_time_t(system_clock::now());
 
-				std::unique_ptr<Event> logEvent(new Event(now, prio, std::move(what)));
+				std::unique_ptr<LogEvent> logEvent(new LogEvent(now, prio, std::move(what)));
 
 #	ifdef ENABLE_3FD_ERR_IMPL_DETAILS
 				if (details.empty() == false)
@@ -346,7 +340,7 @@ namespace _3fd
 				if (cst && CallStackTracer::GetInstance().IsReady())
 					logEvent->cst = CallStackTracer::GetInstance().GetStackReport();
 #	endif
-				m_eventsQueue.push(logEvent.release()); // enqueue the request to write this event to the log file
+				m_eventsQueue.Push(logEvent.release()); // enqueue the request to write this event to the log file
 			}
 			catch (std::exception &)
 			{

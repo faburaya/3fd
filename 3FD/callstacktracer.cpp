@@ -70,6 +70,11 @@ namespace _3fd
 		/// <returns>A string which shows the current stack trace.</returns>
 		string CallStack::GetReport()
 		{
+#       ifdef _3FD_PLATFORM_WINRT
+            const char *newLine = "\n";
+#       else
+            const char *newLine = "\r\n";
+#       endif
 			std::ostringstream oss;
 
 			for(int index = 0 ; index < m_stackFrames.size() ; ++index)
@@ -78,7 +83,7 @@ namespace _3fd
 
 				oss << "$ " << GetFileName(frame.file)
                     << " (" << frame.line << ") @ " << frame.function
-                    << "\r\n";
+                    << newLine;
 			}
 
 			return oss.str();

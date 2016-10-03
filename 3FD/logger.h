@@ -11,9 +11,7 @@
 #	include <Poco/Message.h>
 #elif defined _3FD_PLATFORM_WINRT
 #	include "utils.h"
-#	include <boost/lockfree/queue.hpp>
 #	include <thread>
-#	include <memory>
 #endif
 
 namespace _3fd
@@ -54,7 +52,7 @@ namespace _3fd
 			/// <summary>
 			/// Represents a queued log event.
 			/// </summary>
-			struct Event
+			struct LogEvent
 			{
 				time_t time;
 				Priority prio;
@@ -66,7 +64,7 @@ namespace _3fd
 #	ifdef ENABLE_3FD_CST
 				string cst;
 #	endif
-				Event(time_t p_time, Priority p_prio, string &&p_what)
+                LogEvent(time_t p_time, Priority p_prio, string &&p_what)
 					: time(p_time), prio(p_prio), what(std::move(p_what)) {}
 			};
 
@@ -74,7 +72,7 @@ namespace _3fd
 
 			utils::Event m_terminationEvent;
 
-			boost::lockfree::queue<Event *> m_eventsQueue;
+			utils::Win32ApiWrappers::LockFreeQueue<LogEvent> m_eventsQueue;
 
 			Windows::Storage::StorageFile ^m_txtLogFile;
 

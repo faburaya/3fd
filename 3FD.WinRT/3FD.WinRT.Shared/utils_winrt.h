@@ -3,38 +3,20 @@
 
 #include "base.h"
 #include "exceptions.h"
+#include "Interlockedapi.h"
 
 #include <functional>
 #include <future>
 #include <string>
+#include <memory>
 
 namespace _3fd
 {
 	namespace utils
 	{
-		/// <summary>
-		/// Alternative implementation for std::shared_mutex from C++14 Std library.
-		/// </summary>
-		class shared_mutex : notcopiable
-		{
-		private:
-
-			enum LockType : short { None, Shared, Exclusive };
-
-			SRWLOCK m_srwLockHandle;
-			LockType m_curLockType;
-
-		public:
-
-			shared_mutex();
-			~shared_mutex();
-
-			void lock_shared();
-			void unlock_shared();
-
-			void lock();
-			void unlock();
-		};
+        ////////////////////////////////////
+        // Windows Runtime API extensions
+        ////////////////////////////////////
 
 		using namespace Windows::Foundation;
 		using namespace Windows::Storage;
