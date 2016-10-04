@@ -221,14 +221,14 @@ namespace _3fd
                     m_eventsQueue.ForEach([&estimateRoomForLogEvents, &ofs](const LogEvent &ev)
 					{
 						PrepareEventString(ofs, ev.time, ev.prio) << ev.what; // add the main details and message
-#ifdef ENABLE_3FD_ERR_IMPL_DETAILS
+#   ifdef ENABLE_3FD_ERR_IMPL_DETAILS
 						if (ev.details.empty() == false) // add the details
 							ofs << " - " << ev.details;
-#endif
-#ifdef ENABLE_3FD_CST
-						if (ev.cst.empty() == false) // add the call stack trace
-							ofs << "\n\n### CALL STACK ###\n" << ev.cst;
-#endif
+#   endif
+#   ifdef ENABLE_3FD_CST
+						if (ev.trace.empty() == false) // add the call stack trace
+							ofs << "\n\n### CALL STACK ###\n" << ev.trace;
+#   endif
 						ofs << std::endl << std::flush; // flush the content to the file
 
 						if (ofs.bad())
@@ -330,17 +330,17 @@ namespace _3fd
 				using namespace std::chrono;
 				auto now = system_clock::to_time_t(system_clock::now());
 
-				std::unique_ptr<LogEvent> logEvent(new LogEvent(now, prio, std::move(what)));
+                LogEvent logEvent(now, prio, std::move(what));
 
 #	ifdef ENABLE_3FD_ERR_IMPL_DETAILS
 				if (details.empty() == false)
-					logEvent->details = std::move(details);
+					logEvent.details = std::move(details);
 #	endif
 #	ifdef ENABLE_3FD_CST
 				if (cst && CallStackTracer::GetInstance().IsReady())
-					logEvent->cst = CallStackTracer::GetInstance().GetStackReport();
+					logEvent.trace = CallStackTracer::GetInstance().GetStackReport();
 #	endif
-				m_eventsQueue.Push(logEvent.release()); // enqueue the request to write this event to the log file
+				m_eventsQueue.Push(std::move(logEvent)); // enqueue the request to write this event to the log file
 			}
 			catch (std::exception &)
 			{

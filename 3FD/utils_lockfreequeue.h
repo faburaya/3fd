@@ -1,9 +1,22 @@
 #ifndef UTILS_LOCKFREEQUEUE_H // header guard
 #define UTILS_LOCKFREEQUEUE_H
 
+#include "preprocessing.h"
+#include "base.h"
+
+#include <functional>
+#include <memory>
 #include <atomic>
 #include <mutex>
 #include <queue>
+
+#ifdef _WIN32
+#   ifdef _3FD_PLATFORM_WINRT
+#       include "Interlockedapi.h"
+#   else
+#       include "Windows.h"
+#   endif
+#endif
 
 namespace _3fd
 {
@@ -183,6 +196,106 @@ namespace _3fd
 			}
 		};
 
+#   ifdef _WIN32
+        namespace Win32ApiWrappers
+        {
+            /// <summary>
+            /// Implementation of lock-free queue that uses Win32 API.
+            /// This is an alternative to the lock-free queue from Boost,
+            /// which appears not to work in ARM architecture (Windows Phone hardware).
+            /// </summary>
+            template <typename ItemType> class LockFreeQueue : notcopiable
+            {
+            private:
+
+                struct QueueItem
+                {
+                    SLIST_ENTRY itemEntry;
+                    ItemType data;
+
+                    QueueItem(const ItemType &p_data)
+                        : data(p_data) {}
+
+                    QueueItem(ItemType &&p_data)
+                        : data(std::move(p_data)) {}
+                };
+
+                PSLIST_HEADER m_front;
+
+                // Iterates the singly-linked list backwards in order to get its elements in chronological order
+                static size_t IterateRecursiveForEach(QueueItem *front,
+                                                      const std::function<void(const ItemType &)> &callback)
+                {
+                    if (front == nullptr)
+                        return 0;
+
+                    auto nextFront = reinterpret_cast<QueueItem *> (front->itemEntry.Next);
+                    auto sizeRecursiveCalc = 1 + IterateRecursiveForEach(nextFront, callback);
+
+                    auto item = reinterpret_cast<QueueItem *> (front);
+                    callback(item->data);
+
+                    item->QueueItem::~QueueItem();
+                    _aligned_free(item);
+
+                    return sizeRecursiveCalc;
+                }
+
+            public:
+
+                LockFreeQueue()
+                {
+                    m_front = (PSLIST_HEADER)_aligned_malloc(sizeof(SLIST_HEADER), MEMORY_ALLOCATION_ALIGNMENT);
+
+                    if (m_front == nullptr)
+                        throw std::bad_alloc();
+
+                    InitializeSListHead(m_front);
+                }
+
+                ~LockFreeQueue()
+                {
+                    // Upon destruction remove all items:
+                    ForEach([](const ItemType &) {});
+                    _aligned_free(m_front);
+                }
+
+                void Push(const ItemType &item)
+                {
+                    auto ptr = _aligned_malloc(sizeof(QueueItem), MEMORY_ALLOCATION_ALIGNMENT);
+                    
+                    if (ptr == nullptr)
+                        throw std::bad_alloc();
+                        
+                    auto newQueueItem = new (ptr) QueueItem(item);
+                    InterlockedPushEntrySList(m_front, &(newQueueItem->itemEntry));
+                }
+
+                void Push(ItemType &&item)
+                {
+                    auto ptr = _aligned_malloc(sizeof(QueueItem), MEMORY_ALLOCATION_ALIGNMENT);
+
+                    if (ptr == nullptr)
+                        throw std::bad_alloc();
+
+                    auto newQueueItem = new (ptr) QueueItem(std::move(item));
+                    InterlockedPushEntrySList(m_front, &(newQueueItem->itemEntry));
+                }
+
+                /// <summary>
+                /// Flushes the queue, then iterates over all the elements.
+                /// </summary>
+                /// <param name="callback">The callback to execute for each item.</param>
+                /// <returns>How many items were flushed from the queue.</returns>
+                size_t ForEach(const std::function<void(const ItemType &)> &callback)
+                {
+                    auto front = InterlockedFlushSList(m_front);
+                    return IterateRecursiveForEach(reinterpret_cast<QueueItem *> (front), callback);
+                }
+            };
+
+        }// end of namespace Win32ApiWrappers
+#   endif
     }// end of namespace utils
 }// end of namespace _3fd
 

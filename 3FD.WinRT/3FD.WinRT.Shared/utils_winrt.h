@@ -3,7 +3,6 @@
 
 #include "base.h"
 #include "exceptions.h"
-#include "Interlockedapi.h"
 
 #include <functional>
 #include <future>

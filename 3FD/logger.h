@@ -62,10 +62,22 @@ namespace _3fd
 				string details;
 #	endif
 #	ifdef ENABLE_3FD_CST
-				string cst;
+				string trace;
 #	endif
                 LogEvent(time_t p_time, Priority p_prio, string &&p_what)
 					: time(p_time), prio(p_prio), what(std::move(p_what)) {}
+
+                LogEvent(LogEvent &&ob) :
+                    time(ob.time),
+                    prio(ob.prio),
+                    what(std::move(ob.what))
+#	ifdef ENABLE_3FD_ERR_IMPL_DETAILS
+                    , details(std::move(ob.details))
+#	endif
+#	ifdef ENABLE_3FD_CST
+                    , trace(std::move(ob.trace))
+#	endif
+                {}
 			};
 
 			std::thread m_logWriterThread;

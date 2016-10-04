@@ -16,7 +16,7 @@
 #include <cinttypes>
 
 #ifdef _3FD_PLATFORM_WINRT
-#   include "utils_winrt.h"
+#   include "utils_lockfreequeue.h"
 #endif
 
 #ifdef _MSC_VER
@@ -171,84 +171,6 @@ namespace _3fd
             void unlock();
         };
 
-        namespace Win32ApiWrappers
-        {
-            /// <summary>
-            /// Implementation of lock-free queue that uses Win32 API.
-            /// This is an alternative to the lock-free queue from Boost,
-            /// which appears not to work in ARM architecture (Windows Phone hardware).
-            /// </summary>
-            template <typename ItemType> class LockFreeQueue : notcopiable
-            {
-            private:
-
-                struct QueueItem
-                {
-                    SLIST_ENTRY itemEntry;
-                    std::unique_ptr<ItemType> data;
-                };
-
-                PSLIST_HEADER m_front;
-
-                // Iterates the singly-linked list backwards in order to get its elements in chronological order
-                static void IterateRecursiveForEach(QueueItem *front, const std::function<void(const ItemType &)> &callback)
-                {
-                    auto nextFront = reinterpret_cast<QueueItem *> (front->itemEntry.Next);
-                    
-                    // Is there an element beyond the current front?
-                    if (nextFront != nullptr)
-                        IterateRecursiveForEach(nextFront, callback);
-
-                    auto item = reinterpret_cast<QueueItem *> (front);
-                    callback(*item->data.get());
-                    item->data.get()->ItemType::~ItemType();
-                    _aligned_free(item);
-                }
-
-            public:
-
-                LockFreeQueue()
-                {
-                    m_front = (PSLIST_HEADER)_aligned_malloc(sizeof(SLIST_HEADER), MEMORY_ALLOCATION_ALIGNMENT);
-
-                    if (m_front == nullptr)
-                        throw std::bad_alloc();
-
-                    InitializeSListHead(m_front);
-                }
-
-                ~LockFreeQueue()
-                {
-                    // Upon destruction remove all items:
-                    ForEach([](const ItemType &) {});
-                    _aligned_free(m_front);
-                }
-                
-                void Push(ItemType *item) NOEXCEPT
-                {
-                    auto newQueueItem = new (_aligned_malloc(sizeof(QueueItem), MEMORY_ALLOCATION_ALIGNMENT)) QueueItem;
-                    newQueueItem->data.reset(item);
-                    InterlockedPushEntrySList(m_front, &(newQueueItem->itemEntry));
-                }
-
-                /// <summary>
-                /// Flushes the queue, then iterates over all the elements.
-                /// </summary>
-                /// <param name="callback">The callback to execute for each item.</param>
-                /// <returns><c>true<c/> if then queue was not empty, otherwise, <c>false<c/>.</returns>
-                bool ForEach(const std::function<void(const ItemType &)> &callback) NOEXCEPT
-                {
-                    auto front = InterlockedFlushSList(m_front);
-
-                    if (front != nullptr)
-                    {
-                        IterateRecursiveForEach(reinterpret_cast<QueueItem *> (front), callback);
-                        return true;
-                    }
-                }
-            };
-
-        }// end of namespace Win32ApiWrappers
 	}// end of namespace utils
 }// end of namespace _3fd
 
