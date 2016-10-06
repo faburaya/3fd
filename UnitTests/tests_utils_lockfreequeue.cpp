@@ -97,6 +97,7 @@ namespace _3fd
 				producerThread.join();
 		}
 
+#   ifdef _WIN32
         /// <summary>
         /// Generic tests for <see cref="utils::Win32ApiWrappers::LockFreeQueue{}"/> class.
         /// </summary>
@@ -143,6 +144,6 @@ namespace _3fd
             if (producerThread.joinable())
                 producerThread.join();
         }
-
+#   endif
 	}// end of namespace unit_tests
 }// end of namespace _3fd
