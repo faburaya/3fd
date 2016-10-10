@@ -61,11 +61,21 @@
 
 // These instructions have they definition depending on whether this is a release compilation:
 #ifdef NDEBUG
-#	define dbgexhnd				throw()
+#   if defined _MSC_VER && _MSC_VER < 19000
+#       define NOEXCEPT     throw()
+#   else
+#       define NOEXCEPT     noexcept
+#   endif
+
 #	define ONDEBUG(CODE_LINE)	;
 #else
 #   ifdef _3FD_PLATFORM_WIN32API
 #       include <vld.h> // Visual Leak Detector
+
+#   elif defined _3FD_PLATFORM_WINRT
+#       define _CRTDBG_MAP_ALLOC
+#       include <stdlib.h>
+#       include <crtdbg.h>
 #   endif
 
 #	define dbgexhnd
@@ -78,7 +88,7 @@
 // These are the calls that should be used for handling errors: it uses the RuntimeManager class:
 #ifdef ENABLE_3FD_CST
 #   // Obligatory use if you want call stack tracing feature:
-#	define CALL_STACK_TRACE		_3fd::core::CallStackTracer::GetInstance().TrackCall(__FILE__, __LINE__, __FUNCTION__); _3fd::core::StackDeactivationTrigger _stackDeactTrigObj;
+#	define CALL_STACK_TRACE _3fd::core::CallStackTracer::GetInstance().TrackCall(__FILE__, __LINE__, __FUNCTION__); _3fd::core::StackDeactivationTrigger _stackDeactTrigObj;
 #else
 #	define CALL_STACK_TRACE
 #endif

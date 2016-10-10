@@ -37,6 +37,7 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\stdafx.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\targetver.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\utils.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\utils_lockfreequeue.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)utils_winrt.h" />
   </ItemGroup>
   <ItemGroup>

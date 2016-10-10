@@ -5,6 +5,8 @@
 
 #include "pch.h"
 #include "MainPage.xaml.h"
+#include <gtest/gtest.h>
+#include <cstdio>
 
 using namespace IntegrationTestsApp_WinRT;
 
@@ -33,6 +35,44 @@ App::App()
 {
 	InitializeComponent();
 	Suspending += ref new SuspendingEventHandler(this, &App::OnSuspending);
+
+    using namespace Windows::Storage;
+
+    // Replace stdout:
+    concurrency::create_task(
+        ApplicationData::Current->LocalFolder
+            ->CreateFileAsync(L"test-report.txt", CreationCollisionOption::OpenIfExists)
+    )
+    .then([this](concurrency::task<StorageFile ^> asyncOpCreateStdOut)
+    {
+        auto stdOutFile = asyncOpCreateStdOut.get();
+        _wfreopen(stdOutFile->Path->Data(), L"w", stdout);
+    });
+
+    // Replace stderr:
+    concurrency::create_task(
+        ApplicationData::Current->LocalFolder
+            ->CreateFileAsync(L"gtest-errors.txt", CreationCollisionOption::OpenIfExists)
+    )
+    .then([this](concurrency::task<StorageFile ^> asyncOpCreateStdErr)
+    {
+        auto stdErrFile = asyncOpCreateStdErr.get();
+        _wfreopen(stdErrFile->Path->Data(), L"w", stderr);
+    });
+
+    int argc(1);
+    wchar_t *argv[] =
+    {
+        const_cast<wchar_t *> (L"IntegrationTestsApp.WinRT"),
+        nullptr
+    };
+
+    testing::InitGoogleTest(&argc, argv);
+}
+
+App::~App()
+{
+    fclose(stderr);
 }
 
 /// <summary>

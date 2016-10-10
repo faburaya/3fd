@@ -8,6 +8,7 @@
 #include <memory>
 #include <atomic>
 #include <mutex>
+#include <vector>
 #include <queue>
 
 #ifdef _WIN32
@@ -222,6 +223,14 @@ namespace _3fd
 
                 PSLIST_HEADER m_front;
 
+                /// <summary>
+                /// The count of items in the queue.
+                /// This is not very reliable, because it does not get updated atomically
+                /// along with the queue insertion, but it serves to provide a value very close
+                /// to the real one, but understimating it.
+                /// </summary>
+                std::atomic<size_t> m_itemsCount;
+
                 // Iterates the singly-linked list backwards in order to get its elements in chronological order
                 static size_t IterateRecursiveForEach(QueueItem *front,
                                                       const std::function<void(const ItemType &)> &callback)
@@ -243,7 +252,11 @@ namespace _3fd
 
             public:
 
+                /// <summary>
+                /// Initializes a new instance of the <see cref="LockFreeQueue"/> class.
+                /// </summary>
                 LockFreeQueue()
+                    : m_itemsCount(0)
                 {
                     m_front = (PSLIST_HEADER)_aligned_malloc(sizeof(SLIST_HEADER), MEMORY_ALLOCATION_ALIGNMENT);
 
@@ -253,6 +266,9 @@ namespace _3fd
                     InitializeSListHead(m_front);
                 }
 
+                /// <summary>
+                /// Finalizes an instance of the <see cref="LockFreeQueue"/> class.
+                /// </summary>
                 ~LockFreeQueue()
                 {
                     // Upon destruction remove all items:
@@ -260,6 +276,10 @@ namespace _3fd
                     _aligned_free(m_front);
                 }
 
+                /// <summary>
+                /// Adds the specified item to the front of the queue.
+                /// </summary>
+                /// <param name="item">The item to add (using copy semantics).</param>
                 void Push(const ItemType &item)
                 {
                     auto ptr = _aligned_malloc(sizeof(QueueItem), MEMORY_ALLOCATION_ALIGNMENT);
@@ -269,8 +289,13 @@ namespace _3fd
                         
                     auto newQueueItem = new (ptr) QueueItem(item);
                     InterlockedPushEntrySList(m_front, &(newQueueItem->itemEntry));
+                    m_itemsCount.fetch_add(1ULL, std::memory_order_acq_rel);
                 }
 
+                /// <summary>
+                /// Adds the specified item to the front of the queue.
+                /// </summary>
+                /// <param name="item">The item to add (using move semantics).</param>
                 void Push(ItemType &&item)
                 {
                     auto ptr = _aligned_malloc(sizeof(QueueItem), MEMORY_ALLOCATION_ALIGNMENT);
@@ -280,6 +305,7 @@ namespace _3fd
 
                     auto newQueueItem = new (ptr) QueueItem(std::move(item));
                     InterlockedPushEntrySList(m_front, &(newQueueItem->itemEntry));
+                    m_itemsCount.fetch_add(1ULL, std::memory_order_acq_rel);
                 }
 
                 /// <summary>
@@ -290,7 +316,38 @@ namespace _3fd
                 size_t ForEach(const std::function<void(const ItemType &)> &callback)
                 {
                     auto front = InterlockedFlushSList(m_front);
-                    return IterateRecursiveForEach(reinterpret_cast<QueueItem *> (front), callback);
+                    size_t size = m_itemsCount.exchange(0ULL, std::memory_order_acq_rel);
+
+                    const size_t sizeThreshold(128);
+
+                    /* Use recursive iteration if the queue is short enough
+                    to guarantee that a stack overflow is not going to happen: */
+                    if(size < sizeThreshold)
+                        return IterateRecursiveForEach(reinterpret_cast<QueueItem *> (front), callback);
+
+                    /* Use a vector as a stack, in order to take advantage
+                    of speed boost of accessing contiguous memory. */
+                    std::vector<QueueItem *> stack;
+                    stack.reserve(2 * sizeThreshold);
+
+                    // Revert the queue by reading it backwards into a stack:
+                    do
+                    {
+                        auto item = reinterpret_cast<QueueItem *> (front);
+                        stack.push_back(item);
+                        front = item->itemEntry.Next;
+                    }
+                    while (front != nullptr);
+                    
+                    // Now process the items in the correct order:
+                    std::for_each(stack.rbegin(), stack.rend(), [&callback](QueueItem *item)
+                    {
+                        callback(item->data);
+                        item->QueueItem::~QueueItem();
+                        _aligned_free(item);
+                    });
+
+                    return stack.size();
                 }
             };
 

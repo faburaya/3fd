@@ -73,6 +73,9 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\sqlite3.h">
       <Filter>SQLite\sqlite3</Filter>
     </ClInclude>
+    <ClInclude Include="$(MSBuildThisFileDirectory)..\..\3FD\utils_lockfreequeue.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="$(MSBuildThisFileDirectory)..\..\3FD\callstacktracer.cpp">

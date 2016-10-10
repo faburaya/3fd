@@ -17,6 +17,8 @@ namespace IntegrationTestsApp_WinRT
 	public:
 		App();
 
+        virtual ~App();
+
 		virtual void OnLaunched(Windows::ApplicationModel::Activation::LaunchActivatedEventArgs^ e) override;
 
 	private:

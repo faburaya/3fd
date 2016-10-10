@@ -6,6 +6,7 @@
 #include "pch.h"
 #include "MainPage.xaml.h"
 #include "utils_winrt.h"
+#include <gtest/gtest.h>
 #include <sstream>
 #include <codecvt>
 #include <cstdio>
@@ -25,39 +26,18 @@ void MainPage::OnClickRunButton(Object ^sender, RoutedEventArgs ^evArgs)
 
 	using namespace Windows::Storage;
 
-	auto asyncOpCreateStdOut =
-		ApplicationData::Current->LocalFolder
-			->CreateFileAsync(L"test-report.txt", CreationCollisionOption::OpenIfExists);
+    auto asyncOpGetStdOut =
+        ApplicationData::Current->LocalFolder->GetFileAsync(L"test-report.txt");
 
-	auto asyncOpCreateStdErr =
-		ApplicationData::Current->LocalFolder
-			->CreateFileAsync(L"gtest-errors.txt", CreationCollisionOption::OpenIfExists);
-
-	concurrency::create_task([asyncOpCreateStdOut, asyncOpCreateStdErr]()
-	{
-		auto stdOutFile = _3fd::utils::WinRTExt::WaitForAsync(asyncOpCreateStdOut);
-
-		auto stdErrFile = _3fd::utils::WinRTExt::WaitForAsync(asyncOpCreateStdErr);
-
-		// Replace standard output & error for TXT files:
-		_wfreopen(stdOutFile->Path->Data(), L"w", stdout);
-		_wfreopen(stdErrFile->Path->Data(), L"w", stderr);
-
-		int argc(1);
-		wchar_t *argv[] =
-		{
-			const_cast<wchar_t *> (L"UnitTestsApp.WinRT"),
-			nullptr
-		};
-
-		testing::InitGoogleTest(&argc, argv);
-		RUN_ALL_TESTS();
-
-		fclose(stdout);
-		fflush(stderr);
-
-		return FileIO::ReadTextAsync(stdOutFile);
-	})
+    // Run the tests using the gtest port:
+    concurrency::create_task([asyncOpGetStdOut]()
+    {
+        RUN_ALL_TESTS();
+        fclose(stdout);
+        auto stdOutFile = _3fd::utils::WinRTExt::WaitForAsync(asyncOpGetStdOut);
+        return FileIO::ReadTextAsync(stdOutFile);
+    })
+    // Print the tests results in the app main page:
 	.then([this](concurrency::task<String ^> &asyncOpReadFile)
 	{
 		try
