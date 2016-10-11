@@ -1,10 +1,11 @@
 #include "stdafx.h"
 #include "runtime.h"
+#include "utils.h"
 #include "web_wws_webservicehost.h"
-#include "web_wws_webserviceproxy.h"
 #include "calculator.wsdl.h"
 
 #include <vector>
+#include <chrono>
 
 namespace _3fd
 {
@@ -15,20 +16,274 @@ namespace _3fd
 
 		void HandleException();
 
-		const size_t proxyOperHeapSize(4096);
-
 		/////////////////////////////
 		// Web service operations
 		/////////////////////////////
 
+        /// <summary>
+        /// Test fixture for the WWS module.
+        /// </summary>
+        class Framework_WWS_TestCase : public ::testing::Test
+        {
+        private:
+
+            static std::unique_ptr<utils::Event> closeServiceRequestEvent;
+
+            static std::chrono::milliseconds maxTimeSpanForSvcClosure;
+
+        public:
+
+            /// <summary>
+            /// Signalize to close the web service host.
+            /// </summary>
+            static void SignalWebServiceClosureEvent()
+            {
+                closeServiceRequestEvent->Signalize();
+            }
+
+            /// <summary>
+            /// Wait for signal to close the web service host.
+            /// Once the signal is received, close it and measure how long that takes.
+            /// The maximum closure time is kept for later use (of web clients).
+            /// </summary>
+            void WaitSignalAndClose(WebServiceHost &svc)
+            {
+                using namespace std::chrono;
+
+                if (!closeServiceRequestEvent->WaitFor(5000))
+                    return;
+
+                auto t1 = system_clock().now();
+
+                if (!svc.Close())
+                    return;
+
+                auto t2 = system_clock().now();
+                auto closureTimeSpan = duration_cast<milliseconds>(t2 - t1);
+
+                if (closureTimeSpan > maxTimeSpanForSvcClosure)
+                    maxTimeSpanForSvcClosure = closureTimeSpan;
+            }
+
+            /// <summary>
+            /// Retrieves the maximum closure time for the
+            /// web service host registered so far.
+            /// </summary>
+            /// <return>
+            /// Retrieves the maximum closure time in milliseconds.
+            /// </return>
+            static uint32_t GetMaxClosureTime()
+            {
+                return static_cast<uint32_t> (maxTimeSpanForSvcClosure.count());
+            }
+
+            /// <summary>
+            /// Set up the test fixture.
+            /// </summary>
+            virtual void SetUp() override
+            {
+                closeServiceRequestEvent.reset(new utils::Event());
+            }
+
+            /// <summary>
+            /// Tear down the test fixture.
+            /// </summary>
+            virtual void TearDown() override
+            {
+                closeServiceRequestEvent.reset();
+            }
+
+            /// <summary>
+            /// Tests web service access without transport security.
+            /// </summary>
+            void TestHostTransportUnsecure()
+            {
+                // Ensures proper initialization/finalization of the framework
+                _3fd::core::FrameworkInstance _framework;
+
+                CALL_STACK_TRACE;
+
+                try
+                {
+                    // Function tables contains the implementations for the operations:
+                    CalcBindingUnsecureFunctionTable funcTableSvcUnsecure = {
+                        &AddImpl,
+                        &MultiplyImpl
+                    };
+
+                    // Create the web service host with default configurations:
+                    SvcEndpointsConfig hostCfg;
+
+                    /* Map the binding used for the unsecure endpoint to
+                    the corresponding implementations: */
+                    hostCfg.MapBinding(
+                        "CalcBindingUnsecure",
+                        &funcTableSvcUnsecure,
+                        CalcBindingUnsecure_CreateServiceEndpoint
+                    );
+
+                    // Create the service host:
+                    WebServiceHost host(2048);
+                    host.Setup("calculator.wsdl", hostCfg, true);
+                    host.Open(); // start listening
+
+                    // Wait client to request service closure:
+                    WaitSignalAndClose(host);
+                }
+                catch (...)
+                {
+                    HandleException();
+                }
+            }
+
+            /// <summary>
+            /// Tests web service access with SSL over HTTP
+            /// and no client certificate.
+            /// </summary>
+            void TestHostTransportSslNoClientCert()
+            {
+                // Ensures proper initialization/finalization of the framework
+                _3fd::core::FrameworkInstance _framework;
+
+                CALL_STACK_TRACE;
+
+                try
+                {
+                    // Function tables contains the implementations for the operations:
+                    CalcBindingSSLFunctionTable funcTableSvcSSL = {
+                        &AddImpl,
+                        &MultiplyImpl
+                    };
+
+                    // Create the web service host with default configurations:
+                    SvcEndpointsConfig hostCfg;
+
+                    /* Map the binding used for the endpoint using SSL over HTTP to
+                    the corresponding implementations: */
+                    hostCfg.MapBinding(
+                        "CalcBindingSSL",
+                        &funcTableSvcSSL,
+                        CalcBindingSSL_CreateServiceEndpoint
+                    );
+
+                    // Create the service host:
+                    WebServiceHost host(2048);
+                    host.Setup("calculator.wsdl", hostCfg, true);
+                    host.Open(); // start listening
+
+                    // Wait client to request service closure:
+                    WaitSignalAndClose(host);
+                }
+                catch (...)
+                {
+                    HandleException();
+                }
+            }
+
+            /// <summary>
+            /// Tests web service access, with SSL over HTTP
+            /// and a client certificate.
+            /// </summary>
+            void TestHostTransportSslWithClientCert()
+            {
+                // Ensures proper initialization/finalization of the framework
+                _3fd::core::FrameworkInstance _framework;
+
+                CALL_STACK_TRACE;
+
+                try
+                {
+                    // Function tables contains the implementations for the operations:
+                    CalcBindingSSLFunctionTable funcTableSvcSSL = {
+                        &AddImpl,
+                        &MultiplyImpl
+                    };
+
+                    // Create the web service host with default configurations:
+                    SvcEndpointsConfig hostCfg;
+
+                    /* Map the binding used for the endpoint using SSL over HTTP to
+                    the corresponding implementations: */
+                    hostCfg.MapBinding(
+                        "CalcBindingSSL",
+                        &funcTableSvcSSL,
+                        CalcBindingSSL_CreateServiceEndpoint
+                    );
+
+                    // Create the service host:
+                    WebServiceHost host(2048);
+                    host.Setup("calculator.wsdl", hostCfg, true);
+                    host.Open(); // start listening
+
+                    // Wait client to request service closure:
+                    WaitSignalAndClose(host);
+                }
+                catch (...)
+                {
+                    HandleException();
+                }
+            }
+
+            /// <summary>
+            /// Tests SOAP fault transmission by web service.
+            /// </summary>
+            void TestHostSoapFaultHandling()
+            {
+                // Ensures proper initialization/finalization of the framework
+                _3fd::core::FrameworkInstance _framework;
+
+                CALL_STACK_TRACE;
+
+                try
+                {
+                    // Function tables contains the implementations for the operations:
+                    CalcBindingUnsecureFunctionTable funcTableSvcUnsecure = { Fail, Fail };
+                    CalcBindingSSLFunctionTable funcTableSvcSSL = { Fail, Fail };
+
+                    // Create the web service host with default configurations:
+                    SvcEndpointsConfig hostCfg;
+
+                    /* Map the binding used for the unsecure endpoint to
+                    the corresponding implementations: */
+                    hostCfg.MapBinding(
+                        "CalcBindingUnsecure",
+                        &funcTableSvcUnsecure,
+                        CalcBindingUnsecure_CreateServiceEndpoint
+                    );
+
+                    /* Map the binding used for the endpoint using SSL over HTTP to
+                    the corresponding implementations: */
+                    hostCfg.MapBinding(
+                        "CalcBindingSSL",
+                        &funcTableSvcSSL,
+                        CalcBindingSSL_CreateServiceEndpoint
+                    );
+
+                    // Create the service host:
+                    WebServiceHost host(2048);
+                    host.Setup("calculator.wsdl", hostCfg, true);
+                    host.Open(); // start listening
+
+                    // Wait client to request service closure:
+                    WaitSignalAndClose(host);
+                }
+                catch (...)
+                {
+                    HandleException();
+                }
+            }
+        };
+
+        std::chrono::milliseconds Framework_WWS_TestCase::maxTimeSpanForSvcClosure(0);
+
 		// Implementation for the operation "Add"
 		HRESULT CALLBACK AddImpl(
-			_In_ const WS_OPERATION_CONTEXT* wsContextHandle,
+			_In_ const WS_OPERATION_CONTEXT *wsContextHandle,
 			_In_ double first,
 			_In_ double second,
-			_Out_ double* result,
+			_Out_ double *result,
 			_In_ const WS_ASYNC_CONTEXT* asyncContext,
-			_In_ WS_ERROR* wsErrorHandle)
+			_In_ WS_ERROR *wsErrorHandle)
 		{
 			*result = first + second;
 			return S_OK;
@@ -36,16 +291,28 @@ namespace _3fd
 
 		// Implementation for the operation "Multiply"
 		HRESULT CALLBACK MultiplyImpl(
-			_In_ const WS_OPERATION_CONTEXT* wsContextHandle,
+			_In_ const WS_OPERATION_CONTEXT *wsContextHandle,
 			_In_ double first,
 			_In_ double second,
-			_Out_ double* result,
-			_In_ const WS_ASYNC_CONTEXT* asyncContext,
-			_In_ WS_ERROR* wsErrorHandle)
+			_Out_ double *result,
+			_In_ const WS_ASYNC_CONTEXT *asyncContext,
+			_In_ WS_ERROR *wsErrorHandle)
 		{
 			*result = first * second;
 			return S_OK;
 		}
+
+        // Implementation for the operation "CloseService"
+        HRESULT CALLBACK CloseServiceImpl(
+            _In_ const WS_OPERATION_CONTEXT *wsContextHandle,
+            _Out_ __int64 *result,
+            _In_ const WS_ASYNC_CONTEXT *asyncContext,
+            _In_ WS_ERROR *wsErrorHandle)
+        {
+            Framework_WWS_TestCase::SignalWebServiceClosureEvent();
+            *result = Framework_WWS_TestCase::GetMaxClosureTime();
+            return S_OK;
+        }
 
 		// Implementation that generates a SOAP fault
 		HRESULT CALLBACK Fail(
@@ -75,849 +342,73 @@ namespace _3fd
 			return E_FAIL;
 		}
 
-		/////////////////////////////////////
-		// Proxy without transport security
-		/////////////////////////////////////
-
-		/// <summary>
-		/// Implements a client for the calculator web service without transport security.
-		/// </summary>
-		class CalcSvcProxyUnsecure : public WebServiceProxy
+        /// <summary>
+        /// Tests synchronous web service access without transport security.
+        /// </summary>
+		TEST_F(Framework_WWS_TestCase, TransportUnsecure_SyncTest)
 		{
-		public:
-
-			CalcSvcProxyUnsecure(const SvcProxyConfig &config) :
-				WebServiceProxy(
-					"http://tars:81/calculator",
-					config,
-					&CreateWSProxy<WS_HTTP_BINDING_TEMPLATE, CalcBindingUnsecure_CreateServiceProxy>
-				)
-			{}
-
-			// Synchronous 'Add' operation
-			double Add(double first, double second)
-			{
-				CALL_STACK_TRACE;
-
-				double result;
-				WSHeap heap(proxyOperHeapSize);
-				WSError err;
-				HRESULT hr =
-					CalcBindingUnsecure_Add(
-						GetHandle(),
-						first,
-						second,
-						&result,
-						heap.GetHandle(),
-						nullptr, 0,
-						nullptr,
-						err.GetHandle()
-					);
-
-				err.RaiseExClientNotOK(hr, "Calculator web service returned an error", heap);
-
-				return result;
-			}
-
-			// Synchronous 'Multiply' operation
-			double Multiply(double first, double second)
-			{
-				CALL_STACK_TRACE;
-
-				double result;
-				WSHeap heap(proxyOperHeapSize);
-				WSError err;
-				HRESULT hr =
-					CalcBindingUnsecure_Multiplication(
-						GetHandle(),
-						first,
-						second,
-						&result,
-						heap.GetHandle(),
-						nullptr, 0,
-						nullptr,
-						err.GetHandle()
-					);
-
-				err.RaiseExClientNotOK(hr, "Calculator web service returned an error", heap);
-
-				return result;
-			}
-
-			// Asynchronous 'Multiply' operation
-			WSAsyncOper MultiplyAsync(double first, double second, double &result)
-			{
-				CALL_STACK_TRACE;
-
-				// Prepare for an asynchronous operation:
-				auto asyncOp = CreateAsyncOperation(proxyOperHeapSize);
-				auto asyncContext = asyncOp.GetContext();
-				
-				HRESULT hr = // this is immediately returned HRESULT code
-					CalcBindingUnsecure_Multiplication(
-						GetHandle(),
-						first,
-						second,
-						&result,
-						asyncOp.GetHeapHandle(),
-						nullptr, 0,
-						&asyncContext, // this parameter asks for an asynchronous call
-						asyncOp.GetErrHelperHandle()
-					);
-
-				asyncOp.SetCallReturn(hr);
-				return std::move(asyncOp);
-			}
-		};
-
-		/// <summary>
-		/// Tests synchronous web service access without transport security.
-		/// </summary>
-		TEST(Framework_WWS_TestCase, TransportUnsecure_SyncTest)
-		{
-			// Ensures proper initialization/finalization of the framework
-			_3fd::core::FrameworkInstance _framework;
-
-			CALL_STACK_TRACE;
-
-			try
-			{
-				/////////////////
-				// HOST setup
-
-				// Function tables contains the implementations for the operations:
-				CalcBindingUnsecureFunctionTable funcTableSvcUnsecure = {
-					&AddImpl,
-					&MultiplyImpl
-				};
-
-				// Create the web service host with default configurations:
-				SvcEndpointsConfig hostCfg;
-
-				/* Map the binding used for the unsecure endpoint to
-				the corresponding implementations: */
-				hostCfg.MapBinding(
-					"CalcBindingUnsecure",
-					&funcTableSvcUnsecure,
-					CalcBindingUnsecure_CreateServiceEndpoint
-				);
-
-				// Create the service host:
-				WebServiceHost host(2048);
-				host.Setup("calculator.wsdl", hostCfg, true);
-				host.Open(); // start listening
-
-				/////////////////
-				// CLIENT setup
-
-				// Create the proxy (client):
-				SvcProxyConfig proxyCfg;
-				CalcSvcProxyUnsecure client(proxyCfg);
-				client.Open();
-
-				for (int count = 0; count < 10; ++count)
-				{
-					EXPECT_EQ(666.0, client.Add(606.0, 60.0));
-					EXPECT_EQ(666.0, client.Multiply(111.0, 6.0));
-				}
-
-				client.Close();
-				host.Close();
-			}
-			catch (...)
-			{
-				HandleException();
-			}
+            TestHostTransportUnsecure();
 		}
 
 		/// <summary>
 		/// Tests asynchronous web service access without transport security.
 		/// </summary>
-		TEST(Framework_WWS_TestCase, TransportUnsecure_AsyncTest)
+		TEST_F(Framework_WWS_TestCase, TransportUnsecure_AsyncTest)
 		{
-			// Ensures proper initialization/finalization of the framework
-			_3fd::core::FrameworkInstance _framework;
-
-			CALL_STACK_TRACE;
-
-			try
-			{
-				/////////////////
-				// HOST setup
-
-				// Function tables contains the implementations for the operations:
-				CalcBindingUnsecureFunctionTable funcTableSvcUnsecure = {
-					&AddImpl,
-					&MultiplyImpl
-				};
-
-				// Create the web service host with default configurations:
-				SvcEndpointsConfig hostCfg;
-
-				/* Map the binding used for the unsecure endpoint to
-				the corresponding implementations: */
-				hostCfg.MapBinding(
-					"CalcBindingUnsecure",
-					&funcTableSvcUnsecure,
-					CalcBindingUnsecure_CreateServiceEndpoint
-				);
-
-				// Create the service host:
-				WebServiceHost host(2048);
-				host.Setup("calculator.wsdl", hostCfg, true);
-				host.Open(); // start listening
-
-				/////////////////
-				// CLIENT setup
-
-				// Create the proxy (client):
-				SvcProxyConfig proxyCfg;
-				CalcSvcProxyUnsecure client(proxyCfg);
-				client.Open();
-
-				const int maxAsyncCalls = 5;
-
-				std::vector<double> results(maxAsyncCalls);
-				std::vector<WSAsyncOper> asyncOps;
-				asyncOps.reserve(maxAsyncCalls);
-
-				// Fire the asynchronous requests:
-				for (int idx = 0; idx < maxAsyncCalls; ++idx)
-				{
-					asyncOps.push_back(
-						client.MultiplyAsync(111.0, 6.0, results[idx])
-					);
-				}
-
-				// Get the results and check for errors:
-				while (!asyncOps.empty())
-				{
-					asyncOps.back()
-						.RaiseExClientNotOK("Calculator web service returned an error");
-
-					asyncOps.pop_back();
-
-					EXPECT_EQ(666.0, results.back());
-					results.pop_back();
-				}
-
-				client.Close();
-				host.Close();
-			}
-			catch (...)
-			{
-				HandleException();
-			}
+            TestHostTransportUnsecure();
 		}
-
-		////////////////////////////////
-		// Proxy with SSL over HTTP
-		////////////////////////////////
-
-		/// <summary>
-		/// Implements a client for the calculator web service with SSL security.
-		/// </summary>
-		class CalcSvcProxySSL : public WebServiceProxy
-		{
-		public:
-
-			// Ctor for proxy without client certificate
-			CalcSvcProxySSL(const SvcProxyConfig &config) :
-				WebServiceProxy(
-					"https://localhost:8989/calculator",
-					config,
-					&CreateWSProxy<WS_HTTP_SSL_BINDING_TEMPLATE, CalcBindingSSL_CreateServiceProxy>
-				)
-			{}
-
-			// Ctor for proxy using a client certificate
-			CalcSvcProxySSL(const SvcProxyConfig &config, const SvcProxyCertInfo &certInfo) :
-				WebServiceProxy(
-					"https://localhost:8989/calculator",
-					config,
-					certInfo,
-					CalcBindingSSL_CreateServiceProxy
-				)
-			{}
-
-			double Add(double first, double second)
-			{
-				CALL_STACK_TRACE;
-
-				double result;
-				WSHeap heap(proxyOperHeapSize);
-				WSError err;
-				HRESULT hr =
-					CalcBindingSSL_Add(
-						GetHandle(),
-						first,
-						second,
-						&result,
-						heap.GetHandle(),
-						nullptr, 0,
-						nullptr,
-						err.GetHandle()
-					);
-
-				err.RaiseExClientNotOK(hr, "Calculator web service returned an error", heap);
-
-				return result;
-			}
-
-			double Multiply(double first, double second)
-			{
-				CALL_STACK_TRACE;
-
-				double result;
-				WSHeap heap(proxyOperHeapSize);
-				WSError err;
-				HRESULT hr =
-					CalcBindingSSL_Multiplication(
-						GetHandle(),
-						first,
-						second,
-						&result,
-						heap.GetHandle(),
-						nullptr, 0,
-						nullptr,
-						err.GetHandle()
-					);
-
-				err.RaiseExClientNotOK(hr, "Calculator web service returned an error", heap);
-
-				return result;
-			}
-
-			// Asynchronous 'Multiply' operation
-			WSAsyncOper MultiplyAsync(double first, double second, double &result)
-			{
-				CALL_STACK_TRACE;
-
-				// Prepare for an asynchronous operation:
-				auto asyncOp = CreateAsyncOperation(proxyOperHeapSize);
-				auto asyncContext = asyncOp.GetContext();
-
-				HRESULT hr = // this is immediately returned HRESULT code
-					CalcBindingSSL_Multiplication(
-						GetHandle(),
-						first,
-						second,
-						&result,
-						asyncOp.GetHeapHandle(),
-						nullptr, 0,
-						&asyncContext, // this parameter asks for an asynchronous call
-						asyncOp.GetErrHelperHandle()
-					);
-
-				asyncOp.SetCallReturn(hr);
-				return std::move(asyncOp);
-			}
-		};
-
-		// Thumbprint of client side certificate for transport security
-		const char *clientCertificateThumbprint = "fa6040bc28b9b50ec77c2f40b94125c2f775087f";
 
 		/// <summary>
 		/// Tests synchronous web service access
 		/// with SSL over HTTP and no client certificate.
 		/// </summary>
-		TEST(Framework_WWS_TestCase, TransportSSL_NoClientCert_SyncTest)
+		TEST_F(Framework_WWS_TestCase, TransportSSL_NoClientCert_SyncTest)
 		{
-			// Ensures proper initialization/finalization of the framework
-			_3fd::core::FrameworkInstance _framework;
-
-			CALL_STACK_TRACE;
-
-			try
-			{
-				/////////////////
-				// HOST setup
-
-				// Function tables contains the implementations for the operations:
-				CalcBindingSSLFunctionTable funcTableSvcSSL = {
-					&AddImpl,
-					&MultiplyImpl
-				};
-
-				// Create the web service host with default configurations:
-				SvcEndpointsConfig hostCfg;
-
-				/* Map the binding used for the endpoint using SSL over HTTP to
-				the corresponding implementations: */
-				hostCfg.MapBinding(
-					"CalcBindingSSL",
-					&funcTableSvcSSL,
-					CalcBindingSSL_CreateServiceEndpoint
-				);
-
-				// Create the service host:
-				WebServiceHost host(2048);
-				host.Setup("calculator.wsdl", hostCfg, true);
-				host.Open(); // start listening
-
-				/////////////////
-				// CLIENT setup
-
-				// Create the proxy (client):
-				SvcProxyConfig proxyCfg;
-				CalcSvcProxySSL client(proxyCfg);
-				client.Open();
-
-				for (int count = 0; count < 10; ++count)
-				{
-					EXPECT_EQ(666.0, client.Add(606.0, 60.0));
-					EXPECT_EQ(666.0, client.Multiply(111.0, 6.0));
-				}
-
-				client.Close();
-				host.Close();
-			}
-			catch (...)
-			{
-				HandleException();
-			}
+            TestHostTransportSslNoClientCert();
 		}
 
 		/// <summary>
 		/// Tests asynchronous web service access with
 		/// SSL over HTTP and no client certificate.
 		/// </summary>
-		TEST(Framework_WWS_TestCase, TransportSSL_NoClientCert_AsyncTest)
+		TEST_F(Framework_WWS_TestCase, TransportSSL_NoClientCert_AsyncTest)
 		{
-			// Ensures proper initialization/finalization of the framework
-			_3fd::core::FrameworkInstance _framework;
-
-			CALL_STACK_TRACE;
-
-			try
-			{
-				/////////////////
-				// HOST setup
-
-				// Function tables contains the implementations for the operations:
-				CalcBindingSSLFunctionTable funcTableSvcSSL = {
-					&AddImpl,
-					&MultiplyImpl
-				};
-
-				// Create the web service host with default configurations:
-				SvcEndpointsConfig hostCfg;
-
-				/* Map the binding used for the endpoint using SSL over HTTP to
-				the corresponding implementations: */
-				hostCfg.MapBinding(
-					"CalcBindingSSL",
-					&funcTableSvcSSL,
-					CalcBindingSSL_CreateServiceEndpoint
-					);
-
-				// Create the service host:
-				WebServiceHost host(2048);
-				host.Setup("calculator.wsdl", hostCfg, true);
-				host.Open(); // start listening
-
-				/////////////////
-				// CLIENT setup
-
-				// Create the proxy (client):
-				SvcProxyConfig proxyCfg;
-				CalcSvcProxySSL client(proxyCfg);
-				client.Open();
-
-				const int maxAsyncCalls = 5;
-
-				std::vector<double> results(maxAsyncCalls);
-				std::vector<WSAsyncOper> asyncOps;
-				asyncOps.reserve(maxAsyncCalls);
-
-				// Fire the asynchronous requests:
-				for (int idx = 0; idx < maxAsyncCalls; ++idx)
-				{
-					asyncOps.push_back(
-						client.MultiplyAsync(111.0, 6.0, results[idx])
-					);
-				}
-
-				// Get the results and check for errors:
-				while (!asyncOps.empty())
-				{
-					asyncOps.back()
-						.RaiseExClientNotOK("Calculator web service returned an error");
-
-					asyncOps.pop_back();
-
-					EXPECT_EQ(666.0, results.back());
-					results.pop_back();
-				}
-
-				client.Close();
-				host.Close();
-			}
-			catch (...)
-			{
-				HandleException();
-			}
+            TestHostTransportSslNoClientCert();
 		}
 
 		/// <summary>
 		/// Tests synchronous web service access, with SSL over HTTP
-		/// and and a client certificate.
+		/// and a client certificate.
 		/// </summary>
-		TEST(Framework_WWS_TestCase, TransportSSL_WithClientCert_SyncTest)
+		TEST_F(Framework_WWS_TestCase, TransportSSL_WithClientCert_SyncTest)
 		{
-			// Ensures proper initialization/finalization of the framework
-			_3fd::core::FrameworkInstance _framework;
-
-			CALL_STACK_TRACE;
-
-			try
-			{
-				/////////////////
-				// HOST setup
-
-				// Function tables contains the implementations for the operations:
-				CalcBindingSSLFunctionTable funcTableSvcSSL = {
-					&AddImpl,
-					&MultiplyImpl
-				};
-
-				// Create the web service host with default configurations:
-				SvcEndpointsConfig hostCfg;
-
-				/* Map the binding used for the endpoint using SSL over HTTP to
-				the corresponding implementations: */
-				hostCfg.MapBinding(
-					"CalcBindingSSL",
-					&funcTableSvcSSL,
-					CalcBindingSSL_CreateServiceEndpoint
-				);
-
-				// Create the service host:
-				WebServiceHost host(2048);
-				host.Setup("calculator.wsdl", hostCfg, true);
-				host.Open(); // start listening
-
-				/////////////////
-				// CLIENT setup
-
-				/* Insert here the information describing the client side
-				certificate to use in your test environment: */
-				SvcProxyCertInfo proxyCertInfo(
-					CERT_SYSTEM_STORE_LOCAL_MACHINE,
-					"My",
-					clientCertificateThumbprint
-				);
-
-				// Create the proxy (client):
-				SvcProxyConfig proxyCfg;
-				CalcSvcProxySSL client(proxyCfg, proxyCertInfo);
-				client.Open();
-
-				for (int count = 0; count < 10; ++count)
-				{
-					EXPECT_EQ(666.0, client.Add(606.0, 60.0));
-					EXPECT_EQ(666.0, client.Multiply(111.0, 6.0));
-				}
-
-				client.Close();
-				host.Close();
-			}
-			catch (...)
-			{
-				HandleException();
-			}
+            TestHostTransportSslWithClientCert();
 		}
 
 		/// <summary>
 		/// Tests asynchronous web service access, with SSL over HTTP
-		/// and and a client certificate.
+		/// and a client certificate.
 		/// </summary>
-		TEST(Framework_WWS_TestCase, TransportSSL_WithClientCert_AsyncTest)
+		TEST_F(Framework_WWS_TestCase, TransportSSL_WithClientCert_AsyncTest)
 		{
-			// Ensures proper initialization/finalization of the framework
-			_3fd::core::FrameworkInstance _framework;
-
-			CALL_STACK_TRACE;
-
-			try
-			{
-				/////////////////
-				// HOST setup
-
-				// Function tables contains the implementations for the operations:
-				CalcBindingSSLFunctionTable funcTableSvcSSL = {
-					&AddImpl,
-					&MultiplyImpl
-				};
-
-				// Create the web service host with default configurations:
-				SvcEndpointsConfig hostCfg;
-
-				/* Map the binding used for the endpoint using SSL over HTTP to
-				the corresponding implementations: */
-				hostCfg.MapBinding(
-					"CalcBindingSSL",
-					&funcTableSvcSSL,
-					CalcBindingSSL_CreateServiceEndpoint
-					);
-
-				// Create the service host:
-				WebServiceHost host(2048);
-				host.Setup("calculator.wsdl", hostCfg, true);
-				host.Open(); // start listening
-
-				/////////////////
-				// CLIENT setup
-
-				/* Insert here the information describing the client side
-				certificate to use in your test environment: */
-				SvcProxyCertInfo proxyCertInfo(
-					CERT_SYSTEM_STORE_LOCAL_MACHINE,
-					"My",
-					clientCertificateThumbprint
-				);
-
-				// Create the proxy (client):
-				SvcProxyConfig proxyCfg;
-				CalcSvcProxySSL client(proxyCfg, proxyCertInfo);
-				client.Open();
-
-				const int maxAsyncCalls = 5;
-
-				std::vector<double> results(maxAsyncCalls);
-				std::vector<WSAsyncOper> asyncOps;
-				asyncOps.reserve(maxAsyncCalls);
-
-				// Fire the asynchronous requests:
-				for (int idx = 0; idx < maxAsyncCalls; ++idx)
-				{
-					asyncOps.push_back(
-						client.MultiplyAsync(111.0, 6.0, results[idx])
-					);
-				}
-
-				// Get the results and check for errors:
-				while (!asyncOps.empty())
-				{
-					asyncOps.back()
-						.RaiseExClientNotOK("Calculator web service returned an error");
-
-					asyncOps.pop_back();
-
-					EXPECT_EQ(666.0, results.back());
-					results.pop_back();
-				}
-
-				client.Close();
-				host.Close();
-			}
-			catch (...)
-			{
-				HandleException();
-			}
+            TestHostTransportSslWithClientCert();
 		}
+
 
 		/// <summary>
 		/// Tests SOAP fault transmission in web service synchronous access.
 		/// </summary>
-		TEST(Framework_WWS_TestCase, SOAP_Fault_SyncTest)
+		TEST_F(Framework_WWS_TestCase, SOAP_Fault_SyncTest)
 		{
-			// Ensures proper initialization/finalization of the framework
-			_3fd::core::FrameworkInstance _framework;
-
-			CALL_STACK_TRACE;
-
-			try
-			{
-				/////////////////
-				// HOST setup
-
-				// Function tables contains the implementations for the operations:
-				CalcBindingUnsecureFunctionTable funcTableSvcUnsecure = { Fail, Fail };
-				CalcBindingSSLFunctionTable funcTableSvcSSL = { Fail, Fail };
-
-				// Create the web service host with default configurations:
-				SvcEndpointsConfig hostCfg;
-
-				/* Map the binding used for the unsecure endpoint to
-				the corresponding implementations: */
-				hostCfg.MapBinding(
-					"CalcBindingUnsecure",
-					&funcTableSvcUnsecure,
-					CalcBindingUnsecure_CreateServiceEndpoint
-				);
-
-				/* Map the binding used for the endpoint using SSL over HTTP to
-				the corresponding implementations: */
-				hostCfg.MapBinding(
-					"CalcBindingSSL",
-					&funcTableSvcSSL,
-					CalcBindingSSL_CreateServiceEndpoint
-				);
-
-				// Create the service host:
-				WebServiceHost host(2048);
-				host.Setup("calculator.wsdl", hostCfg, true);
-				host.Open(); // start listening
-
-				/////////////////
-				// CLIENT setup
-
-				SvcProxyConfig proxyCfg; // proxy configuration with default values
-
-				try
-				{
-					// Create a proxy without transport security:
-					CalcSvcProxyUnsecure unsecureClient(proxyCfg);
-					unsecureClient.Open();
-
-					// This request should generate a SOAP fault, hence throwing an exception
-					unsecureClient.Add(606.0, 60.0);
-
-					unsecureClient.Close();
-				}
-				catch (IAppException &ex)
-				{// Log the fault:
-					Logger::Write(ex, Logger::PRIO_ERROR);
-				}
-
-				/* Insert here the information describing the client side
-				certificate to use in your test environment: */
-				SvcProxyCertInfo proxyCertInfo(
-					CERT_SYSTEM_STORE_LOCAL_MACHINE,
-					"My",
-					clientCertificateThumbprint
-				);
-
-				try
-				{
-					// Create a secure proxy (client):
-					CalcSvcProxySSL sslClient(proxyCfg, proxyCertInfo);
-					sslClient.Open();
-
-					// This request should generate a SOAP fault, hence throwing an exception
-					sslClient.Multiply(111.0, 6.0);
-
-					sslClient.Close();
-					host.Close();
-				}
-				catch (IAppException &ex)
-				{// Log the fault:
-					Logger::Write(ex, Logger::PRIO_ERROR);
-				}
-			}
-			catch (...)
-			{
-				HandleException();
-			}
+            TestHostSoapFaultHandling();
 		}
 
 		/// <summary>
 		/// Tests SOAP fault transmission in web service asynchronous access.
 		/// </summary>
-		TEST(Framework_WWS_TestCase, SOAP_Fault_AsyncTest)
+		TEST_F(Framework_WWS_TestCase, SOAP_Fault_AsyncTest)
 		{
-			// Ensures proper initialization/finalization of the framework
-			_3fd::core::FrameworkInstance _framework;
-
-			CALL_STACK_TRACE;
-
-			try
-			{
-				/////////////////
-				// HOST setup
-
-				// Function tables contains the implementations for the operations:
-				CalcBindingUnsecureFunctionTable funcTableSvcUnsecure = { Fail, Fail };
-				CalcBindingSSLFunctionTable funcTableSvcSSL = { Fail, Fail };
-
-				// Create the web service host with default configurations:
-				SvcEndpointsConfig hostCfg;
-
-				/* Map the binding used for the unsecure endpoint to
-				the corresponding implementations: */
-				hostCfg.MapBinding(
-					"CalcBindingUnsecure",
-					&funcTableSvcUnsecure,
-					CalcBindingUnsecure_CreateServiceEndpoint
-				);
-
-				/* Map the binding used for the endpoint using SSL over HTTP to
-				the corresponding implementations: */
-				hostCfg.MapBinding(
-					"CalcBindingSSL",
-					&funcTableSvcSSL,
-					CalcBindingSSL_CreateServiceEndpoint
-				);
-
-				// Create the service host:
-				WebServiceHost host(2048);
-				host.Setup("calculator.wsdl", hostCfg, true);
-				host.Open(); // start listening
-
-				/////////////////
-				// CLIENT setup
-
-				SvcProxyConfig proxyCfg; // proxy configuration with default values
-
-				try
-				{
-					// Create a proxy without transport security:
-					CalcSvcProxyUnsecure unsecureClient(proxyCfg);
-					unsecureClient.Open();
-
-					// Start an asynchronous request:
-					double result;
-					auto asyncOp = unsecureClient.MultiplyAsync(606.0, 60.0, result);
-
-					/* The request generates a SOAP fault. This will wait for its
-					completion, then it throws an exception made from the deserialized
-					SOAP fault response: */
-					asyncOp.RaiseExClientNotOK("Calculator web service returned an error");
-
-					unsecureClient.Close();
-				}
-				catch (IAppException &ex)
-				{// Log the fault:
-					Logger::Write(ex, Logger::PRIO_ERROR);
-				}
-
-				/* Insert here the information describing the client side
-				certificate to use in your test environment: */
-				SvcProxyCertInfo proxyCertInfo(
-					CERT_SYSTEM_STORE_LOCAL_MACHINE,
-					"My",
-					clientCertificateThumbprint
-				);
-
-				try
-				{
-					// Create a secure proxy (client):
-					CalcSvcProxySSL sslClient(proxyCfg, proxyCertInfo);
-					sslClient.Open();
-
-					// This request should generate a SOAP fault, hence throwing an exception
-					double result;
-					auto asyncOp = sslClient.MultiplyAsync(111.0, 6.0, result);
-
-					/* The request generates a SOAP fault. This will wait for its
-					completion, then it throws an exception made from the deserialized
-					SOAP fault response: */
-					asyncOp.RaiseExClientNotOK("Calculator web service returned an error");
-
-					sslClient.Close();
-				}
-				catch (IAppException &ex)
-				{// Log the fault:
-					Logger::Write(ex, Logger::PRIO_ERROR);
-				}
-
-				host.Close();
-			}
-			catch (...)
-			{
-				HandleException();
-			}
+            TestHostSoapFaultHandling();
 		}
 
 		/// <summary>

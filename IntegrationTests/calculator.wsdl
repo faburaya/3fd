@@ -38,14 +38,26 @@
   <!-- Types of requests: -->
   <wsdl:types>
     <xsd:schema elementFormDefault="qualified" targetNamespace="http://calculator.example.org/">
-      
-      <xsd:complexType name="BinaryOpRequest">
-        <xsd:sequence>
-          <xsd:element name="first" type="xsd:double" />
-          <xsd:element name="second" type="xsd:double" />
-        </xsd:sequence>
+
+      <xsd:complexType name="EmptyRequest">
       </xsd:complexType>
-      
+
+      <xsd:complexType name="MultipurposeSingleIntegerResponse">
+          <xsd:sequence>
+              <xsd:element name="result" type="xsd:integer" />
+          </xsd:sequence>
+      </xsd:complexType>
+
+      <xsd:element name="CloseServiceRequest" type="tns:EmptyRequest" />
+      <xsd:element name="CloseServiceResponse" type="tns:MultipurposeSingleIntegerResponse" />
+        
+      <xsd:complexType name="BinaryOpRequest">
+          <xsd:sequence>
+              <xsd:element name="first" type="xsd:double" />
+              <xsd:element name="second" type="xsd:double" />
+          </xsd:sequence>
+      </xsd:complexType>
+
       <xsd:complexType name="OperationResponse">
         <xsd:sequence>
           <xsd:element name="result" type="xsd:double" />
@@ -62,11 +74,11 @@
   </wsdl:types>
 
   <!-- Definition of service messages: -->
-  
+
   <wsdl:message name="AdditionRequestMessage">
     <wsdl:part name="parameters" element="tns:AdditionRequest" />
   </wsdl:message>
-  
+
   <wsdl:message name="AdditionResponseMessage">
     <wsdl:part name="parameters" element="tns:AdditionResponse" />
   </wsdl:message>
@@ -79,15 +91,27 @@
     <wsdl:part name="parameters" element="tns:MultiplicationResponse" />
   </wsdl:message>
 
-  <!-- The web service interface: -->
+  <wsdl:message name="CloseServiceRequestMessage">
+    <wsdl:part name="parameters" element="tns:CloseServiceRequest" />
+  </wsdl:message>
+
+  <wsdl:message name="CloseServiceResponseMessage">
+    <wsdl:part name="parameters" element="tns:CloseServiceResponse" />
+  </wsdl:message>
+
+    <!-- The web service interface: -->
   <wsdl:portType name="CalculatorInterface">
     <wsdl:operation name="Add">
       <wsdl:input message="tns:AdditionRequestMessage" />
       <wsdl:output message="tns:AdditionResponseMessage" />
     </wsdl:operation>
-    <wsdl:operation name="Multiplication">
+    <wsdl:operation name="Multiply">
       <wsdl:input message="tns:MultiplicationRequestMessage" />
       <wsdl:output message="tns:MultiplicationResponseMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="CloseService">
+      <wsdl:input message="tns:CloseServiceRequestMessage" />
+      <wsdl:output message="tns:CloseServiceResponseMessage" />
     </wsdl:operation>
   </wsdl:portType>
 
@@ -104,8 +128,17 @@
         <soap:body use="literal"/>
       </wsdl:output>
     </wsdl:operation>
-    <wsdl:operation name="Multiplication">
+    <wsdl:operation name="Multiply">
       <soap:operation soapAction="http://calculator.example.org/Multiply" style="document"/>
+      <wsdl:input>
+        <soap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal"/>
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="CloseService">
+      <soap:operation soapAction="http://calculator.example.org/Close" style="document"/>
       <wsdl:input>
         <soap:body use="literal"/>
       </wsdl:input>
@@ -127,8 +160,17 @@
         <soap:body use="literal"/>
       </wsdl:output>
     </wsdl:operation>
-    <wsdl:operation name="Multiplication">
+    <wsdl:operation name="Multiply">
       <soap:operation soapAction="http://calculator.example.org/Multiply" style="document"/>
+      <wsdl:input>
+        <soap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal"/>
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="CloseService">
+      <soap:operation soapAction="http://calculator.example.org/Close" style="document"/>
       <wsdl:input>
         <soap:body use="literal"/>
       </wsdl:input>
