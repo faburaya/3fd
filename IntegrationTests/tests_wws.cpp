@@ -20,6 +20,40 @@ namespace _3fd
 		// Web service operations
 		/////////////////////////////
 
+        HRESULT CALLBACK AddImpl(
+            _In_ const WS_OPERATION_CONTEXT *wsContextHandle,
+            _In_ double first,
+            _In_ double second,
+            _Out_ double *result,
+            _In_ const WS_ASYNC_CONTEXT* asyncContext,
+            _In_ WS_ERROR *wsErrorHandle
+        );
+
+        HRESULT CALLBACK MultiplyImpl(
+            _In_ const WS_OPERATION_CONTEXT *wsContextHandle,
+            _In_ double first,
+            _In_ double second,
+            _Out_ double *result,
+            _In_ const WS_ASYNC_CONTEXT *asyncContext,
+            _In_ WS_ERROR *wsErrorHandle
+        );
+
+        HRESULT CALLBACK CloseServiceImpl(
+            _In_ const WS_OPERATION_CONTEXT *wsContextHandle,
+            _Out_ __int64 *result,
+            _In_ const WS_ASYNC_CONTEXT *asyncContext,
+            _In_ WS_ERROR *wsErrorHandle
+        );
+
+        HRESULT CALLBACK Fail(
+            _In_ const WS_OPERATION_CONTEXT* wsContextHandle,
+            _In_ double first,
+            _In_ double second,
+            _Out_ double* result,
+            _In_ const WS_ASYNC_CONTEXT* asyncContext,
+            _In_ WS_ERROR* wsErrorHandle
+        );
+
         /// <summary>
         /// Test fixture for the WWS module.
         /// </summary>
@@ -46,23 +80,30 @@ namespace _3fd
             /// Once the signal is received, close it and measure how long that takes.
             /// The maximum closure time is kept for later use (of web clients).
             /// </summary>
-            void WaitSignalAndClose(WebServiceHost &svc)
+            /// <param name="svc">The web service host object.</param>
+            /// <returns>
+            /// <c>true</c> when the signal was received and the host service
+            /// succesfully closed, otherwise, <c>false</c>.
+            /// </returns>
+            bool WaitSignalAndClose(WebServiceHost &svc)
             {
                 using namespace std::chrono;
 
-                if (!closeServiceRequestEvent->WaitFor(5000))
-                    return;
+                if (!closeServiceRequestEvent->WaitFor(8000))
+                    return false;
 
                 auto t1 = system_clock().now();
 
                 if (!svc.Close())
-                    return;
+                    return false;
 
                 auto t2 = system_clock().now();
                 auto closureTimeSpan = duration_cast<milliseconds>(t2 - t1);
 
                 if (closureTimeSpan > maxTimeSpanForSvcClosure)
                     maxTimeSpanForSvcClosure = closureTimeSpan;
+
+                return true;
             }
 
             /// <summary>
@@ -108,7 +149,8 @@ namespace _3fd
                     // Function tables contains the implementations for the operations:
                     CalcBindingUnsecureFunctionTable funcTableSvcUnsecure = {
                         &AddImpl,
-                        &MultiplyImpl
+                        &MultiplyImpl,
+                        &CloseServiceImpl
                     };
 
                     // Create the web service host with default configurations:
@@ -128,7 +170,7 @@ namespace _3fd
                     host.Open(); // start listening
 
                     // Wait client to request service closure:
-                    WaitSignalAndClose(host);
+                    ASSERT_TRUE(WaitSignalAndClose(host));
                 }
                 catch (...)
                 {
@@ -152,7 +194,8 @@ namespace _3fd
                     // Function tables contains the implementations for the operations:
                     CalcBindingSSLFunctionTable funcTableSvcSSL = {
                         &AddImpl,
-                        &MultiplyImpl
+                        &MultiplyImpl,
+                        &CloseServiceImpl
                     };
 
                     // Create the web service host with default configurations:
@@ -172,7 +215,7 @@ namespace _3fd
                     host.Open(); // start listening
 
                     // Wait client to request service closure:
-                    WaitSignalAndClose(host);
+                    ASSERT_TRUE(WaitSignalAndClose(host));
                 }
                 catch (...)
                 {
@@ -196,7 +239,8 @@ namespace _3fd
                     // Function tables contains the implementations for the operations:
                     CalcBindingSSLFunctionTable funcTableSvcSSL = {
                         &AddImpl,
-                        &MultiplyImpl
+                        &MultiplyImpl,
+                        &CloseServiceImpl
                     };
 
                     // Create the web service host with default configurations:
@@ -216,7 +260,7 @@ namespace _3fd
                     host.Open(); // start listening
 
                     // Wait client to request service closure:
-                    WaitSignalAndClose(host);
+                    ASSERT_TRUE(WaitSignalAndClose(host));
                 }
                 catch (...)
                 {
@@ -237,8 +281,8 @@ namespace _3fd
                 try
                 {
                     // Function tables contains the implementations for the operations:
-                    CalcBindingUnsecureFunctionTable funcTableSvcUnsecure = { Fail, Fail };
-                    CalcBindingSSLFunctionTable funcTableSvcSSL = { Fail, Fail };
+                    CalcBindingUnsecureFunctionTable funcTableSvcUnsecure = { Fail, Fail, CloseServiceImpl };
+                    CalcBindingSSLFunctionTable funcTableSvcSSL = { Fail, Fail, CloseServiceImpl };
 
                     // Create the web service host with default configurations:
                     SvcEndpointsConfig hostCfg;
@@ -265,7 +309,7 @@ namespace _3fd
                     host.Open(); // start listening
 
                     // Wait client to request service closure:
-                    WaitSignalAndClose(host);
+                    ASSERT_TRUE(WaitSignalAndClose(host));
                 }
                 catch (...)
                 {
@@ -273,6 +317,8 @@ namespace _3fd
                 }
             }
         };
+
+        std::unique_ptr<utils::Event> Framework_WWS_TestCase::closeServiceRequestEvent;
 
         std::chrono::milliseconds Framework_WWS_TestCase::maxTimeSpanForSvcClosure(0);
 
@@ -345,7 +391,7 @@ namespace _3fd
         /// <summary>
         /// Tests synchronous web service access without transport security.
         /// </summary>
-		TEST_F(Framework_WWS_TestCase, TransportUnsecure_SyncTest)
+		TEST_F(Framework_WWS_TestCase, Host_TransportUnsecure_SyncTest)
 		{
             TestHostTransportUnsecure();
 		}
@@ -353,7 +399,7 @@ namespace _3fd
 		/// <summary>
 		/// Tests asynchronous web service access without transport security.
 		/// </summary>
-		TEST_F(Framework_WWS_TestCase, TransportUnsecure_AsyncTest)
+		TEST_F(Framework_WWS_TestCase, Host_TransportUnsecure_AsyncTest)
 		{
             TestHostTransportUnsecure();
 		}
@@ -362,7 +408,7 @@ namespace _3fd
 		/// Tests synchronous web service access
 		/// with SSL over HTTP and no client certificate.
 		/// </summary>
-		TEST_F(Framework_WWS_TestCase, TransportSSL_NoClientCert_SyncTest)
+		TEST_F(Framework_WWS_TestCase, Host_TransportSSL_NoClientCert_SyncTest)
 		{
             TestHostTransportSslNoClientCert();
 		}
@@ -371,7 +417,7 @@ namespace _3fd
 		/// Tests asynchronous web service access with
 		/// SSL over HTTP and no client certificate.
 		/// </summary>
-		TEST_F(Framework_WWS_TestCase, TransportSSL_NoClientCert_AsyncTest)
+		TEST_F(Framework_WWS_TestCase, Host_TransportSSL_NoClientCert_AsyncTest)
 		{
             TestHostTransportSslNoClientCert();
 		}
@@ -380,7 +426,7 @@ namespace _3fd
 		/// Tests synchronous web service access, with SSL over HTTP
 		/// and a client certificate.
 		/// </summary>
-		TEST_F(Framework_WWS_TestCase, TransportSSL_WithClientCert_SyncTest)
+		TEST_F(Framework_WWS_TestCase, Host_TransportSSL_WithClientCert_SyncTest)
 		{
             TestHostTransportSslWithClientCert();
 		}
@@ -389,7 +435,7 @@ namespace _3fd
 		/// Tests asynchronous web service access, with SSL over HTTP
 		/// and a client certificate.
 		/// </summary>
-		TEST_F(Framework_WWS_TestCase, TransportSSL_WithClientCert_AsyncTest)
+		TEST_F(Framework_WWS_TestCase, Host_TransportSSL_WithClientCert_AsyncTest)
 		{
             TestHostTransportSslWithClientCert();
 		}
@@ -398,7 +444,7 @@ namespace _3fd
 		/// <summary>
 		/// Tests SOAP fault transmission in web service synchronous access.
 		/// </summary>
-		TEST_F(Framework_WWS_TestCase, SOAP_Fault_SyncTest)
+		TEST_F(Framework_WWS_TestCase, Host_SOAP_Fault_SyncTest)
 		{
             TestHostSoapFaultHandling();
 		}
@@ -406,7 +452,7 @@ namespace _3fd
 		/// <summary>
 		/// Tests SOAP fault transmission in web service asynchronous access.
 		/// </summary>
-		TEST_F(Framework_WWS_TestCase, SOAP_Fault_AsyncTest)
+		TEST_F(Framework_WWS_TestCase, Host_SOAP_Fault_AsyncTest)
 		{
             TestHostSoapFaultHandling();
 		}
@@ -414,7 +460,7 @@ namespace _3fd
 		/// <summary>
 		/// Tests web service metadata retrieval via WS-MetadataExchange.
 		/// </summary>
-		TEST(Framework_WWS_TestCase, DISABLED_MexRequest_TransportUnsecure_Test)
+		TEST(Framework_WWS_TestCase, DISABLED_Host_MexRequest_TransportUnsecure_Test)
 		{
 			// Ensures proper initialization/finalization of the framework
 			_3fd::core::FrameworkInstance _framework;
@@ -423,13 +469,11 @@ namespace _3fd
 
 			try
 			{
-				/////////////////
-				// HOST setup
-
 				// Function tables contains the implementations for the operations:
 				CalcBindingUnsecureFunctionTable funcTableSvcUnsecure = {
 					&AddImpl,
-					&MultiplyImpl
+					&MultiplyImpl,
+                    &CloseServiceImpl
 				};
 
 				// Create the web service host with default configurations:

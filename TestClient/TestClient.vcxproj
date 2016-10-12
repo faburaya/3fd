@@ -180,6 +180,7 @@
     <ClInclude Include="..\TestShared\rpc_test_shared.h" />
     <ClInclude Include="AcmeTesting_w32.h" />
     <ClInclude Include="AcmeTesting_x64.h" />
+    <ClInclude Include="calculator.wsdl.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
@@ -202,6 +203,12 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="calculator.wsdl.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -210,6 +217,7 @@
     </ClCompile>
     <ClCompile Include="TestClient.cpp" />
     <ClCompile Include="tests_rpc.cpp" />
+    <ClCompile Include="tests_wws.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\3FD\3FD.vcxproj">

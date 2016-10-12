@@ -96,6 +96,7 @@ namespace _3fd
         // The set of options for each test template instantiation
         struct TestOptions
         {
+            uint16_t waitSecs;
             ProtocolSequence protocolSequence;
             const char *objectUUID1;
             const char *objectUUID2;
@@ -121,7 +122,7 @@ namespace _3fd
             try
             {
                 // Wait for RPC server to become available
-                std::this_thread::sleep_for(std::chrono::seconds(1));
+                std::this_thread::sleep_for(std::chrono::seconds(GetParam().waitSecs));
 
                 AcmeSvcProxy client1(
                     GetParam().protocolSequence,
@@ -164,6 +165,7 @@ namespace _3fd
             Framework_RPC_TestCase,
             ::testing::Values(
                 TestOptions{
+                    12,
                     ProtocolSequence::Local,
                     objectsUuidsImpl1[6],
                     objectsUuidsImpl2[6],
@@ -172,6 +174,7 @@ namespace _3fd
                     ImpersonationLevel::Impersonate
                 },
                 TestOptions{
+                    1,
                     ProtocolSequence::Local,
                     objectsUuidsImpl1[7],
                     objectsUuidsImpl2[7],
@@ -180,6 +183,7 @@ namespace _3fd
                     ImpersonationLevel::Impersonate
                 },
                 TestOptions{
+                    1,
                     ProtocolSequence::Local,
                     objectsUuidsImpl1[8],
                     objectsUuidsImpl2[8],
@@ -188,6 +192,7 @@ namespace _3fd
                     ImpersonationLevel::Impersonate
                 },
                 TestOptions{
+                    1,
                     ProtocolSequence::Local,
                     objectsUuidsImpl1[9],
                     objectsUuidsImpl2[9],
@@ -196,6 +201,7 @@ namespace _3fd
                     ImpersonationLevel::Impersonate
                 },
                 TestOptions{
+                    1,
                     ProtocolSequence::Local,
                     objectsUuidsImpl1[10],
                     objectsUuidsImpl2[10],
@@ -204,6 +210,7 @@ namespace _3fd
                     ImpersonationLevel::Impersonate
                 }/*,
                 TestOptions{
+                    1,
                     ProtocolSequence::Local,
                     objectsUuidsImpl1[11],
                     objectsUuidsImpl2[11],
@@ -212,6 +219,7 @@ namespace _3fd
                     ImpersonationLevel::Impersonate
                 },
                 TestOptions{
+                    1,
                     ProtocolSequence::Local,
                     objectsUuidsImpl1[12],
                     objectsUuidsImpl2[12],
@@ -220,6 +228,7 @@ namespace _3fd
                     ImpersonationLevel::Impersonate
                 },*//*
                 TestOptions{
+                    8,
                     ProtocolSequence::TCP,
                     objectsUuidsImpl1[6],
                     objectsUuidsImpl2[6],
@@ -228,6 +237,7 @@ namespace _3fd
                     ImpersonationLevel::Impersonate
                 },
                 TestOptions{
+                    1,
                     ProtocolSequence::TCP,
                     objectsUuidsImpl1[7],
                     objectsUuidsImpl2[7],
@@ -236,6 +246,7 @@ namespace _3fd
                     ImpersonationLevel::Impersonate
                 },
                 TestOptions{
+                    1,
                     ProtocolSequence::TCP,
                     objectsUuidsImpl1[8],
                     objectsUuidsImpl2[8],
@@ -244,6 +255,7 @@ namespace _3fd
                     ImpersonationLevel::Impersonate
                 },
                 TestOptions{
+                    1,
                     ProtocolSequence::TCP,
                     objectsUuidsImpl1[9],
                     objectsUuidsImpl2[9],
@@ -252,6 +264,7 @@ namespace _3fd
                     ImpersonationLevel::Impersonate
                 }*//*,
                 TestOptions{
+                    1,
                     ProtocolSequence::TCP,
                     objectsUuidsImpl1[10],
                     objectsUuidsImpl2[10],
@@ -260,6 +273,7 @@ namespace _3fd
                     ImpersonationLevel::Impersonate
                 },
                 TestOptions{
+                    1,
                     ProtocolSequence::TCP,
                     objectsUuidsImpl1[11],
                     objectsUuidsImpl2[11],

@@ -36,6 +36,9 @@
     <ClInclude Include="..\TestShared\rpc_test_shared.h">
       <Filter>Shared</Filter>
     </ClInclude>
+    <ClInclude Include="calculator.wsdl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -55,6 +58,12 @@
     </ClCompile>
     <ClCompile Include="..\TestShared\rpc_test_shared.cpp">
       <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="tests_wws.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="calculator.wsdl.c">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
