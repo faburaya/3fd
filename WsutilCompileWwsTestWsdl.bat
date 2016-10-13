@@ -4,4 +4,6 @@ cd IntegrationTests
 wsutil /noclient /wsdl:calculator.wsdl
 
 cd ..\TestClient
-wsutil /noservice /wsdl:IntegrationTests\calculator.wsdl
+wsutil /noservice /wsdl:..\IntegrationTests\calculator.wsdl
+
+cd ..

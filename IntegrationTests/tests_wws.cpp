@@ -162,7 +162,6 @@ namespace _3fd
                         "CalcBindingUnsecure",
                         &calculator_wsdl.contracts.CalcBindingUnsecure,
                         &calculator_wsdl.policies.CalcBindingUnsecure,
-                        &calculator_wsdl.policies.CalcBindingUnsecure.channelProperties,
                         &funcTableSvcUnsecure
                     );
                     
@@ -181,10 +180,9 @@ namespace _3fd
             }
 
             /// <summary>
-            /// Tests web service access with SSL over HTTP
-            /// and no client certificate.
+            /// Tests web service access with SSL over HTTP.
             /// </summary>
-            void TestHostTransportSslNoClientCert()
+            void TestHostTransportSSL()
             {
                 // Ensures proper initialization/finalization of the framework
                 _3fd::core::FrameworkInstance _framework;
@@ -209,54 +207,6 @@ namespace _3fd
                         "CalcBindingSSL",
                         &calculator_wsdl.contracts.CalcBindingSSL,
                         &calculator_wsdl.policies.CalcBindingSSL,
-                        &calculator_wsdl.policies.CalcBindingSSL.channelProperties,
-                        &funcTableSvcSSL
-                    );
-
-                    // Create the service host:
-                    WebServiceHost host(2048);
-                    host.Setup("calculator.wsdl", hostCfg, true);
-                    host.Open(); // start listening
-
-                    // Wait client to request service closure:
-                    ASSERT_TRUE(WaitSignalAndClose(host));
-                }
-                catch (...)
-                {
-                    HandleException();
-                }
-            }
-
-            /// <summary>
-            /// Tests web service access, with SSL over HTTP
-            /// and a client certificate.
-            /// </summary>
-            void TestHostTransportSslWithClientCert()
-            {
-                // Ensures proper initialization/finalization of the framework
-                _3fd::core::FrameworkInstance _framework;
-
-                CALL_STACK_TRACE;
-
-                try
-                {
-                    // Function tables contains the implementations for the operations:
-                    CalcBindingSSLFunctionTable funcTableSvcSSL = {
-                        &AddImpl,
-                        &MultiplyImpl,
-                        &CloseServiceImpl
-                    };
-
-                    // Create the web service host with default configurations:
-                    SvcEndpointsConfig hostCfg;
-
-                    /* Map the binding used for the endpoint using SSL over HTTP to
-                    the corresponding implementations: */
-                    hostCfg.MapBinding(
-                        "CalcBindingSSL",
-                        &calculator_wsdl.contracts.CalcBindingSSL,
-                        &calculator_wsdl.policies.CalcBindingSSL,
-                        &calculator_wsdl.policies.CalcBindingSSL.channelProperties,
                         &funcTableSvcSSL
                     );
 
@@ -299,7 +249,6 @@ namespace _3fd
                         "CalcBindingUnsecure",
                         &calculator_wsdl.contracts.CalcBindingUnsecure,
                         &calculator_wsdl.policies.CalcBindingUnsecure,
-                        &calculator_wsdl.policies.CalcBindingUnsecure.channelProperties,
                         &funcTableSvcUnsecure
                     );
 
@@ -309,7 +258,6 @@ namespace _3fd
                         "CalcBindingSSL",
                         &calculator_wsdl.contracts.CalcBindingSSL,
                         &calculator_wsdl.policies.CalcBindingSSL,
-                        &calculator_wsdl.policies.CalcBindingSSL.channelProperties,
                         &funcTableSvcSSL
                     );
 
@@ -420,7 +368,7 @@ namespace _3fd
 		/// </summary>
 		TEST_F(Framework_WWS_TestCase, Host_TransportSSL_NoClientCert_SyncTest)
 		{
-            TestHostTransportSslNoClientCert();
+            TestHostTransportSSL();
 		}
 
 		/// <summary>
@@ -429,7 +377,7 @@ namespace _3fd
 		/// </summary>
 		TEST_F(Framework_WWS_TestCase, Host_TransportSSL_NoClientCert_AsyncTest)
 		{
-            TestHostTransportSslNoClientCert();
+            TestHostTransportSSL();
 		}
 
 		/// <summary>
@@ -438,7 +386,7 @@ namespace _3fd
 		/// </summary>
 		TEST_F(Framework_WWS_TestCase, Host_TransportSSL_WithClientCert_SyncTest)
 		{
-            TestHostTransportSslWithClientCert();
+            TestHostTransportSSL();
 		}
 
 		/// <summary>
@@ -447,7 +395,7 @@ namespace _3fd
 		/// </summary>
 		TEST_F(Framework_WWS_TestCase, Host_TransportSSL_WithClientCert_AsyncTest)
 		{
-            TestHostTransportSslWithClientCert();
+            TestHostTransportSSL();
 		}
 
 
@@ -495,7 +443,6 @@ namespace _3fd
 					"CalcBindingUnsecure",
                     &calculator_wsdl.contracts.CalcBindingUnsecure,
                     &calculator_wsdl.policies.CalcBindingUnsecure,
-                    &calculator_wsdl.policies.CalcBindingUnsecure.channelProperties,
                     &funcTableSvcUnsecure
 				);
 

@@ -16,15 +16,6 @@ namespace _3fd
 		namespace wws
 		{
             /// <summary>
-            /// Enumerates some options for binding security.
-            /// </summary>
-            enum class BindingSecurity
-            {
-                HttpUnsecure,
-                HttpWithSSL
-            };
-
-            /// <summary>
             /// Abstract class that is base to hold the implementations (both custom
             /// and from wsutil.exe) for a service endpoint with a specific binding.
             /// </summary>
@@ -34,7 +25,6 @@ namespace _3fd
 
                 const void *m_functionTable; // The table of functions that implement the service contract
                 WS_CONTRACT_DESCRIPTION *m_contractDescription;
-                WS_CHANNEL_PROPERTIES *m_channelProperties;
 
             protected:
 
@@ -42,25 +32,23 @@ namespace _3fd
 
                 WS_CONTRACT_DESCRIPTION *GetContractDescription() { return m_contractDescription; }
 
-                WS_CHANNEL_PROPERTIES *GetChannelProperties() { return m_channelProperties; }
-
-                virtual void *GetPolicyDescription() = 0;
+                virtual void *GetPolicyDescription(WSHeap &heap) = 0;
 
                 virtual size_t GetPolicyDescriptionTypeSize() const = 0;
+
+                virtual WS_CHANNEL_PROPERTIES &GetChannelProperties(WSHeap &heap) = 0;
 
             public:
 
                 BaseSvcEndptBindImpls(const void *functionTable,
-                                      const WS_CONTRACT_DESCRIPTION *contractDescription,
-                                      const WS_CHANNEL_PROPERTIES *channelProperties) :
+                                      const WS_CONTRACT_DESCRIPTION *contractDescription) :
                     m_functionTable(functionTable),
-                    m_contractDescription(const_cast<WS_CONTRACT_DESCRIPTION *> (contractDescription)),
-                    m_channelProperties(const_cast<WS_CHANNEL_PROPERTIES *> (channelProperties))
+                    m_contractDescription(const_cast<WS_CONTRACT_DESCRIPTION *> (contractDescription))
                 {}
 
                 virtual ~BaseSvcEndptBindImpls() {}
 
-                virtual BindingSecurity GetBindingSecurity() const = 0;
+                virtual WS_BINDING_TEMPLATE_TYPE GetBindingTemplateType() const = 0;
 
                 WS_SERVICE_ENDPOINT *CreateWSEndpoint(
                     const string &address,
@@ -79,22 +67,38 @@ namespace _3fd
             {
             private:
 
-                WS_HTTP_POLICY_DESCRIPTION *m_policyDescription;
+                const WS_HTTP_POLICY_DESCRIPTION *m_policyDescription;
+                WS_HTTP_POLICY_DESCRIPTION *m_copyOfPolicyDescription;
 
-                virtual void *GetPolicyDescription() override { return m_policyDescription;  }
+                virtual void *GetPolicyDescription(WSHeap &heap) override;
 
-                virtual size_t GetPolicyDescriptionTypeSize() const override { return sizeof *m_policyDescription; }
+                virtual size_t GetPolicyDescriptionTypeSize() const override
+                {
+                    return sizeof *m_policyDescription;
+                }
+
+                virtual WS_CHANNEL_PROPERTIES &GetChannelProperties(WSHeap &heap) override
+                {
+                    return static_cast<WS_HTTP_POLICY_DESCRIPTION *> (
+                        GetPolicyDescription(heap)
+                    )->channelProperties;
+                }
 
             public:
 
-                virtual BindingSecurity GetBindingSecurity() const override { return BindingSecurity::HttpUnsecure; }
+                virtual WS_BINDING_TEMPLATE_TYPE GetBindingTemplateType() const override
+                {
+                    return WS_HTTP_BINDING_TEMPLATE_TYPE;
+                }
 
-                SvcEndptBindHttpUnsecImpls(const void *functionTable,
-                                           const WS_CONTRACT_DESCRIPTION *contractDescription,
-                                           const WS_HTTP_POLICY_DESCRIPTION *policyDescription,
-                                           const WS_CHANNEL_PROPERTIES *channelProperties) :
-                    BaseSvcEndptBindImpls(functionTable, contractDescription, channelProperties),
-                    m_policyDescription(const_cast<WS_HTTP_POLICY_DESCRIPTION *> (policyDescription))
+                SvcEndptBindHttpUnsecImpls(
+                    const void *functionTable,
+                    const WS_CONTRACT_DESCRIPTION *contractDescription,
+                    const WS_HTTP_POLICY_DESCRIPTION *policyDescription
+                )
+                :   BaseSvcEndptBindImpls(functionTable, contractDescription),
+                    m_policyDescription(policyDescription),
+                    m_copyOfPolicyDescription(nullptr)
                 {}
 
                 virtual ~SvcEndptBindHttpUnsecImpls() {}
@@ -108,22 +112,38 @@ namespace _3fd
             {
             private:
 
-                WS_HTTP_SSL_POLICY_DESCRIPTION *m_policyDescription;
+                const WS_HTTP_SSL_POLICY_DESCRIPTION *m_policyDescription;
+                WS_HTTP_SSL_POLICY_DESCRIPTION *m_copyOfPolicyDescription;
 
-                virtual void *GetPolicyDescription() override { return m_policyDescription; }
+                virtual void *GetPolicyDescription(WSHeap &heap) override;
 
-                virtual size_t GetPolicyDescriptionTypeSize() const override { return sizeof *m_policyDescription; }
+                virtual size_t GetPolicyDescriptionTypeSize() const override
+                {
+                    return sizeof *m_policyDescription;
+                }
+
+                virtual WS_CHANNEL_PROPERTIES &GetChannelProperties(WSHeap &heap) override
+                {
+                    return static_cast<WS_HTTP_POLICY_DESCRIPTION *> (
+                        GetPolicyDescription(heap)
+                    )->channelProperties;
+                }
 
             public:
 
-                virtual BindingSecurity GetBindingSecurity() const override { return BindingSecurity::HttpWithSSL; }
+                virtual WS_BINDING_TEMPLATE_TYPE GetBindingTemplateType() const override
+                {
+                    return WS_HTTP_SSL_BINDING_TEMPLATE_TYPE;
+                }
 
-                SvcEndptBindHttpSslImpls(const void *functionTable,
-                                         const WS_CONTRACT_DESCRIPTION *contractDescription,
-                                         const WS_HTTP_SSL_POLICY_DESCRIPTION *policyDescription,
-                                         const WS_CHANNEL_PROPERTIES *channelProperties) :
-                    BaseSvcEndptBindImpls(functionTable, contractDescription, channelProperties),
-                    m_policyDescription(const_cast<WS_HTTP_SSL_POLICY_DESCRIPTION *> (policyDescription))
+                SvcEndptBindHttpSslImpls(
+                    const void *functionTable,
+                    const WS_CONTRACT_DESCRIPTION *contractDescription,
+                    const WS_HTTP_SSL_POLICY_DESCRIPTION *policyDescription
+                )
+                :   BaseSvcEndptBindImpls(functionTable, contractDescription),
+                    m_policyDescription(policyDescription),
+                    m_copyOfPolicyDescription(nullptr)
                 {}
 
                 virtual ~SvcEndptBindHttpSslImpls() {}
@@ -186,10 +206,9 @@ namespace _3fd
                 /// in the template generated by wsutil.</param>
                 /// <param name="policyDescription">The policy description implemented
                 /// in the template generated by wsutil.</param>
-                /// <param name="channelProperties">The channel properties implemented
-                /// in the template generated by wsutil.</param>
                 /// <param name="functionTable">The table of functions that implement the
                 /// service contract as specified in the binding.</param>
+                /// <param name="heap">The heap to allocate memory from.</param>
                 /// <remarks>
                 /// The binding identifier is not fully qualified (by namespace) because this
                 /// framework component assumes the programmer is using the target namespace
@@ -199,15 +218,13 @@ namespace _3fd
                     const string &bindName,
                     const WS_CONTRACT_DESCRIPTION *contractDescription,
                     const WS_HTTP_POLICY_DESCRIPTION *policyDescription,
-                    const WS_CHANNEL_PROPERTIES *channelProperties,
                     const void *functionTable)
                 {
                     m_bindNameToImpls[bindName].reset(
                         new SvcEndptBindHttpUnsecImpls(
                             functionTable,
                             contractDescription,
-                            policyDescription,
-                            channelProperties
+                            policyDescription
                         )
                     );
                 }
@@ -221,12 +238,9 @@ namespace _3fd
                 /// in the template generated by wsutil.</param>
                 /// <param name="policyDescription">The policy description implemented
                 /// in the template generated by wsutil.</param>
-                /// <param name="channelProperties">The channel properties implemented
-                /// in the template generated by wsutil.</param>
                 /// <param name="functionTable">The table of functions that implement the
                 /// service contract as specified in the binding.</param>
-                /// <param name="channelProperties">The channel properties implemented
-                /// in the template generated by wsutil.</param></param>
+                /// <param name="heap">The heap to allocate memory from.</param>
                 /// <remarks>
                 /// The binding identifier is not fully qualified (by namespace) because this
                 /// framework component assumes the programmer is using the target namespace
@@ -236,15 +250,13 @@ namespace _3fd
                     const string &bindName,
                     const WS_CONTRACT_DESCRIPTION *contractDescription,
                     const WS_HTTP_SSL_POLICY_DESCRIPTION *policyDescription,
-                    const WS_CHANNEL_PROPERTIES *channelProperties,
                     const void *functionTable)
                 {
                     m_bindNameToImpls[bindName].reset(
                         new SvcEndptBindHttpSslImpls(
                             functionTable,
                             contractDescription,
-                            policyDescription,
-                            channelProperties
+                            policyDescription
                         )
                     );
                 }
