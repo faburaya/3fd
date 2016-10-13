@@ -160,10 +160,15 @@ namespace _3fd
                     the corresponding implementations: */
                     hostCfg.MapBinding(
                         "CalcBindingUnsecure",
+                        &calculator_wsdl.contracts.CalcBindingUnsecure,
+                        &calculator_wsdl.policies.CalcBindingUnsecure,
                         &funcTableSvcUnsecure,
-                        CalcBindingUnsecure_CreateServiceEndpoint
+                        WS_CHANNEL_PROPERTIES{
+                            const_cast<WS_CHANNEL_PROPERTY *> (calculator_wsdl.policies.CalcBindingUnsecure.channelProperties),
+                            sizeof calculator_wsdl.policies.CalcBindingUnsecure.channelProperties
+                        }
                     );
-
+                    
                     // Create the service host:
                     WebServiceHost host(2048);
                     host.Setup("calculator.wsdl", hostCfg, true);
