@@ -162,11 +162,8 @@ namespace _3fd
                         "CalcBindingUnsecure",
                         &calculator_wsdl.contracts.CalcBindingUnsecure,
                         &calculator_wsdl.policies.CalcBindingUnsecure,
-                        &funcTableSvcUnsecure,
-                        WS_CHANNEL_PROPERTIES{
-                            const_cast<WS_CHANNEL_PROPERTY *> (calculator_wsdl.policies.CalcBindingUnsecure.channelProperties),
-                            sizeof calculator_wsdl.policies.CalcBindingUnsecure.channelProperties
-                        }
+                        &calculator_wsdl.policies.CalcBindingUnsecure.channelProperties,
+                        &funcTableSvcUnsecure
                     );
                     
                     // Create the service host:
@@ -210,8 +207,10 @@ namespace _3fd
                     the corresponding implementations: */
                     hostCfg.MapBinding(
                         "CalcBindingSSL",
-                        &funcTableSvcSSL,
-                        CalcBindingSSL_CreateServiceEndpoint
+                        &calculator_wsdl.contracts.CalcBindingSSL,
+                        &calculator_wsdl.policies.CalcBindingSSL,
+                        &calculator_wsdl.policies.CalcBindingSSL.channelProperties,
+                        &funcTableSvcSSL
                     );
 
                     // Create the service host:
@@ -255,8 +254,10 @@ namespace _3fd
                     the corresponding implementations: */
                     hostCfg.MapBinding(
                         "CalcBindingSSL",
-                        &funcTableSvcSSL,
-                        CalcBindingSSL_CreateServiceEndpoint
+                        &calculator_wsdl.contracts.CalcBindingSSL,
+                        &calculator_wsdl.policies.CalcBindingSSL,
+                        &calculator_wsdl.policies.CalcBindingSSL.channelProperties,
+                        &funcTableSvcSSL
                     );
 
                     // Create the service host:
@@ -296,16 +297,20 @@ namespace _3fd
                     the corresponding implementations: */
                     hostCfg.MapBinding(
                         "CalcBindingUnsecure",
-                        &funcTableSvcUnsecure,
-                        CalcBindingUnsecure_CreateServiceEndpoint
+                        &calculator_wsdl.contracts.CalcBindingUnsecure,
+                        &calculator_wsdl.policies.CalcBindingUnsecure,
+                        &calculator_wsdl.policies.CalcBindingUnsecure.channelProperties,
+                        &funcTableSvcUnsecure
                     );
 
                     /* Map the binding used for the endpoint using SSL over HTTP to
                     the corresponding implementations: */
                     hostCfg.MapBinding(
                         "CalcBindingSSL",
-                        &funcTableSvcSSL,
-                        CalcBindingSSL_CreateServiceEndpoint
+                        &calculator_wsdl.contracts.CalcBindingSSL,
+                        &calculator_wsdl.policies.CalcBindingSSL,
+                        &calculator_wsdl.policies.CalcBindingSSL.channelProperties,
+                        &funcTableSvcSSL
                     );
 
                     // Create the service host:
@@ -488,8 +493,10 @@ namespace _3fd
 				the corresponding implementations: */
 				hostCfg.MapBinding(
 					"CalcBindingUnsecure",
-					&funcTableSvcUnsecure,
-					CalcBindingUnsecure_CreateServiceEndpoint
+                    &calculator_wsdl.contracts.CalcBindingUnsecure,
+                    &calculator_wsdl.policies.CalcBindingUnsecure,
+                    &calculator_wsdl.policies.CalcBindingUnsecure.channelProperties,
+                    &funcTableSvcUnsecure
 				);
 
 				// Create the service host:

@@ -32,31 +32,33 @@ namespace _3fd
             {
             private:
 
-                void *m_functionTable; // The table of functions that implement the service contract
+                const void *m_functionTable; // The table of functions that implement the service contract
                 WS_CONTRACT_DESCRIPTION *m_contractDescription;
-                WS_CHANNEL_PROPERTIES m_channelProperties;
+                WS_CHANNEL_PROPERTIES *m_channelProperties;
 
             protected:
 
-                void *GetFunctionTable() { return m_functionTable; }
+                const void *GetFunctionTable() const { return m_functionTable; }
 
                 WS_CONTRACT_DESCRIPTION *GetContractDescription() { return m_contractDescription; }
 
-                WS_CHANNEL_PROPERTIES &GetChannelProperties() { return m_channelProperties; }
+                WS_CHANNEL_PROPERTIES *GetChannelProperties() { return m_channelProperties; }
 
                 virtual void *GetPolicyDescription() = 0;
 
-                virtual size_t GetPolicyDescriptionTypeSize() = 0;
+                virtual size_t GetPolicyDescriptionTypeSize() const = 0;
 
             public:
 
-                BaseSvcEndptBindImpls(void *functionTable,
-                                      WS_CONTRACT_DESCRIPTION *contractDescription,
-                                      WS_CHANNEL_PROPERTIES channelProperties) :
+                BaseSvcEndptBindImpls(const void *functionTable,
+                                      const WS_CONTRACT_DESCRIPTION *contractDescription,
+                                      const WS_CHANNEL_PROPERTIES *channelProperties) :
                     m_functionTable(functionTable),
-                    m_contractDescription(contractDescription),
-                    m_channelProperties(channelProperties)
+                    m_contractDescription(const_cast<WS_CONTRACT_DESCRIPTION *> (contractDescription)),
+                    m_channelProperties(const_cast<WS_CHANNEL_PROPERTIES *> (channelProperties))
                 {}
+
+                virtual ~BaseSvcEndptBindImpls() {}
 
                 virtual BindingSecurity GetBindingSecurity() const = 0;
 
@@ -81,19 +83,21 @@ namespace _3fd
 
                 virtual void *GetPolicyDescription() override { return m_policyDescription;  }
 
-                virtual size_t GetPolicyDescriptionTypeSize() override { return sizeof *m_policyDescription; }
+                virtual size_t GetPolicyDescriptionTypeSize() const override { return sizeof *m_policyDescription; }
 
             public:
 
                 virtual BindingSecurity GetBindingSecurity() const override { return BindingSecurity::HttpUnsecure; }
 
-                SvcEndptBindHttpUnsecImpls(void *functionTable,
-                                           WS_CONTRACT_DESCRIPTION *contractDescription,
-                                           WS_HTTP_POLICY_DESCRIPTION *policyDescription,
-                                           WS_CHANNEL_PROPERTIES channelProperties) :
+                SvcEndptBindHttpUnsecImpls(const void *functionTable,
+                                           const WS_CONTRACT_DESCRIPTION *contractDescription,
+                                           const WS_HTTP_POLICY_DESCRIPTION *policyDescription,
+                                           const WS_CHANNEL_PROPERTIES *channelProperties) :
                     BaseSvcEndptBindImpls(functionTable, contractDescription, channelProperties),
-                    m_policyDescription(policyDescription)
+                    m_policyDescription(const_cast<WS_HTTP_POLICY_DESCRIPTION *> (policyDescription))
                 {}
+
+                virtual ~SvcEndptBindHttpUnsecImpls() {}
             };
 
             /// <summary>
@@ -108,19 +112,21 @@ namespace _3fd
 
                 virtual void *GetPolicyDescription() override { return m_policyDescription; }
 
-                virtual size_t GetPolicyDescriptionTypeSize() override { return sizeof *m_policyDescription; }
+                virtual size_t GetPolicyDescriptionTypeSize() const override { return sizeof *m_policyDescription; }
 
             public:
 
                 virtual BindingSecurity GetBindingSecurity() const override { return BindingSecurity::HttpWithSSL; }
 
-                SvcEndptBindHttpSslImpls(void *functionTable,
-                                         WS_CONTRACT_DESCRIPTION *contractDescription,
-                                         WS_HTTP_SSL_POLICY_DESCRIPTION *policyDescription,
-                                         WS_CHANNEL_PROPERTIES channelProperties) :
+                SvcEndptBindHttpSslImpls(const void *functionTable,
+                                         const WS_CONTRACT_DESCRIPTION *contractDescription,
+                                         const WS_HTTP_SSL_POLICY_DESCRIPTION *policyDescription,
+                                         const WS_CHANNEL_PROPERTIES *channelProperties) :
                     BaseSvcEndptBindImpls(functionTable, contractDescription, channelProperties),
-                    m_policyDescription(policyDescription)
+                    m_policyDescription(const_cast<WS_HTTP_SSL_POLICY_DESCRIPTION *> (policyDescription))
                 {}
+
+                virtual ~SvcEndptBindHttpSslImpls() {}
             };
 
 			/// <summary>
@@ -161,12 +167,12 @@ namespace _3fd
                 /// framework component assumes the programmer is using the target namespace
                 /// of prefix 'tns' when declaring the bindings.
                 /// </remarks>
-                BaseSvcEndptBindImpls *GetImplementations(const string &bindName) const
+                std::shared_ptr<BaseSvcEndptBindImpls> GetImplementations(const string &bindName) const
                 {
                     auto iter = m_bindNameToImpls.find(bindName);
 
                     if (m_bindNameToImpls.end() != iter)
-                        return iter->second.get();
+                        return iter->second;
                     else
                         return nullptr;
                 }
@@ -180,6 +186,8 @@ namespace _3fd
                 /// in the template generated by wsutil.</param>
                 /// <param name="policyDescription">The policy description implemented
                 /// in the template generated by wsutil.</param>
+                /// <param name="channelProperties">The channel properties implemented
+                /// in the template generated by wsutil.</param>
                 /// <param name="functionTable">The table of functions that implement the
                 /// service contract as specified in the binding.</param>
                 /// <remarks>
@@ -189,10 +197,10 @@ namespace _3fd
                 /// </remarks>
                 void ServiceBindings::MapBinding(
                     const string &bindName,
-                    WS_CONTRACT_DESCRIPTION *contractDescription,
-                    WS_HTTP_POLICY_DESCRIPTION *policyDescription,
-                    void *functionTable,
-                    WS_CHANNEL_PROPERTIES channelProperties)
+                    const WS_CONTRACT_DESCRIPTION *contractDescription,
+                    const WS_HTTP_POLICY_DESCRIPTION *policyDescription,
+                    const WS_CHANNEL_PROPERTIES *channelProperties,
+                    const void *functionTable)
                 {
                     m_bindNameToImpls[bindName].reset(
                         new SvcEndptBindHttpUnsecImpls(
@@ -204,7 +212,6 @@ namespace _3fd
                     );
                 }
 
-
                 /// <summary>
                 /// Maps the binding name to the implementations for a
                 /// service endpoint binding with SSL on transport.
@@ -213,6 +220,8 @@ namespace _3fd
                 /// <param name="contractDescription">The contract description implemented
                 /// in the template generated by wsutil.</param>
                 /// <param name="policyDescription">The policy description implemented
+                /// in the template generated by wsutil.</param>
+                /// <param name="channelProperties">The channel properties implemented
                 /// in the template generated by wsutil.</param>
                 /// <param name="functionTable">The table of functions that implement the
                 /// service contract as specified in the binding.</param>
@@ -225,10 +234,10 @@ namespace _3fd
                 /// </remarks>
                 void ServiceBindings::MapBinding(
                     const string &bindName,
-                    WS_CONTRACT_DESCRIPTION *contractDescription,
-                    WS_HTTP_SSL_POLICY_DESCRIPTION *policyDescription,
-                    void *functionTable,
-                    WS_CHANNEL_PROPERTIES channelProperties)
+                    const WS_CONTRACT_DESCRIPTION *contractDescription,
+                    const WS_HTTP_SSL_POLICY_DESCRIPTION *policyDescription,
+                    const WS_CHANNEL_PROPERTIES *channelProperties,
+                    const void *functionTable)
                 {
                     m_bindNameToImpls[bindName].reset(
                         new SvcEndptBindHttpSslImpls(

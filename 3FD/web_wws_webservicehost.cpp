@@ -116,27 +116,24 @@ namespace _3fd
                 };
 
                 /* In the wsutil implementation of channel properties,
-                find the one setting the allowed encodings: */
+                find the one that sets the allowed encodings: */
 
-                auto channelPropertiesBegin = GetChannelProperties().properties;
-                auto channelPropertiesEnd = channelPropertiesBegin + GetChannelProperties().propertyCount;
+                auto channelPropertiesBegin = GetChannelProperties()->properties;
+                auto channelPropertiesEnd = channelPropertiesBegin + GetChannelProperties()->propertyCount;
 
                 auto iter = std::find_if(
                     channelPropertiesBegin,
                     channelPropertiesEnd,
                     [](const WS_CHANNEL_PROPERTY &prop) { return prop.id == WS_CHANNEL_PROPERTY_ENCODING; }
                 );
-                _ASSERTE(iter != channelPropertiesEnd);
 
-                *iter = WS_CHANNEL_PROPERTY {
-                    WS_CHANNEL_PROPERTY_ENCODING,
-                    memcpy(heap.Alloc(sizeof allowedEncodings), &allowedEncodings, sizeof allowedEncodings),
-                    sizeof allowedEncodings / sizeof allowedEncodings[0]
-                };
+                // Change such implementation:
+                _ASSERTE(iter != channelPropertiesEnd);
+                iter->value = memcpy(heap.Alloc(sizeof allowedEncodings), &allowedEncodings, sizeof allowedEncodings);
+                iter->valueSize = sizeof allowedEncodings / sizeof allowedEncodings[0];
 
                 std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
                 auto ucs2address = transcoder.from_bytes(address);
-
                 auto wsaddr = heap.Alloc<WS_STRING>();
                 wsaddr->length = ucs2address.length();
                 wsaddr->chars = heap.Alloc<wchar_t>(ucs2address.length());
@@ -147,6 +144,20 @@ namespace _3fd
                 serviceContract.defaultMessageHandlerCallback = 0;
                 serviceContract.methodTable = GetFunctionTable();
 
+                WS_BINDING_TEMPLATE_TYPE bindingTemplateType;
+                switch (GetBindingSecurity())
+                {
+                case BindingSecurity::HttpUnsecure:
+                    bindingTemplateType = WS_HTTP_BINDING_TEMPLATE_TYPE;
+                    break;
+                case BindingSecurity::HttpWithSSL:
+                    bindingTemplateType = WS_HTTP_SSL_BINDING_TEMPLATE_TYPE;
+                    break;
+                default:
+                    _ASSERTE(false);
+                    break;
+                }
+
                 WS_SERVICE_ENDPOINT *wsEndpointHandle;
                 auto hr = WsCreateServiceEndpointFromTemplate(
                     WS_CHANNEL_TYPE_REPLY,
@@ -156,7 +167,7 @@ namespace _3fd
                     &serviceContract,
                     nullptr, // no authorization callback
                     heap.GetHandle(),
-                    WS_HTTP_BINDING_TEMPLATE_TYPE, nullptr, 0,
+                    bindingTemplateType, nullptr, 0,
                     GetPolicyDescription(),
                     GetPolicyDescriptionTypeSize(),
                     &wsEndpointHandle,
@@ -385,8 +396,8 @@ namespace _3fd
 						// For the assigned binding, get the implementations
 						auto svcImplsForBind = bindings.GetImplementations(endpoint.bindingName);
 
-						if (svcImplsForBind != nullptr)
-							endpoint.implementations.reset(svcImplsForBind);
+						if (svcImplsForBind.get() != nullptr)
+							endpoint.implementations.swap(svcImplsForBind);
 						else
 						{// If no implementation has been found for the endpoint binding:
 							std::ostringstream oss;
@@ -447,10 +458,8 @@ namespace _3fd
             /// </summary>
             /// <param name="config">The configurations common to all endpoints in the web service.</param>
             /// <param name="endptsInfo">The information for each of the endpoints to create.</param>
-            /// <param name="enableMEX">
-            /// If set to <c>true</c>, the endpoint will serve metadata in the endpoints using
-            /// WS-MetadataExchange requests.
-            /// </param>
+            /// <param name="enableMEX">If set to <c>true</c>, the endpoint will serve metadata
+            /// in the endpoints using HTTP GET requests.</param>
             /// <param name="endpoints">Where to save the endpoints to be created.</param>
             /// <param name="heap">The heap that provides memory allocation.</param>
             static void CreateWebSvcEndpoints(
@@ -471,8 +480,8 @@ namespace _3fd
 
 					WS_SERVICE_ENDPOINT_PROPERTY *endpointProps;
 
-					size_t  idxProp(0),
-							endptPropCount;
+					size_t idxProp(0),
+						   endptPropCount;
 
                     if (enableMEX)
                     {
