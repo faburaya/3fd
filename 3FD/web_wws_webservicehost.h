@@ -52,6 +52,7 @@ namespace _3fd
 
                 WS_SERVICE_ENDPOINT *CreateWSEndpoint(
                     const string &address,
+                    WS_CHANNEL_PROPERTIES &moreChannelProps,
                     WS_SERVICE_ENDPOINT_PROPERTY *endpointProps,
                     size_t endpointPropsCount,
                     WSHeap &heap,
@@ -273,9 +274,9 @@ namespace _3fd
 					maxConcurrency; // specifies the maximum number of concurrent calls that would be serviced on a session based channel
 
 				unsigned long
-					//timeoutSend, // limits the amount of time (in milliseconds) that will be spent sending the HTTP headers and the bytes of the message
-					//timeoutReceive, // limits the amount of time (in milliseconds) that will be spent receiving the the bytes of the message
-					//timeoutDnsResolve, // limits the amount of time (in milliseconds) that will be spent resolving the DNS name
+					timeoutSend, // limits the amount of time (in milliseconds) that will be spent sending the HTTP headers and the bytes of the message
+					timeoutReceive, // limits the amount of time (in milliseconds) that will be spent receiving the the bytes of the message
+					timeoutDnsResolve, // limits the amount of time (in milliseconds) that will be spent resolving the DNS name
 					timeoutClose; // limits the amount of time (in milliseconds) a service model will wait after 'Close' is called, and once the timeout expires, the host will abort
 
 				/// <summary>
@@ -285,9 +286,9 @@ namespace _3fd
 				SvcEndpointsConfig() : 
 					maxAcceptingChannels(1),
 					maxConcurrency(1),
-					//timeoutSend(15000),
-					//timeoutReceive(15000),
-					//timeoutDnsResolve(60000),
+					timeoutSend(15000),
+					timeoutReceive(15000),
+					timeoutDnsResolve(60000),
 					timeoutClose(0)
 				{}
 			};
