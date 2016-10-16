@@ -170,9 +170,6 @@
     <ClInclude Include="gc_vertexstore.h">
       <Filter>Header Files\GC</Filter>
     </ClInclude>
-    <ClInclude Include="web_wws_utils.h">
-      <Filter>Header Files\WWS</Filter>
-    </ClInclude>
     <ClInclude Include="web_wws_webservicehost.h">
       <Filter>Header Files\WWS</Filter>
     </ClInclude>
@@ -190,6 +187,18 @@
     </ClInclude>
     <ClInclude Include="rpc_helpers.h">
       <Filter>Header Files\RPC</Filter>
+    </ClInclude>
+    <ClInclude Include="web_wws_impl_utils.h">
+      <Filter>Header Files\WWS</Filter>
+    </ClInclude>
+    <ClInclude Include="web_wws_impl_proxy.h">
+      <Filter>Header Files\WWS</Filter>
+    </ClInclude>
+    <ClInclude Include="web_wws_impl_host.h">
+      <Filter>Header Files\WWS</Filter>
+    </ClInclude>
+    <ClInclude Include="web_wws_utils.h">
+      <Filter>Header Files\WWS</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -322,21 +331,6 @@
     <ClCompile Include="gc_vertexstore.cpp">
       <Filter>Source Files\GC</Filter>
     </ClCompile>
-    <ClCompile Include="web_wws_webservicehost.cpp">
-      <Filter>Source Files\WWS</Filter>
-    </ClCompile>
-    <ClCompile Include="web_wws_utils.cpp">
-      <Filter>Source Files\WWS</Filter>
-    </ClCompile>
-    <ClCompile Include="web_wws_webserviceproxy.cpp">
-      <Filter>Source Files\WWS</Filter>
-    </ClCompile>
-    <ClCompile Include="web_wws_utils_wserror.cpp">
-      <Filter>Source Files\WWS</Filter>
-    </ClCompile>
-    <ClCompile Include="web_wws_utils_xml.cpp">
-      <Filter>Source Files\WWS</Filter>
-    </ClCompile>
     <ClCompile Include="rpc_impl_client.cpp">
       <Filter>Source Files\RPC</Filter>
     </ClCompile>
@@ -348,6 +342,24 @@
     </ClCompile>
     <ClCompile Include="utils_sharedmutex.cpp">
       <Filter>Source Files\utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="web_wws_impl_utils_xml.cpp">
+      <Filter>Source Files\WWS</Filter>
+    </ClCompile>
+    <ClCompile Include="web_wws_impl_host.cpp">
+      <Filter>Source Files\WWS</Filter>
+    </ClCompile>
+    <ClCompile Include="web_wws_impl_proxy.cpp">
+      <Filter>Source Files\WWS</Filter>
+    </ClCompile>
+    <ClCompile Include="web_wws_impl_utils_wserror.cpp">
+      <Filter>Source Files\WWS</Filter>
+    </ClCompile>
+    <ClCompile Include="web_wws_impl_utils.cpp">
+      <Filter>Source Files\WWS</Filter>
+    </ClCompile>
+    <ClCompile Include="web_wws_impl_utils_wsasyncoper.cpp">
+      <Filter>Source Files\WWS</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

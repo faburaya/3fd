@@ -36,6 +36,26 @@ typedef struct _calculator_wsdlLocalDefinitions
     } messages;  // end of messages
     struct  // contracts
     {
+        struct  // CalcBindingHeaderAuthSSL
+        {
+            struct  // CalcBindingHeaderAuthSSL_Add
+            {
+                WS_PARAMETER_DESCRIPTION params[3];
+                WS_OPERATION_DESCRIPTION CalcBindingHeaderAuthSSL_Add;
+            } CalcBindingHeaderAuthSSL_Add;
+            struct  // CalcBindingHeaderAuthSSL_Multiply
+            {
+                WS_PARAMETER_DESCRIPTION params[3];
+                WS_OPERATION_DESCRIPTION CalcBindingHeaderAuthSSL_Multiply;
+            } CalcBindingHeaderAuthSSL_Multiply;
+            struct  // CalcBindingHeaderAuthSSL_CloseService
+            {
+                WS_PARAMETER_DESCRIPTION params[1];
+                WS_OPERATION_DESCRIPTION CalcBindingHeaderAuthSSL_CloseService;
+            } CalcBindingHeaderAuthSSL_CloseService;
+            WS_OPERATION_DESCRIPTION* operations[3];
+            WS_CONTRACT_DESCRIPTION contractDesc;
+        } CalcBindingHeaderAuthSSL;
         struct  // CalcBindingSSL
         {
             struct  // CalcBindingSSL_Add
@@ -79,6 +99,20 @@ typedef struct _calculator_wsdlLocalDefinitions
     } contracts;  // endof contracts 
     struct  // policies
     {
+        struct  // CalcBindingHeaderAuthSSL
+        {
+            WS_ENCODING encoding;
+            WS_ADDRESSING_VERSION addressingVersion;
+            WS_ENVELOPE_VERSION envelopeVersion;
+            WS_CHANNEL_PROPERTY channelPropertiesArray[3];
+            WS_PROTECTION_LEVEL protectionLevel;
+            WS_SECURITY_PROPERTY securityPropertiesArray[1];
+            struct // headerAuthBinding
+            {
+                ULONG headerAuthentication;
+                WS_SECURITY_BINDING_PROPERTY securityBindingProperties[1];
+            } headerAuthBinding; 
+        } CalcBindingHeaderAuthSSL;
         struct  // CalcBindingSSL
         {
             WS_ENCODING encoding;
@@ -122,6 +156,25 @@ typedef struct _calculator_wsdlLocalDefinitions
     } dictionary;  // end of XML dictionary
 } _calculator_wsdlLocalDefinitions;
 
+
+typedef struct CalcBindingHeaderAuthSSL_AddParamStruct 
+{
+    double* first;
+    double* second;
+    double* result;
+} CalcBindingHeaderAuthSSL_AddParamStruct;
+
+typedef struct CalcBindingHeaderAuthSSL_MultiplyParamStruct 
+{
+    double* first;
+    double* second;
+    double* result;
+} CalcBindingHeaderAuthSSL_MultiplyParamStruct;
+
+typedef struct CalcBindingHeaderAuthSSL_CloseServiceParamStruct 
+{
+    __int64* result;
+} CalcBindingHeaderAuthSSL_CloseServiceParamStruct;
 
 typedef struct CalcBindingSSL_AddParamStruct 
 {
@@ -252,6 +305,69 @@ const static _calculator_wsdlLocalDefinitions calculator_wsdlLocalDefinitions =
         },    // message description for CloseServiceResponseMessage
     },  // end of messages 
     {  // contracts
+        {  // CalcBindingHeaderAuthSSL,
+            {  // CalcBindingHeaderAuthSSL_Add
+                {  // parameter descriptions for CalcBindingHeaderAuthSSL_Add
+                    {WS_PARAMETER_TYPE_NORMAL, (USHORT)0, (USHORT)-1},
+                    {WS_PARAMETER_TYPE_NORMAL, (USHORT)1, (USHORT)-1},
+                    {WS_PARAMETER_TYPE_NORMAL, (USHORT)-1, (USHORT)0},
+                },  // parameter descriptions for CalcBindingHeaderAuthSSL_Add
+                {  // operation description for CalcBindingHeaderAuthSSL_Add
+                    1,
+                    (WS_MESSAGE_DESCRIPTION*)&calculator_wsdl.messages.AdditionRequestMessage, 
+                    (WS_MESSAGE_DESCRIPTION*)&calculator_wsdl.messages.AdditionResponseMessage, 
+                    0,
+                    0,
+                    3,
+                    (WS_PARAMETER_DESCRIPTION*)calculator_wsdlLocalDefinitions.contracts.CalcBindingHeaderAuthSSL.CalcBindingHeaderAuthSSL_Add.params,
+                    0,
+                    WS_NON_RPC_LITERAL_OPERATION
+                }, //operation description for CalcBindingHeaderAuthSSL_Add
+            },  // CalcBindingHeaderAuthSSL_Add
+            {  // CalcBindingHeaderAuthSSL_Multiply
+                {  // parameter descriptions for CalcBindingHeaderAuthSSL_Multiply
+                    {WS_PARAMETER_TYPE_NORMAL, (USHORT)0, (USHORT)-1},
+                    {WS_PARAMETER_TYPE_NORMAL, (USHORT)1, (USHORT)-1},
+                    {WS_PARAMETER_TYPE_NORMAL, (USHORT)-1, (USHORT)0},
+                },  // parameter descriptions for CalcBindingHeaderAuthSSL_Multiply
+                {  // operation description for CalcBindingHeaderAuthSSL_Multiply
+                    1,
+                    (WS_MESSAGE_DESCRIPTION*)&calculator_wsdl.messages.MultiplicationRequestMessage, 
+                    (WS_MESSAGE_DESCRIPTION*)&calculator_wsdl.messages.MultiplicationResponseMessage, 
+                    0,
+                    0,
+                    3,
+                    (WS_PARAMETER_DESCRIPTION*)calculator_wsdlLocalDefinitions.contracts.CalcBindingHeaderAuthSSL.CalcBindingHeaderAuthSSL_Multiply.params,
+                    0,
+                    WS_NON_RPC_LITERAL_OPERATION
+                }, //operation description for CalcBindingHeaderAuthSSL_Multiply
+            },  // CalcBindingHeaderAuthSSL_Multiply
+            {  // CalcBindingHeaderAuthSSL_CloseService
+                {  // parameter descriptions for CalcBindingHeaderAuthSSL_CloseService
+                    {WS_PARAMETER_TYPE_NORMAL, (USHORT)-1, (USHORT)0},
+                },  // parameter descriptions for CalcBindingHeaderAuthSSL_CloseService
+                {  // operation description for CalcBindingHeaderAuthSSL_CloseService
+                    1,
+                    (WS_MESSAGE_DESCRIPTION*)&calculator_wsdl.messages.CloseServiceRequestMessage, 
+                    (WS_MESSAGE_DESCRIPTION*)&calculator_wsdl.messages.CloseServiceResponseMessage, 
+                    0,
+                    0,
+                    1,
+                    (WS_PARAMETER_DESCRIPTION*)calculator_wsdlLocalDefinitions.contracts.CalcBindingHeaderAuthSSL.CalcBindingHeaderAuthSSL_CloseService.params,
+                    0,
+                    WS_NON_RPC_LITERAL_OPERATION
+                }, //operation description for CalcBindingHeaderAuthSSL_CloseService
+            },  // CalcBindingHeaderAuthSSL_CloseService
+            {  // array of operations for CalcBindingHeaderAuthSSL
+                (WS_OPERATION_DESCRIPTION*)&calculator_wsdlLocalDefinitions.contracts.CalcBindingHeaderAuthSSL.CalcBindingHeaderAuthSSL_Add.CalcBindingHeaderAuthSSL_Add,
+                (WS_OPERATION_DESCRIPTION*)&calculator_wsdlLocalDefinitions.contracts.CalcBindingHeaderAuthSSL.CalcBindingHeaderAuthSSL_Multiply.CalcBindingHeaderAuthSSL_Multiply,
+                (WS_OPERATION_DESCRIPTION*)&calculator_wsdlLocalDefinitions.contracts.CalcBindingHeaderAuthSSL.CalcBindingHeaderAuthSSL_CloseService.CalcBindingHeaderAuthSSL_CloseService,
+            },  // array of operations for CalcBindingHeaderAuthSSL
+            {  // contract description for CalcBindingHeaderAuthSSL
+            3,
+            (WS_OPERATION_DESCRIPTION**)calculator_wsdlLocalDefinitions.contracts.CalcBindingHeaderAuthSSL.operations,
+            },  // end of contract description for CalcBindingHeaderAuthSSL
+        },  // CalcBindingHeaderAuthSSL
         {  // CalcBindingSSL,
             {  // CalcBindingSSL_Add
                 {  // parameter descriptions for CalcBindingSSL_Add
@@ -381,6 +497,46 @@ const static _calculator_wsdlLocalDefinitions calculator_wsdlLocalDefinitions =
     },  // end of contracts 
     {  // policies
         {
+            WS_ENCODING_XML_BINARY_1,
+            WS_ADDRESSING_VERSION_TRANSPORT,
+            WS_ENVELOPE_VERSION_SOAP_1_2,
+            { // channelPropertiesArray
+                {
+                    WS_CHANNEL_PROPERTY_ENCODING,
+                    (void*)&calculator_wsdlLocalDefinitions.policies.CalcBindingHeaderAuthSSL.encoding,
+                    sizeof(calculator_wsdlLocalDefinitions.policies.CalcBindingHeaderAuthSSL.encoding),
+                },
+                {
+                    WS_CHANNEL_PROPERTY_ADDRESSING_VERSION,
+                    (void*)&calculator_wsdlLocalDefinitions.policies.CalcBindingHeaderAuthSSL.addressingVersion,
+                    sizeof(calculator_wsdlLocalDefinitions.policies.CalcBindingHeaderAuthSSL.addressingVersion),
+                },
+                {
+                    WS_CHANNEL_PROPERTY_ENVELOPE_VERSION,
+                    (void*)&calculator_wsdlLocalDefinitions.policies.CalcBindingHeaderAuthSSL.envelopeVersion,
+                    sizeof(calculator_wsdlLocalDefinitions.policies.CalcBindingHeaderAuthSSL.envelopeVersion),
+                },
+            },
+            WS_PROTECTION_LEVEL_SIGN_AND_ENCRYPT,
+            { // securityPropertiesArray
+                {
+                    WS_SECURITY_PROPERTY_TRANSPORT_PROTECTION_LEVEL,
+                    (void*)&calculator_wsdlLocalDefinitions.policies.CalcBindingHeaderAuthSSL.protectionLevel,
+                    sizeof(calculator_wsdlLocalDefinitions.policies.CalcBindingHeaderAuthSSL.protectionLevel),
+                },
+            },
+            {  // headerAuthBinding
+                WS_HTTP_HEADER_AUTH_SCHEME_NEGOTIATE,
+                {  // security binding properties
+                    {
+                        WS_SECURITY_BINDING_PROPERTY_HTTP_HEADER_AUTH_SCHEME,
+                        (void*)&calculator_wsdlLocalDefinitions.policies.CalcBindingHeaderAuthSSL.headerAuthBinding.headerAuthentication,
+                        sizeof(calculator_wsdlLocalDefinitions.policies.CalcBindingHeaderAuthSSL.headerAuthBinding.headerAuthentication),
+                    },
+                },  // security binding properties
+            },  // headerAuthBinding
+        },   // end of CalcBindingHeaderAuthSSL,
+        {
             WS_ENCODING_XML_UTF8,
             WS_ADDRESSING_VERSION_TRANSPORT,
             WS_ENVELOPE_VERSION_SOAP_1_2,
@@ -469,6 +625,80 @@ const static _calculator_wsdlLocalDefinitions calculator_wsdlLocalDefinitions =
 #pragma warning(push)
 #endif
 #pragma warning(disable: 6101 6054)
+
+// operation: CalcBindingHeaderAuthSSL_Add
+HRESULT WINAPI CalcBindingHeaderAuthSSL_Add(
+    _In_ WS_SERVICE_PROXY* _serviceProxy,
+    _In_ double first, 
+    _In_ double second, 
+    _Out_ double* result, 
+    _In_ WS_HEAP* _heap,
+    _In_reads_opt_(_callPropertyCount) const WS_CALL_PROPERTY* _callProperties,
+    _In_ const ULONG _callPropertyCount,
+    _In_opt_ const WS_ASYNC_CONTEXT* _asyncContext,
+    _In_opt_ WS_ERROR* _error)
+{
+    void* _argList[3]; 
+    _argList[0] = &first;
+    _argList[1] = &second;
+    _argList[2] = &result;
+    return WsCall(_serviceProxy,
+        (WS_OPERATION_DESCRIPTION*)&calculator_wsdlLocalDefinitions.contracts.CalcBindingHeaderAuthSSL.CalcBindingHeaderAuthSSL_Add.CalcBindingHeaderAuthSSL_Add,
+        (const void **)&_argList,
+        _heap,
+        _callProperties,
+        _callPropertyCount,
+        _asyncContext,
+        _error);
+}
+
+// operation: CalcBindingHeaderAuthSSL_Multiply
+HRESULT WINAPI CalcBindingHeaderAuthSSL_Multiply(
+    _In_ WS_SERVICE_PROXY* _serviceProxy,
+    _In_ double first, 
+    _In_ double second, 
+    _Out_ double* result, 
+    _In_ WS_HEAP* _heap,
+    _In_reads_opt_(_callPropertyCount) const WS_CALL_PROPERTY* _callProperties,
+    _In_ const ULONG _callPropertyCount,
+    _In_opt_ const WS_ASYNC_CONTEXT* _asyncContext,
+    _In_opt_ WS_ERROR* _error)
+{
+    void* _argList[3]; 
+    _argList[0] = &first;
+    _argList[1] = &second;
+    _argList[2] = &result;
+    return WsCall(_serviceProxy,
+        (WS_OPERATION_DESCRIPTION*)&calculator_wsdlLocalDefinitions.contracts.CalcBindingHeaderAuthSSL.CalcBindingHeaderAuthSSL_Multiply.CalcBindingHeaderAuthSSL_Multiply,
+        (const void **)&_argList,
+        _heap,
+        _callProperties,
+        _callPropertyCount,
+        _asyncContext,
+        _error);
+}
+
+// operation: CalcBindingHeaderAuthSSL_CloseService
+HRESULT WINAPI CalcBindingHeaderAuthSSL_CloseService(
+    _In_ WS_SERVICE_PROXY* _serviceProxy,
+    _Out_ __int64* result, 
+    _In_ WS_HEAP* _heap,
+    _In_reads_opt_(_callPropertyCount) const WS_CALL_PROPERTY* _callProperties,
+    _In_ const ULONG _callPropertyCount,
+    _In_opt_ const WS_ASYNC_CONTEXT* _asyncContext,
+    _In_opt_ WS_ERROR* _error)
+{
+    void* _argList[1]; 
+    _argList[0] = &result;
+    return WsCall(_serviceProxy,
+        (WS_OPERATION_DESCRIPTION*)&calculator_wsdlLocalDefinitions.contracts.CalcBindingHeaderAuthSSL.CalcBindingHeaderAuthSSL_CloseService.CalcBindingHeaderAuthSSL_CloseService,
+        (const void **)&_argList,
+        _heap,
+        _callProperties,
+        _callPropertyCount,
+        _asyncContext,
+        _error);
+}
 
 // operation: CalcBindingSSL_Add
 HRESULT WINAPI CalcBindingSSL_Add(
@@ -734,6 +964,10 @@ const _calculator_wsdl calculator_wsdl =
         },    // message description for CloseServiceResponseMessage
     },  // messages
     {  // contracts
+        {  // CalcBindingHeaderAuthSSL
+            3,
+            (WS_OPERATION_DESCRIPTION**)calculator_wsdlLocalDefinitions.contracts.CalcBindingHeaderAuthSSL.operations,
+        },  // end of CalcBindingHeaderAuthSSL
         {  // CalcBindingSSL
             3,
             (WS_OPERATION_DESCRIPTION**)calculator_wsdlLocalDefinitions.contracts.CalcBindingSSL.operations,
@@ -744,6 +978,27 @@ const _calculator_wsdl calculator_wsdl =
         },  // end of CalcBindingUnsecure
     },  // contracts
     {  // policies
+        {  // template description for CalcBindingHeaderAuthSSL
+            {  // channel properties
+                (WS_CHANNEL_PROPERTY*)&calculator_wsdlLocalDefinitions.policies.CalcBindingHeaderAuthSSL.channelPropertiesArray,
+                3,
+            },
+            {  // security properties
+                (WS_SECURITY_PROPERTY*)&calculator_wsdlLocalDefinitions.policies.CalcBindingHeaderAuthSSL.securityPropertiesArray,
+                1,
+            },
+            { // sslBinding
+                { 
+                    0,
+                },
+            },
+            { // headerAuthBinding
+                { 
+                    (WS_SECURITY_BINDING_PROPERTY*)&calculator_wsdlLocalDefinitions.policies.CalcBindingHeaderAuthSSL.headerAuthBinding.securityBindingProperties,
+                    1,
+                },
+            },
+        },  // end of template description
         {  // template description for CalcBindingSSL
             {  // channel properties
                 (WS_CHANNEL_PROPERTY*)&calculator_wsdlLocalDefinitions.policies.CalcBindingSSL.channelPropertiesArray,
@@ -767,6 +1022,26 @@ const _calculator_wsdl calculator_wsdl =
         },  // end of template description
     },  // policies
 }; // end of _calculator_wsdl
+
+HRESULT CalcBindingHeaderAuthSSL_CreateServiceProxy(
+    _In_opt_ WS_HTTP_SSL_HEADER_AUTH_BINDING_TEMPLATE* templateValue,
+    _In_reads_opt_(proxyPropertyCount) const WS_PROXY_PROPERTY* proxyProperties,
+    _In_ const ULONG proxyPropertyCount,
+    _Outptr_ WS_SERVICE_PROXY** _serviceProxy,
+    _In_opt_ WS_ERROR* error)
+{
+    return WsCreateServiceProxyFromTemplate(
+        WS_CHANNEL_TYPE_REQUEST,
+        proxyProperties,
+        proxyPropertyCount,
+        WS_HTTP_SSL_HEADER_AUTH_BINDING_TEMPLATE_TYPE,
+        templateValue,
+        templateValue == NULL ? 0 : sizeof(WS_HTTP_SSL_HEADER_AUTH_BINDING_TEMPLATE),
+        &calculator_wsdl.policies.CalcBindingHeaderAuthSSL,
+        sizeof(calculator_wsdl.policies.CalcBindingHeaderAuthSSL),
+        _serviceProxy,
+        error);
+}
 
 HRESULT CalcBindingSSL_CreateServiceProxy(
     _In_opt_ WS_HTTP_SSL_BINDING_TEMPLATE* templateValue,

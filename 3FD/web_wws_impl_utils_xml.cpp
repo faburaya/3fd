@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "web_wws_utils.h"
+#include "web_wws_impl_utils.h"
 
 #include "callstacktracer.h"
 #include "logger.h"

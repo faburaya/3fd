@@ -283,7 +283,10 @@
     <ClInclude Include="targetver.h" />
     <ClInclude Include="utils.h" />
     <ClInclude Include="utils_lockfreequeue.h" />
+    <ClInclude Include="web_wws_impl_host.h" />
+    <ClInclude Include="web_wws_impl_proxy.h" />
     <ClInclude Include="web_wws_utils.h" />
+    <ClInclude Include="web_wws_impl_utils.h" />
     <ClInclude Include="web_wws_webservicehost.h" />
     <ClInclude Include="web_wws_webserviceproxy.h" />
   </ItemGroup>
@@ -356,11 +359,12 @@
     <ClCompile Include="gc_arrayofedges.cpp" />
     <ClCompile Include="utils_memorypool.cpp" />
     <ClCompile Include="utils_sharedmutex.cpp" />
-    <ClCompile Include="web_wws_utils.cpp" />
-    <ClCompile Include="web_wws_utils_wserror.cpp" />
-    <ClCompile Include="web_wws_utils_xml.cpp" />
-    <ClCompile Include="web_wws_webservicehost.cpp" />
-    <ClCompile Include="web_wws_webserviceproxy.cpp" />
+    <ClCompile Include="web_wws_impl_utils.cpp" />
+    <ClCompile Include="web_wws_impl_utils_wserror.cpp" />
+    <ClCompile Include="web_wws_impl_utils_xml.cpp" />
+    <ClCompile Include="web_wws_impl_host.cpp" />
+    <ClCompile Include="web_wws_impl_proxy.cpp" />
+    <ClCompile Include="web_wws_impl_utils_wsasyncoper.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Xml Include="config3fd-template.xml">

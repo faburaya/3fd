@@ -149,6 +149,9 @@ extern "C" {
 
 // The following client functions were generated:
 
+//     CalcBindingHeaderAuthSSL_Add
+//     CalcBindingHeaderAuthSSL_Multiply
+//     CalcBindingHeaderAuthSSL_CloseService
 //     CalcBindingSSL_Add
 //     CalcBindingSSL_Multiply
 //     CalcBindingSSL_CloseService
@@ -158,6 +161,7 @@ extern "C" {
 
 // The following server function tables were generated:
 
+//     struct CalcBindingHeaderAuthSSLFunctionTable
 //     struct CalcBindingSSLFunctionTable
 //     struct CalcBindingUnsecureFunctionTable
 
@@ -176,6 +180,7 @@ extern "C" {
 
 // the following policy helpers were generated:
 
+//  CalcBindingHeaderAuthSSL_CreateServiceEndpoint;
 //  CalcBindingSSL_CreateServiceEndpoint;
 //  CalcBindingUnsecure_CreateServiceEndpoint;
 
@@ -207,6 +212,65 @@ typedef struct OperationResponse
 {
     double result;
 } OperationResponse;
+
+////////////////////////////////////////////////
+// Policy helper routines
+////////////////////////////////////////////////
+
+//  WS_CHANNEL_PROPERTY_ENCODING = WS_ENCODING_XML_BINARY_1,
+//  WS_CHANNEL_PROPERTY_ADDRESSING_VERSION = WS_ADDRESSING_VERSION_TRANSPORT,
+//  WS_ENVELOPE_VERSION = WS_ENVELOPE_VERSION_SOAP_1_2,
+//  WS_PROTECTION_LEVEL = WS_PROTECTION_LEVEL_SIGN_AND_ENCRYPT,
+//  WS_SSL_TRANSPORT_SECURITY_BINDING_POLICY_DESCRIPTION
+//  WS_HTTP_HEADER_AUTH_SECURITY_BINDING_POLICY_DESCRIPTION
+//  security binding Property: WS_HTTP_HEADER_AUTH_SCHEME_NEGOTIATE,
+// client channel type: WS_CHANNEL_TYPE_REQUEST, service endpoint channel type: WS_CHANNEL_TYPE_REPLY
+
+struct CalcBindingHeaderAuthSSLFunctionTable;
+HRESULT CalcBindingHeaderAuthSSL_CreateServiceEndpoint(
+    _In_opt_ WS_HTTP_SSL_HEADER_AUTH_BINDING_TEMPLATE* templateValue,
+    _In_opt_ CONST WS_STRING* address,
+    _In_opt_ struct CalcBindingHeaderAuthSSLFunctionTable* functionTable,
+    _In_opt_ WS_SERVICE_SECURITY_CALLBACK authorizationCallback,
+    _In_reads_opt_(endpointPropertyCount) WS_SERVICE_ENDPOINT_PROPERTY* endpointProperties,
+    _In_ const ULONG endpointPropertyCount,
+    _In_ WS_HEAP* heap,
+    _Outptr_ WS_SERVICE_ENDPOINT** serviceEndpoint,
+    _In_opt_ WS_ERROR* error);
+
+////////////////////////////////////////////////
+// Service functions definitions
+////////////////////////////////////////////////
+
+typedef HRESULT (CALLBACK* CalcBindingHeaderAuthSSL_AddCallback) (
+    _In_ const WS_OPERATION_CONTEXT* _context,
+    _In_ double first, 
+    _In_ double second, 
+    _Out_ double* result, 
+    _In_ const WS_ASYNC_CONTEXT* _asyncContext,
+    _In_ WS_ERROR* _error);
+
+typedef HRESULT (CALLBACK* CalcBindingHeaderAuthSSL_MultiplyCallback) (
+    _In_ const WS_OPERATION_CONTEXT* _context,
+    _In_ double first, 
+    _In_ double second, 
+    _Out_ double* result, 
+    _In_ const WS_ASYNC_CONTEXT* _asyncContext,
+    _In_ WS_ERROR* _error);
+
+typedef HRESULT (CALLBACK* CalcBindingHeaderAuthSSL_CloseServiceCallback) (
+    _In_ const WS_OPERATION_CONTEXT* _context,
+    _Out_ __int64* result, 
+    _In_ const WS_ASYNC_CONTEXT* _asyncContext,
+    _In_ WS_ERROR* _error);
+
+// binding: CalcBindingHeaderAuthSSL
+typedef struct CalcBindingHeaderAuthSSLFunctionTable 
+{
+    CalcBindingHeaderAuthSSL_AddCallback CalcBindingHeaderAuthSSL_Add;
+    CalcBindingHeaderAuthSSL_MultiplyCallback CalcBindingHeaderAuthSSL_Multiply;
+    CalcBindingHeaderAuthSSL_CloseServiceCallback CalcBindingHeaderAuthSSL_CloseService;
+} CalcBindingHeaderAuthSSLFunctionTable;
 
 ////////////////////////////////////////////////
 // Policy helper routines
@@ -427,6 +491,20 @@ typedef struct _calculator_wsdl
     } messages;
     struct // contracts
     {
+        // binding: CalcBindingHeaderAuthSSL
+        // portType: CalculatorInterface
+        // operation: CalcBindingHeaderAuthSSL_Add
+        //     input message: AdditionRequestMessage
+        //     output message: AdditionResponseMessage
+        // operation: CalcBindingHeaderAuthSSL_Multiply
+        //     input message: MultiplicationRequestMessage
+        //     output message: MultiplicationResponseMessage
+        // operation: CalcBindingHeaderAuthSSL_CloseService
+        //     input message: CloseServiceRequestMessage
+        //     output message: CloseServiceResponseMessage
+        // contractDescription: calculator_wsdl.contracts.CalcBindingHeaderAuthSSL
+        WS_CONTRACT_DESCRIPTION CalcBindingHeaderAuthSSL;
+        
         // binding: CalcBindingSSL
         // portType: CalculatorInterface
         // operation: CalcBindingSSL_Add
@@ -458,6 +536,9 @@ typedef struct _calculator_wsdl
     } contracts;
     struct // policies
     {
+        // policy for binding: CalcBindingHeaderAuthSSL
+        // port name: CalculatorEndpointHeaderAuthSSL, binding: CalcBindingHeaderAuthSSL, namespace: http://calculator.example.org/
+        WS_HTTP_SSL_HEADER_AUTH_POLICY_DESCRIPTION CalcBindingHeaderAuthSSL;
         // policy for binding: CalcBindingSSL
         // port name: CalculatorEndpointSSL, binding: CalcBindingSSL, namespace: http://calculator.example.org/
         WS_HTTP_SSL_POLICY_DESCRIPTION CalcBindingSSL;

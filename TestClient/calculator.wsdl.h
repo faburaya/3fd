@@ -149,6 +149,9 @@ extern "C" {
 
 // The following client functions were generated:
 
+//     CalcBindingHeaderAuthSSL_Add
+//     CalcBindingHeaderAuthSSL_Multiply
+//     CalcBindingHeaderAuthSSL_CloseService
 //     CalcBindingSSL_Add
 //     CalcBindingSSL_Multiply
 //     CalcBindingSSL_CloseService
@@ -171,6 +174,7 @@ extern "C" {
 
 // the following policy helpers were generated:
 
+//  CalcBindingHeaderAuthSSL_CreateServiceProxy;
 //  CalcBindingSSL_CreateServiceProxy;
 //  CalcBindingUnsecure_CreateServiceProxy;
 
@@ -202,6 +206,64 @@ typedef struct OperationResponse
 {
     double result;
 } OperationResponse;
+
+////////////////////////////////////////////////
+// Policy helper routines
+////////////////////////////////////////////////
+
+//  WS_CHANNEL_PROPERTY_ENCODING = WS_ENCODING_XML_BINARY_1,
+//  WS_CHANNEL_PROPERTY_ADDRESSING_VERSION = WS_ADDRESSING_VERSION_TRANSPORT,
+//  WS_ENVELOPE_VERSION = WS_ENVELOPE_VERSION_SOAP_1_2,
+//  WS_PROTECTION_LEVEL = WS_PROTECTION_LEVEL_SIGN_AND_ENCRYPT,
+//  WS_SSL_TRANSPORT_SECURITY_BINDING_POLICY_DESCRIPTION
+//  WS_HTTP_HEADER_AUTH_SECURITY_BINDING_POLICY_DESCRIPTION
+//  security binding Property: WS_HTTP_HEADER_AUTH_SCHEME_NEGOTIATE,
+// client channel type: WS_CHANNEL_TYPE_REQUEST, service endpoint channel type: WS_CHANNEL_TYPE_REPLY
+
+HRESULT CalcBindingHeaderAuthSSL_CreateServiceProxy(
+    _In_opt_ WS_HTTP_SSL_HEADER_AUTH_BINDING_TEMPLATE* templateValue,
+    _In_reads_opt_(proxyPropertyCount) const WS_PROXY_PROPERTY* proxyProperties,
+    _In_ const ULONG proxyPropertyCount,
+    _Outptr_ WS_SERVICE_PROXY** _serviceProxy,
+    _In_opt_ WS_ERROR* error);
+
+////////////////////////////////////////////////
+// Client functions definitions
+////////////////////////////////////////////////
+
+// operation: CalcBindingHeaderAuthSSL_Add
+HRESULT WINAPI CalcBindingHeaderAuthSSL_Add(
+    _In_ WS_SERVICE_PROXY* _serviceProxy,
+    _In_ double first, 
+    _In_ double second, 
+    _Out_ double* result, 
+    _In_ WS_HEAP* _heap,
+    _In_reads_opt_(_callPropertyCount) const WS_CALL_PROPERTY* _callProperties,
+    _In_ const ULONG _callPropertyCount,
+    _In_opt_ const WS_ASYNC_CONTEXT* _asyncContext,
+    _In_opt_ WS_ERROR* _error);
+
+// operation: CalcBindingHeaderAuthSSL_Multiply
+HRESULT WINAPI CalcBindingHeaderAuthSSL_Multiply(
+    _In_ WS_SERVICE_PROXY* _serviceProxy,
+    _In_ double first, 
+    _In_ double second, 
+    _Out_ double* result, 
+    _In_ WS_HEAP* _heap,
+    _In_reads_opt_(_callPropertyCount) const WS_CALL_PROPERTY* _callProperties,
+    _In_ const ULONG _callPropertyCount,
+    _In_opt_ const WS_ASYNC_CONTEXT* _asyncContext,
+    _In_opt_ WS_ERROR* _error);
+
+// operation: CalcBindingHeaderAuthSSL_CloseService
+HRESULT WINAPI CalcBindingHeaderAuthSSL_CloseService(
+    _In_ WS_SERVICE_PROXY* _serviceProxy,
+    _Out_ __int64* result, 
+    _In_ WS_HEAP* _heap,
+    _In_reads_opt_(_callPropertyCount) const WS_CALL_PROPERTY* _callProperties,
+    _In_ const ULONG _callPropertyCount,
+    _In_opt_ const WS_ASYNC_CONTEXT* _asyncContext,
+    _In_opt_ WS_ERROR* _error);
 
 ////////////////////////////////////////////////
 // Policy helper routines
@@ -420,6 +482,20 @@ typedef struct _calculator_wsdl
     } messages;
     struct // contracts
     {
+        // binding: CalcBindingHeaderAuthSSL
+        // portType: CalculatorInterface
+        // operation: CalcBindingHeaderAuthSSL_Add
+        //     input message: AdditionRequestMessage
+        //     output message: AdditionResponseMessage
+        // operation: CalcBindingHeaderAuthSSL_Multiply
+        //     input message: MultiplicationRequestMessage
+        //     output message: MultiplicationResponseMessage
+        // operation: CalcBindingHeaderAuthSSL_CloseService
+        //     input message: CloseServiceRequestMessage
+        //     output message: CloseServiceResponseMessage
+        // contractDescription: calculator_wsdl.contracts.CalcBindingHeaderAuthSSL
+        WS_CONTRACT_DESCRIPTION CalcBindingHeaderAuthSSL;
+        
         // binding: CalcBindingSSL
         // portType: CalculatorInterface
         // operation: CalcBindingSSL_Add
@@ -451,6 +527,9 @@ typedef struct _calculator_wsdl
     } contracts;
     struct // policies
     {
+        // policy for binding: CalcBindingHeaderAuthSSL
+        // port name: CalculatorEndpointHeaderAuthSSL, binding: CalcBindingHeaderAuthSSL, namespace: http://calculator.example.org/
+        WS_HTTP_SSL_HEADER_AUTH_POLICY_DESCRIPTION CalcBindingHeaderAuthSSL;
         // policy for binding: CalcBindingSSL
         // port name: CalculatorEndpointSSL, binding: CalcBindingSSL, namespace: http://calculator.example.org/
         WS_HTTP_SSL_POLICY_DESCRIPTION CalcBindingSSL;
