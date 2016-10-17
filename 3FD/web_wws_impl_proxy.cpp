@@ -336,9 +336,12 @@ namespace wws
             "Failed to create proxy for web service with HTTP "
             "header authentication and client side SSL certificate");
     }
-    catch (IAppException &)
+    catch (IAppException &ex)
     {
-        throw; // just forward exceptions regarding errors known to have been previously handled
+        CALL_STACK_TRACE;
+        throw AppException<std::runtime_error>(
+            "Failed to instantiate object wrapper for web service proxy", ex
+        );
     }
     catch (std::system_error &ex)
     {

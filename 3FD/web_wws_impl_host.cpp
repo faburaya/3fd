@@ -366,9 +366,12 @@ namespace wws
 		m_hostStateMutex()
 	{
 	}
-	catch (IAppException &)
+	catch (IAppException &ex)
 	{
-		throw; // just forward exceptions known to have been already handled
+        CALL_STACK_TRACE;
+		throw AppException<std::runtime_error>(
+            "Failed to instantiate wrapper object for web service host", ex
+        );
 	}
 	catch (std::system_error &ex)
 	{
