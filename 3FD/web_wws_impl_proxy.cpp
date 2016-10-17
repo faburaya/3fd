@@ -358,7 +358,7 @@ namespace wws
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="WebServiceProxyImpl" /> class.
+    /// Initializes a new instance of the <see cref="WebServiceProxy" /> class.
     /// This constructor applies to the specific case of HTTP binding with header
     /// authentication, SSL and this proxy using a client certificate.
     /// </summary>

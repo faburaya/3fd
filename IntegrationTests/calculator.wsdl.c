@@ -725,7 +725,7 @@ const static _calculator_wsdlLocalDefinitions calculator_wsdlLocalDefinitions =
     },  // end of contracts 
     {  // policies
         {
-            WS_ENCODING_XML_BINARY_1,
+            WS_ENCODING_XML_UTF8,
             WS_ADDRESSING_VERSION_TRANSPORT,
             WS_ENVELOPE_VERSION_SOAP_1_2,
             { // channelPropertiesArray

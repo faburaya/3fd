@@ -160,7 +160,8 @@ namespace integration_tests
 			}
 
             /* Request the host to close the service. The host will respond
-            with the max expected duration (in ms) for that to complete: */
+            with the max expected duration (in ms) for that to complete and
+            the same be again available for the next test: */
             auto timeout = client.CloseHostService();
             std::this_thread::sleep_for(std::chrono::milliseconds(timeout));
 			client.Close();
@@ -215,7 +216,8 @@ namespace integration_tests
 			}
 
             /* Request the host to close the service. The host will respond
-            with the max expected duration (in ms) for that to complete: */
+            with the max expected duration (in ms) for that to complete and
+            the same be again available for the next test: */
             auto timeout = client.CloseHostService();
             std::this_thread::sleep_for(std::chrono::milliseconds(timeout));
             client.Close();
@@ -240,7 +242,7 @@ namespace integration_tests
 		// Ctor for proxy without client certificate
 		CalcSvcProxySSL(const SvcProxyConfig &config) :
 			WebServiceProxy(
-				"https://localhost:8989/calculator",
+				"https://tars:8989/calculator",
 				config,
 				&CreateWSProxy<WS_HTTP_SSL_BINDING_TEMPLATE, CalcBindingSSL_CreateServiceProxy>
 			)
@@ -249,7 +251,7 @@ namespace integration_tests
 		// Ctor for proxy using a client certificate
 		CalcSvcProxySSL(const SvcProxyConfig &config, const SvcProxyCertInfo &certInfo) :
 			WebServiceProxy(
-				"https://localhost:8989/calculator",
+				"https://tars:8989/calculator",
 				config,
 				certInfo,
 				CalcBindingSSL_CreateServiceProxy
@@ -354,7 +356,7 @@ namespace integration_tests
 	};
 
 	// Thumbprint of client side certificate for transport security
-	const char *clientCertificateThumbprint = "fa6040bc28b9b50ec77c2f40b94125c2f775087f";
+	const char *clientCertificateThumbprint = "b4ca5fb6227dca20cb6842bfb02e04a772dbbb12";
 
 	/// <summary>
 	/// Tests synchronous web service access
@@ -381,7 +383,8 @@ namespace integration_tests
 			}
 
             /* Request the host to close the service. The host will respond
-            with the max expected duration (in ms) for that to complete: */
+            with the max expected duration (in ms) for that to complete and
+            the same be again available for the next test: */
             auto timeout = client.CloseHostService();
             std::this_thread::sleep_for(std::chrono::milliseconds(timeout));
             client.Close();
@@ -437,7 +440,8 @@ namespace integration_tests
 			}
 
             /* Request the host to close the service. The host will respond
-            with the max expected duration (in ms) for that to complete: */
+            with the max expected duration (in ms) for that to complete and
+            the same be again available for the next test: */
             auto timeout = client.CloseHostService();
             std::this_thread::sleep_for(std::chrono::milliseconds(timeout));
             client.Close();
@@ -449,8 +453,8 @@ namespace integration_tests
 	}
 
 	/// <summary>
-	/// Tests synchronous web service access, with SSL over HTTP
-	/// and and a client certificate.
+	/// Tests synchronous web service access, with
+	/// SSL over HTTP and a client certificate.
 	/// </summary>
 	TEST(Framework_WWS_TestCase, Proxy_TransportSSL_WithClientCert_SyncTest)
 	{
@@ -481,7 +485,8 @@ namespace integration_tests
 			}
 
             /* Request the host to close the service. The host will respond
-            with the max expected duration (in ms) for that to complete: */
+            with the max expected duration (in ms) for that to complete and
+            the same be again available for the next test: */
             auto timeout = client.CloseHostService();
             std::this_thread::sleep_for(std::chrono::milliseconds(timeout));
             client.Close();
@@ -493,8 +498,8 @@ namespace integration_tests
 	}
 
 	/// <summary>
-	/// Tests asynchronous web service access, with SSL over HTTP
-	/// and and a client certificate.
+	/// Tests asynchronous web service access, with
+	/// SSL over HTTP and a client certificate.
 	/// </summary>
 	TEST(Framework_WWS_TestCase, Proxy_TransportSSL_WithClientCert_AsyncTest)
 	{
@@ -545,7 +550,8 @@ namespace integration_tests
 			}
 
             /* Request the host to close the service. The host will respond
-            with the max expected duration (in ms) for that to complete: */
+            with the max expected duration (in ms) for that to complete and
+            the same be again available for the next test: */
             auto timeout = client.CloseHostService();
             std::this_thread::sleep_for(std::chrono::milliseconds(timeout));
             client.Close();
@@ -555,6 +561,230 @@ namespace integration_tests
 			HandleException();
 		}
 	}
+
+    /// <summary>
+    /// Implements a client for the calculator web service with SSL security.
+    /// </summary>
+    class CalcSvcProxyHeaderAuthSSL : public WebServiceProxy
+    {
+    public:
+
+        // Ctor for proxy using a client certificate
+        CalcSvcProxyHeaderAuthSSL(const SvcProxyConfig &config, const SvcProxyCertInfo &certInfo) :
+            WebServiceProxy(
+                "https://tars:8888/calculator",
+                config,
+                certInfo,
+                CalcBindingHeaderAuthSSL_CreateServiceProxy
+            )
+        {}
+
+        double Add(double first, double second)
+        {
+            CALL_STACK_TRACE;
+
+            double result;
+            WSHeap heap(proxyOperHeapSize);
+            WSError err;
+            HRESULT hr =
+                CalcBindingHeaderAuthSSL_Add(
+                    GetHandle(),
+                    first,
+                    second,
+                    &result,
+                    heap.GetHandle(),
+                    nullptr, 0,
+                    nullptr,
+                    err.GetHandle()
+                );
+
+            err.RaiseExClientNotOK(hr, "Calculator web service returned an error", heap);
+
+            return result;
+        }
+
+        double Multiply(double first, double second)
+        {
+            CALL_STACK_TRACE;
+
+            double result;
+            WSHeap heap(proxyOperHeapSize);
+            WSError err;
+            HRESULT hr =
+                CalcBindingHeaderAuthSSL_Multiply(
+                    GetHandle(),
+                    first,
+                    second,
+                    &result,
+                    heap.GetHandle(),
+                    nullptr, 0,
+                    nullptr,
+                    err.GetHandle()
+                );
+
+            err.RaiseExClientNotOK(hr, "Calculator web service returned an error", heap);
+
+            return result;
+        }
+
+        // Asynchronous 'Multiply' operation
+        WSAsyncOper MultiplyAsync(double first, double second, double &result)
+        {
+            CALL_STACK_TRACE;
+
+            // Prepare for an asynchronous operation:
+            auto asyncOp = CreateAsyncOperation(proxyOperHeapSize);
+            auto asyncContext = asyncOp.GetContext();
+
+            HRESULT hr = // this is immediately returned HRESULT code
+                CalcBindingHeaderAuthSSL_Multiply(
+                    GetHandle(),
+                    first,
+                    second,
+                    &result,
+                    asyncOp.GetHeapHandle(),
+                    nullptr, 0,
+                    &asyncContext, // this parameter asks for an asynchronous call
+                    asyncOp.GetErrHelperHandle()
+                );
+
+            asyncOp.SetCallReturn(hr);
+            return std::move(asyncOp);
+        }
+
+        // 'CloseService' operation
+        uint32_t CloseHostService()
+        {
+            CALL_STACK_TRACE;
+
+            int64_t result;
+            WSHeap heap(proxyOperHeapSize);
+            WSError err;
+            HRESULT hr =
+                CalcBindingHeaderAuthSSL_CloseService(
+                    GetHandle(),
+                    &result,
+                    heap.GetHandle(),
+                    nullptr, 0,
+                    nullptr,
+                    err.GetHandle()
+                );
+
+            err.RaiseExClientNotOK(hr, "Calculator web service returned an error", heap);
+
+            return result;
+        }
+    };
+
+    /// <summary>
+    /// Tests synchronous web service access, with HTTP
+    /// header authorization, SSL and a client certificate.
+    /// </summary>
+    TEST(Framework_WWS_TestCase, Proxy_HeaderAuthTransportSSL_WithClientCert_SyncTest)
+    {
+        // Ensures proper initialization/finalization of the framework
+        _3fd::core::FrameworkInstance _framework;
+
+        CALL_STACK_TRACE;
+
+        try
+        {
+            /* Insert here the information describing the client side
+            certificate to use in your test environment: */
+            SvcProxyCertInfo proxyCertInfo(
+                CERT_SYSTEM_STORE_LOCAL_MACHINE,
+                "My",
+                clientCertificateThumbprint
+            );
+
+            // Create the proxy (client):
+            SvcProxyConfig proxyCfg;
+            CalcSvcProxyHeaderAuthSSL client(proxyCfg, proxyCertInfo);
+            client.Open();
+
+            for (int count = 0; count < 10; ++count)
+            {
+                EXPECT_EQ(666.0, client.Add(606.0, 60.0));
+                EXPECT_EQ(666.0, client.Multiply(111.0, 6.0));
+            }
+
+            /* Request the host to close the service. The host will respond
+            with the max expected duration (in ms) for that to complete and
+            the same be again available for the next test: */
+            auto timeout = client.CloseHostService();
+            std::this_thread::sleep_for(std::chrono::milliseconds(timeout));
+            client.Close();
+        }
+        catch (...)
+        {
+            HandleException();
+        }
+    }
+
+    /// <summary>
+    /// Tests asynchronous web service access, with HTTP
+    /// header authorization, SSL and a client certificate.
+    /// </summary>
+    TEST(Framework_WWS_TestCase, Proxy_HeaderAuthTransportSSL_WithClientCert_AsyncTest)
+    {
+        // Ensures proper initialization/finalization of the framework
+        _3fd::core::FrameworkInstance _framework;
+
+        CALL_STACK_TRACE;
+
+        try
+        {
+            /* Insert here the information describing the client side
+            certificate to use in your test environment: */
+            SvcProxyCertInfo proxyCertInfo(
+                CERT_SYSTEM_STORE_LOCAL_MACHINE,
+                "My",
+                clientCertificateThumbprint
+            );
+
+            // Create the proxy (client):
+            SvcProxyConfig proxyCfg;
+            CalcSvcProxyHeaderAuthSSL client(proxyCfg, proxyCertInfo);
+            client.Open();
+
+            const int maxAsyncCalls = 5;
+
+            std::vector<double> results(maxAsyncCalls);
+            std::vector<WSAsyncOper> asyncOps;
+            asyncOps.reserve(maxAsyncCalls);
+
+            // Fire the asynchronous requests:
+            for (int idx = 0; idx < maxAsyncCalls; ++idx)
+            {
+                asyncOps.push_back(
+                    client.MultiplyAsync(111.0, 6.0, results[idx])
+                );
+            }
+
+            // Get the results and check for errors:
+            while (!asyncOps.empty())
+            {
+                asyncOps.back()
+                    .RaiseExClientNotOK("Calculator web service returned an error");
+
+                asyncOps.pop_back();
+
+                EXPECT_EQ(666.0, results.back());
+                results.pop_back();
+            }
+
+            /* Request the host to close the service. The host will respond
+            with the max expected duration (in ms) for that to complete and
+            the same be again available for the next test: */
+            auto timeout = client.CloseHostService();
+            std::this_thread::sleep_for(std::chrono::milliseconds(timeout));
+            client.Close();
+        }
+        catch (...)
+        {
+            HandleException();
+        }
+    }
 
 	/// <summary>
 	/// Tests SOAP fault transmission in web service synchronous access.
@@ -609,7 +839,8 @@ namespace integration_tests
 			}
 
             /* Request the host to close the service. The host will respond
-            with the max expected duration (in ms) for that to complete: */
+            with the max expected duration (in ms) for that to complete and
+            the same be again available for the next test: */
             auto timeout = sslClient.CloseHostService();
             std::this_thread::sleep_for(std::chrono::milliseconds(timeout));
             sslClient.Close();
@@ -685,7 +916,8 @@ namespace integration_tests
 			}
 
             /* Request the host to close the service. The host will respond
-            with the max expected duration (in ms) for that to complete: */
+            with the max expected duration (in ms) for that to complete and
+            the same be again available for the next test: */
             auto timeout = sslClient.CloseHostService();
             std::this_thread::sleep_for(std::chrono::milliseconds(timeout));
             sslClient.Close();

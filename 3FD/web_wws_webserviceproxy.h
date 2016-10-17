@@ -95,7 +95,7 @@ namespace wws
     /// An HRESULT code, which is 'S_OK' when successful.
     /// </returns>
     template <typename BindingTemplateType,
-                CallbackCreateServiceProxyImpl<BindingTemplateType> callback>
+              CallbackCreateServiceProxyImpl<BindingTemplateType> callback>
     HRESULT CreateWSProxy(
         WS_CHANNEL_PROPERTIES channelProperties,
         const WS_PROXY_PROPERTY *proxyProperties,

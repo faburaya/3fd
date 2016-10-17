@@ -4,6 +4,7 @@
 #include "web_wws_webservicehost.h"
 #include "calculator.wsdl.h"
 
+#include <sstream>
 #include <vector>
 #include <chrono>
 
@@ -63,7 +64,9 @@ namespace integration_tests
 
         static std::unique_ptr<utils::Event> closeServiceRequestEvent;
 
-        static std::chrono::milliseconds maxTimeSpanForSvcClosure;
+        static std::chrono::time_point<std::chrono::system_clock> startTimeSvcSetupAndOpen;
+
+        static std::chrono::milliseconds maxTimeSpanForSvcCycle;
 
     public:
 
@@ -76,20 +79,32 @@ namespace integration_tests
         }
 
         /// <summary>
-        /// Wait for signal to close the web service host.
+        /// Starts the counting time for web service setup and open.
+        /// </summary>
+        void StartTimeCountWebServiceSetupAndOpen()
+        {
+            startTimeSvcSetupAndOpen = std::chrono::system_clock().now();
+        }
+
+        /// <summary>
+        /// Stop counting time for web service setup and open, then wait for
+        /// signal to close the web service host.
         /// Once the signal is received, close it and measure how long that takes.
-        /// The maximum closure time is kept for later use (of web clients).
+        /// The maximum cycle time (setup, open & close) is kept to respond web clients that
+        /// need to know how long to wait before the web service host of the next test is available.
         /// </summary>
         /// <param name="svc">The web service host object.</param>
         /// <returns>
         /// <c>true</c> when the signal was received and the host service
         /// succesfully closed, otherwise, <c>false</c>.
         /// </returns>
-        bool WaitSignalAndClose(WebServiceHost &svc)
+        static bool WaitSignalAndClose(WebServiceHost &svc)
         {
             using namespace std::chrono;
 
-            if (!closeServiceRequestEvent->WaitFor(8000))
+            auto stopTimeSvcSetupAndOpen = system_clock().now();
+
+            if (!closeServiceRequestEvent->WaitFor(10000))
                 return false;
 
             auto t1 = system_clock().now();
@@ -98,10 +113,23 @@ namespace integration_tests
                 return false;
 
             auto t2 = system_clock().now();
+
             auto closureTimeSpan = duration_cast<milliseconds>(t2 - t1);
 
-            if (closureTimeSpan > maxTimeSpanForSvcClosure)
-                maxTimeSpanForSvcClosure = closureTimeSpan;
+            auto setupAndOpenTimeSpan = duration_cast<milliseconds>(
+                stopTimeSvcSetupAndOpen - startTimeSvcSetupAndOpen
+            );
+
+            auto cycleTimeSpan = setupAndOpenTimeSpan + closureTimeSpan;
+
+            if (cycleTimeSpan > maxTimeSpanForSvcCycle)
+                maxTimeSpanForSvcCycle = cycleTimeSpan;
+
+            std::ostringstream oss;
+            oss << "Max registered time span for web service host cycle close-setup-open is "
+                << maxTimeSpanForSvcCycle.count() << " ms";
+
+            Logger::Write(oss.str(), Logger::PRIO_NOTICE);
 
             return true;
         }
@@ -113,9 +141,9 @@ namespace integration_tests
         /// <return>
         /// Retrieves the maximum closure time in milliseconds.
         /// </return>
-        static uint32_t GetMaxClosureTime()
+        static uint32_t GetMaxCycleTime()
         {
-            return static_cast<uint32_t> (maxTimeSpanForSvcClosure.count());
+            return static_cast<uint32_t> (maxTimeSpanForSvcCycle.count());
         }
 
         /// <summary>
@@ -147,7 +175,7 @@ namespace integration_tests
             try
             {
                 // Function tables contains the implementations for the operations:
-                CalcBindingUnsecureFunctionTable funcTableSvcUnsecure = {
+                CalcBindingUnsecureFunctionTable funcTableSvc = {
                     &AddImpl,
                     &MultiplyImpl,
                     &CloseServiceImpl
@@ -162,9 +190,11 @@ namespace integration_tests
                     "CalcBindingUnsecure",
                     &calculator_wsdl.contracts.CalcBindingUnsecure,
                     &calculator_wsdl.policies.CalcBindingUnsecure,
-                    &funcTableSvcUnsecure
+                    &funcTableSvc
                 );
-                    
+                
+                StartTimeCountWebServiceSetupAndOpen();
+
                 // Create the service host:
                 WebServiceHost host(2048);
                 host.Setup("calculator.wsdl", hostCfg, nullptr, true);
@@ -192,7 +222,7 @@ namespace integration_tests
             try
             {
                 // Function tables contains the implementations for the operations:
-                CalcBindingSSLFunctionTable funcTableSvcSSL = {
+                CalcBindingSSLFunctionTable funcTableSvc = {
                     &AddImpl,
                     &MultiplyImpl,
                     &CloseServiceImpl
@@ -207,8 +237,57 @@ namespace integration_tests
                     "CalcBindingSSL",
                     &calculator_wsdl.contracts.CalcBindingSSL,
                     &calculator_wsdl.policies.CalcBindingSSL,
-                    &funcTableSvcSSL
+                    &funcTableSvc
                 );
+
+                StartTimeCountWebServiceSetupAndOpen();
+
+                // Create the service host:
+                WebServiceHost host(2048);
+                host.Setup("calculator.wsdl", hostCfg, nullptr, true);
+                host.Open(); // start listening
+
+                // Wait client to request service closure:
+                ASSERT_TRUE(WaitSignalAndClose(host));
+            }
+            catch (...)
+            {
+                HandleException();
+            }
+        }
+
+        /// <summary>
+        /// Tests web service access with HTTP header authorization and SSL.
+        /// </summary>
+        void TestHostHttpHeaderAuthTransportSSL()
+        {
+            // Ensures proper initialization/finalization of the framework
+            _3fd::core::FrameworkInstance _framework;
+
+            CALL_STACK_TRACE;
+
+            try
+            {
+                // Function tables contains the implementations for the operations:
+                CalcBindingHeaderAuthSSLFunctionTable funcTableSvc = {
+                    &AddImpl,
+                    &MultiplyImpl,
+                    &CloseServiceImpl
+                };
+
+                // Create the web service host with default configurations:
+                SvcEndpointsConfig hostCfg;
+
+                /* Map the binding used for the endpoint using HTTP header
+                authorization with SSL the corresponding implementations: */
+                hostCfg.MapBinding(
+                    "CalcBindingHeaderAuthSSL",
+                    &calculator_wsdl.contracts.CalcBindingHeaderAuthSSL,
+                    &calculator_wsdl.policies.CalcBindingHeaderAuthSSL,
+                    &funcTableSvc
+                );
+
+                StartTimeCountWebServiceSetupAndOpen();
 
                 // Create the service host:
                 WebServiceHost host(2048);
@@ -239,12 +318,13 @@ namespace integration_tests
                 // Function tables contains the implementations for the operations:
                 CalcBindingUnsecureFunctionTable funcTableSvcUnsecure = { Fail, Fail, CloseServiceImpl };
                 CalcBindingSSLFunctionTable funcTableSvcSSL = { Fail, Fail, CloseServiceImpl };
+                CalcBindingHeaderAuthSSLFunctionTable funcTableSvcHeaderAuthSSL = { Fail, Fail, CloseServiceImpl };
 
                 // Create the web service host with default configurations:
                 SvcEndpointsConfig hostCfg;
 
-                /* Map the binding used for the unsecure endpoint to
-                the corresponding implementations: */
+                /* Map the binding used for the unsecure endpoint
+                to the corresponding implementations: */
                 hostCfg.MapBinding(
                     "CalcBindingUnsecure",
                     &calculator_wsdl.contracts.CalcBindingUnsecure,
@@ -252,8 +332,8 @@ namespace integration_tests
                     &funcTableSvcUnsecure
                 );
 
-                /* Map the binding used for the endpoint using SSL over HTTP to
-                the corresponding implementations: */
+                /* Map the binding used for the endpoint using SSL
+                over HTTP to the corresponding implementations: */
                 hostCfg.MapBinding(
                     "CalcBindingSSL",
                     &calculator_wsdl.contracts.CalcBindingSSL,
@@ -261,8 +341,19 @@ namespace integration_tests
                     &funcTableSvcSSL
                 );
 
+                /* Map the binding used for the endpoint using HTTP header
+                authorization with SSL the corresponding implementations: */
+                hostCfg.MapBinding(
+                    "CalcBindingHeaderAuthSSL",
+                    &calculator_wsdl.contracts.CalcBindingHeaderAuthSSL,
+                    &calculator_wsdl.policies.CalcBindingHeaderAuthSSL,
+                    &funcTableSvcHeaderAuthSSL
+                );
+
+                StartTimeCountWebServiceSetupAndOpen();
+
                 // Create the service host:
-                WebServiceHost host(2048);
+                WebServiceHost host(3072);
                 host.Setup("calculator.wsdl", hostCfg, nullptr, true);
                 host.Open(); // start listening
 
@@ -278,7 +369,9 @@ namespace integration_tests
 
     std::unique_ptr<utils::Event> Framework_WWS_TestCase::closeServiceRequestEvent;
 
-    std::chrono::milliseconds Framework_WWS_TestCase::maxTimeSpanForSvcClosure(0);
+    std::chrono::time_point<std::chrono::system_clock> Framework_WWS_TestCase::startTimeSvcSetupAndOpen;
+
+    std::chrono::milliseconds Framework_WWS_TestCase::maxTimeSpanForSvcCycle(0);
 
 	// Implementation for the operation "Add"
 	HRESULT CALLBACK AddImpl(
@@ -314,7 +407,7 @@ namespace integration_tests
         _In_ WS_ERROR *wsErrorHandle)
     {
         Framework_WWS_TestCase::SignalWebServiceClosureEvent();
-        *result = Framework_WWS_TestCase::GetMaxClosureTime();
+        *result = Framework_WWS_TestCase::GetMaxCycleTime();
         return S_OK;
     }
 
@@ -398,6 +491,23 @@ namespace integration_tests
         TestHostTransportSSL();
 	}
 
+    /// <summary>
+    /// Tests synchronous web service access, with HTTP header
+    /// authorization, SSL and a client certificate.
+    /// </summary>
+    TEST_F(Framework_WWS_TestCase, Host_HeaderAuthTransportSSL_WithClientCert_SyncTest)
+    {
+        TestHostHttpHeaderAuthTransportSSL();
+    }
+
+    /// <summary>
+    /// Tests asynchronous web service access, with HTTP header
+    /// authorization, SSL and a client certificate.
+    /// </summary>
+    TEST_F(Framework_WWS_TestCase, Host_HeaderAuthTransportSSL_WithClientCert_AsyncTest)
+    {
+        TestHostHttpHeaderAuthTransportSSL();
+    }
 
 	/// <summary>
 	/// Tests SOAP fault transmission in web service synchronous access.
