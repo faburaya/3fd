@@ -171,8 +171,7 @@ namespace wws
             static const WS_XML_STRING faultCodeNamespace =
                 WS_XML_STRING_VALUE("http://www.w3.org/2003/05/soap-envelope");
 
-            static const WS_XML_STRING faultCodeLocalName =
-                WS_XML_STRING_VALUE("Receiver");
+            static const WS_XML_STRING faultCodeLocalName = WS_XML_STRING_VALUE("Receiver");
 
             ////////////////
             // FAULT CODE
@@ -358,8 +357,8 @@ namespace wws
         catch (std::exception &ex)
         {
             std::ostringstream oss;
-            oss << "Generic failure when attempting to get Windows token "
-                "from message sender for authorization: " << ex.what();
+            oss << "Generic failure when attempting to get Windows "
+                   "token from message sender for authorization: " << ex.what();
 
             Logger::Write(oss.str(), Logger::Priority::PRIO_CRITICAL);
             return STATUS_FAIL;

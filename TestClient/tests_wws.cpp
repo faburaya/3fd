@@ -162,9 +162,11 @@ namespace integration_tests
             /* Request the host to close the service. The host will respond
             with the max expected duration (in ms) for that to complete and
             the same be again available for the next test: */
+
             auto timeout = client.CloseHostService();
+            client.Close();
+
             std::this_thread::sleep_for(std::chrono::milliseconds(timeout));
-			client.Close();
 		}
 		catch (...)
 		{
@@ -218,9 +220,11 @@ namespace integration_tests
             /* Request the host to close the service. The host will respond
             with the max expected duration (in ms) for that to complete and
             the same be again available for the next test: */
+
             auto timeout = client.CloseHostService();
-            std::this_thread::sleep_for(std::chrono::milliseconds(timeout));
             client.Close();
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(timeout));
 		}
 		catch (...)
 		{
@@ -385,9 +389,11 @@ namespace integration_tests
             /* Request the host to close the service. The host will respond
             with the max expected duration (in ms) for that to complete and
             the same be again available for the next test: */
+
             auto timeout = client.CloseHostService();
-            std::this_thread::sleep_for(std::chrono::milliseconds(timeout));
             client.Close();
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(timeout));
 		}
 		catch (...)
 		{
@@ -442,9 +448,11 @@ namespace integration_tests
             /* Request the host to close the service. The host will respond
             with the max expected duration (in ms) for that to complete and
             the same be again available for the next test: */
+
             auto timeout = client.CloseHostService();
-            std::this_thread::sleep_for(std::chrono::milliseconds(timeout));
             client.Close();
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(timeout));
 		}
 		catch (...)
 		{
@@ -487,9 +495,11 @@ namespace integration_tests
             /* Request the host to close the service. The host will respond
             with the max expected duration (in ms) for that to complete and
             the same be again available for the next test: */
+
             auto timeout = client.CloseHostService();
-            std::this_thread::sleep_for(std::chrono::milliseconds(timeout));
             client.Close();
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(timeout));
 		}
 		catch (...)
 		{
@@ -552,9 +562,11 @@ namespace integration_tests
             /* Request the host to close the service. The host will respond
             with the max expected duration (in ms) for that to complete and
             the same be again available for the next test: */
+
             auto timeout = client.CloseHostService();
-            std::this_thread::sleep_for(std::chrono::milliseconds(timeout));
             client.Close();
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(timeout));
 		}
 		catch (...)
 		{
@@ -711,9 +723,11 @@ namespace integration_tests
             /* Request the host to close the service. The host will respond
             with the max expected duration (in ms) for that to complete and
             the same be again available for the next test: */
+
             auto timeout = client.CloseHostService();
-            std::this_thread::sleep_for(std::chrono::milliseconds(timeout));
             client.Close();
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(timeout));
         }
         catch (...)
         {
@@ -776,9 +790,11 @@ namespace integration_tests
             /* Request the host to close the service. The host will respond
             with the max expected duration (in ms) for that to complete and
             the same be again available for the next test: */
+
             auto timeout = client.CloseHostService();
-            std::this_thread::sleep_for(std::chrono::milliseconds(timeout));
             client.Close();
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(timeout));
         }
         catch (...)
         {
@@ -800,7 +816,7 @@ namespace integration_tests
 		{
 			SvcProxyConfig proxyCfg; // proxy configuration with default values
 
-            // Create a proxy without transport security:
+            // Create a proxy (client) without transport security:
             CalcSvcProxyUnsecure unsecureClient(proxyCfg);
             unsecureClient.Open();
 
@@ -816,8 +832,8 @@ namespace integration_tests
 
             unsecureClient.Close();
 
-			/* Insert here the information describing the client side
-			certificate to use in your test environment: */
+			/* Insert here the information describing the client
+			side certificate to use in your test environment: */
 			SvcProxyCertInfo proxyCertInfo(
 				CERT_SYSTEM_STORE_LOCAL_MACHINE,
 				"My",
@@ -838,12 +854,30 @@ namespace integration_tests
 				Logger::Write(ex, Logger::PRIO_ERROR);
 			}
 
+            sslClient.Close();
+
+            // Create a secure proxy (client) with HTTP header authentication:
+            CalcSvcProxyHeaderAuthSSL headerAuthSslClient(proxyCfg, proxyCertInfo);
+            headerAuthSslClient.Open();
+
+            try
+            {
+                // This request should generate a SOAP fault, hence throwing an exception
+                headerAuthSslClient.Multiply(111.0, 6.0);
+            }
+            catch (IAppException &ex)
+            {// Log the fault:
+                Logger::Write(ex, Logger::PRIO_ERROR);
+            }
+
             /* Request the host to close the service. The host will respond
             with the max expected duration (in ms) for that to complete and
             the same be again available for the next test: */
-            auto timeout = sslClient.CloseHostService();
+
+            auto timeout = headerAuthSslClient.CloseHostService();
+            headerAuthSslClient.Close();
+
             std::this_thread::sleep_for(std::chrono::milliseconds(timeout));
-            sslClient.Close();
 		}
 		catch (...)
 		{
@@ -915,12 +949,30 @@ namespace integration_tests
 				Logger::Write(ex, Logger::PRIO_ERROR);
 			}
 
-            /* Request the host to close the service. The host will respond
-            with the max expected duration (in ms) for that to complete and
-            the same be again available for the next test: */
-            auto timeout = sslClient.CloseHostService();
-            std::this_thread::sleep_for(std::chrono::milliseconds(timeout));
             sslClient.Close();
+
+            // Create a secure proxy (client) with HTTP header authentication:
+            CalcSvcProxyHeaderAuthSSL headerAuthSslClient(proxyCfg, proxyCertInfo);
+            headerAuthSslClient.Open();
+
+            try
+            {
+                // This request should generate a SOAP fault, hence throwing an exception
+                double result;
+                auto asyncOp = headerAuthSslClient.MultiplyAsync(111.0, 6.0, result);
+
+                /* The request generates a SOAP fault. This will wait for its
+                completion, then it throws an exception made from the deserialized
+                SOAP fault response: */
+                asyncOp.RaiseExClientNotOK("Calculator web service returned an error");
+            }
+            catch (IAppException &ex)
+            {// Log the fault:
+                Logger::Write(ex, Logger::PRIO_ERROR);
+            }
+
+            headerAuthSslClient.CloseHostService();
+            headerAuthSslClient.Close();
 		}
 		catch (...)
 		{
