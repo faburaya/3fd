@@ -55,6 +55,26 @@ namespace integration_tests
         _In_ WS_ERROR* wsErrorHandle
     );
 
+    HRESULT CALLBACK AuthorizeMessage(
+        _In_ const WS_OPERATION_CONTEXT *wsContextHandle,
+        _Out_ BOOL *authorized,
+        _In_opt_ WS_ERROR *wsErrorHandle)
+    {
+        CALL_STACK_TRACE;
+
+        HANDLE senderWinToken;
+        if (HelpAuthorizeSender(wsContextHandle, &senderWinToken, wsErrorHandle) == STATUS_FAIL)
+        {
+            *authorized = FALSE;
+            return WS_E_SECURITY_VERIFICATION_FAILURE;
+        }
+
+        // DO SOMETHING WITH THE WINDOWS TOKEN ...
+
+        *authorized = TRUE;
+        return S_OK;
+    }
+
     /// <summary>
     /// Test fixture for the WWS module.
     /// </summary>
@@ -293,7 +313,7 @@ namespace integration_tests
 
                 // Create the service host:
                 WebServiceHost host(2048);
-                host.Setup("calculator.wsdl", hostCfg, nullptr, true);
+                host.Setup("calculator.wsdl", hostCfg, &AuthorizeMessage, true);
                 host.Open(); // start listening
 
                 // Wait client to request service closure:
