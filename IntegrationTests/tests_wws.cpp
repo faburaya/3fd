@@ -107,6 +107,8 @@ namespace integration_tests
             if (!closeServiceRequestEvent->WaitFor(10000))
                 return false;
 
+            closeServiceRequestEvent->Reset();
+
             auto t1 = system_clock().now();
 
             if (!svc.Close())
