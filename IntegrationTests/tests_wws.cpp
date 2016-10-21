@@ -71,8 +71,8 @@ namespace integration_tests
 
         // DO SOMETHING WITH THE WINDOWS TOKEN ...
 
-        *authorized = FALSE;
-
+        *authorized = TRUE;
+        /*
         SetSoapFault(
             "Sender is not authorized",
             "Web service host refused to authorize the message sender",
@@ -80,7 +80,7 @@ namespace integration_tests
             wsContextHandle,
             wsErrorHandle
         );
-
+        */
         return S_OK;
     }
 
