@@ -139,12 +139,14 @@ namespace wws
     /// Creates a SOAP fault response from an exception (service error)
     /// and record it as rich error information.
     /// </summary>
-    /// <param name="operEx">The exception thrown by the web service operation implementation.</param>
+    /// <param name="reason">The fault reason.</param>
+    /// <param name="details">The fault details.</param>
     /// <param name="action">The SOAP action to which the fault refers.</param>
     /// <param name="wsOperContextHandle">Handle for the the current web service operation context.</param>
     /// <param name="wsErrorHandle">Handle for the rich error info utility.</param>
     void SetSoapFault(
-        core::IAppException &operEx,
+        const string &reason,
+        const string &details,
         const char *action,
         const WS_OPERATION_CONTEXT *wsOperContextHandle,
         WS_ERROR *wsErrorHandle)
@@ -186,7 +188,7 @@ namespace wws
             // FAULT REASON
 
             std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
-            auto what = transcoder.from_bytes(operEx.What());
+            auto why = transcoder.from_bytes(reason);
 
             fault.reasonCount = 1;
             fault.reasons = heap.Alloc<WS_FAULT_REASON>(fault.reasonCount);
@@ -195,12 +197,12 @@ namespace wws
 
             auto &reason = fault.reasons[0];
             reason.lang = faultReasonLanguage;
-            reason.text.length = what.length();
-            reason.text.chars = heap.Alloc<wchar_t>(what.length());
+            reason.text.length = why.length();
+            reason.text.chars = heap.Alloc<wchar_t>(why.length());
 
             memcpy(reason.text.chars,
-                   what.data(),
-                   what.length() * sizeof what[0]);
+                   why.data(),
+                   why.length() * sizeof why[0]);
 
             // Record the SOAP fault into the error object:
             hr = WsSetFaultErrorProperty(
@@ -254,8 +256,8 @@ namespace wws
                 faultDetailDescElemLocalName
             );
 
-            if (!operEx.Details().empty())
-                xmlWriter.WriteText(operEx.Details());
+            if (!details.empty())
+                xmlWriter.WriteText(details);
 
             xmlWriter.WriteEndElement();
 
@@ -285,6 +287,29 @@ namespace wws
             oss << "Generic failure when creating SOAP fault response: " << ex.what();
             Logger::Write(oss.str(), Logger::Priority::PRIO_CRITICAL);
         }
+    }
+
+    /// <summary>
+    /// Creates a SOAP fault response from an exception (service error)
+    /// and record it as rich error information.
+    /// </summary>
+    /// <param name="operEx">The exception thrown by the web service operation implementation.</param>
+    /// <param name="action">The SOAP action to which the fault refers.</param>
+    /// <param name="wsOperContextHandle">Handle for the the current web service operation context.</param>
+    /// <param name="wsErrorHandle">Handle for the rich error info utility.</param>
+    void SetSoapFault(
+        core::IAppException &operEx,
+        const char *action,
+        const WS_OPERATION_CONTEXT *wsOperContextHandle,
+        WS_ERROR *wsErrorHandle)
+    {
+        SetSoapFault(
+            operEx.What(),
+            operEx.Details(),
+            action,
+            wsOperContextHandle,
+            wsErrorHandle
+        );
     }
 
     /// <summary>
@@ -351,11 +376,20 @@ namespace wws
         }
         catch (IAppException &ex)
         {
+            SetSoapFault(ex, "AuthorizeSender", wsOperContextHandle, wsErrorHandle);
             Logger::Write(ex, Logger::Priority::PRIO_ERROR);
             return STATUS_FAIL;
         }
         catch (std::exception &ex)
         {
+            SetSoapFault(
+                "Failed to get Windows token from message sender for authorization",
+                ex.what(),
+                "AuthorizeSender",
+                wsOperContextHandle,
+                wsErrorHandle
+            );
+
             std::ostringstream oss;
             oss << "Generic failure when attempting to get Windows "
                    "token from message sender for authorization: " << ex.what();

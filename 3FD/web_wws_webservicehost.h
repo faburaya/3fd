@@ -142,6 +142,14 @@ namespace wws
 		WS_ERROR *wsErrorHandle
     );
 
+    void SetSoapFault(
+        const string &reason,
+        const string &details,
+        const char *action,
+        const WS_OPERATION_CONTEXT *wsOperContextHandle,
+        WS_ERROR *wsErrorHandle
+    );
+
     bool HelpAuthorizeSender(
         const WS_OPERATION_CONTEXT *wsOperContextHandle,
         HANDLE *senderWinToken,
