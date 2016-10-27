@@ -187,7 +187,7 @@ namespace _3fd
 
         /* This callback is invoked by RPC runtime every time an RPC takes
         place. At this point, the client is already authenticated.*/
-        RPC_STATUS CALLBACK callbackIntfAuthz(
+        rpc_status_t CALLBACK callbackIntfAuthz(
             _In_ RPC_IF_HANDLE interface,
             _In_ void *context)
         {
@@ -225,7 +225,7 @@ namespace _3fd
         {
             CALL_STACK_TRACE;
 
-            RPC_STATUS status;
+            rpc_status_t status;
 
             try
             {
@@ -273,7 +273,7 @@ namespace _3fd
 
                         UUID paramObjUuid;
                         std::wstring ucs2ObjUuid = transcoder.from_bytes(obj.uuid);
-                        status = UuidFromStringW((RPC_WSTR)ucs2ObjUuid.c_str(), &paramObjUuid);
+                        status = UuidFromStringW((rpc_string_t)ucs2ObjUuid.c_str(), &paramObjUuid);
                         ThrowIfError(status, "Could not parse UUID provided for object in RPC server", obj.uuid);
 
                         /* Assign the object UUID (as known by the customer)
@@ -317,7 +317,7 @@ namespace _3fd
                             interfaceHandle,
                             m_bindings,
                             objects.CopyTo(objsUuidsVec), // use the fix for UUID_VECTOR...
-                            const_cast<RPC_WSTR> (annotation.c_str())
+                            const_cast<rpc_string_t> (annotation.c_str())
                         );
 
                         ThrowIfError(status,
@@ -379,7 +379,7 @@ namespace _3fd
                 "RPC server will rollback its state to after initialization",
                 core::Logger::PRIO_INFORMATION);
 
-            RPC_STATUS status;
+            rpc_status_t status;
 
             switch (m_state)
             {
@@ -471,7 +471,7 @@ namespace _3fd
 
             core::Logger::Write("Shutting down RPC server...", core::Logger::PRIO_NOTICE);
 
-            RPC_STATUS status;
+            rpc_status_t status;
 
             switch (m_state)
             {
@@ -616,7 +616,7 @@ namespace _3fd
         {
             CALL_STACK_TRACE;
 
-            RPC_STATUS status;
+            rpc_status_t status;
 
             switch (m_state)
             {

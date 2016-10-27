@@ -131,7 +131,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>ENABLE_3FD_CST;ENABLE_3FD_ERR_IMPL_DETAILS;SQLITE_OMIT_DEPRECATED;SQLITE_OMIT_LOAD_EXTENSION;SQLITE_DEFAULT_FOREIGN_KEYS=1;_ENABLE_ATOMIC_ALIGNMENT_FIX;_SCL_SECURE_NO_WARNINGS;SECURITY_WIN32;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\btree;$(ProjectDir)\..\OpenCL;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\btree;$(ProjectDir)\..\OpenCL;$(SolutionDir)\..\..\dcerpc\include;$(SolutionDir)\..\..\openldap\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/D POCO_STATIC %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -149,7 +149,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>ENABLE_3FD_CST;ENABLE_3FD_ERR_IMPL_DETAILS;SQLITE_OMIT_DEPRECATED;SQLITE_OMIT_LOAD_EXTENSION;SQLITE_DEFAULT_FOREIGN_KEYS=1;_ENABLE_ATOMIC_ALIGNMENT_FIX;_SCL_SECURE_NO_WARNINGS;SECURITY_WIN32;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\btree;$(ProjectDir)\..\OpenCL;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\btree;$(ProjectDir)\..\OpenCL;$(SolutionDir)\..\..\dcerpc\include;$(SolutionDir)\..\..\openldap\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/D POCO_STATIC %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -167,7 +167,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>ENABLE_3FD_CST;ENABLE_3FD_ERR_IMPL_DETAILS;SQLITE_OMIT_DEPRECATED;SQLITE_OMIT_LOAD_EXTENSION;SQLITE_DEFAULT_FOREIGN_KEYS=1;_ENABLE_ATOMIC_ALIGNMENT_FIX;_SCL_SECURE_NO_WARNINGS;SECURITY_WIN32;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\btree;$(ProjectDir)\..\OpenCL;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\btree;$(ProjectDir)\..\OpenCL;$(SolutionDir)\..\..\dcerpc\include;$(SolutionDir)\..\..\openldap\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/D POCO_STATIC %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -187,7 +187,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>ENABLE_3FD_CST;ENABLE_3FD_ERR_IMPL_DETAILS;SQLITE_OMIT_DEPRECATED;SQLITE_OMIT_LOAD_EXTENSION;SQLITE_DEFAULT_FOREIGN_KEYS=1;_ENABLE_ATOMIC_ALIGNMENT_FIX;_SCL_SECURE_NO_WARNINGS;SECURITY_WIN32;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\btree;$(ProjectDir)\..\OpenCL;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\btree;$(ProjectDir)\..\OpenCL;$(SolutionDir)\..\..\dcerpc\include;$(SolutionDir)\..\..\openldap\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/D POCO_STATIC %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -209,7 +209,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>ENABLE_3FD_CST;ENABLE_3FD_ERR_IMPL_DETAILS;SQLITE_OMIT_DEPRECATED;SQLITE_OMIT_LOAD_EXTENSION;SQLITE_DEFAULT_FOREIGN_KEYS=1;_ENABLE_ATOMIC_ALIGNMENT_FIX;_SCL_SECURE_NO_WARNINGS;SECURITY_WIN32;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\btree;$(ProjectDir)\..\OpenCL;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\btree;$(ProjectDir)\..\OpenCL;$(SolutionDir)\..\..\dcerpc\include;$(SolutionDir)\..\..\openldap\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/D POCO_STATIC %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -231,7 +231,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>ENABLE_3FD_CST;ENABLE_3FD_ERR_IMPL_DETAILS;SQLITE_OMIT_DEPRECATED;SQLITE_OMIT_LOAD_EXTENSION;SQLITE_DEFAULT_FOREIGN_KEYS=1;_ENABLE_ATOMIC_ALIGNMENT_FIX;_SCL_SECURE_NO_WARNINGS;SECURITY_WIN32;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\btree;$(ProjectDir)\..\OpenCL;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\btree;$(ProjectDir)\..\OpenCL;$(SolutionDir)\..\..\dcerpc\include;$(SolutionDir)\..\..\openldap\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/D POCO_STATIC %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -273,6 +273,7 @@
     <ClInclude Include="opencl_impl.h" />
     <ClInclude Include="preprocessing.h" />
     <ClInclude Include="rpc_helpers.h" />
+    <ClInclude Include="rpc_impl_client.h" />
     <ClInclude Include="rpc_impl_server.h" />
     <ClInclude Include="rpc_impl_util.h" />
     <ClInclude Include="runtime.h" />
@@ -322,6 +323,7 @@
     <ClCompile Include="opencl_impl_program.cpp" />
     <ClCompile Include="opencl_impl_programmanifest.cpp" />
     <ClCompile Include="rpc_impl_client.cpp" />
+    <ClCompile Include="rpc_impl_client_posix.cpp" />
     <ClCompile Include="rpc_impl_server.cpp" />
     <ClCompile Include="runtime.cpp" />
     <ClCompile Include="rpc_impl_util.cpp" />

@@ -35,7 +35,7 @@ namespace _3fd
 
         void HandleException();
 
-        RPC_STATUS OperateImpl(RPC_BINDING_HANDLE handle, double left, double right, double &result)
+        rpc_status_t OperateImpl(RPC_BINDING_HANDLE handle, double left, double right, double &result)
         {
         RpcTryExcept
             Operate(handle, left, right, &result);
@@ -45,7 +45,7 @@ namespace _3fd
         RpcEndExcept
         }
 
-        RPC_STATUS ChangeCaseImpl(RPC_BINDING_HANDLE handle, const char *text, cstring &output)
+        rpc_status_t ChangeCaseImpl(RPC_BINDING_HANDLE handle, const char *text, cstring &output)
         {
         RpcTryExcept
             cstring input = { strlen(text) + 1, (unsigned char *)text };

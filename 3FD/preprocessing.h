@@ -49,14 +49,17 @@
 #       define _3FD_PLATFORM_WINRT
 #       define _3FD_PLATFORM_WINRT_PHONE
 #   endif
+#	define _3FD_MICROSOFT_RPC
 
 #elif defined __linux__ // Linux only:
 #	define _3FD_POCO_SUPPORT
 #	define _3FD_OPENCL_SUPPORT
 #	define _3FD_CONSOLE_AVAILABLE
+#	define _3FD_DCE_RPC
 #elif defined __unix__ // Unix only:
 #	define _3FD_POCO_SUPPORT
 #	define _3FD_CONSOLE_AVAILABLE
+#	define _3FD_DCE_RPC
 #endif
 
 // These instructions have they definition depending on whether this is a release compilation:
@@ -67,6 +70,7 @@
 #       define NOEXCEPT     noexcept
 #   endif
 
+#   define RELEASE_DEBUG_SWITCH(STATEMENT1, STATEMENT2) STATEMENT1
 #	define ONDEBUG(CODE_LINE)	;
 #else
 #   ifdef _3FD_PLATFORM_WIN32API
@@ -79,6 +83,7 @@
 #   endif
 
 #	define dbgexhnd
+#   define RELEASE_DEBUG_SWITCH(STATEMENT1, STATEMENT2) STATEMENT2
 #	define ONDEBUG(CODE_LINE)	CODE_LINE
 #endif
 

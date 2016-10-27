@@ -4,126 +4,179 @@
 #include "rpc_helpers.h"
 
 #include <string>
-#include <NtDsAPI.h>
+
+#ifdef _3FD_MICROSOFT_RPC
+#   include <NtDsAPI.h>
+#   include <wincrypt.h>
+#endif
 
 namespace _3fd
 {
-    using std::string;
+using std::string;
 
-    namespace rpc
+namespace rpc
+{
+    const char *ToString(ProtocolSequence protSeq);
+
+    const char *ToString(AuthenticationLevel authnLevel);
+
+    const char *ToString(ImpersonationLevel impersonationLevel);
+
+    const char *ConvertAuthnSvcOptToString(unsigned long authnService);
+
+#   ifdef _3FD_MICROSOFT_RPC
+
+    void AppendSecQosOptsDescription(const RPC_SECURITY_QOS &secQOS, std::ostringstream &oss);
+
+    const unsigned long UUID_VECTOR_MAX_SIZE(32);
+
+    /// <summary>
+    /// This is an improvised fix for UUID_VECTOR,
+    /// that seems to be wrongly defined in RPC API.
+    /// </summary>
+    struct UuidVectorFix
     {
-        const char *ToString(ProtocolSequence protSeq);
+        unsigned long size;
+        UUID *data[UUID_VECTOR_MAX_SIZE];
+    };
 
-        const char *ToString(AuthenticationLevel authnLevel);
+    /// <summary>
+    /// Simple wrapper for a vector of <see cref="UUID"/> structs.
+    /// It uses RAII to guarantee deallocation upon scope end,
+    /// not having to resort to smart pointers.
+    /// </summary>
+    class VectorOfUuids
+    {
+    private:
 
-        const char *ToString(ImpersonationLevel impersonationLevel);
+        std::vector<UUID *> m_ptrs2Uuids;
 
-        const char *ConvertAuthnSvcOptToString(unsigned long authnService);
+    public:
 
-        void AppendSecQosOptsDescription(const RPC_SECURITY_QOS &secQOS, std::ostringstream &oss);
+        VectorOfUuids() {}
 
-        const unsigned long UUID_VECTOR_MAX_SIZE(32);
+        VectorOfUuids(VectorOfUuids &&ob)
+            : m_ptrs2Uuids(std::move(ob.m_ptrs2Uuids)) {}
 
-        /// <summary>
-        /// This is an improvised fix for UUID_VECTOR,
-        /// that seems to be wrongly defined in RPC API.
-        /// </summary>
-        struct UuidVectorFix
+        VectorOfUuids &operator =(VectorOfUuids &&ob)
         {
-            unsigned long size;
-            UUID *data[UUID_VECTOR_MAX_SIZE];
-        };
+            if (&ob != this)
+                m_ptrs2Uuids = std::move(ob.m_ptrs2Uuids);
 
-        /// <summary>
-        /// Simple wrapper for a vector of <see cref="UUID"/> structs.
-        /// It uses RAII to guarantee deallocation upon scope end,
-        /// not having to resort to smart pointers.
-        /// </summary>
-        class VectorOfUuids
+            return *this;
+        }
+
+        ~VectorOfUuids();
+
+        size_t Size() const { return m_ptrs2Uuids.size(); }
+
+        void Add(const UUID &uuid);
+
+        UUID_VECTOR *CopyTo(UuidVectorFix &vec) noexcept;
+    };
+
+    /// <summary>
+    /// RAII for Directory Service binding handle.
+    /// </summary>
+    struct DirSvcBinding
+    {
+        HANDLE handle;
+
+        DirSvcBinding()
+            : handle(nullptr) {}
+
+        ~DirSvcBinding()
         {
-        private:
+            if (handle != nullptr)
+                DsUnBindW(&handle);
+        }
+    };
 
-            std::vector<UUID *> m_ptrs2Uuids;
+    /// <summary>
+    /// RAII for array of SPN's.
+    /// </summary>
+    struct ArrayOfSpn
+    {
+        DWORD size;
+        LPWSTR *data;
 
-        public:
+        ArrayOfSpn()
+            : size(0), data(nullptr) {}
 
-            VectorOfUuids() {}
+        ~ArrayOfSpn()
+        {
+            if (data != nullptr)
+                DsFreeSpnArrayW(size, data);
+        }
+    };
 
-            VectorOfUuids(VectorOfUuids &&ob)
-                : m_ptrs2Uuids(std::move(ob.m_ptrs2Uuids)) {}
+    bool DetectActiveDirectoryServices(DirSvcBinding &dirSvcBinding, bool isClient);
 
-            VectorOfUuids &operator =(VectorOfUuids &&ob)
+    class Certificate
+    {
+    };
+
+    /// <summary>
+    /// Provides access to the system certificate store.
+    /// </summary>
+    class SystemCertificateStore : notcopiable
+    {
+    private:
+
+        HCERTSTORE m_certStoreHandle;
+
+    public:
+
+        SystemCertificateStore(DWORD registryLocation, const string &storeName);
+
+        ~SystemCertificateStore();
+
+
+    };
+
+    // These wrappers make the porting from Microsoft RPC to DCE RPC a lot easier:
+
+    void rpc_string_free(rpc_string_t *str, rpc_status_t *status)
+    {
+        *status = RpcStringFreeW(str);
+    }
+
+    void dce_error_inq_text(rpc_status_t errCode, rpc_string_t errText, rpc_status_t *status)
+    {
+        *status = DceErrorInqTextW(errCode, errText);
+    }
+
+#   else
+
+
+
+#   endif
+
+    /// <summary>
+    /// RAII for RPC lib C-style strings.
+    /// </summary>
+    struct RpcString
+    {
+        rpc_string_t data;
+
+        RpcString()
+            : data(nullptr) {}
+
+        ~RpcString()
+        {
+            if (data != nullptr)
             {
-                if(&ob != this)
-                    m_ptrs2Uuids = std::move(ob.m_ptrs2Uuids);
-
-                return *this;
+                CALL_STACK_TRACE;
+                rpc_status_t status;
+                rpc_string_free(&data, &status);
+                LogIfError(status,
+                    "Failed to release resources of string generated by RPC library",
+                    core::Logger::PRIO_CRITICAL);
             }
+        }
+    };
 
-            ~VectorOfUuids();
-
-            size_t Size() const { return m_ptrs2Uuids.size(); }
-
-            void Add(const UUID &uuid);
-
-            UUID_VECTOR *CopyTo(UuidVectorFix &vec) noexcept;
-        };
-
-        /// <summary>
-        /// RAII for Directory Service binding handle.
-        /// </summary>
-        struct DirSvcBinding
-        {
-            HANDLE handle;
-
-            DirSvcBinding()
-                : handle(nullptr) {}
-
-            ~DirSvcBinding()
-            {
-                if (handle != nullptr)
-                    DsUnBindW(&handle);
-            }
-        };
-
-        bool DetectActiveDirectoryServices(DirSvcBinding &dirSvcBinding, bool isClient);
-
-        /// <summary>
-        /// RAII for array of SPN's.
-        /// </summary>
-        struct ArrayOfSpn
-        {
-            DWORD size;
-            LPWSTR *data;
-
-            ArrayOfSpn()
-                : size(0), data(nullptr) {}
-
-            ~ArrayOfSpn()
-            {
-                if (data != nullptr)
-                    DsFreeSpnArrayW(size, data);
-            }
-        };
-
-        /// <summary>
-        /// RAII for RPC lib C-style strings.
-        /// </summary>
-        struct RpcString
-        {
-            RPC_WSTR data;
-
-            RpcString()
-                : data(nullptr) {}
-
-            ~RpcString()
-            {
-                if (data != nullptr)
-                    RpcStringFreeW(&data);
-            }
-        };
-
-    }// end of namespace rpc
+}// end of namespace rpc
 }// end of namespace _3fd
 
 #endif // end of header guard

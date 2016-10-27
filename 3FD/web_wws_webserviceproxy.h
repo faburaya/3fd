@@ -65,8 +65,8 @@ namespace wws
 		/// <param name="storeName">Name of the store.</param>
 		/// <param name="thumbprint">The certificate thumbprint.</param>
 		SvcProxyCertInfo(unsigned long p_storeLocation,
-							const string &p_storeName,
-							const string &p_thumbprint) : 
+					     const string &p_storeName,
+				         const string &p_thumbprint) : 
 			storeLocation(p_storeLocation),
 			storeName(p_storeName),
 			thumbprint(p_thumbprint)

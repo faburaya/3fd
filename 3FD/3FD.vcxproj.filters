@@ -200,6 +200,9 @@
     <ClInclude Include="web_wws_utils.h">
       <Filter>Header Files\WWS</Filter>
     </ClInclude>
+    <ClInclude Include="rpc_impl_client.h">
+      <Filter>Header Files\RPC</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="sqlite3.c">
@@ -360,6 +363,9 @@
     </ClCompile>
     <ClCompile Include="web_wws_impl_utils_wsasyncoper.cpp">
       <Filter>Source Files\WWS</Filter>
+    </ClCompile>
+    <ClCompile Include="rpc_impl_client_posix.cpp">
+      <Filter>Source Files\RPC</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
