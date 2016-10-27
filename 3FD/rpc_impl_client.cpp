@@ -101,6 +101,7 @@ namespace rpc
 
     /// <summary>
     /// Initializes a new instance of the <see cref="RpcClient"/> class.
+    /// This is a basic constructor that sets everything but security options.
     /// </summary>
     /// <param name="protSeq">The transport to use for RPC.</param>
     /// <param name="objUUID">The UUID of the object in the RPC server. An empty string
@@ -161,7 +162,8 @@ namespace rpc
 #   ifdef _3FD_MICROSOFT_RPC
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="RpcClient"/> class.
+    /// Initializes a new instance of the <see cref="RpcClient"/> class
+    /// for security options of Windows SSP packages only (NTLM & Kerberos).
     /// </summary>
     /// <param name="protSeq">The transport to use for RPC.</param>
     /// <param name="objUUID">The UUID of the object in the RPC server. An empty string
@@ -192,6 +194,12 @@ namespace rpc
     try :
         RpcClient(protSeq, objUUID, destination, authnLevel, endpoint)
     {
+        _ASSERTE(
+            authnSecurity == AuthenticationSecurity::NTLM
+            || authnSecurity == AuthenticationSecurity::TryKerberos
+            || authnSecurity == AuthenticationSecurity::RequireMutualAuthn
+        );
+
         CALL_STACK_TRACE;
 
         if (authnLevel == AuthenticationLevel::None)
@@ -333,6 +341,112 @@ namespace rpc
     }
 
 #   endif
+
+    void rpc_binding_set_auth_info(
+        rpc_binding_handle_t bindingHandle,
+        rpc_string_t spn,
+        uint32_t protectLevel,
+        uint32_t authnSvc,
+        RPC_AUTH_IDENTITY_HANDLE authIdentity,
+        uint32_t authzSvc,
+        rpc_status_t *status)
+    {
+        *status = RpcBindingSetAuthInfoW(
+            bindingHandle,
+            spn,
+            protectLevel,
+            authnSvc,
+            authIdentity,
+            authzSvc
+        );
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="RpcClient"/> class
+    /// for security options of Secure Channel SSP.
+    /// </summary>
+    /// <param name="protSeq">The transport to use for RPC.</param>
+    /// <param name="objUUID">The UUID of the object in the RPC server. An empty string
+    /// is equivalent to a nil UUID, which is valid as long as the endpoint is specified.</param>
+    /// <param name="destination">The destination: local RPC requires the machine name,
+    /// while for TCP this is the network address (IP or host name).</param>
+    /// <param name="certInfoX509">Description of the X.509 certificate to use.</param>
+    /// <param name="authnLevel">The authentication level to use.</param>
+    /// <param name="endpoint">The endpoint: for local RPC is the application or service
+    /// name, while for TCP this is the port number. Specifying the endpoint is optional
+    /// if the server has registered its bindings with the endpoint mapper.</param>
+    RpcClient::RpcClient(
+        ProtocolSequence protSeq,
+        const string &objUUID,
+        const string &destination,
+        const CertInfo &certInfoX509,
+        AuthenticationLevel authnLevel,
+        const string &endpoint)
+    try :
+        RpcClient(protSeq, objUUID, destination, authnLevel, endpoint)
+    {
+        CALL_STACK_TRACE;
+
+        if (authnLevel == AuthenticationLevel::None)
+            return;
+
+        SystemCertificateStore certStore(certInfoX509.storeLocation, certInfoX509.storeName);
+        auto certX509 = certStore.FindCertBySubject(certInfoX509.subject);
+
+        if (certX509 == nullptr)
+        {
+            std::ostringstream oss;
+            oss << "Could not get from system store code " << certInfoX509.storeLocation
+                << " the specified X.509 certificate (subject = '" << certInfoX509.subject << "')";
+
+            throw core::AppException<std::runtime_error>(
+                "Certificate for RPC client was not found in store",
+                oss.str()
+            );
+        }
+
+        std::unique_ptr<SChannelCredWrapper> schannelCred(
+            new SChannelCredWrapper(certX509, certInfoX509.strongerSecurity)
+        );
+
+        auto authnService = static_cast<uint32_t> (AuthenticationSecurity::SecureChannel);
+
+        rpc_status_t status;
+        rpc_binding_set_auth_info(
+            m_bindingHandle,
+            nullptr,
+            static_cast<uint32_t> (authnLevel),
+            authnService,
+            schannelCred.get()->GetCredential(),
+            RPC_C_AUTHZ_DEFAULT,
+            &status
+        );
+
+        ThrowIfError(status, "Failed to set security for binding handle of RPC client");
+
+        std::ostringstream oss;
+        oss << "RPC client binding security was set to use "
+            << ConvertAuthnSvcOptToString(authnService)
+            << " with X.509 certificate (subject = '"
+            << certInfoX509.subject << "')";
+
+        core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
+    }
+    catch (core::IAppException &)
+    {
+        CALL_STACK_TRACE;
+        HelpFreeBindingHandle(&m_bindingHandle);
+        throw; // just forward an exception regarding an error known to have been already handled
+    }
+    catch (std::exception &ex)
+    {
+        CALL_STACK_TRACE;
+        HelpFreeBindingHandle(&m_bindingHandle);
+
+        std::ostringstream oss;
+        oss << "Generic failure when creating RPC client: " << ex.what();
+        throw core::AppException<std::runtime_error>(oss.str());
+    }
 
     /// <summary>
     /// Finalizes an instance of the <see cref="RpcClient"/> class.

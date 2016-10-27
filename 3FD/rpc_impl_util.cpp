@@ -110,6 +110,7 @@ namespace rpc
     {
         switch (authnService)
         {
+#   ifdef _3FD_MICROSOFT_RPC
         case RPC_C_AUTHN_WINNT:
             return R"(authentication service "Microsoft NTLM SSP")";
 
@@ -118,6 +119,12 @@ namespace rpc
 
         case RPC_C_AUTHN_GSS_KERBEROS:
             return R"(authentication service "Microsoft Kerberos SSP")";
+#   endif
+        case RPC_IMPL_SWITCH(RPC_C_AUTHN_GSS_SCHANNEL, rpc_c_authn_schannel):
+            return RPC_IMPL_SWITCH(
+                R"(authentication service "Microsoft Schannel SSP")",
+                R"(authentication service "Secure Channel")"
+            );
 
         default:
             _ASSERTE(false);
@@ -247,7 +254,7 @@ namespace rpc
     /// The certificate store location (such as CERT_SYSTEM_STORE_CURRENT_USER
     /// or CERT_SYSTEM_STORE_LOCAL_MACHINE) that contains the specified certificate.
     /// See https://msdn.microsoft.com/en-us/library/windows/desktop/aa388136.aspx.
-    ///</param>
+    /// </param>
     /// <param name="storeName">The certificate store name
     /// (such as "My") that contains the specified certificate.</param>
     SystemCertificateStore::SystemCertificateStore(DWORD registryLocation, const string &storeName)
@@ -292,19 +299,169 @@ namespace rpc
     /// </summary>
     SystemCertificateStore::~SystemCertificateStore()
     {
-        BOOL ret = CertCloseStore(
-            m_certStoreHandle,
-            RELEASE_DEBUG_SWITCH(0, CERT_CLOSE_STORE_CHECK_FLAG)
-        );
-
-        if (ret == FALSE)
+        try
+        {
+            if (CertCloseStore(m_certStoreHandle, 0) == FALSE)
+            {
+                CALL_STACK_TRACE;
+                std::ostringstream oss;
+                oss << "Failed to close system certificate store - ";
+                core::WWAPI::AppendDWordErrorMessage(GetLastError(), "CertCloseStore", oss);
+                core::Logger::Write(oss.str(), core::Logger::PRIO_ERROR, true);
+            }
+        }
+        catch (std::exception &ex)
         {
             CALL_STACK_TRACE;
             std::ostringstream oss;
-            oss << "Failed to close system certificate store - ";
-            core::WWAPI::AppendDWordErrorMessage(GetLastError(), "CertCloseStore", oss);
-            core::Logger::Write(oss.str(), core::Logger::PRIO_ERROR, true);
+            oss << "Generic failure when releasing resources "
+                   "of system certificate store: " << ex.what();
+
+            core::Logger::Write(oss.str(), core::Logger::PRIO_CRITICAL, true);
         }
+    }
+
+    /// <summary>
+    /// Finds and retrieves from the system store a
+    /// X.509 certificate with a given subject.
+    /// </summary>
+    /// <param name="certSubject">The specified subject string
+    /// in the certificate to look for.</param>
+    /// <return>The first matching certificate when found,
+    /// otherwise, <c>nullptr</c>.</return>
+    PCCERT_CONTEXT SystemCertificateStore::FindCertBySubject(const string &certSubject) const
+    {
+        CALL_STACK_TRACE;
+
+        try
+        {
+            std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
+
+            auto certCtxtHandle = CertFindCertificateInStore(
+                m_certStoreHandle,
+                X509_ASN_ENCODING,
+                0,
+                CERT_FIND_SUBJECT_STR_W,
+                transcoder.from_bytes(certSubject).c_str(),
+                nullptr
+            );
+
+            if (certCtxtHandle == nullptr
+                && GetLastError() != CRYPT_E_NOT_FOUND)
+            {
+                std::ostringstream oss;
+                oss << "Failed to find X.509 certificate in store - ";
+                core::WWAPI::AppendDWordErrorMessage(GetLastError(), "CertFindCertificateInStore", oss);
+                throw core::AppException<std::runtime_error>(oss.str());
+            }
+
+            return certCtxtHandle;
+        }
+        catch (core::IAppException &)
+        {
+            // just forward an exception regarding an error known to have been already handled
+        }
+        catch (std::exception &ex)
+        {
+            std::ostringstream oss;
+            oss << "Generic failure when searching for certificate in store: " << ex.what();
+            throw core::AppException<std::runtime_error>(oss.str());
+        }
+    }
+
+    //////////////////////////////////
+    // SChannelCredWrapper Class
+    //////////////////////////////////
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SChannelCredWrapper"/> class.
+    /// Instances initialized by this constructor represent credentials for the RPC client.
+    /// </summary>
+    /// <param name="certCtxtHandle">Handle to the certificate context.</param>
+    /// <param name="strongerSec">
+    /// Flag to set stronger security options. Allowed cipher suites/algorithms will
+    /// be SSL3 and TLS with MAC (weaker ones will be disabled to the detriment of
+    /// interoperability) and revocation checks the whole certificate chain.
+    /// </param>
+    SChannelCredWrapper::SChannelCredWrapper(PCCERT_CONTEXT certCtxtHandle, bool strongerSec)
+    try :
+        m_credStructure{ 0 }
+    {
+        m_credStructure.dwVersion = SCHANNEL_CRED_VERSION;
+        m_credStructure.cCreds = 1;
+        m_credStructure.paCred = new PCCERT_CONTEXT[1]{ certCtxtHandle };
+
+        if (strongerSec)
+        {
+            m_credStructure.grbitEnabledProtocols =
+                SP_PROT_SSL3_CLIENT | SP_PROT_TLS1_X_CLIENT | SP_PROT_DTLS1_X_CLIENT;
+
+            m_credStructure.dwMinimumCipherStrength = -1;
+            m_credStructure.dwMaximumCipherStrength = -1;
+
+            m_credStructure.dwFlags =
+                SCH_CRED_REVOCATION_CHECK_CHAIN | SCH_USE_STRONG_CRYPTO;
+        }
+    }
+    catch (std::exception &ex)
+    {
+        std::ostringstream oss;
+        oss << "Generic failure when instantiating RPC client "
+               "credential for secure channel: " << ex.what();
+
+        throw core::AppException<std::runtime_error>(oss.str());
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SChannelCredWrapper"/> class.
+    /// Instances initialized by this constructor represent credentials for the RPC server.
+    /// </summary>
+    /// <param name="certStoreHandle">Handle to the certificate store.</param>
+    /// <param name="certCtxtHandle">Handle to the certificate context.</param>
+    /// <param name="strongerSec">
+    /// Flag to set stronger security options. Allowed cipher suites/algorithms will
+    /// be SSL3 and TLS with MAC (weaker ones will be disabled to the detriment of
+    /// interoperability) and revocation will check the whole certificate chain.
+    ///</param>
+    SChannelCredWrapper::SChannelCredWrapper(HCERTSTORE certStoreHandle,
+                                             PCCERT_CONTEXT certCtxtHandle,
+                                             bool strongerSec)
+    try :
+        m_credStructure{ 0 }
+    {
+        m_credStructure.dwVersion = SCHANNEL_CRED_VERSION;
+        m_credStructure.cCreds = 1;
+        m_credStructure.paCred = new PCCERT_CONTEXT[1]{ certCtxtHandle };
+        m_credStructure.hRootStore = certStoreHandle;
+
+        if (strongerSec)
+        {
+            m_credStructure.grbitEnabledProtocols =
+                SP_PROT_SSL3_SERVER | SP_PROT_TLS1_X_SERVER | SP_PROT_DTLS1_X_SERVER;
+
+            m_credStructure.dwMinimumCipherStrength = -1;
+            m_credStructure.dwMaximumCipherStrength = -1;
+
+            m_credStructure.dwFlags =
+                SCH_CRED_REVOCATION_CHECK_CHAIN | SCH_USE_STRONG_CRYPTO;
+        }
+    }
+    catch (std::exception &ex)
+    {
+        std::ostringstream oss;
+        oss << "Generic failure when instantiating RPC server "
+               "credential for secure channel: " << ex.what();
+
+        throw core::AppException<std::runtime_error>(oss.str());
+    }
+
+    /// <summary>
+    /// Finalizes an instance of the <see cref="SChannelCredWrapper"/> class.
+    /// </summary>
+    SChannelCredWrapper::~SChannelCredWrapper()
+    {
+        CertFreeCertificateContext(m_credStructure.paCred[0]);
+        delete m_credStructure.paCred;
     }
 
 #   else // Not Windows platform: DCE RPC

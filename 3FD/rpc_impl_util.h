@@ -4,10 +4,12 @@
 #include "rpc_helpers.h"
 
 #include <string>
+#include <memory>
 
 #ifdef _3FD_MICROSOFT_RPC
 #   include <NtDsAPI.h>
 #   include <wincrypt.h>
+#   include <schannel.h>
 #endif
 
 namespace _3fd
@@ -112,10 +114,6 @@ namespace rpc
 
     bool DetectActiveDirectoryServices(DirSvcBinding &dirSvcBinding, bool isClient);
 
-    class Certificate
-    {
-    };
-
     /// <summary>
     /// Provides access to the system certificate store.
     /// </summary>
@@ -131,7 +129,7 @@ namespace rpc
 
         ~SystemCertificateStore();
 
-
+        PCCERT_CONTEXT FindCertBySubject(const string &certSubject) const;
     };
 
     // These wrappers make the porting from Microsoft RPC to DCE RPC a lot easier:
@@ -145,6 +143,35 @@ namespace rpc
     {
         *status = DceErrorInqTextW(errCode, errText);
     }
+
+    /// <summary>
+    /// Wraps a credential for secure channel SSP, containing a X.509
+    /// certificate from the store and using RAII to control reference
+    /// count for the certificate
+    /// </summary>
+    class SChannelCredWrapper
+    {
+    private:
+
+        SCHANNEL_CRED m_credStructure;
+
+    public:
+
+        SChannelCredWrapper(
+            PCCERT_CONTEXT certCtxtHandle,
+            bool strongerSec = false
+        );
+
+        SChannelCredWrapper(
+            HCERTSTORE certStoreHandle,
+            PCCERT_CONTEXT certCtxtHandle,
+            bool strongerSec = false
+        );
+
+        ~SChannelCredWrapper();
+
+        SCHANNEL_CRED *GetCredential() { return &m_credStructure; }
+    };
 
 #   else
 
