@@ -106,7 +106,7 @@ namespace integration_tests
         try
         {
             // Wait for RPC server to become available
-            std::this_thread::sleep_for(std::chrono::seconds(1));
+            system("pause");
 
             AcmeSvcProxy client1(
                 ProtocolSequence::Local,
@@ -137,6 +137,7 @@ namespace integration_tests
     // The set of options for each test template instantiation
     struct TestOptions
     {
+        uint32_t waitSecs;
         ProtocolSequence protocolSequence;
         const char *objectUUID1;
         const char *objectUUID2;
@@ -162,7 +163,7 @@ namespace integration_tests
         try
         {
             // Wait for RPC server to become available
-            std::this_thread::sleep_for(std::chrono::seconds(1));
+            std::this_thread::sleep_for(std::chrono::seconds(GetParam().waitSecs));
 
             AcmeSvcProxy client1(
                 GetParam().protocolSequence,
@@ -205,6 +206,7 @@ namespace integration_tests
         Framework_RPC_TestCase,
         ::testing::Values(
             TestOptions{
+                15,
                 ProtocolSequence::Local,
                 objectsUuidsImpl1[7],
                 objectsUuidsImpl2[7],
@@ -213,6 +215,7 @@ namespace integration_tests
                 ImpersonationLevel::Impersonate
             },
             TestOptions{
+                1,
                 ProtocolSequence::Local,
                 objectsUuidsImpl1[8],
                 objectsUuidsImpl2[8],
@@ -221,6 +224,7 @@ namespace integration_tests
                 ImpersonationLevel::Impersonate
             },
             TestOptions{
+                1,
                 ProtocolSequence::Local,
                 objectsUuidsImpl1[9],
                 objectsUuidsImpl2[9],
@@ -229,6 +233,7 @@ namespace integration_tests
                 ImpersonationLevel::Impersonate
             },
             TestOptions{
+                1,
                 ProtocolSequence::Local,
                 objectsUuidsImpl1[10],
                 objectsUuidsImpl2[10],
@@ -237,6 +242,7 @@ namespace integration_tests
                 ImpersonationLevel::Impersonate
             }/*,
             TestOptions{
+                1,
                 ProtocolSequence::Local,
                 objectsUuidsImpl1[11],
                 objectsUuidsImpl2[11],
@@ -245,6 +251,7 @@ namespace integration_tests
                 ImpersonationLevel::Impersonate
             },
             TestOptions{
+                1,
                 ProtocolSequence::Local,
                 objectsUuidsImpl1[12],
                 objectsUuidsImpl2[12],
@@ -253,6 +260,7 @@ namespace integration_tests
                 ImpersonationLevel::Impersonate
             },*//*
             TestOptions{
+                12,
                 ProtocolSequence::TCP,
                 objectsUuidsImpl1[6],
                 objectsUuidsImpl2[6],
@@ -261,6 +269,7 @@ namespace integration_tests
                 ImpersonationLevel::Impersonate
             },
             TestOptions{
+                1,
                 ProtocolSequence::TCP,
                 objectsUuidsImpl1[7],
                 objectsUuidsImpl2[7],
@@ -269,6 +278,7 @@ namespace integration_tests
                 ImpersonationLevel::Impersonate
             },
             TestOptions{
+                1,
                 ProtocolSequence::TCP,
                 objectsUuidsImpl1[8],
                 objectsUuidsImpl2[8],
@@ -277,6 +287,7 @@ namespace integration_tests
                 ImpersonationLevel::Impersonate
             },
             TestOptions{
+                1,
                 ProtocolSequence::TCP,
                 objectsUuidsImpl1[9],
                 objectsUuidsImpl2[9],
@@ -285,6 +296,7 @@ namespace integration_tests
                 ImpersonationLevel::Impersonate
             }*//*,
             TestOptions{
+                1,
                 ProtocolSequence::TCP,
                 objectsUuidsImpl1[10],
                 objectsUuidsImpl2[10],
@@ -293,6 +305,7 @@ namespace integration_tests
                 ImpersonationLevel::Impersonate
             },
             TestOptions{
+                1,
                 ProtocolSequence::TCP,
                 objectsUuidsImpl1[11],
                 objectsUuidsImpl2[11],

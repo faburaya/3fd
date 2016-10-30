@@ -11,7 +11,7 @@
 #endif
 
 #include <vector>
-#include <fstream>>
+#include <fstream>
 #include <cstring>
 
 //////////////////////////////////////
@@ -286,6 +286,63 @@ namespace _3fd
             )
         );
 
+        /// <summary>
+        /// Tests the RPC server normal operation (responding requests), trying
+        /// several combinations of protocol sequence and authentication level.
+        /// </summary>
+        TEST(Framework_RPC_TestCase2, ServerRun_NoAuthn_ResponseTest)
+        {
+            // Ensures proper initialization/finalization of the framework
+            FrameworkInstance _framework;
+
+            CALL_STACK_TRACE;
+
+            try
+            {
+                // Initialize the RPC server (authn svc reg & resource allocation takes place)
+                RpcServer::Initialize(
+                    ProtocolSequence::Local,
+                    "TestClient3FD",
+                    AuthenticationLevel::None
+                );
+
+                // RPC interface implementation 1:
+                AcmeTesting_v1_0_epv_t intfImplFuncTable1 = { Operate, ChangeCase, Shutdown };
+
+                // RPC interface implementation 2:
+                AcmeTesting_v1_0_epv_t intfImplFuncTable2 = { Operate2, ChangeCase2, Shutdown };
+
+                std::vector<RpcSrvObject> objects;
+                objects.reserve(2);
+
+                // This object will run impl 1:
+                objects.emplace_back(
+                    objectsUuidsImpl1[6],
+                    AcmeTesting_v1_0_s_ifspec, // this is the interface (generated from IDL)
+                    &intfImplFuncTable1
+                );
+
+                // This object will run impl 2:
+                objects.emplace_back(
+                    objectsUuidsImpl2[6],
+                    AcmeTesting_v1_0_s_ifspec, // this is the interface (generated from IDL)
+                    &intfImplFuncTable2
+                );
+
+                // Now cycle through the states:
+                EXPECT_EQ(STATUS_OKAY, RpcServer::Start(objects));
+                EXPECT_EQ(STATUS_OKAY, RpcServer::Wait());
+
+                // Finalize the RPC server (resources will be released)
+                RpcServer::Finalize();
+            }
+            catch (...)
+            {
+                RpcServer::Finalize();
+                HandleException();
+            }
+        }
+
         class Framework_RPC_TestCase2 :
             public ::testing::TestWithParam<TestOptions> {};
 
@@ -293,7 +350,7 @@ namespace _3fd
         /// Tests the RPC server normal operation (responding requests), trying
         /// several combinations of protocol sequence and authentication level.
         /// </summary>
-        TEST_P(Framework_RPC_TestCase2, ServerRun_ResponseTest)
+        TEST_P(Framework_RPC_TestCase2, ServerRun_AuthnSec_ResponseTest)
         {
             // Ensures proper initialization/finalization of the framework
             FrameworkInstance _framework;
@@ -352,12 +409,6 @@ namespace _3fd
             SwitchProtAndAuthLevel,
             Framework_RPC_TestCase2,
             ::testing::Values(
-                TestOptions{
-                    ProtocolSequence::Local,
-                    objectsUuidsImpl1[6],
-                    objectsUuidsImpl2[6],
-                    AuthenticationLevel::None
-                },
                 TestOptions{
                     ProtocolSequence::Local,
                     objectsUuidsImpl1[7],
