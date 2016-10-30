@@ -58,7 +58,7 @@ static void ImpersonateClientAndCreateFile(handle_t clientBindingHandle)
     {
         std::ostringstream oss;
         oss << "Generic failure in RPC server procedure: " << ex.what();
-        Logger::Write(oss.str(), Logger::PRIO_ERROR);
+        Logger::Write(oss.str(), Logger::PRIO_ERROR, true);
     }
 }
 
