@@ -11,34 +11,9 @@
 #include <string>
 #include <vector>
 
-#ifdef _3FD_MICROSOFT_RPC
-
-#   define RPC_USE_NATIVE_WCHAR
-#   include <rpc.h>
-#   include <AuthZ.h>
-
-#   define RPC_IMPL_SWITCH(PARAM1, PARAM2) PARAM1
-#   define RPC_MS_ONLY(PARAM) PARAM
-#   define RPC_DCE_ONLY(PARAM)
-#   define rpc_strlen wcslen
-
-    typedef RPC_STATUS rpc_status_t;
-    typedef RPC_WSTR rpc_string_t;
-
-#else // DCE RPC for POSIX:
-
-#   include <dce/rpc.h>
-
-#   define RPC_IMPL_SWITCH(PARAM1, PARAM2) PARAM2
-#   define RPC_MS_ONLY(PARAM)
-#   define RPC_DCE_ONLY(PARAM) PARAM
-#   define rpc_strlen strlen
-#   define RPC_S_OK 0
-
-    typedef unsigned32 rpc_status_t;
-    typedef unsigned_char_p_t rpc_string_t;
-
-#endif
+#define RPC_USE_NATIVE_WCHAR
+#include <rpc.h>
+#include <AuthZ.h>
 
 namespace _3fd
 {
@@ -49,22 +24,16 @@ namespace rpc
     /// <summary>
     /// Enumerates the possible options for RPC transport.
     /// </summary>
-    enum class ProtocolSequence
-    {
-#   ifdef _3FD_MICROSOFT_RPC
-        Local,
-#   endif
-        TCP
-    };
+    enum class ProtocolSequence { Local, TCP };
 
     /// <summary>
     /// Enumerates the possible options for authentication level.
     /// </summary>
     enum class AuthenticationLevel : uint32_t
     {
-        None      = RPC_IMPL_SWITCH(RPC_C_AUTHN_LEVEL_NONE,          rpc_c_protect_level_none), // no authn security at all
-        Integrity = RPC_IMPL_SWITCH(RPC_C_AUTHN_LEVEL_PKT_INTEGRITY, rpc_c_protect_level_pkt_integ),
-        Privacy   = RPC_IMPL_SWITCH(RPC_C_AUTHN_LEVEL_PKT_PRIVACY,   rpc_c_protect_level_pkt_privacy)
+        None = RPC_C_AUTHN_NONE,
+        Integrity = RPC_C_AUTHN_LEVEL_PKT_INTEGRITY,
+        Privacy = RPC_C_AUTHN_LEVEL_PKT_PRIVACY
     };
 
     /// <summary>
@@ -72,12 +41,10 @@ namespace rpc
     /// </summary>
     enum class AuthenticationSecurity : uint32_t
     {
-#   ifdef _3FD_MICROSOFT_RPC // Both client and server must on Windows:
         NTLM = RPC_C_AUTHN_WINNT, // Microsoft NT LAN Manager SSP
         TryKerberos = RPC_C_AUTHN_GSS_NEGOTIATE, // Microsoft Negotiate SSP
         RequireMutualAuthn = RPC_C_AUTHN_GSS_KERBEROS, // Microsoft Kerberos SSP (or NTLM with mutual authentication)
-#   endif
-        SecureChannel = RPC_IMPL_SWITCH(RPC_C_AUTHN_GSS_SCHANNEL, rpc_c_authn_schannel)
+        SecureChannel = RPC_C_AUTHN_GSS_SCHANNEL
     };
 
     /// <summary>
@@ -237,31 +204,26 @@ namespace rpc
             ProtocolSequence protSeq,
             const string &objUUID,
             const string &destination,
-            AuthenticationLevel authnLevel = AuthenticationLevel::None,
             const string &endpoint = ""
         );
-
-#   ifdef _3FD_MICROSOFT_RPC
 
         RpcClient(
             ProtocolSequence protSeq,
             const string &objUUID,
             const string &destination,
-            const string &spn,
+            AuthenticationSecurity authnSecurity,
             AuthenticationLevel authnLevel = AuthenticationLevel::Integrity,
-            AuthenticationSecurity authSec = AuthenticationSecurity::TryKerberos,
             ImpersonationLevel impLevel = ImpersonationLevel::Default,
+            const string &spn = "",
             const string &endpoint = ""
         );
-
-#   endif
 
         RpcClient(
             ProtocolSequence protSeq,
             const string &objUUID,
             const string &destination,
             const CertInfo &certInfoX509,
-            AuthenticationLevel authnLevel = AuthenticationLevel::None,
+            AuthenticationLevel authnLevel,
             const string &endpoint = ""
         );
 
@@ -289,22 +251,22 @@ namespace rpc
     // Error Helpers
     /////////////////////////
 
-    void ThrowIfError(rpc_status_t status, const char *message);
+    void ThrowIfError(RPC_STATUS status, const char *message);
 
     void ThrowIfError(
-        rpc_status_t status,
+        RPC_STATUS status,
         const char *message,
         const string &details
     );
 
     void LogIfError(
-        rpc_status_t status,
+        RPC_STATUS status,
         const char *message,
         core::Logger::Priority prio
     ) noexcept;
 
     void LogIfError(
-        rpc_status_t status,
+        RPC_STATUS status,
         const char *message,
         const string &details,
         core::Logger::Priority prio

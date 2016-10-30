@@ -49,17 +49,14 @@
 #       define _3FD_PLATFORM_WINRT
 #       define _3FD_PLATFORM_WINRT_PHONE
 #   endif
-#	define _3FD_MICROSOFT_RPC
 
 #elif defined __linux__ // Linux only:
 #	define _3FD_POCO_SUPPORT
 #	define _3FD_OPENCL_SUPPORT
 #	define _3FD_CONSOLE_AVAILABLE
-#	define _3FD_DCE_RPC
 #elif defined __unix__ // Unix only:
 #	define _3FD_POCO_SUPPORT
 #	define _3FD_CONSOLE_AVAILABLE
-#	define _3FD_DCE_RPC
 #endif
 
 // These instructions have they definition depending on whether this is a release compilation:

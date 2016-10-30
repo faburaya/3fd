@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "rpc_impl_client.h"
+#include "rpc_helpers.h"
 #include "rpc_impl_util.h"
 #include "callstacktracer.h"
 #include "logger.h"
@@ -7,7 +7,6 @@
 #include <codecvt>
 #include <memory>
 #include <sstream>
-//#include <NtDsAPI.h>
 
 namespace _3fd
 {
@@ -21,83 +20,19 @@ namespace rpc
     /// Releases resources of a RPC client binding handle.
     /// </summary>
     /// <param name="bindingHandle">The given RPC binding handle.</param>
-    void HelpFreeBindingHandle(rpc_binding_handle_t *bindingHandle)
+    static void HelpFreeBindingHandle(rpc_binding_handle_t *bindingHandle)
     {
+        CALL_STACK_TRACE;
+
         if (*bindingHandle == nullptr)
             return;
 
-        rpc_status_t status;
-        rpc_binding_free(bindingHandle, &status);
+        auto status = RpcBindingFree(bindingHandle);
 
         LogIfError(status,
             "Failed to release resources from binding handle of RPC client",
             core::Logger::Priority::PRIO_CRITICAL);
     }
-
-#   ifdef _3FD_MICROSOFT_RPC
-
-    // Wraps RPC implementation specific call for composition of binding string
-    static rpc_status_t ComposeBindingString(
-        const string &objUUID,
-        ProtocolSequence protSeq,
-        const string &destination,
-        const string &endpoint,
-        rpc_string_t *bindingString)
-    {
-        CALL_STACK_TRACE;
-
-        try
-        {
-            // Prepare text parameters encoded in UCS-2:
-            std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
-
-            std::wstring ucs2objUuid;
-            rpc_string_t paramObjUuid;
-
-            if (objUUID.empty() || objUUID == "")
-                paramObjUuid = nullptr;
-            else
-            {
-                ucs2objUuid = transcoder.from_bytes(objUUID);
-                paramObjUuid = const_cast<rpc_string_t> (ucs2objUuid.c_str());
-            }
-
-            std::wstring protSeqName = transcoder.from_bytes(ToString(protSeq));
-            auto paramProtSeq = const_cast<rpc_string_t> (protSeqName.c_str());
-
-            std::wstring ucs2Destination = transcoder.from_bytes(destination);
-            auto paramNetwAddr = const_cast<rpc_string_t> (ucs2Destination.c_str());
-
-            std::wstring ucs2Endpoint;
-            rpc_string_t paramEndpoint;
-
-            if (endpoint.empty() || endpoint == "")
-                paramEndpoint = nullptr;
-            else
-            {
-                ucs2Endpoint = transcoder.from_bytes(endpoint);
-                paramEndpoint = const_cast<rpc_string_t> (ucs2Endpoint.c_str());
-            }
-
-            // Compose the binding string:
-            return RpcStringBindingComposeW(
-                paramObjUuid,
-                paramProtSeq,
-                paramNetwAddr,
-                paramEndpoint,
-                nullptr,
-                bindingString
-            );
-        }
-        catch (std::exception &ex)
-        {
-            std::ostringstream oss;
-            oss << "Generic failure when composing binding string for RPC client: " << ex.what();
-            throw core::AppException<std::runtime_error>(oss.str());
-        }
-    }
-
-#   endif
 
     /// <summary>
     /// Initializes a new instance of the <see cref="RpcClient"/> class.
@@ -112,37 +47,65 @@ namespace rpc
     /// <param name="endpoint">The endpoint: for local RPC is the application or service
     /// name, while for TCP this is the port number. Specifying the endpoint is optional
     /// if the server has registered its bindings with the endpoint mapper.</param>
-    RpcClient::RpcClient(
-        ProtocolSequence protSeq,
-        const string &objUUID,
-        const string &destination,
-        AuthenticationLevel authnLevel,
-        const string &endpoint
-    )
-    :   m_bindingHandle(nullptr)
+    RpcClient::RpcClient(ProtocolSequence protSeq,
+                         const string &objUUID,
+                         const string &destination,
+                         const string &endpoint)
+    try :
+        m_bindingHandle(nullptr)
     {
         CALL_STACK_TRACE;
 
-        rpc_status_t status;
-        rpc_string_t bindingString;
+        // Prepare text parameters encoded in UCS-2
+        std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
 
-        auto status = ComposeBindingString(objUUID,
-                                           protSeq,
-                                           destination,
-                                           endpoint,
-                                           &bindingString);
+        std::wstring ucs2objUuid;
+        RPC_WSTR paramObjUuid;
+
+        if (objUUID.empty() || objUUID == "")
+            paramObjUuid = nullptr;
+        else
+        {
+            ucs2objUuid = transcoder.from_bytes(objUUID);
+            paramObjUuid = const_cast<RPC_WSTR> (ucs2objUuid.c_str());
+        }
+
+        std::wstring protSeqName = transcoder.from_bytes(ToString(protSeq));
+        auto paramProtSeq = const_cast<RPC_WSTR> (protSeqName.c_str());
+
+        std::wstring ucs2Destination = transcoder.from_bytes(destination);
+        auto paramNetwAddr = const_cast<RPC_WSTR> (ucs2Destination.c_str());
+
+        std::wstring ucs2Endpoint;
+        RPC_WSTR paramEndpoint;
+
+        if (endpoint.empty() || endpoint == "")
+            paramEndpoint = nullptr;
+        else
+        {
+            ucs2Endpoint = transcoder.from_bytes(endpoint);
+            paramEndpoint = const_cast<RPC_WSTR> (ucs2Endpoint.c_str());
+        }
+
+        // Compose the binding string:
+        RPC_WSTR bindingString;
+        auto status = RpcStringBindingComposeW(
+            paramObjUuid,
+            paramProtSeq,
+            paramNetwAddr,
+            paramEndpoint,
+            nullptr,
+            &bindingString
+        );
 
         ThrowIfError(status, "Failed to compose binding string for RPC client");
 
         // Create a binding handle from the composed string:
-        rpc_binding_from_string_binding(bindingString, &m_bindingHandle, &status);
-
-        rpc_status_t status2;
-        rpc_string_free(&bindingString, &status2);
+        status = RpcBindingFromStringBindingW(bindingString, &m_bindingHandle);
 
         // Release the memory allocated for the binding string:
         LogIfError(
-            status2,
+            RpcStringFreeW(&bindingString),
             "Failed to release resources of binding string for RPC client",
             core::Logger::Priority::PRIO_CRITICAL
         );
@@ -151,15 +114,22 @@ namespace rpc
 
         // Notify establishment of binding with this protocol sequence:
         std::ostringstream oss;
-        oss << "RPC client for object " << objUUID
-            << " in " << destination
-            << " will use protocol sequence '" << ToString(protSeq)
-            << "' and " << ToString(authnLevel);
+        oss << "RPC client for object " << objUUID << " in " << destination
+            << " will use protocol sequence '" << ToString(protSeq) ;
 
         core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
     }
-
-#   ifdef _3FD_MICROSOFT_RPC
+    catch (core::IAppException &)
+    {
+        throw; // just forward an exception regarding an error known to have been already handled
+    }
+    catch (std::exception &ex)
+    {
+        CALL_STACK_TRACE;
+        std::ostringstream oss;
+        oss << "Generic failure when instantiating RPC client: " << ex.what();
+        throw core::AppException<std::runtime_error>(oss.str());
+    }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="RpcClient"/> class
@@ -170,15 +140,15 @@ namespace rpc
     /// is equivalent to a nil UUID, which is valid as long as the endpoint is specified.</param>
     /// <param name="destination">The destination: local RPC requires the machine name,
     /// while for TCP this is the network address (IP or host name).</param>
-    /// <param name="spn">The SPN as registered in AD.</param>
-    /// <param name="authnLevel">The authentication level to use.</param>
     /// <param name="authnSecurity">The authentication security package to use. Because
     /// local RPC does not support Kerberos, the requirement of mutual authentication will
     /// cause NTLM to use SPN's registered in AD. This parameter is ignored if the
     /// authentication level specifies that no authentication takes place.</param>
+    /// <param name="authnLevel">The authentication level to use.</param>
     /// <param name="impLevel">The level allowed for the RPC server to impersonate
     /// the identity of an authorized client. This parameter is ignored if the
     /// authentication level specifies that no authentication takes place.</param>
+    /// <param name="spn">The SPN as registered in AD.</param>
     /// <param name="endpoint">The endpoint: for local RPC is the application or service
     /// name, while for TCP this is the port number. Specifying the endpoint is optional
     /// if the server has registered its bindings with the endpoint mapper.</param>
@@ -186,24 +156,42 @@ namespace rpc
         ProtocolSequence protSeq,
         const string &objUUID,
         const string &destination,
-        const string &spn,
-        AuthenticationLevel authnLevel,
         AuthenticationSecurity authnSecurity,
+        AuthenticationLevel authnLevel,
         ImpersonationLevel impLevel,
+        const string &spn,
         const string &endpoint)
     try :
-        RpcClient(protSeq, objUUID, destination, authnLevel, endpoint)
+        RpcClient(protSeq, objUUID, destination, endpoint)
     {
+        // Invalid arguments:
         _ASSERTE(
             authnSecurity == AuthenticationSecurity::NTLM
             || authnSecurity == AuthenticationSecurity::TryKerberos
             || authnSecurity == AuthenticationSecurity::RequireMutualAuthn
+            || authnLevel == AuthenticationLevel::None
         );
 
         CALL_STACK_TRACE;
 
+        if (authnSecurity != AuthenticationSecurity::NTLM
+            && authnSecurity != AuthenticationSecurity::TryKerberos
+            && authnSecurity != AuthenticationSecurity::RequireMutualAuthn)
+        {
+            throw core::AppException<std::invalid_argument>(
+                "Invalid argument: the constructor overload was meant to be used only "
+                "with authentication services Microsoft NTLM/Negotiate/Kerberos SSP"
+            );
+        }
+
         if (authnLevel == AuthenticationLevel::None)
-            return;
+        {
+            throw core::AppException<std::invalid_argument>(
+                "Invalid argument: the constructor overload was meant to be used with "
+                "authentication services Microsoft NTLM/Negotiate/Kerberos SSP, hence "
+                "the authentication level cannot be set to 'none'"
+            );
+        }
 
         /* Kerberos security package is preferable over NTLM, however, Kerberos is not
         supported in local RPC, and it requires SPN registration, which is only available
@@ -249,8 +237,8 @@ namespace rpc
         // AD not available, but mutual authentication was required:
         else if (authnSecurity == AuthenticationSecurity::RequireMutualAuthn)
         {
-            oss << "Could not fulfill mutual authentication requirement of"
-                    " RPC client for object " << objUUID << " in " << destination
+            oss << "Could not fulfill mutual authentication requirement of "
+                   "RPC client for object " << objUUID << " in " << destination
                 << " because Microsoft Active Directory services are not available";
 
             throw core::AppException<std::runtime_error>(oss.str());
@@ -304,7 +292,7 @@ namespace rpc
 
         auto status = RpcBindingSetAuthInfoExW(
             m_bindingHandle,
-            const_cast<rpc_string_t> (ucs2spn.empty() ? nullptr : ucs2spn.c_str()),
+            const_cast<RPC_WSTR> (ucs2spn.empty() ? nullptr : ucs2spn.c_str()),
             static_cast<unsigned long> (authnLevel),
             authnService,
             nullptr, // no explicit credentials, use context
@@ -328,6 +316,7 @@ namespace rpc
     {
         CALL_STACK_TRACE;
         HelpFreeBindingHandle(&m_bindingHandle);
+
         throw; // just forward an exception regarding an error known to have been already handled
     }
     catch (std::exception &ex)
@@ -338,27 +327,6 @@ namespace rpc
         std::ostringstream oss;
         oss << "Generic failure when creating RPC client: " << ex.what();
         throw core::AppException<std::runtime_error>(oss.str());
-    }
-
-#   endif
-
-    void rpc_binding_set_auth_info(
-        rpc_binding_handle_t bindingHandle,
-        rpc_string_t spn,
-        uint32_t protectLevel,
-        uint32_t authnSvc,
-        RPC_AUTH_IDENTITY_HANDLE authIdentity,
-        uint32_t authzSvc,
-        rpc_status_t *status)
-    {
-        *status = RpcBindingSetAuthInfoW(
-            bindingHandle,
-            spn,
-            protectLevel,
-            authnSvc,
-            authIdentity,
-            authzSvc
-        );
     }
 
     /// <summary>
@@ -375,20 +343,28 @@ namespace rpc
     /// <param name="endpoint">The endpoint: for local RPC is the application or service
     /// name, while for TCP this is the port number. Specifying the endpoint is optional
     /// if the server has registered its bindings with the endpoint mapper.</param>
-    RpcClient::RpcClient(
-        ProtocolSequence protSeq,
-        const string &objUUID,
-        const string &destination,
-        const CertInfo &certInfoX509,
-        AuthenticationLevel authnLevel,
-        const string &endpoint)
+    RpcClient::RpcClient(ProtocolSequence protSeq,
+                         const string &objUUID,
+                         const string &destination,
+                         const CertInfo &certInfoX509,
+                         AuthenticationLevel authnLevel,
+                         const string &endpoint)
     try :
-        RpcClient(protSeq, objUUID, destination, authnLevel, endpoint)
+        RpcClient(protSeq, objUUID, destination, endpoint)
     {
+        // Invalid arguments:
+        _ASSERTE(authnLevel == AuthenticationLevel::None);
+
         CALL_STACK_TRACE;
 
         if (authnLevel == AuthenticationLevel::None)
-            return;
+        {
+            throw core::AppException<std::invalid_argument>(
+                "Invalid argument: the constructor overload was meant to be used with "
+                "authentication service Schannel SSP, hence the authentication level "
+                "should be set to an option other than 'none'"
+            );
+        }
 
         SystemCertificateStore certStore(certInfoX509.storeLocation, certInfoX509.storeName);
         auto certX509 = certStore.FindCertBySubject(certInfoX509.subject);
@@ -405,21 +381,19 @@ namespace rpc
             );
         }
 
-        std::unique_ptr<SChannelCredWrapper> schannelCred(
+        auto authnService = static_cast<unsigned long> (AuthenticationSecurity::SecureChannel);
+
+        m_schannelCred.reset(
             new SChannelCredWrapper(certX509, certInfoX509.strongerSecurity)
         );
 
-        auto authnService = static_cast<uint32_t> (AuthenticationSecurity::SecureChannel);
-
-        rpc_status_t status;
-        rpc_binding_set_auth_info(
+        auto status = RpcBindingSetAuthInfoW(
             m_bindingHandle,
             nullptr,
-            static_cast<uint32_t> (authnLevel),
+            static_cast<unsigned long> (authnLevel),
             authnService,
-            schannelCred.get()->GetCredential(),
-            RPC_C_AUTHZ_DEFAULT,
-            &status
+            m_schannelCred.get()->GetCredential(),
+            RPC_C_AUTHZ_DEFAULT
         );
 
         ThrowIfError(status, "Failed to set security for binding handle of RPC client");
@@ -428,7 +402,11 @@ namespace rpc
         oss << "RPC client binding security was set to use "
             << ConvertAuthnSvcOptToString(authnService)
             << " with X.509 certificate (subject = '"
-            << certInfoX509.subject << "')";
+            << certInfoX509.subject
+            << "' in store '"
+            << certInfoX509.storeName
+            << "') and "
+            << ToString(authnLevel);
 
         core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
     }
@@ -497,8 +475,9 @@ namespace rpc
     ScopedImpersonation::~ScopedImpersonation()
     {
         CALL_STACK_TRACE;
-        auto status = RpcRevertToSelfEx(m_clientBindingHandle);
-        LogIfError(status,
+        
+        LogIfError(
+            RpcRevertToSelfEx(m_clientBindingHandle),
             "Failed to revert impersonation of RPC client",
             core::Logger::PRIO_CRITICAL);
     }

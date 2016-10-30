@@ -5,12 +5,7 @@
 
 #include <string>
 #include <sstream>
-
-#ifdef _3FD_MICROSOFT_RPC
-#   include <codecvt>
-#else
-#   include <dce/dce_error.h>
-#endif
+#include <codecvt>
 
 namespace _3fd
 {
@@ -34,10 +29,9 @@ namespace rpc
         // What protocol sequence?
         switch (protSeq)
         {
-#   ifdef _3FD_MICROSOFT_RPC
         case ProtocolSequence::Local:
             return "ncalrpc";
-#   endif
+
         case ProtocolSequence::TCP:
             return "ncacn_ip_tcp";
                 
@@ -58,7 +52,7 @@ namespace rpc
         switch (authnLevel)
         {
         case AuthenticationLevel::None:
-            return "no authentication";
+            return "without authentication";
 
         case AuthenticationLevel::Integrity:
             return R"(authentication level "integrity")";
@@ -110,7 +104,6 @@ namespace rpc
     {
         switch (authnService)
         {
-#   ifdef _3FD_MICROSOFT_RPC
         case RPC_C_AUTHN_WINNT:
             return R"(authentication service "Microsoft NTLM SSP")";
 
@@ -119,20 +112,15 @@ namespace rpc
 
         case RPC_C_AUTHN_GSS_KERBEROS:
             return R"(authentication service "Microsoft Kerberos SSP")";
-#   endif
-        case RPC_IMPL_SWITCH(RPC_C_AUTHN_GSS_SCHANNEL, rpc_c_authn_schannel):
-            return RPC_IMPL_SWITCH(
-                R"(authentication service "Microsoft Schannel SSP")",
-                R"(authentication service "Secure Channel")"
-            );
+
+        case RPC_C_AUTHN_GSS_SCHANNEL:
+            return R"(authentication service "Schannel SSP")";
 
         default:
             _ASSERTE(false);
             return "UNRECOGNIZED AUTHENTICATION SERVICE";
         }
     }
-
-#   ifdef _3FD_MICROSOFT_RPC
 
     /// <summary>
     /// Gets a structure with security QOS options for Microsoft RPC,
@@ -181,11 +169,11 @@ namespace rpc
         else
         {
             std::ostringstream oss;
-            oss << "Could not copy object UUID because "
-                    "the amount of implementations for the RPC interface "
-                    "exceeded a practical limit of " << UUID_VECTOR_MAX_SIZE;
+            oss << "Could not copy object UUID because the amount of "
+                   "implementations for the RPC interface exceeded "
+                   "a practical limit of " << UUID_VECTOR_MAX_SIZE;
 
-            throw core::AppException<std::runtime_error>(oss.str());
+            throw core::AppException<std::length_error>(oss.str());
         }
     }
 
@@ -258,40 +246,38 @@ namespace rpc
     /// <param name="storeName">The certificate store name
     /// (such as "My") that contains the specified certificate.</param>
     SystemCertificateStore::SystemCertificateStore(DWORD registryLocation, const string &storeName)
-        : m_certStoreHandle(nullptr)
+    try :
+        m_certStoreHandle(nullptr)
     {
         CALL_STACK_TRACE;
 
-        try
-        {
-            std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
+        std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
 
-            m_certStoreHandle = CertOpenStore(
-                CERT_STORE_PROV_SYSTEM_W,
-                X509_ASN_ENCODING,
-                0,
-                registryLocation,
-                transcoder.from_bytes(storeName).c_str()
-            );
+        m_certStoreHandle = CertOpenStore(
+            CERT_STORE_PROV_SYSTEM_W,
+            X509_ASN_ENCODING,
+            0,
+            registryLocation,
+            transcoder.from_bytes(storeName).c_str()
+        );
 
-            if (m_certStoreHandle == nullptr)
-            {
-                std::ostringstream oss;
-                oss << "Failed to open system certificate store - ";
-                core::WWAPI::AppendDWordErrorMessage(GetLastError(), "CertOpenStore", oss);
-                throw core::AppException<std::runtime_error>(oss.str());
-            }
-        }
-        catch (core::IAppException &)
-        {
-            // just forward an exception regarding an error known to have been already handled
-        }
-        catch (std::exception &ex)
+        if (m_certStoreHandle == nullptr)
         {
             std::ostringstream oss;
-            oss << "Generic failure when opening system certificate store: " << ex.what();
+            oss << "Failed to open system certificate store - ";
+            core::WWAPI::AppendDWordErrorMessage(GetLastError(), "CertOpenStore", oss);
             throw core::AppException<std::runtime_error>(oss.str());
         }
+    }
+    catch (core::IAppException &)
+    {
+        throw; // just forward an exception regarding an error known to have been already handled
+    }
+    catch (std::exception &ex)
+    {
+        std::ostringstream oss;
+        oss << "Generic failure when opening system certificate store: " << ex.what();
+        throw core::AppException<std::runtime_error>(oss.str());
     }
 
     /// <summary>
@@ -359,7 +345,7 @@ namespace rpc
         }
         catch (core::IAppException &)
         {
-            // just forward an exception regarding an error known to have been already handled
+            throw; // just forward an exception regarding an error known to have been already handled
         }
         catch (std::exception &ex)
         {
@@ -387,6 +373,8 @@ namespace rpc
     try :
         m_credStructure{ 0 }
     {
+        CALL_STACK_TRACE;
+
         m_credStructure.dwVersion = SCHANNEL_CRED_VERSION;
         m_credStructure.cCreds = 1;
         m_credStructure.paCred = new PCCERT_CONTEXT[1]{ certCtxtHandle };
@@ -429,6 +417,8 @@ namespace rpc
     try :
         m_credStructure{ 0 }
     {
+        CALL_STACK_TRACE;
+
         m_credStructure.dwVersion = SCHANNEL_CRED_VERSION;
         m_credStructure.cCreds = 1;
         m_credStructure.paCred = new PCCERT_CONTEXT[1]{ certCtxtHandle };
@@ -464,12 +454,6 @@ namespace rpc
         delete m_credStructure.paCred;
     }
 
-#   else // Not Windows platform: DCE RPC
-
-
-
-#   endif
-
     /////////////////////////
     // Error Helpers
     /////////////////////////
@@ -477,41 +461,34 @@ namespace rpc
     static
     core::AppException<std::runtime_error>
     CreateException(
-        rpc_status_t errCode,
+        RPC_STATUS errCode,
         const string &message,
         const string &details)
     {
-        const char *labelRpcImpl = RPC_IMPL_SWITCH("RPC runtime", "DCE RPC library");
-
         try
         {
             // Assemble the message:
             std::ostringstream oss;
-            oss << message << " - " << labelRpcImpl << " reported an error: ";
-
-            RPC_IMPL_SWITCH(wchar_t, char) errorMessage[
-                RPC_IMPL_SWITCH(DCE_C_ERROR_STRING_LEN, dce_c_error_string_len)
-            ];
+            oss << message << " - RPC runtime reported an error: ";
 
             // Get error message from API:
-            RPC_IMPL_SWITCH(rpc_status_t, int) status;
-            dce_error_inq_text(errCode, errorMessage, &status);
+            wchar_t errorMessage[DCE_C_ERROR_STRING_LEN];
+            auto status = DceErrorInqTextW(errCode, errorMessage);
 
             if (status == RPC_S_OK)
             {
-                RPC_MS_ONLY(std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder);
+                std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
 
                 // Remove the CRLF at the end of the error message:
-                auto lastCharPos = rpc_strlen(errorMessage) - 1;
+                auto lastCharPos = wcslen(errorMessage) - 1;
                 if (errorMessage[lastCharPos] == '\n' && errorMessage[lastCharPos - 1] == '\r')
                     errorMessage[lastCharPos] = errorMessage[lastCharPos - 1] = 0;
                 
-                oss << RPC_IMPL_SWITCH(transcoder.to_bytes(errorMessage), errorMessage);
+                oss << transcoder.to_bytes(errorMessage);
             }
-#   ifdef _3FD_MICROSOFT_RPC
             else
                 core::WWAPI::AppendDWordErrorMessage(status, nullptr, oss);
-#   endif
+
             // Create the exception:
             if (details.empty() || details == "")
                 return core::AppException<std::runtime_error>(oss.str());
@@ -521,7 +498,7 @@ namespace rpc
         catch (std::exception &ex)
         {
             std::ostringstream oss;
-            oss << message << " - " << labelRpcImpl << " reported an error, but a generic "
+            oss << message << " - RPC runtime reported an error, but a generic "
                    "failure prevented the retrieval of more information: " << ex.what();
 
             return core::AppException<std::runtime_error>(oss.str());
@@ -533,7 +510,7 @@ namespace rpc
     /// </summary>
     /// <param name="status">The status returned by the RPC API.</param>
     /// <param name="message">The main message for the error.</param>
-    void ThrowIfError(rpc_status_t status, const char *message)
+    void ThrowIfError(RPC_STATUS status, const char *message)
     {
         if (status == RPC_S_OK)
             return;
@@ -548,7 +525,7 @@ namespace rpc
     /// <param name="message">The main message for the error.</param>
     /// <param name="details">The details for the error.</param>
     void ThrowIfError(
-        rpc_status_t status,
+        RPC_STATUS status,
         const char *message,
         const string &details)
     {
@@ -565,7 +542,7 @@ namespace rpc
     /// <param name="message">The main message for the error.</param>
     /// <param name="prio">The priority for event to be logged.</param>
     void LogIfError(
-        rpc_status_t status,
+        RPC_STATUS status,
         const char *message,
         core::Logger::Priority prio) noexcept
     {
@@ -584,7 +561,7 @@ namespace rpc
     /// <param name="details">The details for the error.</param>
     /// <param name="prio">The priority for event to be logged.</param>
     void LogIfError(
-        rpc_status_t status,
+        RPC_STATUS status,
         const char *message,
         const string &details,
         core::Logger::Priority prio) noexcept

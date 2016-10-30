@@ -6,8 +6,6 @@
 
 #include <codecvt>
 #include <sstream>
-//#include <security.h>
-//#include <NtDsAPI.h>
 
 namespace _3fd
 {
@@ -187,7 +185,7 @@ namespace _3fd
 
         /* This callback is invoked by RPC runtime every time an RPC takes
         place. At this point, the client is already authenticated.*/
-        rpc_status_t CALLBACK callbackIntfAuthz(
+        RPC_STATUS CALLBACK callbackIntfAuthz(
             _In_ RPC_IF_HANDLE interface,
             _In_ void *context)
         {
@@ -225,7 +223,7 @@ namespace _3fd
         {
             CALL_STACK_TRACE;
 
-            rpc_status_t status;
+            RPC_STATUS status;
 
             try
             {
@@ -273,7 +271,7 @@ namespace _3fd
 
                         UUID paramObjUuid;
                         std::wstring ucs2ObjUuid = transcoder.from_bytes(obj.uuid);
-                        status = UuidFromStringW((rpc_string_t)ucs2ObjUuid.c_str(), &paramObjUuid);
+                        status = UuidFromStringW((RPC_WSTR)ucs2ObjUuid.c_str(), &paramObjUuid);
                         ThrowIfError(status, "Could not parse UUID provided for object in RPC server", obj.uuid);
 
                         /* Assign the object UUID (as known by the customer)
@@ -317,7 +315,7 @@ namespace _3fd
                             interfaceHandle,
                             m_bindings,
                             objects.CopyTo(objsUuidsVec), // use the fix for UUID_VECTOR...
-                            const_cast<rpc_string_t> (annotation.c_str())
+                            const_cast<RPC_WSTR> (annotation.c_str())
                         );
 
                         ThrowIfError(status,
@@ -379,7 +377,7 @@ namespace _3fd
                 "RPC server will rollback its state to after initialization",
                 core::Logger::PRIO_INFORMATION);
 
-            rpc_status_t status;
+            RPC_STATUS status;
 
             switch (m_state)
             {
@@ -471,7 +469,7 @@ namespace _3fd
 
             core::Logger::Write("Shutting down RPC server...", core::Logger::PRIO_NOTICE);
 
-            rpc_status_t status;
+            RPC_STATUS status;
 
             switch (m_state)
             {
@@ -492,7 +490,7 @@ namespace _3fd
                         core::Logger::PRIO_CRITICAL);
                 }
 
-            // FALLTHROUGH
+            // FALLTHROUGH:
             case State::IntfRegLocalEndptMap:
 
                 for (auto &pair : m_regObjsByIntfHnd)
@@ -512,7 +510,7 @@ namespace _3fd
                         core::Logger::PRIO_CRITICAL);
                 }
 
-            // FALLTROUGH
+            // FALLTROUGH:
             case State::IntfRegRuntimeLib:
 
                 status = RpcServerUnregisterIf(nullptr, nullptr, TRUE);
@@ -616,7 +614,7 @@ namespace _3fd
         {
             CALL_STACK_TRACE;
 
-            rpc_status_t status;
+            RPC_STATUS status;
 
             switch (m_state)
             {
@@ -770,13 +768,13 @@ namespace _3fd
                 oss << "System error prevented RPC server finalization: "
                     << core::StdLibExt::GetDetailsFromSystemError(ex);
 
-                core::Logger::Write(oss.str(), core::Logger::PRIO_CRITICAL);
+                core::Logger::Write(oss.str(), core::Logger::PRIO_CRITICAL, true);
             }
             catch (std::exception &ex)
             {
                 std::ostringstream oss;
                 oss << "Generic failure prevented RPC server finalization: " << ex.what();
-                core::Logger::Write(oss.str(), core::Logger::PRIO_CRITICAL);
+                core::Logger::Write(oss.str(), core::Logger::PRIO_CRITICAL, true);
             }
         }
 
