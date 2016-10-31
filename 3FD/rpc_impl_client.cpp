@@ -115,7 +115,7 @@ namespace rpc
         // Notify establishment of binding with this protocol sequence:
         std::ostringstream oss;
         oss << "RPC client for object " << objUUID << " in " << destination
-            << " will use protocol sequence '" << ToString(protSeq) ;
+            << " will use protocol sequence '" << ToString(protSeq) << '\'';
 
         core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
     }

@@ -215,7 +215,7 @@ namespace integration_tests
             TestOptions2{ 1, ProtocolSequence::Local, objectsUuidsImpl1[11], objectsUuidsImpl2[11], AuthenticationLevel::Privacy, AuthenticationSecurity::RequireMutualAuthn, ImpersonationLevel::Impersonate }
             */
             /*,
-            TestOptions2{ 12, ProtocolSequence::TCP, objectsUuidsImpl1[5], objectsUuidsImpl2[5], AuthenticationLevel::Integrity, AuthenticationSecurity::NTLM, ImpersonationLevel::Impersonate },
+            TestOptions2{ 15, ProtocolSequence::TCP, objectsUuidsImpl1[5], objectsUuidsImpl2[5], AuthenticationLevel::Integrity, AuthenticationSecurity::NTLM, ImpersonationLevel::Impersonate },
             TestOptions2{ 1, ProtocolSequence::TCP, objectsUuidsImpl1[6], objectsUuidsImpl2[6], AuthenticationLevel::Privacy, AuthenticationSecurity::NTLM, ImpersonationLevel::Impersonate },
             TestOptions2{ 1, ProtocolSequence::TCP, objectsUuidsImpl1[7], objectsUuidsImpl2[7], AuthenticationLevel::Integrity, AuthenticationSecurity::TryKerberos, ImpersonationLevel::Impersonate },
             TestOptions2{ 1, ProtocolSequence::TCP, objectsUuidsImpl1[8], objectsUuidsImpl2[8], AuthenticationLevel::Privacy, AuthenticationSecurity::TryKerberos, ImpersonationLevel::Impersonate }
@@ -300,10 +300,10 @@ namespace integration_tests
         SwitchProtAndAuthLevel,
         Framework_RPC_TestCase3,
         ::testing::Values(
-            TestOptions3{ 15, ProtocolSequence::Local, objectsUuidsImpl1[12], objectsUuidsImpl2[12], AuthenticationLevel::Integrity, false },
+            /*TestOptions3{ 3, ProtocolSequence::Local, objectsUuidsImpl1[12], objectsUuidsImpl2[12], AuthenticationLevel::Integrity, false },
             TestOptions3{ 1, ProtocolSequence::Local, objectsUuidsImpl1[13], objectsUuidsImpl2[13], AuthenticationLevel::Integrity, true },
             TestOptions3{ 1, ProtocolSequence::Local, objectsUuidsImpl1[14], objectsUuidsImpl2[14], AuthenticationLevel::Privacy, false },
-            TestOptions3{ 1, ProtocolSequence::Local, objectsUuidsImpl1[15], objectsUuidsImpl2[15], AuthenticationLevel::Privacy, true },
+            TestOptions3{ 1, ProtocolSequence::Local, objectsUuidsImpl1[15], objectsUuidsImpl2[15], AuthenticationLevel::Privacy, true },*/
             TestOptions3{ 1, ProtocolSequence::TCP, objectsUuidsImpl1[16], objectsUuidsImpl2[16], AuthenticationLevel::Integrity, false },
             TestOptions3{ 1, ProtocolSequence::TCP, objectsUuidsImpl1[17], objectsUuidsImpl2[17], AuthenticationLevel::Integrity, true },
             TestOptions3{ 1, ProtocolSequence::TCP, objectsUuidsImpl1[18], objectsUuidsImpl2[18], AuthenticationLevel::Privacy, false },

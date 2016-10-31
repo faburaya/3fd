@@ -536,10 +536,10 @@ namespace integration_tests
         SwitchProtAndAuthLevel,
         Framework_RPC_TestCase5,
         ::testing::Values(
-            TestOptionsB{ ProtocolSequence::Local, objectsUuidsImpl1[12], objectsUuidsImpl2[12], AuthenticationLevel::Integrity, false },
+            /*TestOptionsB{ ProtocolSequence::Local, objectsUuidsImpl1[12], objectsUuidsImpl2[12], AuthenticationLevel::Integrity, false },
             TestOptionsB{ ProtocolSequence::Local, objectsUuidsImpl1[13], objectsUuidsImpl2[13], AuthenticationLevel::Integrity, true },
             TestOptionsB{ ProtocolSequence::Local, objectsUuidsImpl1[14], objectsUuidsImpl2[14], AuthenticationLevel::Privacy, false },
-            TestOptionsB{ ProtocolSequence::Local, objectsUuidsImpl1[15], objectsUuidsImpl2[15], AuthenticationLevel::Privacy, true },
+            TestOptionsB{ ProtocolSequence::Local, objectsUuidsImpl1[15], objectsUuidsImpl2[15], AuthenticationLevel::Privacy, true },*/
             TestOptionsB{ ProtocolSequence::TCP, objectsUuidsImpl1[16], objectsUuidsImpl2[16], AuthenticationLevel::Integrity, false },
             TestOptionsB{ ProtocolSequence::TCP, objectsUuidsImpl1[17], objectsUuidsImpl2[17], AuthenticationLevel::Integrity, true },
             TestOptionsB{ ProtocolSequence::TCP, objectsUuidsImpl1[18], objectsUuidsImpl2[18], AuthenticationLevel::Privacy, false },
