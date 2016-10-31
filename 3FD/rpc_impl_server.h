@@ -59,7 +59,6 @@ namespace rpc
         );
 
         RpcServerImpl(
-            ProtocolSequence protSeq,
             const string &serviceName,
             const CertInfo *certInfoX509,
             AuthenticationLevel authnLevel

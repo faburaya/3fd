@@ -20,10 +20,7 @@ namespace rpc
     std::mutex RpcServer::singletonAccessMutex;
 
     // Template for basic initialization of RPC server singleton
-    void RpcServer::InitializeBaseTemplate(
-        ProtocolSequence protSeq,
-        const string &serviceName,
-        const std::function<void(ProtocolSequence, const string &)> &callback)
+    void RpcServer::InitializeBaseTemplate(const std::function<void ()> &callback)
     {
         try
         {
@@ -32,7 +29,7 @@ namespace rpc
             // cannot initialize RPC server twice, unless you stop it first
             _ASSERTE(uniqueObject.get() == nullptr);
 
-            callback(protSeq, serviceName);
+            callback();
         }
         catch (core::IAppException &)
         {
@@ -63,19 +60,15 @@ namespace rpc
     /// be employed for informational purposes (will be displayed in management tools that 
     /// expose listening servers, as a description).</param>
     /// <param name="authnLevel">The authentication level required for the client.</param>
-    void RpcServer::Initialize(
-        ProtocolSequence protSeq,
-        const string &serviceName)
+    void RpcServer::Initialize(ProtocolSequence protSeq, const string &serviceName)
     {
         CALL_STACK_TRACE;
-        InitializeBaseTemplate(protSeq, serviceName,
-            [](ProtocolSequence protSeq, const string &serviceName)
-            {
-                uniqueObject.reset(
-                    new RpcServerImpl(protSeq, serviceName, false)
-                );
-            }
-        );
+        InitializeBaseTemplate([protSeq, &serviceName]()
+        {
+            uniqueObject.reset(
+                new RpcServerImpl(protSeq, serviceName, false)
+            );
+        });
     }
 
     /// <summary>
@@ -89,10 +82,9 @@ namespace rpc
     /// tools that expose listening servers, as a description).</param>
     /// <param name="hasAuthnSec">Other implementations must pass <c>false</c> when
     /// no authentication will be used, otherwise, <c>true</c>.</param>
-    RpcServerImpl::RpcServerImpl(
-        ProtocolSequence protSeq,
-        const string &serviceName,
-        bool hasAuthnSec)
+    RpcServerImpl::RpcServerImpl(ProtocolSequence protSeq,
+                                 const string &serviceName,
+                                 bool hasAuthnSec)
     try :
         m_bindings(nullptr),
         m_state(State::NotInitialized),
@@ -151,20 +143,17 @@ namespace rpc
     /// be employed for informational purposes (will be displayed in management tools that 
     /// expose listening servers, as a description).</param>
     /// <param name="authnLevel">The authentication level required for the client.</param>
-    void RpcServer::Initialize(
-        ProtocolSequence protSeq,
-        const string &serviceName,
-        AuthenticationLevel authnLevel)
+    void RpcServer::Initialize(ProtocolSequence protSeq,
+                               const string &serviceName,
+                               AuthenticationLevel authnLevel)
     {
         CALL_STACK_TRACE;
-        InitializeBaseTemplate(protSeq, serviceName,
-            [authnLevel](ProtocolSequence protSeq, const string &serviceName)
-            {
-                uniqueObject.reset(
-                    new RpcServerImpl(protSeq, serviceName, authnLevel)
-                );
-            }
-        );
+        InitializeBaseTemplate([protSeq, &serviceName, authnLevel]()
+        {
+            uniqueObject.reset(
+                new RpcServerImpl(protSeq, serviceName, authnLevel)
+            );
+        });
     }
 
     /// <summary>
@@ -176,10 +165,9 @@ namespace rpc
     /// be employed for informational purposes (will be displayed in management tools that 
     /// expose listening servers, as a description).</param>
     /// <param name="authnLevel">The authentication level required for the client.</param>
-    RpcServerImpl::RpcServerImpl(
-        ProtocolSequence protSeq,
-        const string &serviceName,
-        AuthenticationLevel authnLevel)
+    RpcServerImpl::RpcServerImpl(ProtocolSequence protSeq,
+                                 const string &serviceName,
+                                 AuthenticationLevel authnLevel)
     try :
         RpcServerImpl(protSeq, serviceName, true)
     {
@@ -246,48 +234,44 @@ namespace rpc
     /// Initializes the RPC server (with security options
     /// set to use Schannel SSP) before running it.
     /// </summary>
-    /// <param name="protSeq">The protocol sequence to be used.</param>
     /// <param name="serviceName">A friendly name to identify this service. Such name will
     /// be employed for informational purposes (will be displayed in management tools that
     /// expose listening servers, as a description).</param>
     /// <param name="authnLevel">The authentication level required for the client.</param>
     /// <param name="certInfoX509">Description of the server side X.509 certificate
     /// to use, or <c>nullptr</c> for a default certificate.</param>
-    void RpcServer::Initialize(
-        ProtocolSequence protSeq,
-        const string &serviceName,
-        const CertInfo *certInfoX509,
-        AuthenticationLevel authnLevel)
+    /// <remarks>Because Schannel SSP is only compatible with transport
+    /// over TCP/IP, that is the implicitly chosen protocol sequence.</remarks>
+    void RpcServer::Initialize(const string &serviceName,
+                               const CertInfo *certInfoX509,
+                               AuthenticationLevel authnLevel)
     {
         CALL_STACK_TRACE;
-        InitializeBaseTemplate(protSeq, serviceName,
-            [&certInfoX509, authnLevel](ProtocolSequence protSeq, const string &serviceName)
-            {
-                uniqueObject.reset(
-                    new RpcServerImpl(protSeq, serviceName, certInfoX509, authnLevel)
-                );
-            }
-        );
+        InitializeBaseTemplate([&serviceName, &certInfoX509, authnLevel]()
+        {
+            uniqueObject.reset(
+                new RpcServerImpl(serviceName, certInfoX509, authnLevel)
+            );
+        });
     }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="RpcServerImpl" /> class
     /// with security options set to use Schannel SSP.
     /// </summary>
-    /// <param name="protSeq">The protocol sequence to be used.</param>
     /// <param name="serviceName">A friendly name to identify this service. Such name will
     /// be employed for informational purposes (will be displayed in management tools that 
     /// expose listening servers, as a description).</param>
     /// <param name="authnLevel">The authentication level required for the client.</param>
     /// <param name="certInfoX509">Description of the server side X.509 certificate
     /// to use, or <c>nullptr</c> for a default certificate.</param>
-    RpcServerImpl::RpcServerImpl(
-        ProtocolSequence protSeq,
-        const string &serviceName,
-        const CertInfo *certInfoX509,
-        AuthenticationLevel authnLevel)
+    /// <remarks>Because Schannel SSP is only compatible with transport
+    /// over TCP/IP, that is the implicitly chosen protocol sequence.</remarks>
+    RpcServerImpl::RpcServerImpl(const string &serviceName,
+                                 const CertInfo *certInfoX509,
+                                 AuthenticationLevel authnLevel)
     try :
-        RpcServerImpl(protSeq, serviceName, true)
+        RpcServerImpl(ProtocolSequence::TCP, serviceName, true)
     {
         CALL_STACK_TRACE;
 

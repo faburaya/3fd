@@ -150,11 +150,7 @@ namespace rpc
 
         static std::mutex singletonAccessMutex;
 
-        static void InitializeBaseTemplate(
-            ProtocolSequence protSeq,
-            const string &serviceName,
-            const std::function<void (ProtocolSequence, const string &)> &callback
-        );
+        static void InitializeBaseTemplate(const std::function<void ()> &callback);
 
         RpcServer() {}
 
@@ -174,7 +170,6 @@ namespace rpc
         );
 
         static void Initialize(
-            ProtocolSequence protSeq,
             const string &serviceName,
             const CertInfo *certInfoX509,
             AuthenticationLevel authnLevel
@@ -238,7 +233,6 @@ namespace rpc
         );
 
         RpcClient(
-            ProtocolSequence protSeq,
             const string &objUUID,
             const string &destination,
             const CertInfo &certInfoX509,

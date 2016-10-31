@@ -231,7 +231,6 @@ namespace integration_tests
     struct TestOptions3
     {
         uint32_t waitSecs;
-        ProtocolSequence protocolSequence;
         const char *objectUUID1;
         const char *objectUUID2;
         AuthenticationLevel authenticationLevel;
@@ -265,7 +264,6 @@ namespace integration_tests
             );
 
             AcmeRpcClient client1(
-                GetParam().protocolSequence,
                 GetParam().objectUUID1,
                 "TARS",//"MyVirtualServer.MyDomain.local",
                 certInfo,
@@ -276,7 +274,6 @@ namespace integration_tests
             EXPECT_EQ("SQUIRREL", client1.ChangeCase("squirrel"));
 
             AcmeRpcClient client2(
-                GetParam().protocolSequence,
                 GetParam().objectUUID2,
                 "TARS",//"MyVirtualServer.MyDomain.local",
                 certInfo,
@@ -300,14 +297,10 @@ namespace integration_tests
         SwitchProtAndAuthLevel,
         Framework_RPC_TestCase3,
         ::testing::Values(
-            /*TestOptions3{ 3, ProtocolSequence::Local, objectsUuidsImpl1[12], objectsUuidsImpl2[12], AuthenticationLevel::Integrity, false },
-            TestOptions3{ 1, ProtocolSequence::Local, objectsUuidsImpl1[13], objectsUuidsImpl2[13], AuthenticationLevel::Integrity, true },
-            TestOptions3{ 1, ProtocolSequence::Local, objectsUuidsImpl1[14], objectsUuidsImpl2[14], AuthenticationLevel::Privacy, false },
-            TestOptions3{ 1, ProtocolSequence::Local, objectsUuidsImpl1[15], objectsUuidsImpl2[15], AuthenticationLevel::Privacy, true },*/
-            TestOptions3{ 1, ProtocolSequence::TCP, objectsUuidsImpl1[16], objectsUuidsImpl2[16], AuthenticationLevel::Integrity, false },
-            TestOptions3{ 1, ProtocolSequence::TCP, objectsUuidsImpl1[17], objectsUuidsImpl2[17], AuthenticationLevel::Integrity, true },
-            TestOptions3{ 1, ProtocolSequence::TCP, objectsUuidsImpl1[18], objectsUuidsImpl2[18], AuthenticationLevel::Privacy, false },
-            TestOptions3{ 1, ProtocolSequence::TCP, objectsUuidsImpl1[19], objectsUuidsImpl2[19], AuthenticationLevel::Privacy, true }
+            TestOptions3{ 3, objectsUuidsImpl1[12], objectsUuidsImpl2[12], AuthenticationLevel::Integrity, false },
+            TestOptions3{ 1, objectsUuidsImpl1[13], objectsUuidsImpl2[13], AuthenticationLevel::Integrity, true },
+            TestOptions3{ 1, objectsUuidsImpl1[14], objectsUuidsImpl2[14], AuthenticationLevel::Privacy, false },
+            TestOptions3{ 1, objectsUuidsImpl1[15], objectsUuidsImpl2[15], AuthenticationLevel::Privacy, true }
         )
     );
 

@@ -332,14 +332,15 @@ namespace rpc
     /// <param name="endpoint">The endpoint: for local RPC is the application or service
     /// name, while for TCP this is the port number. Specifying the endpoint is optional
     /// if the server has registered its bindings with the endpoint mapper.</param>
-    RpcClient::RpcClient(ProtocolSequence protSeq,
-                         const string &objUUID,
+    /// <remarks>Because Schannel SSP is only compatible with transport
+    /// over TCP/IP, that is the implicitly chosen protocol sequence.</remarks>
+    RpcClient::RpcClient(const string &objUUID,
                          const string &destination,
                          const CertInfo &certInfoX509,
                          AuthenticationLevel authnLevel,
                          const string &endpoint)
     try :
-        RpcClient(protSeq, objUUID, destination, endpoint)
+        RpcClient(ProtocolSequence::TCP, objUUID, destination, endpoint)
     {
         CALL_STACK_TRACE;
 
