@@ -13,6 +13,7 @@
 #include <vector>
 #include <fstream>
 #include <cstring>
+#include <wincrypt.h>
 
 //////////////////////////////////////
 // RPC Server Stubs Implementation
@@ -163,326 +164,387 @@ void __RPC_USER MIDL_user_free(void *ptr)
 
 namespace _3fd
 {
-    namespace integration_tests
+namespace integration_tests
+{
+    using namespace core;
+    using namespace rpc;
+
+    void HandleException();
+
+    /// <summary>
+    /// Tests the cycle init/start/stop/resume/stop/finalize of the RPC server,
+    /// for local RPC and without authentication security.
+    /// </summary>
+    TEST(Framework_RPC_TestCase1, ServerRun_NoAuth_StatesCycleTest)
     {
-        using namespace core;
-        using namespace rpc;
+        // Ensures proper initialization/finalization of the framework
+        FrameworkInstance _framework;
 
-        void HandleException();
+        CALL_STACK_TRACE;
 
-        // The set of options for each test template instantiation
-        struct TestOptions
+        try
         {
-            ProtocolSequence protocolSequence;
-            const char *objectUUID1;
-            const char *objectUUID2;
-            AuthenticationLevel authenticationLevel;
-        };
+            // Initialize the RPC server (resource allocation takes place)
+            RpcServer::Initialize(ProtocolSequence::Local, "TestClient3FD");
 
-        class Framework_RPC_TestCase1 :
-            public ::testing::TestWithParam<TestOptions> {};
+            // RPC interface implementation 1:
+            AcmeTesting_v1_0_epv_t intfImplFuncTable1 = { Operate, ChangeCase, Shutdown };
 
-        /// <summary>
-        /// Tests the cycle init/start/stop/resume/stop/finalize of the RPC server,
-        /// for several combinations of protocol sequence and authentication level.
-        /// </summary>
-        TEST_P(Framework_RPC_TestCase1, ServerRun_StatesCycleTest)
+            // RPC interface implementation 2:
+            AcmeTesting_v1_0_epv_t intfImplFuncTable2 = { Operate2, ChangeCase2, Shutdown };
+
+            std::vector<RpcSrvObject> objects;
+            objects.reserve(2);
+
+            // This object will run impl 1:
+            objects.emplace_back(
+                objectsUuidsImpl1[0],
+                AcmeTesting_v1_0_s_ifspec, // this is the interface (generated from IDL)
+                &intfImplFuncTable1
+            );
+
+            // This object will run impl 2:
+            objects.emplace_back(
+                objectsUuidsImpl2[0],
+                AcmeTesting_v1_0_s_ifspec, // this is the interface (generated from IDL)
+                &intfImplFuncTable2
+            );
+
+            // Now cycle through the states:
+            EXPECT_EQ(STATUS_OKAY, RpcServer::Start(objects));
+            EXPECT_EQ(STATUS_OKAY, RpcServer::Stop());
+            EXPECT_EQ(STATUS_OKAY, RpcServer::Resume());
+            EXPECT_EQ(STATUS_OKAY, RpcServer::Stop());
+
+            // Finalize the RPC server (resources will be released)
+            RpcServer::Finalize();
+        }
+        catch (...)
         {
-            // Ensures proper initialization/finalization of the framework
-            FrameworkInstance _framework;
+            RpcServer::Finalize();
+            HandleException();
+        }
+    }
 
-            CALL_STACK_TRACE;
+    // The set of options for some test template instantiations
+    struct TestOptionsA
+    {
+        ProtocolSequence protocolSequence;
+        const char *objectUUID1;
+        const char *objectUUID2;
+        AuthenticationLevel authenticationLevel;
+    };
 
-            try
-            {
-                // Initialize the RPC server (authn svc reg & resource allocation takes place)
-                RpcServer::Initialize(
-                    GetParam().protocolSequence,
-                    "TestClient3FD",
-                    GetParam().authenticationLevel
-                );
+    class Framework_RPC_TestCase2 :
+        public ::testing::TestWithParam<TestOptionsA> {};
 
-                // RPC interface implementation 1:
-                AcmeTesting_v1_0_epv_t intfImplFuncTable1 = { Operate, ChangeCase, Shutdown };
+    /// <summary>
+    /// Tests the cycle init/start/stop/resume/stop/finalize of the RPC server,
+    /// for several combinations of protocol sequence and authentication level.
+    /// </summary>
+    TEST_P(Framework_RPC_TestCase2, ServerRun_AuthnSec_StatesCycleTest)
+    {
+        // Ensures proper initialization/finalization of the framework
+        FrameworkInstance _framework;
 
-                // RPC interface implementation 2:
-                AcmeTesting_v1_0_epv_t intfImplFuncTable2 = { Operate2, ChangeCase2, Shutdown };
+        CALL_STACK_TRACE;
 
-                std::vector<RpcSrvObject> objects;
-                objects.reserve(2);
+        try
+        {
+            // Initialize the RPC server (authn svc reg & resource allocation takes place)
+            RpcServer::Initialize(
+                GetParam().protocolSequence,
+                "TestClient3FD",
+                GetParam().authenticationLevel
+            );
 
-                // This object will run impl 1:
-                objects.emplace_back(
-                    GetParam().objectUUID1,
-                    AcmeTesting_v1_0_s_ifspec, // this is the interface (generated from IDL)
-                    &intfImplFuncTable1
-                );
+            // RPC interface implementation 1:
+            AcmeTesting_v1_0_epv_t intfImplFuncTable1 = { Operate, ChangeCase, Shutdown };
+
+            // RPC interface implementation 2:
+            AcmeTesting_v1_0_epv_t intfImplFuncTable2 = { Operate2, ChangeCase2, Shutdown };
+
+            std::vector<RpcSrvObject> objects;
+            objects.reserve(2);
+
+            // This object will run impl 1:
+            objects.emplace_back(
+                GetParam().objectUUID1,
+                AcmeTesting_v1_0_s_ifspec, // this is the interface (generated from IDL)
+                &intfImplFuncTable1
+            );
                 
-                // This object will run impl 2:
-                objects.emplace_back(
-                    GetParam().objectUUID2,
-                    AcmeTesting_v1_0_s_ifspec, // this is the interface (generated from IDL)
-                    &intfImplFuncTable2
-                );
+            // This object will run impl 2:
+            objects.emplace_back(
+                GetParam().objectUUID2,
+                AcmeTesting_v1_0_s_ifspec, // this is the interface (generated from IDL)
+                &intfImplFuncTable2
+            );
 
-                // Now cycle through the states:
-                EXPECT_EQ(STATUS_OKAY, RpcServer::Start(objects));
-                EXPECT_EQ(STATUS_OKAY, RpcServer::Stop());
-                EXPECT_EQ(STATUS_OKAY, RpcServer::Resume());
-                EXPECT_EQ(STATUS_OKAY, RpcServer::Stop());
+            // Now cycle through the states:
+            EXPECT_EQ(STATUS_OKAY, RpcServer::Start(objects));
+            EXPECT_EQ(STATUS_OKAY, RpcServer::Stop());
+            EXPECT_EQ(STATUS_OKAY, RpcServer::Resume());
+            EXPECT_EQ(STATUS_OKAY, RpcServer::Stop());
 
-                // Finalize the RPC server (resources will be released)
-                RpcServer::Finalize();
-            }
-            catch (...)
-            {
-                RpcServer::Finalize();
-                HandleException();
-            }
+            // Finalize the RPC server (resources will be released)
+            RpcServer::Finalize();
         }
-
-        /* Implementation of test template takes care of switching
-        protocol sequences and authentication level: */
-        INSTANTIATE_TEST_CASE_P(
-            SwitchProtAndAuthLevel,
-            Framework_RPC_TestCase1,
-            ::testing::Values(
-                TestOptions {
-                    ProtocolSequence::Local,
-                    objectsUuidsImpl1[0],
-                    objectsUuidsImpl2[0],
-                    AuthenticationLevel::None
-                },
-                TestOptions {
-                    ProtocolSequence::Local,
-                    objectsUuidsImpl1[1],
-                    objectsUuidsImpl2[1],
-                    AuthenticationLevel::Integrity
-                },
-                TestOptions {
-                    ProtocolSequence::Local,
-                    objectsUuidsImpl1[2],
-                    objectsUuidsImpl2[2],
-                    AuthenticationLevel::Privacy
-                },
-                TestOptions {
-                    ProtocolSequence::TCP,
-                    objectsUuidsImpl1[3],
-                    objectsUuidsImpl2[3],
-                    AuthenticationLevel::None
-                },
-                TestOptions {
-                    ProtocolSequence::TCP,
-                    objectsUuidsImpl1[4],
-                    objectsUuidsImpl2[4],
-                    AuthenticationLevel::Integrity
-                },
-                TestOptions {
-                    ProtocolSequence::TCP,
-                    objectsUuidsImpl1[5],
-                    objectsUuidsImpl2[5],
-                    AuthenticationLevel::Privacy
-                }
-            )
-        );
-
-        /// <summary>
-        /// Tests the RPC server normal operation (responding requests), trying
-        /// several combinations of protocol sequence and authentication level.
-        /// </summary>
-        TEST(Framework_RPC_TestCase2, ServerRun_NoAuthn_ResponseTest)
+        catch (...)
         {
-            // Ensures proper initialization/finalization of the framework
-            FrameworkInstance _framework;
-
-            CALL_STACK_TRACE;
-
-            try
-            {
-                // Initialize the RPC server (authn svc reg & resource allocation takes place)
-                RpcServer::Initialize(
-                    ProtocolSequence::Local,
-                    "TestClient3FD",
-                    AuthenticationLevel::None
-                );
-
-                // RPC interface implementation 1:
-                AcmeTesting_v1_0_epv_t intfImplFuncTable1 = { Operate, ChangeCase, Shutdown };
-
-                // RPC interface implementation 2:
-                AcmeTesting_v1_0_epv_t intfImplFuncTable2 = { Operate2, ChangeCase2, Shutdown };
-
-                std::vector<RpcSrvObject> objects;
-                objects.reserve(2);
-
-                // This object will run impl 1:
-                objects.emplace_back(
-                    objectsUuidsImpl1[6],
-                    AcmeTesting_v1_0_s_ifspec, // this is the interface (generated from IDL)
-                    &intfImplFuncTable1
-                );
-
-                // This object will run impl 2:
-                objects.emplace_back(
-                    objectsUuidsImpl2[6],
-                    AcmeTesting_v1_0_s_ifspec, // this is the interface (generated from IDL)
-                    &intfImplFuncTable2
-                );
-
-                // Now cycle through the states:
-                EXPECT_EQ(STATUS_OKAY, RpcServer::Start(objects));
-                EXPECT_EQ(STATUS_OKAY, RpcServer::Wait());
-
-                // Finalize the RPC server (resources will be released)
-                RpcServer::Finalize();
-            }
-            catch (...)
-            {
-                RpcServer::Finalize();
-                HandleException();
-            }
+            RpcServer::Finalize();
+            HandleException();
         }
+    }
 
-        class Framework_RPC_TestCase2 :
-            public ::testing::TestWithParam<TestOptions> {};
+    /* Implementation of test template takes care of switching
+    protocol sequences and authentication level: */
+    INSTANTIATE_TEST_CASE_P(
+        SwitchProtAndAuthLevel,
+        Framework_RPC_TestCase2,
+        ::testing::Values(
+            TestOptionsA { ProtocolSequence::Local, objectsUuidsImpl1[1], objectsUuidsImpl2[1], AuthenticationLevel::Integrity },
+            TestOptionsA { ProtocolSequence::Local, objectsUuidsImpl1[2], objectsUuidsImpl2[2], AuthenticationLevel::Privacy },
+            TestOptionsA { ProtocolSequence::TCP, objectsUuidsImpl1[3], objectsUuidsImpl2[3], AuthenticationLevel::Integrity },
+            TestOptionsA { ProtocolSequence::TCP, objectsUuidsImpl1[4], objectsUuidsImpl2[4], AuthenticationLevel::Privacy }
+        )
+    );
 
-        /// <summary>
-        /// Tests the RPC server normal operation (responding requests), trying
-        /// several combinations of protocol sequence and authentication level.
-        /// </summary>
-        TEST_P(Framework_RPC_TestCase2, ServerRun_AuthnSec_ResponseTest)
+    /// <summary>
+    /// Tests the RPC server normal operation (responding requests), trying
+    /// several combinations of protocol sequence and authentication level.
+    /// </summary>
+    TEST(Framework_RPC_TestCase3, ServerRun_NoAuth_ResponseTest)
+    {
+        // Ensures proper initialization/finalization of the framework
+        FrameworkInstance _framework;
+
+        CALL_STACK_TRACE;
+
+        try
         {
-            // Ensures proper initialization/finalization of the framework
-            FrameworkInstance _framework;
+            // Initialize the RPC server (resource allocation takes place)
+            RpcServer::Initialize(ProtocolSequence::Local, "TestClient3FD");
 
-            CALL_STACK_TRACE;
+            // RPC interface implementation 1:
+            AcmeTesting_v1_0_epv_t intfImplFuncTable1 = { Operate, ChangeCase, Shutdown };
 
-            try
-            {
-                // Initialize the RPC server (authn svc reg & resource allocation takes place)
-                RpcServer::Initialize(
-                    GetParam().protocolSequence,
-                    "TestClient3FD",
-                    GetParam().authenticationLevel
-                );
+            // RPC interface implementation 2:
+            AcmeTesting_v1_0_epv_t intfImplFuncTable2 = { Operate2, ChangeCase2, Shutdown };
 
-                // RPC interface implementation 1:
-                AcmeTesting_v1_0_epv_t intfImplFuncTable1 = { Operate, ChangeCase, Shutdown };
+            std::vector<RpcSrvObject> objects;
+            objects.reserve(2);
 
-                // RPC interface implementation 2:
-                AcmeTesting_v1_0_epv_t intfImplFuncTable2 = { Operate2, ChangeCase2, Shutdown };
+            // This object will run impl 1:
+            objects.emplace_back(
+                objectsUuidsImpl1[5],
+                AcmeTesting_v1_0_s_ifspec, // this is the interface (generated from IDL)
+                &intfImplFuncTable1
+            );
 
-                std::vector<RpcSrvObject> objects;
-                objects.reserve(2);
+            // This object will run impl 2:
+            objects.emplace_back(
+                objectsUuidsImpl2[5],
+                AcmeTesting_v1_0_s_ifspec, // this is the interface (generated from IDL)
+                &intfImplFuncTable2
+            );
 
-                // This object will run impl 1:
-                objects.emplace_back(
-                    GetParam().objectUUID1,
-                    AcmeTesting_v1_0_s_ifspec, // this is the interface (generated from IDL)
-                    &intfImplFuncTable1
-                );
+            // Now cycle through the states:
+            EXPECT_EQ(STATUS_OKAY, RpcServer::Start(objects));
+            EXPECT_EQ(STATUS_OKAY, RpcServer::Wait());
 
-                // This object will run impl 2:
-                objects.emplace_back(
-                    GetParam().objectUUID2,
-                    AcmeTesting_v1_0_s_ifspec, // this is the interface (generated from IDL)
-                    &intfImplFuncTable2
-                );
-
-                // Now cycle through the states:
-                EXPECT_EQ(STATUS_OKAY, RpcServer::Start(objects));
-                EXPECT_EQ(STATUS_OKAY, RpcServer::Wait());
-
-                // Finalize the RPC server (resources will be released)
-                RpcServer::Finalize();
-            }
-            catch (...)
-            {
-                RpcServer::Finalize();
-                HandleException();
-            }
+            // Finalize the RPC server (resources will be released)
+            RpcServer::Finalize();
         }
+        catch (...)
+        {
+            RpcServer::Finalize();
+            HandleException();
+        }
+    }
 
-        /* Implementation of test template takes care of switching
-        protocol sequences and authentication level: */
-        INSTANTIATE_TEST_CASE_P(
-            SwitchProtAndAuthLevel,
-            Framework_RPC_TestCase2,
-            ::testing::Values(
-                TestOptions{
-                    ProtocolSequence::Local,
-                    objectsUuidsImpl1[7],
-                    objectsUuidsImpl2[7],
-                    AuthenticationLevel::Integrity
-                },
-                TestOptions{
-                    ProtocolSequence::Local,
-                    objectsUuidsImpl1[8],
-                    objectsUuidsImpl2[8],
-                    AuthenticationLevel::Privacy
-                },
-                TestOptions{
-                    ProtocolSequence::Local,
-                    objectsUuidsImpl1[9],
-                    objectsUuidsImpl2[9],
-                    AuthenticationLevel::Integrity
-                },
-                TestOptions{
-                    ProtocolSequence::Local,
-                    objectsUuidsImpl1[10],
-                    objectsUuidsImpl2[10],
-                    AuthenticationLevel::Privacy
-                }/*,
-                TestOptions{
-                    ProtocolSequence::Local,
-                    objectsUuidsImpl1[11],
-                    objectsUuidsImpl2[11],
-                    AuthenticationLevel::Integrity
-                },
-                TestOptions{
-                    ProtocolSequence::Local,
-                    objectsUuidsImpl1[12],
-                    objectsUuidsImpl2[12],
-                    AuthenticationLevel::Privacy
-                },*//*
-                TestOptions{
-                    ProtocolSequence::TCP,
-                    objectsUuidsImpl1[6],
-                    objectsUuidsImpl2[6],
-                    AuthenticationLevel::Integrity
-                },
-                TestOptions{
-                    ProtocolSequence::TCP,
-                    objectsUuidsImpl1[7],
-                    objectsUuidsImpl2[7],
-                    AuthenticationLevel::Privacy
-                },
-                TestOptions{
-                    ProtocolSequence::TCP,
-                    objectsUuidsImpl1[8],
-                    objectsUuidsImpl2[8],
-                    AuthenticationLevel::Integrity
-                },
-                TestOptions{
-                    ProtocolSequence::TCP,
-                    objectsUuidsImpl1[9],
-                    objectsUuidsImpl2[9],
-                    AuthenticationLevel::Privacy
-                }*//*,
-                TestOptions{
-                    ProtocolSequence::TCP,
-                    objectsUuidsImpl1[10],
-                    objectsUuidsImpl2[10],
-                    AuthenticationLevel::Integrity
-                },
-                TestOptions{
-                    ProtocolSequence::TCP,
-                    objectsUuidsImpl1[11],
-                    objectsUuidsImpl2[11],
-                    AuthenticationLevel::Privacy
-                }*/
-            )
-        );
+    class Framework_RPC_TestCase4 :
+        public ::testing::TestWithParam<TestOptionsA> {};
 
-    }// end of namespace integration_tests
+    /// <summary>
+    /// Tests the RPC server normal operation (responding requests), trying
+    /// several combinations of protocol sequence and authentication level
+    /// using Microsoft NTLM/Negotiate/Kerberos SSP's.
+    /// </summary>
+    TEST_P(Framework_RPC_TestCase4, ServerRun_AuthnSec_ResponseTest)
+    {
+        // Ensures proper initialization/finalization of the framework
+        FrameworkInstance _framework;
+
+        CALL_STACK_TRACE;
+
+        try
+        {
+            // Initialize the RPC server (authn svc reg & resource allocation takes place)
+            RpcServer::Initialize(
+                GetParam().protocolSequence,
+                "TestClient3FD",
+                GetParam().authenticationLevel
+            );
+
+            // RPC interface implementation 1:
+            AcmeTesting_v1_0_epv_t intfImplFuncTable1 = { Operate, ChangeCase, Shutdown };
+
+            // RPC interface implementation 2:
+            AcmeTesting_v1_0_epv_t intfImplFuncTable2 = { Operate2, ChangeCase2, Shutdown };
+
+            std::vector<RpcSrvObject> objects;
+            objects.reserve(2);
+
+            // This object will run impl 1:
+            objects.emplace_back(
+                GetParam().objectUUID1,
+                AcmeTesting_v1_0_s_ifspec, // this is the interface (generated from IDL)
+                &intfImplFuncTable1
+            );
+
+            // This object will run impl 2:
+            objects.emplace_back(
+                GetParam().objectUUID2,
+                AcmeTesting_v1_0_s_ifspec, // this is the interface (generated from IDL)
+                &intfImplFuncTable2
+            );
+
+            // Now cycle through the states:
+            EXPECT_EQ(STATUS_OKAY, RpcServer::Start(objects));
+            EXPECT_EQ(STATUS_OKAY, RpcServer::Wait());
+
+            // Finalize the RPC server (resources will be released)
+            RpcServer::Finalize();
+        }
+        catch (...)
+        {
+            RpcServer::Finalize();
+            HandleException();
+        }
+    }
+
+    /* Implementation of test template takes care of switching
+    protocol sequences and authentication level: */
+    INSTANTIATE_TEST_CASE_P(
+        SwitchProtAndAuthLevel,
+        Framework_RPC_TestCase4,
+        ::testing::Values(
+            TestOptionsA{ ProtocolSequence::Local, objectsUuidsImpl1[6], objectsUuidsImpl2[6], AuthenticationLevel::Integrity },
+            TestOptionsA{ ProtocolSequence::Local, objectsUuidsImpl1[7], objectsUuidsImpl2[7], AuthenticationLevel::Privacy },
+            TestOptionsA{ ProtocolSequence::Local, objectsUuidsImpl1[8], objectsUuidsImpl2[8], AuthenticationLevel::Integrity },
+            TestOptionsA{ ProtocolSequence::Local, objectsUuidsImpl1[9], objectsUuidsImpl2[9], AuthenticationLevel::Privacy }
+            /*,
+            TestOptionsA{ ProtocolSequence::Local, objectsUuidsImpl1[10], objectsUuidsImpl2[10], AuthenticationLevel::Integrity },
+            TestOptionsA{ ProtocolSequence::Local, objectsUuidsImpl1[11], objectsUuidsImpl2[11], AuthenticationLevel::Privacy },
+            */
+            /*
+            TestOptionsA{ ProtocolSequence::TCP, objectsUuidsImpl1[6], objectsUuidsImpl2[6], AuthenticationLevel::Integrity },
+            TestOptionsA{ ProtocolSequence::TCP, objectsUuidsImpl1[7], objectsUuidsImpl2[7], AuthenticationLevel::Privacy },
+            TestOptionsA{ ProtocolSequence::TCP, objectsUuidsImpl1[8], objectsUuidsImpl2[8], AuthenticationLevel::Integrity },
+            TestOptionsA{ ProtocolSequence::TCP, objectsUuidsImpl1[9], objectsUuidsImpl2[9], AuthenticationLevel::Privacy }
+            */
+            /*,
+            TestOptionsA{ ProtocolSequence::TCP, objectsUuidsImpl1[10], objectsUuidsImpl2[10], AuthenticationLevel::Integrity },
+            TestOptionsA{ ProtocolSequence::TCP, objectsUuidsImpl1[11], objectsUuidsImpl2[11], AuthenticationLevel::Privacy }
+            */
+        )
+    );
+
+    // The set of options for some test template instantiations
+    struct TestOptionsB
+    {
+        ProtocolSequence protocolSequence;
+        const char *objectUUID1;
+        const char *objectUUID2;
+        AuthenticationLevel authenticationLevel;
+        bool useStrongSec;
+    };
+
+    class Framework_RPC_TestCase5 :
+        public ::testing::TestWithParam<TestOptionsB> {};
+
+    /// <summary>
+    /// Tests the RPC server normal operation (responding requests), trying
+    /// several combinations of protocol sequence and authentication level
+    /// using Schannel SSP.
+    /// </summary>
+    TEST_P(Framework_RPC_TestCase5, ServerRun_Schannel_ResponseTest)
+    {
+        // Ensures proper initialization/finalization of the framework
+        FrameworkInstance _framework;
+
+        CALL_STACK_TRACE;
+
+        try
+        {
+            CertInfo certInfo(
+                CERT_SYSTEM_STORE_LOCAL_MACHINE,
+                "My",
+                "TARS",
+                GetParam().useStrongSec
+            );
+
+            // Initialize the RPC server (resource allocation takes place)
+            RpcServer::Initialize(
+                GetParam().protocolSequence,
+                "TestClient3FD",
+                &certInfo,
+                GetParam().authenticationLevel
+            );
+
+            // RPC interface implementation 1:
+            AcmeTesting_v1_0_epv_t intfImplFuncTable1 = { Operate, ChangeCase, Shutdown };
+
+            // RPC interface implementation 2:
+            AcmeTesting_v1_0_epv_t intfImplFuncTable2 = { Operate2, ChangeCase2, Shutdown };
+
+            std::vector<RpcSrvObject> objects;
+            objects.reserve(2);
+
+            // This object will run impl 1:
+            objects.emplace_back(
+                GetParam().objectUUID1,
+                AcmeTesting_v1_0_s_ifspec, // this is the interface (generated from IDL)
+                &intfImplFuncTable1
+            );
+
+            // This object will run impl 2:
+            objects.emplace_back(
+                GetParam().objectUUID2,
+                AcmeTesting_v1_0_s_ifspec, // this is the interface (generated from IDL)
+                &intfImplFuncTable2
+            );
+
+            // Now cycle through the states:
+            EXPECT_EQ(STATUS_OKAY, RpcServer::Start(objects));
+            EXPECT_EQ(STATUS_OKAY, RpcServer::Wait());
+
+            // Finalize the RPC server (resources will be released)
+            RpcServer::Finalize();
+        }
+        catch (...)
+        {
+            RpcServer::Finalize();
+            HandleException();
+        }
+    }
+
+    /* Implementation of test template takes care of switching
+    protocol sequences and authentication level: */
+    INSTANTIATE_TEST_CASE_P(
+        SwitchProtAndAuthLevel,
+        Framework_RPC_TestCase5,
+        ::testing::Values(
+            TestOptionsB{ ProtocolSequence::Local, objectsUuidsImpl1[12], objectsUuidsImpl2[12], AuthenticationLevel::Integrity, false },
+            TestOptionsB{ ProtocolSequence::Local, objectsUuidsImpl1[13], objectsUuidsImpl2[13], AuthenticationLevel::Integrity, true },
+            TestOptionsB{ ProtocolSequence::Local, objectsUuidsImpl1[14], objectsUuidsImpl2[14], AuthenticationLevel::Privacy, false },
+            TestOptionsB{ ProtocolSequence::Local, objectsUuidsImpl1[15], objectsUuidsImpl2[15], AuthenticationLevel::Privacy, true },
+            TestOptionsB{ ProtocolSequence::TCP, objectsUuidsImpl1[16], objectsUuidsImpl2[16], AuthenticationLevel::Integrity, false },
+            TestOptionsB{ ProtocolSequence::TCP, objectsUuidsImpl1[17], objectsUuidsImpl2[17], AuthenticationLevel::Integrity, true },
+            TestOptionsB{ ProtocolSequence::TCP, objectsUuidsImpl1[18], objectsUuidsImpl2[18], AuthenticationLevel::Privacy, false },
+            TestOptionsB{ ProtocolSequence::TCP, objectsUuidsImpl1[19], objectsUuidsImpl2[19], AuthenticationLevel::Privacy, true }
+        )
+    );
+}// end of namespace integration_tests
 }// end of namespace _3fd

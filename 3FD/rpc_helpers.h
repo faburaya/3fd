@@ -29,9 +29,8 @@ namespace rpc
     /// <summary>
     /// Enumerates the possible options for authentication level.
     /// </summary>
-    enum class AuthenticationLevel : uint32_t
+    enum class AuthenticationLevel : unsigned long
     {
-        None = RPC_C_AUTHN_NONE,
         Integrity = RPC_C_AUTHN_LEVEL_PKT_INTEGRITY,
         Privacy = RPC_C_AUTHN_LEVEL_PKT_PRIVACY
     };
@@ -39,7 +38,7 @@ namespace rpc
     /// <summary>
     /// Enumerates the possible options for authentication security (packages).
     /// </summary>
-    enum class AuthenticationSecurity : uint32_t
+    enum class AuthenticationSecurity : unsigned long
     {
         NTLM = RPC_C_AUTHN_WINNT, // Microsoft NT LAN Manager SSP
         TryKerberos = RPC_C_AUTHN_GSS_NEGOTIATE, // Microsoft Negotiate SSP
@@ -151,6 +150,12 @@ namespace rpc
 
         static std::mutex singletonAccessMutex;
 
+        static void InitializeBaseTemplate(
+            ProtocolSequence protSeq,
+            const string &serviceName,
+            const std::function<void (ProtocolSequence, const string &)> &callback
+        );
+
         RpcServer() {}
 
     public:
@@ -159,7 +164,19 @@ namespace rpc
 
         static void Initialize(
             ProtocolSequence protSeq,
+            const string &serviceName
+        );
+
+        static void Initialize(
+            ProtocolSequence protSeq,
             const string &serviceName,
+            AuthenticationLevel authnLevel
+        );
+
+        static void Initialize(
+            ProtocolSequence protSeq,
+            const string &serviceName,
+            const CertInfo *certInfoX509,
             AuthenticationLevel authnLevel
         );
 

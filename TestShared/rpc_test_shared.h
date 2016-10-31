@@ -11,13 +11,13 @@ namespace _3fd
             Operate(left, right) = left * right
             ChangeCase(input) = toUpper(input)
         */
-        extern const std::array<const char *, 13> objectsUuidsImpl1;
+        extern const std::array<const char *, 20> objectsUuidsImpl1;
 
         /* In this implementation:
             Operate(left, right) = left + right
             ChangeCase(input) = toLower(input)
         */
-        extern const std::array<const char *, 13> objectsUuidsImpl2;
+        extern const std::array<const char *, 20> objectsUuidsImpl2;
 
     }// end of namespace rpc
 }// end of namespace _3fd

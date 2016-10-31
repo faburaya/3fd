@@ -11,6 +11,7 @@
 #endif
 
 #include <thread>
+#include <wincrypt.h>
 
 ////////////////////////////
 // RPC Memory Allocation
@@ -59,7 +60,7 @@ namespace integration_tests
     /// <summary>
     /// Proxy for AcmeTesting RPC server.
     /// </summary>
-    class AcmeSvcProxy : public rpc::RpcClient
+    class AcmeRpcClient : public rpc::RpcClient
     {
     public:
 
@@ -96,7 +97,7 @@ namespace integration_tests
     /// <summary>
     /// Tests RPC client issuing requests without authentication.
     /// </summary>
-    TEST(Framework_RPC_TestCase, ClientRun_NoAuthn_RequestTest)
+    TEST(Framework_RPC_TestCase1, ClientRun_NoAuth_RequestTest)
     {
         // Ensures proper initialization/finalization of the framework
         FrameworkInstance _framework;
@@ -108,18 +109,18 @@ namespace integration_tests
             // Wait for RPC server to become available
             system("pause");
 
-            AcmeSvcProxy client1(
+            AcmeRpcClient client1(
                 ProtocolSequence::Local,
-                objectsUuidsImpl1[6],
+                objectsUuidsImpl1[5],
                 "TARS"//"MyVirtualServer.MyDomain.local"
             );
 
             EXPECT_EQ(696.0, client1.Operate(6.0, 116.0));
             EXPECT_EQ("SQUIRREL", client1.ChangeCase("squirrel"));
 
-            AcmeSvcProxy client2(
+            AcmeRpcClient client2(
                 ProtocolSequence::Local,
-                objectsUuidsImpl2[6],
+                objectsUuidsImpl2[5],
                 "TARS"//"MyVirtualServer.MyDomain.local"
             );
 
@@ -135,7 +136,7 @@ namespace integration_tests
     }
 
     // The set of options for each test template instantiation
-    struct TestOptions
+    struct TestOptions2
     {
         uint32_t waitSecs;
         ProtocolSequence protocolSequence;
@@ -146,14 +147,14 @@ namespace integration_tests
         ImpersonationLevel impersonationLevel;
     };
 
-    class Framework_RPC_TestCase :
-        public ::testing::TestWithParam<TestOptions> {};
+    class Framework_RPC_TestCase2 :
+        public ::testing::TestWithParam<TestOptions2> {};
 
     /// <summary>
     /// Tests RPC client issuing requests for several scenarios of
     /// protocol sequence and authentication level.
     /// </summary>
-    TEST_P(Framework_RPC_TestCase, ClientRun_AuthnSec_RequestTest)
+    TEST_P(Framework_RPC_TestCase2, ClientRun_AuthnSec_RequestTest)
     {
         // Ensures proper initialization/finalization of the framework
         FrameworkInstance _framework;
@@ -165,7 +166,7 @@ namespace integration_tests
             // Wait for RPC server to become available
             std::this_thread::sleep_for(std::chrono::seconds(GetParam().waitSecs));
 
-            AcmeSvcProxy client1(
+            AcmeRpcClient client1(
                 GetParam().protocolSequence,
                 GetParam().objectUUID1,
                 "TARS",//"MyVirtualServer.MyDomain.local",
@@ -178,7 +179,7 @@ namespace integration_tests
             EXPECT_EQ(696.0, client1.Operate(6.0, 116.0));
             EXPECT_EQ("SQUIRREL", client1.ChangeCase("squirrel"));
 
-            AcmeSvcProxy client2(
+            AcmeRpcClient client2(
                 GetParam().protocolSequence,
                 GetParam().objectUUID2,
                 "TARS",//"MyVirtualServer.MyDomain.local",
@@ -203,116 +204,110 @@ namespace integration_tests
     protocol sequences and authentication level: */
     INSTANTIATE_TEST_CASE_P(
         SwitchProtAndAuthLevel,
-        Framework_RPC_TestCase,
+        Framework_RPC_TestCase2,
         ::testing::Values(
-            TestOptions{
-                15,
-                ProtocolSequence::Local,
-                objectsUuidsImpl1[7],
-                objectsUuidsImpl2[7],
-                AuthenticationLevel::Integrity,
-                AuthenticationSecurity::NTLM,
-                ImpersonationLevel::Impersonate
-            },
-            TestOptions{
-                1,
-                ProtocolSequence::Local,
-                objectsUuidsImpl1[8],
-                objectsUuidsImpl2[8],
-                AuthenticationLevel::Privacy,
-                AuthenticationSecurity::NTLM,
-                ImpersonationLevel::Impersonate
-            },
-            TestOptions{
-                1,
-                ProtocolSequence::Local,
-                objectsUuidsImpl1[9],
-                objectsUuidsImpl2[9],
-                AuthenticationLevel::Integrity,
-                AuthenticationSecurity::TryKerberos,
-                ImpersonationLevel::Impersonate
-            },
-            TestOptions{
-                1,
-                ProtocolSequence::Local,
-                objectsUuidsImpl1[10],
-                objectsUuidsImpl2[10],
-                AuthenticationLevel::Privacy,
-                AuthenticationSecurity::TryKerberos,
-                ImpersonationLevel::Impersonate
-            }/*,
-            TestOptions{
-                1,
-                ProtocolSequence::Local,
-                objectsUuidsImpl1[11],
-                objectsUuidsImpl2[11],
-                AuthenticationLevel::Integrity,
-                AuthenticationSecurity::RequireMutualAuthn,
-                ImpersonationLevel::Impersonate
-            },
-            TestOptions{
-                1,
-                ProtocolSequence::Local,
-                objectsUuidsImpl1[12],
-                objectsUuidsImpl2[12],
-                AuthenticationLevel::Privacy,
-                AuthenticationSecurity::RequireMutualAuthn,
-                ImpersonationLevel::Impersonate
-            },*//*
-            TestOptions{
-                12,
-                ProtocolSequence::TCP,
-                objectsUuidsImpl1[6],
-                objectsUuidsImpl2[6],
-                AuthenticationLevel::Integrity,
-                AuthenticationSecurity::NTLM,
-                ImpersonationLevel::Impersonate
-            },
-            TestOptions{
-                1,
-                ProtocolSequence::TCP,
-                objectsUuidsImpl1[7],
-                objectsUuidsImpl2[7],
-                AuthenticationLevel::Privacy,
-                AuthenticationSecurity::NTLM,
-                ImpersonationLevel::Impersonate
-            },
-            TestOptions{
-                1,
-                ProtocolSequence::TCP,
-                objectsUuidsImpl1[8],
-                objectsUuidsImpl2[8],
-                AuthenticationLevel::Integrity,
-                AuthenticationSecurity::TryKerberos,
-                ImpersonationLevel::Impersonate
-            },
-            TestOptions{
-                1,
-                ProtocolSequence::TCP,
-                objectsUuidsImpl1[9],
-                objectsUuidsImpl2[9],
-                AuthenticationLevel::Privacy,
-                AuthenticationSecurity::TryKerberos,
-                ImpersonationLevel::Impersonate
-            }*//*,
-            TestOptions{
-                1,
-                ProtocolSequence::TCP,
-                objectsUuidsImpl1[10],
-                objectsUuidsImpl2[10],
-                AuthenticationLevel::Integrity,
-                AuthenticationSecurity::RequireMutualAuthn,
-                ImpersonationLevel::Impersonate
-            },
-            TestOptions{
-                1,
-                ProtocolSequence::TCP,
-                objectsUuidsImpl1[11],
-                objectsUuidsImpl2[11],
-                AuthenticationLevel::Privacy,
-                AuthenticationSecurity::RequireMutualAuthn,
-                ImpersonationLevel::Impersonate
-            }*/
+            TestOptions2{ 15, ProtocolSequence::Local, objectsUuidsImpl1[6], objectsUuidsImpl2[6], AuthenticationLevel::Integrity, AuthenticationSecurity::NTLM, ImpersonationLevel::Impersonate },
+            TestOptions2{ 1, ProtocolSequence::Local, objectsUuidsImpl1[7], objectsUuidsImpl2[7], AuthenticationLevel::Privacy, AuthenticationSecurity::NTLM, ImpersonationLevel::Impersonate },
+            TestOptions2{ 1, ProtocolSequence::Local, objectsUuidsImpl1[8], objectsUuidsImpl2[8], AuthenticationLevel::Integrity, AuthenticationSecurity::TryKerberos, ImpersonationLevel::Impersonate },
+            TestOptions2{ 1, ProtocolSequence::Local, objectsUuidsImpl1[9], objectsUuidsImpl2[9], AuthenticationLevel::Privacy, AuthenticationSecurity::TryKerberos, ImpersonationLevel::Impersonate }
+            /*,
+            TestOptions2{ 1, ProtocolSequence::Local, objectsUuidsImpl1[10], objectsUuidsImpl2[10], AuthenticationLevel::Integrity, AuthenticationSecurity::RequireMutualAuthn, ImpersonationLevel::Impersonate },
+            TestOptions2{ 1, ProtocolSequence::Local, objectsUuidsImpl1[11], objectsUuidsImpl2[11], AuthenticationLevel::Privacy, AuthenticationSecurity::RequireMutualAuthn, ImpersonationLevel::Impersonate }
+            */
+            /*,
+            TestOptions2{ 12, ProtocolSequence::TCP, objectsUuidsImpl1[5], objectsUuidsImpl2[5], AuthenticationLevel::Integrity, AuthenticationSecurity::NTLM, ImpersonationLevel::Impersonate },
+            TestOptions2{ 1, ProtocolSequence::TCP, objectsUuidsImpl1[6], objectsUuidsImpl2[6], AuthenticationLevel::Privacy, AuthenticationSecurity::NTLM, ImpersonationLevel::Impersonate },
+            TestOptions2{ 1, ProtocolSequence::TCP, objectsUuidsImpl1[7], objectsUuidsImpl2[7], AuthenticationLevel::Integrity, AuthenticationSecurity::TryKerberos, ImpersonationLevel::Impersonate },
+            TestOptions2{ 1, ProtocolSequence::TCP, objectsUuidsImpl1[8], objectsUuidsImpl2[8], AuthenticationLevel::Privacy, AuthenticationSecurity::TryKerberos, ImpersonationLevel::Impersonate }
+            */
+            /*,
+            TestOptions2{ 1, ProtocolSequence::TCP, objectsUuidsImpl1[9], objectsUuidsImpl2[9], AuthenticationLevel::Integrity, AuthenticationSecurity::RequireMutualAuthn, ImpersonationLevel::Impersonate },
+            TestOptions2{ 1, ProtocolSequence::TCP, objectsUuidsImpl1[10], objectsUuidsImpl2[10], AuthenticationLevel::Privacy, AuthenticationSecurity::RequireMutualAuthn, ImpersonationLevel::Impersonate }
+            */
+        )
+    );
+
+    // The set of options for each test template instantiation
+    struct TestOptions3
+    {
+        uint32_t waitSecs;
+        ProtocolSequence protocolSequence;
+        const char *objectUUID1;
+        const char *objectUUID2;
+        AuthenticationLevel authenticationLevel;
+        bool useStrongSec;
+    };
+
+    class Framework_RPC_TestCase3 :
+        public ::testing::TestWithParam<TestOptions3> {};
+
+    /// <summary>
+    /// Tests RPC client issuing requests for several scenarios of
+    /// protocol sequence and authentication level using Schannel SSP.
+    /// </summary>
+    TEST_P(Framework_RPC_TestCase3, ClientRun_Schannel_RequestTest)
+    {
+        // Ensures proper initialization/finalization of the framework
+        FrameworkInstance _framework;
+
+        CALL_STACK_TRACE;
+
+        try
+        {
+            // Wait for RPC server to become available
+            std::this_thread::sleep_for(std::chrono::seconds(GetParam().waitSecs));
+
+            CertInfo certInfo(
+                CERT_SYSTEM_STORE_LOCAL_MACHINE,
+                "My",
+                "TARS",
+                GetParam().useStrongSec
+            );
+
+            AcmeRpcClient client1(
+                GetParam().protocolSequence,
+                GetParam().objectUUID1,
+                "TARS",//"MyVirtualServer.MyDomain.local",
+                certInfo,
+                GetParam().authenticationLevel
+            );
+
+            EXPECT_EQ(696.0, client1.Operate(6.0, 116.0));
+            EXPECT_EQ("SQUIRREL", client1.ChangeCase("squirrel"));
+
+            AcmeRpcClient client2(
+                GetParam().protocolSequence,
+                GetParam().objectUUID2,
+                "TARS",//"MyVirtualServer.MyDomain.local",
+                certInfo,
+                GetParam().authenticationLevel
+            );
+
+            EXPECT_EQ(696.0, client2.Operate(606.0, 90.0));
+            EXPECT_EQ("squirrel", client2.ChangeCase("SQUIRREL"));
+
+            client2.Shutdown();
+        }
+        catch (...)
+        {
+            HandleException();
+        }
+    }
+
+    /* Implementation of test template takes care of switching
+    protocol sequences and authentication level: */
+    INSTANTIATE_TEST_CASE_P(
+        SwitchProtAndAuthLevel,
+        Framework_RPC_TestCase3,
+        ::testing::Values(
+            TestOptions3{ 15, ProtocolSequence::Local, objectsUuidsImpl1[12], objectsUuidsImpl2[12], AuthenticationLevel::Integrity, false },
+            TestOptions3{ 1, ProtocolSequence::Local, objectsUuidsImpl1[13], objectsUuidsImpl2[13], AuthenticationLevel::Integrity, true },
+            TestOptions3{ 1, ProtocolSequence::Local, objectsUuidsImpl1[14], objectsUuidsImpl2[14], AuthenticationLevel::Privacy, false },
+            TestOptions3{ 1, ProtocolSequence::Local, objectsUuidsImpl1[15], objectsUuidsImpl2[15], AuthenticationLevel::Privacy, true },
+            TestOptions3{ 1, ProtocolSequence::TCP, objectsUuidsImpl1[16], objectsUuidsImpl2[16], AuthenticationLevel::Integrity, false },
+            TestOptions3{ 1, ProtocolSequence::TCP, objectsUuidsImpl1[17], objectsUuidsImpl2[17], AuthenticationLevel::Integrity, true },
+            TestOptions3{ 1, ProtocolSequence::TCP, objectsUuidsImpl1[18], objectsUuidsImpl2[18], AuthenticationLevel::Privacy, false },
+            TestOptions3{ 1, ProtocolSequence::TCP, objectsUuidsImpl1[19], objectsUuidsImpl2[19], AuthenticationLevel::Privacy, true }
         )
     );
 

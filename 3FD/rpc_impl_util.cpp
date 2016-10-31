@@ -51,9 +51,6 @@ namespace rpc
     {
         switch (authnLevel)
         {
-        case AuthenticationLevel::None:
-            return "without authentication";
-
         case AuthenticationLevel::Integrity:
             return R"(authentication level "integrity")";
 

@@ -22,7 +22,11 @@ namespace rpc
 
         std::wstring m_serviceName;
 
-        AuthenticationLevel m_authLevel;
+        std::unique_ptr<SystemCertificateStore> m_sysCertStore;
+        std::unique_ptr<SChannelCredWrapper> m_schannelCred;
+
+        AuthenticationLevel m_cliReqAuthnLevel;
+        bool m_hasAuthnSec;
 
         /// <summary>
         /// Enumerates the possible states for the RPC server.
@@ -45,6 +49,19 @@ namespace rpc
         RpcServerImpl(
             ProtocolSequence protSeq,
             const string &serviceName,
+            bool hasAuthnSec
+        );
+
+        RpcServerImpl(
+            ProtocolSequence protSeq,
+            const string &serviceName,
+            AuthenticationLevel authnLevel
+        );
+
+        RpcServerImpl(
+            ProtocolSequence protSeq,
+            const string &serviceName,
+            const CertInfo *certInfoX509,
             AuthenticationLevel authnLevel
         );
 
@@ -55,7 +72,7 @@ namespace rpc
         /// </summary>
         /// <returns>The required authentication level for clients,
         /// as defined upon initialization.</returns>
-        AuthenticationLevel GetRequiredAuthnLevel() const { return m_authLevel; }
+        AuthenticationLevel GetRequiredAuthnLevel() const { return m_cliReqAuthnLevel; }
 
         bool Start(const std::vector<RpcSrvObject> &objects);
 

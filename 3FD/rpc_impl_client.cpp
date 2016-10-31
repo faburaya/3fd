@@ -169,7 +169,6 @@ namespace rpc
             authnSecurity == AuthenticationSecurity::NTLM
             || authnSecurity == AuthenticationSecurity::TryKerberos
             || authnSecurity == AuthenticationSecurity::RequireMutualAuthn
-            || authnLevel == AuthenticationLevel::None
         );
 
         CALL_STACK_TRACE;
@@ -181,15 +180,6 @@ namespace rpc
             throw core::AppException<std::invalid_argument>(
                 "Invalid argument: the constructor overload was meant to be used only "
                 "with authentication services Microsoft NTLM/Negotiate/Kerberos SSP"
-            );
-        }
-
-        if (authnLevel == AuthenticationLevel::None)
-        {
-            throw core::AppException<std::invalid_argument>(
-                "Invalid argument: the constructor overload was meant to be used with "
-                "authentication services Microsoft NTLM/Negotiate/Kerberos SSP, hence "
-                "the authentication level cannot be set to 'none'"
             );
         }
 
@@ -303,12 +293,12 @@ namespace rpc
         ThrowIfError(status, "Failed to set security for binding handle of RPC client");
 
         oss << "RPC client binding security was set to use "
-            << ConvertAuthnSvcOptToString(authnService)
-            << " ";
+            << ConvertAuthnSvcOptToString(authnService) << " ";
 
         AppendSecQosOptsDescription(secQOS, oss);
 
-        oss << " and " << ToString(impLevel);
+        oss << ", " << ToString(authnLevel)
+            << " and " << ToString(impLevel);
 
         core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
     }
@@ -316,7 +306,6 @@ namespace rpc
     {
         CALL_STACK_TRACE;
         HelpFreeBindingHandle(&m_bindingHandle);
-
         throw; // just forward an exception regarding an error known to have been already handled
     }
     catch (std::exception &ex)
@@ -352,19 +341,7 @@ namespace rpc
     try :
         RpcClient(protSeq, objUUID, destination, endpoint)
     {
-        // Invalid arguments:
-        _ASSERTE(authnLevel == AuthenticationLevel::None);
-
         CALL_STACK_TRACE;
-
-        if (authnLevel == AuthenticationLevel::None)
-        {
-            throw core::AppException<std::invalid_argument>(
-                "Invalid argument: the constructor overload was meant to be used with "
-                "authentication service Schannel SSP, hence the authentication level "
-                "should be set to an option other than 'none'"
-            );
-        }
 
         SystemCertificateStore certStore(certInfoX509.storeLocation, certInfoX509.storeName);
         auto certX509 = certStore.FindCertBySubject(certInfoX509.subject);
@@ -392,7 +369,7 @@ namespace rpc
             nullptr,
             static_cast<unsigned long> (authnLevel),
             authnService,
-            m_schannelCred.get()->GetCredential(),
+            m_schannelCred->GetCredential(),
             RPC_C_AUTHZ_DEFAULT
         );
 
@@ -401,12 +378,9 @@ namespace rpc
         std::ostringstream oss;
         oss << "RPC client binding security was set to use "
             << ConvertAuthnSvcOptToString(authnService)
-            << " with X.509 certificate (subject = '"
-            << certInfoX509.subject
-            << "' in store '"
-            << certInfoX509.storeName
-            << "') and "
-            << ToString(authnLevel);
+            << " with X.509 certificate (subject = '" << certInfoX509.subject
+            << "' in store '" << certInfoX509.storeName
+            << "') and " << ToString(authnLevel);
 
         core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
     }
