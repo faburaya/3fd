@@ -3,6 +3,7 @@
 
 #include "rpc_helpers.h"
 
+#include <map>
 #include <string>
 #include <memory>
 #include <NtDsAPI.h>
@@ -48,6 +49,31 @@ namespace rpc
                 );
             }
         }
+    };
+
+    /// <summary>
+    /// Gathers resources and code to assemble exceptions with
+    /// highly detailed information regarding RPC errors.
+    /// </summary>
+    class RpcErrorHelper
+    {
+    private:
+
+        static const std::array<const char *, 11> componentMap;
+
+        static std::map<uint32_t, const char *> detectionLocationMap;
+
+        static void EnsureMapInitialization();
+
+    public:
+
+        static
+        core::AppException<std::runtime_error>
+        CreateException(
+            RPC_STATUS errCode,
+            const string &message,
+            const string &details
+        );
     };
 
     const unsigned long UUID_VECTOR_MAX_SIZE(32);

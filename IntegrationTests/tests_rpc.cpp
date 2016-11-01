@@ -480,7 +480,7 @@ namespace integration_tests
             CertInfo certInfo(
                 CERT_SYSTEM_STORE_LOCAL_MACHINE,
                 "My",
-                "TARS",
+                "MySelfSignedCert4DevTests",
                 GetParam().useStrongSec
             );
 
