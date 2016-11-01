@@ -3,7 +3,6 @@
 
 #include "rpc_helpers.h"
 
-#include <map>
 #include <string>
 #include <memory>
 #include <NtDsAPI.h>
@@ -51,6 +50,8 @@ namespace rpc
         }
     };
 
+    typedef std::pair<uint32_t, const char*> RpcCodeLabelKVPair;
+
     /// <summary>
     /// Gathers resources and code to assemble exceptions with
     /// highly detailed information regarding RPC errors.
@@ -61,9 +62,11 @@ namespace rpc
 
         static const std::array<const char *, 11> componentMap;
 
-        static std::map<uint32_t, const char *> detectionLocationMap;
+        static const RpcCodeLabelKVPair detectionLocationMap[];
 
-        static void EnsureMapInitialization();
+        static const char *GetComponentLabel(uint32_t code);
+
+        static const char *GetDetectionLocationLabel(uint32_t code);
 
     public:
 
