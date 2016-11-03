@@ -1,17 +1,17 @@
 #ifndef PREPROCESSING_H
 #define PREPROCESSING_H
 
-#define STATUS_OKAY		false
-#define STATUS_FAIL		true
+#define STATUS_OKAY false
+#define STATUS_FAIL true
 
 // If using a GCC compiler:
 #ifdef __GNUG__
-#	define	__FUNCTION__	__PRETTY_FUNCTION__
+#	define	__FUNCTION__ __PRETTY_FUNCTION__
 #endif
 
 #ifdef _MSC_VER
 // Microsoft Visual Studio:
-#   define INTFOPT              __declspec(novtable) // CHANGE THIS DEFINITION ACCORDING TO YOUR COMPILER (or leave it blank)
+#   define INTFOPT __declspec(novtable) // CHANGE THIS DEFINITION ACCORDING TO YOUR COMPILER (or leave it blank)
 
 #   if _MSC_VER < 19000
 #       define NOEXCEPT             throw()
@@ -62,9 +62,9 @@
 // These instructions have they definition depending on whether this is a release compilation:
 #ifdef NDEBUG
 #   if defined _MSC_VER && _MSC_VER < 19000
-#       define NOEXCEPT     throw()
+#       define NOEXCEPT throw()
 #   else
-#       define NOEXCEPT     noexcept
+#       define NOEXCEPT noexcept
 #   endif
 
 #   define RELEASE_DEBUG_SWITCH(STATEMENT1, STATEMENT2) STATEMENT1
@@ -81,11 +81,11 @@
 
 #	define dbgexhnd
 #   define RELEASE_DEBUG_SWITCH(STATEMENT1, STATEMENT2) STATEMENT2
-#	define ONDEBUG(CODE_LINE)	CODE_LINE
+#	define ONDEBUG(CODE_LINE) CODE_LINE
 #endif
 
 // Some few useful "keywords":
-#define const_this	const_cast<const decltype(*this) &> (*this)
+#define const_this const_cast<const decltype(*this) &> (*this)
 
 // These are the calls that should be used for handling errors: it uses the RuntimeManager class:
 #ifdef ENABLE_3FD_CST

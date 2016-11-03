@@ -349,7 +349,7 @@ namespace integration_tests
                 &intfImplFuncTable2
             );
 
-            // Now cycle through the states:
+            // Now wait for the client:
             EXPECT_EQ(STATUS_OKAY, RpcServer::Start(objects));
             EXPECT_EQ(STATUS_OKAY, RpcServer::Wait());
 
@@ -410,7 +410,7 @@ namespace integration_tests
                 &intfImplFuncTable2
             );
 
-            // Now cycle through the states:
+            // Now wait for the client:
             EXPECT_EQ(STATUS_OKAY, RpcServer::Start(objects));
             EXPECT_EQ(STATUS_OKAY, RpcServer::Wait());
 
@@ -487,7 +487,7 @@ namespace integration_tests
             // Initialize the RPC server (resource allocation takes place)
             RpcServer::Initialize(
                 "TestClient3FD",
-                &certInfo,
+                nullptr,
                 GetParam().authenticationLevel
             );
 
@@ -514,7 +514,7 @@ namespace integration_tests
                 &intfImplFuncTable2
             );
 
-            // Now cycle through the states:
+            // Now wait for the client:
             EXPECT_EQ(STATUS_OKAY, RpcServer::Start(objects));
             EXPECT_EQ(STATUS_OKAY, RpcServer::Wait());
 
@@ -534,10 +534,10 @@ namespace integration_tests
         SwitchProtAndAuthLevel,
         Framework_RPC_TestCase5,
         ::testing::Values(
-            TestOptionsB{ objectsUuidsImpl1[12], objectsUuidsImpl2[12], AuthenticationLevel::Integrity, false },
-            TestOptionsB{ objectsUuidsImpl1[13], objectsUuidsImpl2[13], AuthenticationLevel::Integrity, true },
-            TestOptionsB{ objectsUuidsImpl1[14], objectsUuidsImpl2[14], AuthenticationLevel::Privacy, false },
-            TestOptionsB{ objectsUuidsImpl1[15], objectsUuidsImpl2[15], AuthenticationLevel::Privacy, true }
+            TestOptionsB{ objectsUuidsImpl1[12], objectsUuidsImpl2[12], AuthenticationLevel::Privacy, false },
+            TestOptionsB{ objectsUuidsImpl1[13], objectsUuidsImpl2[13], AuthenticationLevel::Privacy, true },
+            TestOptionsB{ objectsUuidsImpl1[14], objectsUuidsImpl2[14], AuthenticationLevel::Integrity, false },
+            TestOptionsB{ objectsUuidsImpl1[15], objectsUuidsImpl2[15], AuthenticationLevel::Integrity, true }
         )
     );
 }// end of namespace integration_tests

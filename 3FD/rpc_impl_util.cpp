@@ -6,6 +6,7 @@
 #include <array>
 #include <string>
 #include <sstream>
+#include <iomanip>
 #include <codecvt>
 #include <algorithm>
 
@@ -765,6 +766,9 @@ namespace rpc
             if (details.empty() || details == "")
                 return core::AppException<std::runtime_error>(oss.str());
 
+#   ifndef ENABLE_3FD_ERR_IMPL_DETAILS
+            return core::AppException<std::runtime_error>(oss.str(), details);
+#   else
             // Try to enumerate extended error information:
             RPC_ERROR_ENUM_HANDLE errEnumHandle;
             status = RpcErrorStartEnumeration(&errEnumHandle);
@@ -790,13 +794,9 @@ namespace rpc
                     oss << ": " << message;
                 else
                     oss << '!';
-
-                oss << "\r\n";
             }
 
             oss << "\r\n\r\n=== Extended error information ===\r\n";
-
-            struct KeyValuePair { int code; const char *name; };
 
             RPC_EXTENDED_ERROR_INFO errInfoEntry;
             errInfoEntry.Version = RPC_EEINFO_VERSION;
@@ -808,7 +808,7 @@ namespace rpc
                 oss << "\r\n";
 
                 if (errInfoEntry.Flags & EEInfoPreviousRecordsMissing != 0)
-                    oss << "$ *** missing record(s) ***\r\n";
+                    oss << "$ *** missing record(s) ***";
 
                 oss << "$ host " << (errInfoEntry.ComputerName != nullptr)
                                     ? transcoder.to_bytes(errInfoEntry.ComputerName)
@@ -816,16 +816,17 @@ namespace rpc
 
                 oss << " / PID #" << errInfoEntry.ProcessID;
 
-                oss << " @(" << errInfoEntry.u.SystemTime.wYear << '-'
-                             << errInfoEntry.u.SystemTime.wMonth << '-'
-                             << errInfoEntry.u.SystemTime.wDay << ' '
-                             << errInfoEntry.u.SystemTime.wHour << ':'
-                             << errInfoEntry.u.SystemTime.wMinute << ':'
-                             << errInfoEntry.u.SystemTime.wSecond << ')';
+                oss << " @(" << std::setw(2) << std::setfill('0')
+                    << errInfoEntry.u.SystemTime.wYear << '-'
+                    << errInfoEntry.u.SystemTime.wMonth << '-'
+                    << errInfoEntry.u.SystemTime.wDay << ' '
+                    << errInfoEntry.u.SystemTime.wHour << ':'
+                    << errInfoEntry.u.SystemTime.wMinute << ':'
+                    << errInfoEntry.u.SystemTime.wSecond << ')';
 
                 oss << " [com:" << GetComponentLabel(errInfoEntry.GeneratingComponent)
                     << "/loc:" << GetDetectionLocationLabel(errInfoEntry.DetectionLocation)
-                    << "/sta:" << errInfoEntry.Status << ']';
+                    << "/sta=" << errInfoEntry.Status << ']';
 
                 oss << " { ";
 
@@ -861,26 +862,31 @@ namespace rpc
                         oss << "???";
                         break;
                     }
-                }
+                }// for loop end
 
                 oss << " }";
 
                 if (errInfoEntry.Flags & EEInfoNextRecordsMissing != 0)
-                    oss << "\r\n$ *** missing record(s) ***\r\n";
+                    oss << "\r\n$ *** missing record(s) ***";
 
                 errInfoEntry.Version = RPC_EEINFO_VERSION;
                 errInfoEntry.Flags = 0;
                 errInfoEntry.NumberOfParameters = 4;
-            }
+            }// while loop end
 
             // End of records: release resources
             RpcErrorEndEnumeration(&errEnumHandle);
 
             // Loop ended due to failure when processing a record?
             if (status != RPC_S_ENTRY_NOT_FOUND)
-                oss << "\r\n$ failed to retrieve record information!";
+            {
+                RPC_STATUS status2;
+                message = GetFirstLevelRpcErrorText(status, transcoder, status2);
+                oss << "\r\n$ Failed to retrieve record! " << message;
+            }
 
             return core::AppException<std::runtime_error>(what, oss.str());
+#   endif
         }
         catch (std::exception &ex)
         {
@@ -902,7 +908,7 @@ namespace rpc
         if (status == RPC_S_OK)
             return;
 
-        throw CreateException(status, message, "");
+        throw RpcErrorHelper::CreateException(status, message, "");
     }
 
     /// <summary>
@@ -919,7 +925,7 @@ namespace rpc
         if (status == RPC_S_OK)
             return;
             
-        throw CreateException(status, message, details);
+        throw RpcErrorHelper::CreateException(status, message, details);
     }
 
     /// <summary>
@@ -936,7 +942,7 @@ namespace rpc
         if (status == RPC_S_OK)
             return;
 
-        auto ex = CreateException(status, message, "");
+        auto ex = RpcErrorHelper::CreateException(status, message, "");
         core::Logger::Write(ex, prio);
     }
 
@@ -956,7 +962,7 @@ namespace rpc
         if (status == RPC_S_OK)
             return;
 
-        auto ex = CreateException(status, message, details);
+        auto ex = RpcErrorHelper::CreateException(status, message, details);
         core::Logger::Write(ex, prio);
     }
 

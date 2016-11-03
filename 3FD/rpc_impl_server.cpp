@@ -286,12 +286,14 @@ namespace rpc
             if (certX509 == nullptr)
             {
                 std::ostringstream oss;
-                oss << "Could not get from system store code " << certInfoX509->storeLocation
-                    << " the specified X.509 certificate (subject = '" << certInfoX509->subject << "')";
+                oss << "Could not get from system store code "
+                    << certInfoX509->storeLocation
+                    << " named '" << certInfoX509->storeName
+                    << "' the specified X.509 certificate (subject = '"
+                    << certInfoX509->subject << "')";
 
                 throw core::AppException<std::runtime_error>(
-                    "Certificate for RPC server was not found in store",
-                    oss.str()
+                    "Certificate for RPC server was not found in store", oss.str()
                 );
             }
 

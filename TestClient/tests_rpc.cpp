@@ -297,10 +297,10 @@ namespace integration_tests
         SwitchProtAndAuthLevel,
         Framework_RPC_TestCase3,
         ::testing::Values(
-            TestOptions3{ 3, objectsUuidsImpl1[12], objectsUuidsImpl2[12], AuthenticationLevel::Integrity, false },
-            TestOptions3{ 1, objectsUuidsImpl1[13], objectsUuidsImpl2[13], AuthenticationLevel::Integrity, true },
-            TestOptions3{ 1, objectsUuidsImpl1[14], objectsUuidsImpl2[14], AuthenticationLevel::Privacy, false },
-            TestOptions3{ 1, objectsUuidsImpl1[15], objectsUuidsImpl2[15], AuthenticationLevel::Privacy, true }
+            TestOptions3{ 3, objectsUuidsImpl1[12], objectsUuidsImpl2[12], AuthenticationLevel::Privacy, false },
+            TestOptions3{ 1, objectsUuidsImpl1[13], objectsUuidsImpl2[13], AuthenticationLevel::Privacy, true },
+            TestOptions3{ 1, objectsUuidsImpl1[14], objectsUuidsImpl2[14], AuthenticationLevel::Integrity, false },
+            TestOptions3{ 1, objectsUuidsImpl1[15], objectsUuidsImpl2[15], AuthenticationLevel::Integrity, true }
         )
     );
 
