@@ -3,11 +3,11 @@
 /* this ALWAYS GENERATED file contains the RPC server stubs */
 
 
- /* File created by MIDL compiler version 8.00.0613 */
+ /* File created by MIDL compiler version 8.01.0620 */
 /* at Tue Jan 19 01:14:07 2038
  */
 /* Compiler settings for TestShared\AcmeTesting.idl:
-    Oicf, W1, Zp8, env=Win32 (32b run), target_arch=X86 8.00.0613 
+    Oicf, W1, Zp8, env=Win32 (32b run), target_arch=X86 8.01.0620 
     protocol : dce , robust
     error checks: allocation ref bounds_check enum stub_data , use_epv
     VC __declspec() decoration level: 
@@ -35,7 +35,7 @@
 #include "AcmeTesting_w32.h"
 
 #define TYPE_FORMAT_STRING_SIZE   45                                
-#define PROC_FORMAT_STRING_SIZE   115                               
+#define PROC_FORMAT_STRING_SIZE   143                               
 #define EXPR_FORMAT_STRING_SIZE   1                                 
 #define TRANSMIT_AS_TABLE_SIZE    0            
 #define WIRE_MARSHAL_TABLE_SIZE   0            
@@ -183,7 +183,7 @@ static const AcmeTesting_MIDL_PROC_FORMAT_STRING AcmeTesting__MIDL_ProcFormatStr
 /* 82 */	NdrFcShort( 0x8 ),	/* x86 Stack size/offset = 8 */
 /* 84 */	NdrFcShort( 0x12 ),	/* Type Offset=18 */
 
-	/* Procedure Shutdown */
+	/* Procedure WriteOnStorage */
 
 /* 86 */	0x0,		/* 0 */
 			0x4a,		/* Old Flags:  DCE mem package, */
@@ -202,6 +202,26 @@ static const AcmeTesting_MIDL_PROC_FORMAT_STRING AcmeTesting__MIDL_ProcFormatStr
 /* 108 */	NdrFcShort( 0x0 ),	/* 0 */
 /* 110 */	NdrFcShort( 0x0 ),	/* 0 */
 /* 112 */	NdrFcShort( 0x0 ),	/* 0 */
+
+	/* Procedure Shutdown */
+
+/* 114 */	0x0,		/* 0 */
+			0x4a,		/* Old Flags:  DCE mem package, */
+/* 116 */	NdrFcLong( 0x0 ),	/* 0 */
+/* 120 */	NdrFcShort( 0x3 ),	/* 3 */
+/* 122 */	NdrFcShort( 0x4 ),	/* x86 Stack size/offset = 4 */
+/* 124 */	0x32,		/* FC_BIND_PRIMITIVE */
+			0x0,		/* 0 */
+/* 126 */	NdrFcShort( 0x0 ),	/* x86 Stack size/offset = 0 */
+/* 128 */	NdrFcShort( 0x0 ),	/* 0 */
+/* 130 */	NdrFcShort( 0x0 ),	/* 0 */
+/* 132 */	0x40,		/* Oi2 Flags:  has ext, */
+			0x0,		/* 0 */
+/* 134 */	0x8,		/* 8 */
+			0x1,		/* Ext Flags:  new corr desc, */
+/* 136 */	NdrFcShort( 0x0 ),	/* 0 */
+/* 138 */	NdrFcShort( 0x0 ),	/* 0 */
+/* 140 */	NdrFcShort( 0x0 ),	/* 0 */
 
 			0x0
         }
@@ -260,7 +280,8 @@ static const unsigned short AcmeTesting_FormatStringOffsetTable[] =
     {
     0,
     46,
-    86
+    86,
+    114
     };
 
 
@@ -278,7 +299,7 @@ static const MIDL_STUB_DESC AcmeTesting_StubDesc =
     1, /* -error bounds_check flag */
     0x50002, /* Ndr library version */
     0,
-    0x8000265, /* MIDL Version 8.0.613 */
+    0x801026c, /* MIDL Version 8.1.620 */
     0,
     0,
     0,  /* notify & notify_flag routine table */
@@ -293,11 +314,12 @@ static const RPC_DISPATCH_FUNCTION AcmeTesting_table[] =
     NdrServerCall2,
     NdrServerCall2,
     NdrServerCall2,
+    NdrServerCall2,
     0
     };
 static const RPC_DISPATCH_TABLE AcmeTesting_v1_0_DispatchTable = 
     {
-    3,
+    4,
     (RPC_DISPATCH_FUNCTION*)AcmeTesting_table
     };
 
@@ -305,6 +327,7 @@ static const AcmeTesting_v1_0_epv_t DEFAULT_EPV =
     {
     Operate,
     ChangeCase,
+    WriteOnStorage,
     Shutdown
     };
 
@@ -312,6 +335,7 @@ static const SERVER_ROUTINE AcmeTesting_ServerRoutineTable[] =
     {
     (SERVER_ROUTINE)Operate,
     (SERVER_ROUTINE)ChangeCase,
+    (SERVER_ROUTINE)WriteOnStorage,
     (SERVER_ROUTINE)Shutdown
     };
 

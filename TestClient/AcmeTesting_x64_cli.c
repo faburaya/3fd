@@ -3,11 +3,11 @@
 /* this ALWAYS GENERATED file contains the RPC client stubs */
 
 
- /* File created by MIDL compiler version 8.00.0613 */
+ /* File created by MIDL compiler version 8.01.0620 */
 /* at Tue Jan 19 01:14:07 2038
  */
 /* Compiler settings for TestShared\AcmeTesting.idl:
-    Oicf, W1, Zp8, env=Win64 (32b run), target_arch=AMD64 8.00.0613 
+    Oicf, W1, Zp8, env=Win64 (32b run), target_arch=AMD64 8.01.0620 
     protocol : dce , robust
     error checks: allocation ref bounds_check enum stub_data , use_epv
     VC __declspec() decoration level: 
@@ -34,7 +34,7 @@
 #include "AcmeTesting_x64.h"
 
 #define TYPE_FORMAT_STRING_SIZE   39                                
-#define PROC_FORMAT_STRING_SIZE   121                               
+#define PROC_FORMAT_STRING_SIZE   151                               
 #define EXPR_FORMAT_STRING_SIZE   1                                 
 #define TRANSMIT_AS_TABLE_SIZE    0            
 #define WIRE_MARSHAL_TABLE_SIZE   0            
@@ -127,13 +127,25 @@ void ChangeCase(
 }
 
 
-void Shutdown( 
+void WriteOnStorage( 
     /* [in] */ handle_t IDL_handle)
 {
 
     NdrClientCall2(
                   ( PMIDL_STUB_DESC  )&AcmeTesting_StubDesc,
                   (PFORMAT_STRING) &AcmeTesting__MIDL_ProcFormatString.Format[90],
+                  IDL_handle);
+    
+}
+
+
+void Shutdown( 
+    /* [in] */ handle_t IDL_handle)
+{
+
+    NdrClientCall2(
+                  ( PMIDL_STUB_DESC  )&AcmeTesting_StubDesc,
+                  (PFORMAT_STRING) &AcmeTesting__MIDL_ProcFormatString.Format[120],
                   IDL_handle);
     
 }
@@ -223,7 +235,7 @@ static const AcmeTesting_MIDL_PROC_FORMAT_STRING AcmeTesting__MIDL_ProcFormatStr
 /* 86 */	NdrFcShort( 0x10 ),	/* X64 Stack size/offset = 16 */
 /* 88 */	NdrFcShort( 0x12 ),	/* Type Offset=18 */
 
-	/* Procedure Shutdown */
+	/* Procedure WriteOnStorage */
 
 /* 90 */	0x0,		/* 0 */
 			0x4a,		/* Old Flags:  DCE mem package, */
@@ -243,6 +255,27 @@ static const AcmeTesting_MIDL_PROC_FORMAT_STRING AcmeTesting__MIDL_ProcFormatStr
 /* 114 */	NdrFcShort( 0x0 ),	/* 0 */
 /* 116 */	NdrFcShort( 0x0 ),	/* 0 */
 /* 118 */	NdrFcShort( 0x0 ),	/* 0 */
+
+	/* Procedure Shutdown */
+
+/* 120 */	0x0,		/* 0 */
+			0x4a,		/* Old Flags:  DCE mem package, */
+/* 122 */	NdrFcLong( 0x0 ),	/* 0 */
+/* 126 */	NdrFcShort( 0x3 ),	/* 3 */
+/* 128 */	NdrFcShort( 0x8 ),	/* X64 Stack size/offset = 8 */
+/* 130 */	0x32,		/* FC_BIND_PRIMITIVE */
+			0x0,		/* 0 */
+/* 132 */	NdrFcShort( 0x0 ),	/* X64 Stack size/offset = 0 */
+/* 134 */	NdrFcShort( 0x0 ),	/* 0 */
+/* 136 */	NdrFcShort( 0x0 ),	/* 0 */
+/* 138 */	0x40,		/* Oi2 Flags:  has ext, */
+			0x0,		/* 0 */
+/* 140 */	0xa,		/* 10 */
+			0x1,		/* Ext Flags:  new corr desc, */
+/* 142 */	NdrFcShort( 0x0 ),	/* 0 */
+/* 144 */	NdrFcShort( 0x0 ),	/* 0 */
+/* 146 */	NdrFcShort( 0x0 ),	/* 0 */
+/* 148 */	NdrFcShort( 0x0 ),	/* 0 */
 
 			0x0
         }
@@ -310,7 +343,8 @@ static const unsigned short AcmeTesting_FormatStringOffsetTable[] =
     {
     0,
     48,
-    90
+    90,
+    120
     };
 
 
@@ -328,7 +362,7 @@ static const MIDL_STUB_DESC AcmeTesting_StubDesc =
     1, /* -error bounds_check flag */
     0x50002, /* Ndr library version */
     (MALLOC_FREE_STRUCT*)&_MallocFreeStruct,
-    0x8000265, /* MIDL Version 8.0.613 */
+    0x801026c, /* MIDL Version 8.1.620 */
     0,
     0,
     0,  /* notify & notify_flag routine table */

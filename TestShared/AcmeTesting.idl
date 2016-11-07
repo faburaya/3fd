@@ -14,5 +14,7 @@ interface AcmeTesting
 
     void ChangeCase([in] cstring *input, [out] cstring *output);
 
+    void WriteOnStorage(void);
+
     void Shutdown(void);
 }

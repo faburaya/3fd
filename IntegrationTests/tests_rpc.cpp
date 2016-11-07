@@ -15,10 +15,6 @@
 #include <cstring>
 #include <wincrypt.h>
 
-//////////////////////////////////////
-// RPC Server Stubs Implementation
-//////////////////////////////////////
-
 /// <summary>
 /// Impersonates the client and creates a file.
 /// </summary>
@@ -73,8 +69,6 @@ void Operate(
     CALL_STACK_TRACE;
 
     *result = left * right;
-
-    ImpersonateClientAndCreateFile(IDL_handle);
 }
 
 // 2nd implementation for 'Operate'
@@ -87,8 +81,6 @@ void Operate2(
     CALL_STACK_TRACE;
 
     *result = left + right;
-
-    ImpersonateClientAndCreateFile(IDL_handle);
 }
 
 // 1st implementation for 'ChangeCase'
@@ -112,8 +104,6 @@ void ChangeCase(
         output->data[idx] = toupper(input->data[idx]);
 
     output->data[length] = 0;
-
-    ImpersonateClientAndCreateFile(IDL_handle);
 }
 
 // 2nd implementation for 'ChangeCase'
@@ -137,7 +127,12 @@ void ChangeCase2(
         output->data[idx] = tolower(input->data[idx]);
 
     output->data[length] = 0;
+}
 
+// Common procedure that writes a file in server storage in order to test impersonation
+void WriteOnStorage(
+    /* [in] */ handle_t IDL_handle)
+{
     ImpersonateClientAndCreateFile(IDL_handle);
 }
 
@@ -188,10 +183,10 @@ namespace integration_tests
             RpcServer::Initialize(ProtocolSequence::Local, "TestClient3FD");
 
             // RPC interface implementation 1:
-            AcmeTesting_v1_0_epv_t intfImplFuncTable1 = { Operate, ChangeCase, Shutdown };
+            AcmeTesting_v1_0_epv_t intfImplFuncTable1 = { Operate, ChangeCase, WriteOnStorage, Shutdown };
 
             // RPC interface implementation 2:
-            AcmeTesting_v1_0_epv_t intfImplFuncTable2 = { Operate2, ChangeCase2, Shutdown };
+            AcmeTesting_v1_0_epv_t intfImplFuncTable2 = { Operate2, ChangeCase2, WriteOnStorage, Shutdown };
 
             std::vector<RpcSrvObject> objects;
             objects.reserve(2);
@@ -259,10 +254,10 @@ namespace integration_tests
             );
 
             // RPC interface implementation 1:
-            AcmeTesting_v1_0_epv_t intfImplFuncTable1 = { Operate, ChangeCase, Shutdown };
+            AcmeTesting_v1_0_epv_t intfImplFuncTable1 = { Operate, ChangeCase, WriteOnStorage, Shutdown };
 
             // RPC interface implementation 2:
-            AcmeTesting_v1_0_epv_t intfImplFuncTable2 = { Operate2, ChangeCase2, Shutdown };
+            AcmeTesting_v1_0_epv_t intfImplFuncTable2 = { Operate2, ChangeCase2, WriteOnStorage, Shutdown };
 
             std::vector<RpcSrvObject> objects;
             objects.reserve(2);
@@ -327,10 +322,10 @@ namespace integration_tests
             RpcServer::Initialize(ProtocolSequence::Local, "TestClient3FD");
 
             // RPC interface implementation 1:
-            AcmeTesting_v1_0_epv_t intfImplFuncTable1 = { Operate, ChangeCase, Shutdown };
+            AcmeTesting_v1_0_epv_t intfImplFuncTable1 = { Operate, ChangeCase, WriteOnStorage, Shutdown };
 
             // RPC interface implementation 2:
-            AcmeTesting_v1_0_epv_t intfImplFuncTable2 = { Operate2, ChangeCase2, Shutdown };
+            AcmeTesting_v1_0_epv_t intfImplFuncTable2 = { Operate2, ChangeCase2, WriteOnStorage, Shutdown };
 
             std::vector<RpcSrvObject> objects;
             objects.reserve(2);
@@ -388,10 +383,10 @@ namespace integration_tests
             );
 
             // RPC interface implementation 1:
-            AcmeTesting_v1_0_epv_t intfImplFuncTable1 = { Operate, ChangeCase, Shutdown };
+            AcmeTesting_v1_0_epv_t intfImplFuncTable1 = { Operate, ChangeCase, WriteOnStorage, Shutdown };
 
             // RPC interface implementation 2:
-            AcmeTesting_v1_0_epv_t intfImplFuncTable2 = { Operate2, ChangeCase2, Shutdown };
+            AcmeTesting_v1_0_epv_t intfImplFuncTable2 = { Operate2, ChangeCase2, WriteOnStorage, Shutdown };
 
             std::vector<RpcSrvObject> objects;
             objects.reserve(2);
@@ -480,22 +475,22 @@ namespace integration_tests
             CertInfo certInfo(
                 CERT_SYSTEM_STORE_LOCAL_MACHINE,
                 "My",
-                "MySelfSignedCert4DevTests",
+                "TARS",
                 GetParam().useStrongSec
             );
 
             // Initialize the RPC server (resource allocation takes place)
             RpcServer::Initialize(
                 "TestClient3FD",
-                nullptr,
+                &certInfo,
                 GetParam().authenticationLevel
             );
 
             // RPC interface implementation 1:
-            AcmeTesting_v1_0_epv_t intfImplFuncTable1 = { Operate, ChangeCase, Shutdown };
+            AcmeTesting_v1_0_epv_t intfImplFuncTable1 = { Operate, ChangeCase, WriteOnStorage, Shutdown };
 
             // RPC interface implementation 2:
-            AcmeTesting_v1_0_epv_t intfImplFuncTable2 = { Operate2, ChangeCase2, Shutdown };
+            AcmeTesting_v1_0_epv_t intfImplFuncTable2 = { Operate2, ChangeCase2, WriteOnStorage, Shutdown };
 
             std::vector<RpcSrvObject> objects;
             objects.reserve(2);

@@ -365,9 +365,9 @@ namespace rpc
     /// </summary>
     /// <param name="certCtxtHandle">Handle to the certificate context.</param>
     /// <param name="strongerSec">
-    /// Flag to set stronger security options. Allowed cipher suites/algorithms will
-    /// be SSL3 and TLS with MAC (weaker ones will be disabled to the detriment of
-    /// interoperability) and revocation checks the whole certificate chain.
+    /// Flag to set stronger security options. It disables known weak cryptographic algorithms,
+    /// cipher suites, and SSL/TLS protocol versions that may be otherwise enabled for better
+    /// interoperability. Plus, revocation checks the whole certificate chain.
     /// </param>
     SChannelCredWrapper::SChannelCredWrapper(PCCERT_CONTEXT certCtxtHandle, bool strongerSec)
     try :
@@ -381,12 +381,6 @@ namespace rpc
 
         if (strongerSec)
         {
-            m_credStructure.grbitEnabledProtocols =
-                SP_PROT_SSL3_CLIENT | SP_PROT_TLS1_X_CLIENT | SP_PROT_DTLS1_X_CLIENT;
-
-            m_credStructure.dwMinimumCipherStrength = -1;
-            m_credStructure.dwMaximumCipherStrength = -1;
-
             m_credStructure.dwFlags =
                 SCH_CRED_REVOCATION_CHECK_CHAIN | SCH_USE_STRONG_CRYPTO;
         }
@@ -407,9 +401,9 @@ namespace rpc
     /// <param name="certStoreHandle">Handle to the certificate store.</param>
     /// <param name="certCtxtHandle">Handle to the certificate context.</param>
     /// <param name="strongerSec">
-    /// Flag to set stronger security options. Allowed cipher suites/algorithms will
-    /// be SSL3 and TLS with MAC (weaker ones will be disabled to the detriment of
-    /// interoperability) and revocation will check the whole certificate chain.
+    /// Flag to set stronger security options. It disables known weak cryptographic algorithms,
+    /// cipher suites, and SSL/TLS protocol versions that may be otherwise enabled for better
+    /// interoperability. Plus, revocation checks the whole certificate chain.
     ///</param>
     SChannelCredWrapper::SChannelCredWrapper(HCERTSTORE certStoreHandle,
                                              PCCERT_CONTEXT certCtxtHandle,
@@ -426,12 +420,6 @@ namespace rpc
 
         if (strongerSec)
         {
-            m_credStructure.grbitEnabledProtocols =
-                SP_PROT_SSL3_SERVER | SP_PROT_TLS1_X_SERVER | SP_PROT_DTLS1_X_SERVER;
-
-            m_credStructure.dwMinimumCipherStrength = -1;
-            m_credStructure.dwMaximumCipherStrength = -1;
-
             m_credStructure.dwFlags =
                 SCH_CRED_REVOCATION_CHECK_CHAIN | SCH_USE_STRONG_CRYPTO;
         }
@@ -794,6 +782,8 @@ namespace rpc
                     oss << ": " << message;
                 else
                     oss << '!';
+
+                return core::AppException<std::runtime_error>(what, oss.str());
             }
 
             oss << "\r\n\r\n=== Extended error information ===\r\n";

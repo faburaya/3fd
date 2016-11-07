@@ -460,7 +460,7 @@ namespace rpc
                         obj.interfaceHandle,
                         &paramMgrTypeUuid,
                         obj.epv,
-                        0, // use default security flags
+                        m_schannelCred ? RPC_IF_ALLOW_CALLBACKS_WITH_NO_AUTH : 0,
                         RPC_C_LISTEN_MAX_CALLS_DEFAULT, // ignored because the interface is not auto-listen
                         m_hasAuthnSec ? callbackIntfAuthz : nullptr
                     );

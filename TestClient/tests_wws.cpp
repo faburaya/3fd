@@ -29,7 +29,7 @@ namespace integration_tests
 
 		CalcSvcProxyUnsecure(const SvcProxyConfig &config) :
 			WebServiceProxy(
-				"http://tars:81/calculator",
+				"http://TARS:81/calculator",
 				config,
 				&CreateWSProxy<WS_HTTP_BINDING_TEMPLATE, CalcBindingUnsecure_CreateServiceProxy>
 			)
@@ -246,7 +246,7 @@ namespace integration_tests
 		// Ctor for proxy without client certificate
 		CalcSvcProxySSL(const SvcProxyConfig &config) :
 			WebServiceProxy(
-				"https://tars:8989/calculator",
+				"https://TARS:8989/calculator",
 				config,
 				&CreateWSProxy<WS_HTTP_SSL_BINDING_TEMPLATE, CalcBindingSSL_CreateServiceProxy>
 			)
@@ -255,7 +255,7 @@ namespace integration_tests
 		// Ctor for proxy using a client certificate
 		CalcSvcProxySSL(const SvcProxyConfig &config, const SvcProxyCertInfo &certInfo) :
 			WebServiceProxy(
-				"https://tars:8989/calculator",
+				"https://TARS:8989/calculator",
 				config,
 				certInfo,
 				CalcBindingSSL_CreateServiceProxy
@@ -584,7 +584,7 @@ namespace integration_tests
         // Ctor for proxy using a client certificate
         CalcSvcProxyHeaderAuthSSL(const SvcProxyConfig &config, const SvcProxyCertInfo &certInfo) :
             WebServiceProxy(
-                "https://tars:8888/calculator",
+                "https://TARS:8888/calculator",
                 config,
                 certInfo,
                 CalcBindingHeaderAuthSSL_CreateServiceProxy

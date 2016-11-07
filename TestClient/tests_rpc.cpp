@@ -88,6 +88,11 @@ namespace integration_tests
             return string(output.data, output.data + output.size - 1);
         }
 
+        void WriteOnStorage()
+        {
+            ::WriteOnStorage(GetBindingHandle());
+        }
+
         void Shutdown()
         {
             ::Shutdown(GetBindingHandle());
@@ -192,6 +197,7 @@ namespace integration_tests
             EXPECT_EQ(696.0, client2.Operate(606.0, 90.0));
             EXPECT_EQ("squirrel", client2.ChangeCase("SQUIRREL"));
 
+            client2.WriteOnStorage();
             client2.Shutdown();
         }
         catch (...)
@@ -259,7 +265,7 @@ namespace integration_tests
             CertInfo certInfo(
                 CERT_SYSTEM_STORE_LOCAL_MACHINE,
                 "My",
-                "MySelfSignedCert4DevTests",
+                "TARS",
                 GetParam().useStrongSec
             );
 

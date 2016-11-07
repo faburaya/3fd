@@ -3,11 +3,11 @@
 /* this ALWAYS GENERATED file contains the definitions for the interfaces */
 
 
- /* File created by MIDL compiler version 8.00.0613 */
+ /* File created by MIDL compiler version 8.01.0620 */
 /* at Tue Jan 19 01:14:07 2038
  */
 /* Compiler settings for TestShared\AcmeTesting.idl:
-    Oicf, W1, Zp8, env=Win64 (32b run), target_arch=AMD64 8.00.0613 
+    Oicf, W1, Zp8, env=Win64 (32b run), target_arch=AMD64 8.01.0620 
     protocol : dce , robust
     error checks: allocation ref bounds_check enum stub_data , use_epv
     VC __declspec() decoration level: 
@@ -69,6 +69,9 @@ void ChangeCase(
     /* [in] */ cstring *input,
     /* [out] */ cstring *output);
 
+void WriteOnStorage( 
+    /* [in] */ handle_t IDL_handle);
+
 void Shutdown( 
     /* [in] */ handle_t IDL_handle);
 
@@ -85,6 +88,8 @@ typedef struct _AcmeTesting_v1_0_epv_t
         /* [in] */ handle_t IDL_handle,
         /* [in] */ cstring *input,
         /* [out] */ cstring *output);
+    void ( *WriteOnStorage )( 
+        /* [in] */ handle_t IDL_handle);
     void ( *Shutdown )( 
         /* [in] */ handle_t IDL_handle);
     
