@@ -16,5 +16,5 @@ interface AcmeTesting
 
     void WriteOnStorage(void);
 
-    void Shutdown(void);
+    unsigned long Shutdown(void);
 }

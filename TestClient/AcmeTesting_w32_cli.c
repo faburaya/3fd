@@ -37,7 +37,7 @@
 #include "AcmeTesting_w32.h"
 
 #define TYPE_FORMAT_STRING_SIZE   45                                
-#define PROC_FORMAT_STRING_SIZE   143                               
+#define PROC_FORMAT_STRING_SIZE   149                               
 #define EXPR_FORMAT_STRING_SIZE   1                                 
 #define TRANSMIT_AS_TABLE_SIZE    0            
 #define WIRE_MARSHAL_TABLE_SIZE   0            
@@ -137,14 +137,17 @@ void WriteOnStorage(
 }
 
 
-void Shutdown( 
+unsigned long Shutdown( 
     /* [in] */ handle_t IDL_handle)
 {
 
-    NdrClientCall2(
+    CLIENT_CALL_RETURN _RetVal;
+
+    _RetVal = NdrClientCall2(
                   ( PMIDL_STUB_DESC  )&AcmeTesting_StubDesc,
                   (PFORMAT_STRING) &AcmeTesting__MIDL_ProcFormatString.Format[114],
                   ( unsigned char * )&IDL_handle);
+    return ( unsigned long  )_RetVal.Simple;
     
 }
 
@@ -265,19 +268,26 @@ static const AcmeTesting_MIDL_PROC_FORMAT_STRING AcmeTesting__MIDL_ProcFormatStr
 			0x4a,		/* Old Flags:  DCE mem package, */
 /* 116 */	NdrFcLong( 0x0 ),	/* 0 */
 /* 120 */	NdrFcShort( 0x3 ),	/* 3 */
-/* 122 */	NdrFcShort( 0x4 ),	/* x86 Stack size/offset = 4 */
+/* 122 */	NdrFcShort( 0x8 ),	/* x86 Stack size/offset = 8 */
 /* 124 */	0x32,		/* FC_BIND_PRIMITIVE */
 			0x0,		/* 0 */
 /* 126 */	NdrFcShort( 0x0 ),	/* x86 Stack size/offset = 0 */
 /* 128 */	NdrFcShort( 0x0 ),	/* 0 */
-/* 130 */	NdrFcShort( 0x0 ),	/* 0 */
-/* 132 */	0x40,		/* Oi2 Flags:  has ext, */
-			0x0,		/* 0 */
+/* 130 */	NdrFcShort( 0x8 ),	/* 8 */
+/* 132 */	0x44,		/* Oi2 Flags:  has return, has ext, */
+			0x1,		/* 1 */
 /* 134 */	0x8,		/* 8 */
 			0x1,		/* Ext Flags:  new corr desc, */
 /* 136 */	NdrFcShort( 0x0 ),	/* 0 */
 /* 138 */	NdrFcShort( 0x0 ),	/* 0 */
 /* 140 */	NdrFcShort( 0x0 ),	/* 0 */
+
+	/* Return value */
+
+/* 142 */	NdrFcShort( 0x70 ),	/* Flags:  out, return, base type, */
+/* 144 */	NdrFcShort( 0x4 ),	/* x86 Stack size/offset = 4 */
+/* 146 */	0x8,		/* FC_LONG */
+			0x0,		/* 0 */
 
 			0x0
         }

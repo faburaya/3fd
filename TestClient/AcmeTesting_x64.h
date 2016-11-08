@@ -72,7 +72,7 @@ void ChangeCase(
 void WriteOnStorage( 
     /* [in] */ handle_t IDL_handle);
 
-void Shutdown( 
+unsigned long Shutdown( 
     /* [in] */ handle_t IDL_handle);
 
 
@@ -90,7 +90,7 @@ typedef struct _AcmeTesting_v1_0_epv_t
         /* [out] */ cstring *output);
     void ( *WriteOnStorage )( 
         /* [in] */ handle_t IDL_handle);
-    void ( *Shutdown )( 
+    unsigned long ( *Shutdown )( 
         /* [in] */ handle_t IDL_handle);
     
     } AcmeTesting_v1_0_epv_t;

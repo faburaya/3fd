@@ -12,6 +12,7 @@
 
 #include <vector>
 #include <fstream>
+#include <chrono>
 #include <cstring>
 #include <wincrypt.h>
 
@@ -136,13 +137,6 @@ void WriteOnStorage(
     ImpersonateClientAndCreateFile(IDL_handle);
 }
 
-// Common shutdown procedure
-void Shutdown(
-    /* [in] */ handle_t IDL_handle)
-{
-    RpcMgmtStopServerListening(nullptr);
-}
-
 ////////////////////////////
 // RPC Memory Allocation
 ////////////////////////////
@@ -170,7 +164,7 @@ namespace integration_tests
     /// Tests the cycle init/start/stop/resume/stop/finalize of the RPC server,
     /// for local RPC and without authentication security.
     /// </summary>
-    TEST(Framework_RPC_TestCase1, ServerRun_NoAuth_StatesCycleTest)
+    TEST(Framework_RpcNoAuth_TestCase, ServerRun_StatesCycleTest)
     {
         // Ensures proper initialization/finalization of the framework
         FrameworkInstance _framework;
@@ -222,7 +216,7 @@ namespace integration_tests
     }
 
     // The set of options for some test template instantiations
-    struct TestOptionsA
+    struct AuthnTestOptions
     {
         ProtocolSequence protocolSequence;
         const char *objectUUID1;
@@ -230,14 +224,14 @@ namespace integration_tests
         AuthenticationLevel authenticationLevel;
     };
 
-    class Framework_RPC_TestCase2 :
-        public ::testing::TestWithParam<TestOptionsA> {};
+    class Framework_RpcAuthn_TestCase :
+        public ::testing::TestWithParam<AuthnTestOptions> {};
 
     /// <summary>
     /// Tests the cycle init/start/stop/resume/stop/finalize of the RPC server,
     /// for several combinations of protocol sequence and authentication level.
     /// </summary>
-    TEST_P(Framework_RPC_TestCase2, ServerRun_AuthnSec_StatesCycleTest)
+    TEST_P(Framework_RpcAuthn_TestCase, ServerRun_StatesCycleTest)
     {
         // Ensures proper initialization/finalization of the framework
         FrameworkInstance _framework;
@@ -296,20 +290,109 @@ namespace integration_tests
     protocol sequences and authentication level: */
     INSTANTIATE_TEST_CASE_P(
         SwitchProtAndAuthLevel,
-        Framework_RPC_TestCase2,
+        Framework_RpcAuthn_TestCase,
         ::testing::Values(
-            TestOptionsA { ProtocolSequence::Local, objectsUuidsImpl1[1], objectsUuidsImpl2[1], AuthenticationLevel::Integrity },
-            TestOptionsA { ProtocolSequence::Local, objectsUuidsImpl1[2], objectsUuidsImpl2[2], AuthenticationLevel::Privacy },
-            TestOptionsA { ProtocolSequence::TCP, objectsUuidsImpl1[3], objectsUuidsImpl2[3], AuthenticationLevel::Integrity },
-            TestOptionsA { ProtocolSequence::TCP, objectsUuidsImpl1[4], objectsUuidsImpl2[4], AuthenticationLevel::Privacy }
+            AuthnTestOptions { ProtocolSequence::Local, objectsUuidsImpl1[1], objectsUuidsImpl2[1], AuthenticationLevel::Integrity },
+            AuthnTestOptions { ProtocolSequence::Local, objectsUuidsImpl1[2], objectsUuidsImpl2[2], AuthenticationLevel::Privacy },
+            AuthnTestOptions { ProtocolSequence::TCP, objectsUuidsImpl1[3], objectsUuidsImpl2[3], AuthenticationLevel::Integrity },
+            AuthnTestOptions { ProtocolSequence::TCP, objectsUuidsImpl1[4], objectsUuidsImpl2[4], AuthenticationLevel::Privacy }
         )
     );
+
+    /// <summary>
+    /// Basic test timer for the RPC module.
+    /// This implements simple timing for RPC server cycles.
+    /// </summary>
+    class RpcTestTimer
+    {
+    private:
+
+        static std::chrono::time_point<std::chrono::system_clock> startTimeSrvSetupAndStart;
+
+        static std::chrono::milliseconds maxTimeSpanForSrvCycle;
+
+    public:
+
+        /// <summary>
+        /// Starts the counting time for RPC server setup and start.
+        /// </summary>
+        static void StartTimeCountServerSetupAndStart()
+        {
+            startTimeSrvSetupAndStart = std::chrono::system_clock().now();
+        }
+
+        /// <summary>
+        /// Stop counting time for RPC server setup and start,
+        /// then wait for signal to shut it down.
+        /// Once the signal is received, stop it and measure how long that takes.
+        /// The maximum cycle time (setup, start & shutdown) is kept to respond RPC clients that
+        /// need to know how long to wait before the server in the next test is available.
+        /// </summary>
+        /// <returns>
+        /// <c>true</c> when the signal was received and the RPC server
+        /// was succesfully shutdown, otherwise, <c>false</c>.
+        /// </returns>
+        static bool WaitSignalAndShutdown()
+        {
+            using namespace std::chrono;
+
+            auto stopTimeSrvSetupAndStart = system_clock().now();
+
+            if (RpcServer::Wait() == STATUS_FAIL)
+                return false;
+
+            auto t1 = system_clock().now();
+
+            if (RpcServer::Finalize() == STATUS_FAIL)
+                return false;
+
+            auto t2 = system_clock().now();
+
+            auto shutdownTimeSpan = duration_cast<milliseconds>(t2 - t1);
+
+            auto setupAndStartTimeSpan = duration_cast<milliseconds>(
+                stopTimeSrvSetupAndStart - startTimeSrvSetupAndStart
+            );
+
+            auto cycleTimeSpan = setupAndStartTimeSpan + shutdownTimeSpan;
+
+            if (cycleTimeSpan > maxTimeSpanForSrvCycle)
+                maxTimeSpanForSrvCycle = cycleTimeSpan;
+
+            std::ostringstream oss;
+            oss << "Max registered time span for RPC server cycle shutdown-setup-start is "
+                << maxTimeSpanForSrvCycle.count() << " ms";
+
+            Logger::Write(oss.str(), Logger::PRIO_NOTICE);
+
+            return true;
+        }
+
+        /// <summary>
+        /// Retrieves the maximum cycle time for
+        /// the RPC server registered so far.
+        /// </summary>
+        /// <return>
+        /// The maximum cycle time in milliseconds.
+        /// </return>
+        static uint32_t GetMaxCycleTime()
+        {
+            auto maxCycleTime = static_cast<uint32_t> (maxTimeSpanForSrvCycle.count());
+            return maxCycleTime > 0 ? maxCycleTime : 32U;
+        }
+    };
+
+    std::chrono::time_point<std::chrono::system_clock> RpcTestTimer::startTimeSrvSetupAndStart;
+
+    std::chrono::milliseconds RpcTestTimer::maxTimeSpanForSrvCycle(0);
+
+    class Framework_RpcNoAuth_TestCase : public ::testing::Test {};
 
     /// <summary>
     /// Tests the RPC server normal operation (responding requests), trying
     /// several combinations of protocol sequence and authentication level.
     /// </summary>
-    TEST(Framework_RPC_TestCase3, ServerRun_NoAuth_ResponseTest)
+    TEST_F(Framework_RpcNoAuth_TestCase, ServerRun_ResponseTest)
     {
         // Ensures proper initialization/finalization of the framework
         FrameworkInstance _framework;
@@ -318,6 +401,8 @@ namespace integration_tests
 
         try
         {
+            RpcTestTimer::StartTimeCountServerSetupAndStart();
+
             // Initialize the RPC server (resource allocation takes place)
             RpcServer::Initialize(ProtocolSequence::Local, "TestClient3FD");
 
@@ -346,10 +431,8 @@ namespace integration_tests
 
             // Now wait for the client:
             EXPECT_EQ(STATUS_OKAY, RpcServer::Start(objects));
-            EXPECT_EQ(STATUS_OKAY, RpcServer::Wait());
-
-            // Finalize the RPC server (resources will be released)
-            RpcServer::Finalize();
+            
+            RpcTestTimer::WaitSignalAndShutdown();
         }
         catch (...)
         {
@@ -358,15 +441,15 @@ namespace integration_tests
         }
     }
 
-    class Framework_RPC_TestCase4 :
-        public ::testing::TestWithParam<TestOptionsA> {};
+    class Framework_RpcAuthn2_TestCase :
+        public ::testing::TestWithParam<AuthnTestOptions> {};
 
     /// <summary>
     /// Tests the RPC server normal operation (responding requests), trying
     /// several combinations of protocol sequence and authentication level
     /// using Microsoft NTLM/Negotiate/Kerberos SSP's.
     /// </summary>
-    TEST_P(Framework_RPC_TestCase4, ServerRun_AuthnSec_ResponseTest)
+    TEST_P(Framework_RpcAuthn2_TestCase, ServerRun_ResponseTest)
     {
         // Ensures proper initialization/finalization of the framework
         FrameworkInstance _framework;
@@ -375,6 +458,8 @@ namespace integration_tests
 
         try
         {
+            RpcTestTimer::StartTimeCountServerSetupAndStart();
+
             // Initialize the RPC server (authn svc reg & resource allocation takes place)
             RpcServer::Initialize(
                 GetParam().protocolSequence,
@@ -407,10 +492,8 @@ namespace integration_tests
 
             // Now wait for the client:
             EXPECT_EQ(STATUS_OKAY, RpcServer::Start(objects));
-            EXPECT_EQ(STATUS_OKAY, RpcServer::Wait());
 
-            // Finalize the RPC server (resources will be released)
-            RpcServer::Finalize();
+            RpcTestTimer::WaitSignalAndShutdown();
         }
         catch (...)
         {
@@ -423,31 +506,31 @@ namespace integration_tests
     protocol sequences and authentication level: */
     INSTANTIATE_TEST_CASE_P(
         SwitchProtAndAuthLevel,
-        Framework_RPC_TestCase4,
+        Framework_RpcAuthn2_TestCase,
         ::testing::Values(
-            TestOptionsA{ ProtocolSequence::Local, objectsUuidsImpl1[6], objectsUuidsImpl2[6], AuthenticationLevel::Integrity },
-            TestOptionsA{ ProtocolSequence::Local, objectsUuidsImpl1[7], objectsUuidsImpl2[7], AuthenticationLevel::Privacy },
-            TestOptionsA{ ProtocolSequence::Local, objectsUuidsImpl1[8], objectsUuidsImpl2[8], AuthenticationLevel::Integrity },
-            TestOptionsA{ ProtocolSequence::Local, objectsUuidsImpl1[9], objectsUuidsImpl2[9], AuthenticationLevel::Privacy }
+            AuthnTestOptions{ ProtocolSequence::Local, objectsUuidsImpl1[6], objectsUuidsImpl2[6], AuthenticationLevel::Integrity },
+            AuthnTestOptions{ ProtocolSequence::Local, objectsUuidsImpl1[7], objectsUuidsImpl2[7], AuthenticationLevel::Privacy },
+            AuthnTestOptions{ ProtocolSequence::Local, objectsUuidsImpl1[8], objectsUuidsImpl2[8], AuthenticationLevel::Integrity },
+            AuthnTestOptions{ ProtocolSequence::Local, objectsUuidsImpl1[9], objectsUuidsImpl2[9], AuthenticationLevel::Privacy }
             /*,
-            TestOptionsA{ ProtocolSequence::Local, objectsUuidsImpl1[10], objectsUuidsImpl2[10], AuthenticationLevel::Integrity },
-            TestOptionsA{ ProtocolSequence::Local, objectsUuidsImpl1[11], objectsUuidsImpl2[11], AuthenticationLevel::Privacy },
+            AuthnTestOptions{ ProtocolSequence::Local, objectsUuidsImpl1[10], objectsUuidsImpl2[10], AuthenticationLevel::Integrity },
+            AuthnTestOptions{ ProtocolSequence::Local, objectsUuidsImpl1[11], objectsUuidsImpl2[11], AuthenticationLevel::Privacy },
             */
             /*
-            TestOptionsA{ ProtocolSequence::TCP, objectsUuidsImpl1[6], objectsUuidsImpl2[6], AuthenticationLevel::Integrity },
-            TestOptionsA{ ProtocolSequence::TCP, objectsUuidsImpl1[7], objectsUuidsImpl2[7], AuthenticationLevel::Privacy },
-            TestOptionsA{ ProtocolSequence::TCP, objectsUuidsImpl1[8], objectsUuidsImpl2[8], AuthenticationLevel::Integrity },
-            TestOptionsA{ ProtocolSequence::TCP, objectsUuidsImpl1[9], objectsUuidsImpl2[9], AuthenticationLevel::Privacy }
+            AuthnTestOptions{ ProtocolSequence::TCP, objectsUuidsImpl1[6], objectsUuidsImpl2[6], AuthenticationLevel::Integrity },
+            AuthnTestOptions{ ProtocolSequence::TCP, objectsUuidsImpl1[7], objectsUuidsImpl2[7], AuthenticationLevel::Privacy },
+            AuthnTestOptions{ ProtocolSequence::TCP, objectsUuidsImpl1[8], objectsUuidsImpl2[8], AuthenticationLevel::Integrity },
+            AuthnTestOptions{ ProtocolSequence::TCP, objectsUuidsImpl1[9], objectsUuidsImpl2[9], AuthenticationLevel::Privacy }
             */
             /*,
-            TestOptionsA{ ProtocolSequence::TCP, objectsUuidsImpl1[10], objectsUuidsImpl2[10], AuthenticationLevel::Integrity },
-            TestOptionsA{ ProtocolSequence::TCP, objectsUuidsImpl1[11], objectsUuidsImpl2[11], AuthenticationLevel::Privacy }
+            AuthnTestOptions{ ProtocolSequence::TCP, objectsUuidsImpl1[10], objectsUuidsImpl2[10], AuthenticationLevel::Integrity },
+            AuthnTestOptions{ ProtocolSequence::TCP, objectsUuidsImpl1[11], objectsUuidsImpl2[11], AuthenticationLevel::Privacy }
             */
         )
     );
 
     // The set of options for some test template instantiations
-    struct TestOptionsB
+    struct SchannelTestOptions
     {
         const char *objectUUID1;
         const char *objectUUID2;
@@ -455,15 +538,15 @@ namespace integration_tests
         bool useStrongSec;
     };
 
-    class Framework_RPC_TestCase5 :
-        public ::testing::TestWithParam<TestOptionsB> {};
+    class Framework_RpcSchannel_TestCase :
+        public ::testing::TestWithParam<SchannelTestOptions> {};
 
     /// <summary>
     /// Tests the RPC server normal operation (responding requests), trying
     /// several combinations of protocol sequence and authentication level
     /// using Schannel SSP.
     /// </summary>
-    TEST_P(Framework_RPC_TestCase5, ServerRun_Schannel_ResponseTest)
+    TEST_P(Framework_RpcSchannel_TestCase, ServerRun_Schannel_ResponseTest)
     {
         // Ensures proper initialization/finalization of the framework
         FrameworkInstance _framework;
@@ -475,9 +558,11 @@ namespace integration_tests
             CertInfo certInfo(
                 CERT_SYSTEM_STORE_LOCAL_MACHINE,
                 "My",
-                "TARS",
+                "MySelfSignedCert4DevTestsServer",
                 GetParam().useStrongSec
             );
+
+            RpcTestTimer::StartTimeCountServerSetupAndStart();
 
             // Initialize the RPC server (resource allocation takes place)
             RpcServer::Initialize(
@@ -511,10 +596,8 @@ namespace integration_tests
 
             // Now wait for the client:
             EXPECT_EQ(STATUS_OKAY, RpcServer::Start(objects));
-            EXPECT_EQ(STATUS_OKAY, RpcServer::Wait());
-
-            // Finalize the RPC server (resources will be released)
-            RpcServer::Finalize();
+            
+            RpcTestTimer::WaitSignalAndShutdown();
         }
         catch (...)
         {
@@ -527,13 +610,21 @@ namespace integration_tests
     protocol sequences and authentication level: */
     INSTANTIATE_TEST_CASE_P(
         SwitchProtAndAuthLevel,
-        Framework_RPC_TestCase5,
+        Framework_RpcSchannel_TestCase,
         ::testing::Values(
-            TestOptionsB{ objectsUuidsImpl1[12], objectsUuidsImpl2[12], AuthenticationLevel::Privacy, false },
-            TestOptionsB{ objectsUuidsImpl1[13], objectsUuidsImpl2[13], AuthenticationLevel::Privacy, true },
-            TestOptionsB{ objectsUuidsImpl1[14], objectsUuidsImpl2[14], AuthenticationLevel::Integrity, false },
-            TestOptionsB{ objectsUuidsImpl1[15], objectsUuidsImpl2[15], AuthenticationLevel::Integrity, true }
+            SchannelTestOptions{ objectsUuidsImpl1[12], objectsUuidsImpl2[12], AuthenticationLevel::Privacy, false },
+            SchannelTestOptions{ objectsUuidsImpl1[13], objectsUuidsImpl2[13], AuthenticationLevel::Privacy, true },
+            SchannelTestOptions{ objectsUuidsImpl1[14], objectsUuidsImpl2[14], AuthenticationLevel::Integrity, false },
+            SchannelTestOptions{ objectsUuidsImpl1[15], objectsUuidsImpl2[15], AuthenticationLevel::Integrity, true }
         )
     );
 }// end of namespace integration_tests
 }// end of namespace _3fd
+
+// Common shutdown procedure
+unsigned long ::Shutdown(
+    /* [in] */ handle_t IDL_handle)
+{
+    RpcMgmtStopServerListening(nullptr); // emits signal to stop RPC server
+    return _3fd::integration_tests::RpcTestTimer::GetMaxCycleTime();
+}

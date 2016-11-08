@@ -34,7 +34,7 @@
 #include "AcmeTesting_x64.h"
 
 #define TYPE_FORMAT_STRING_SIZE   39                                
-#define PROC_FORMAT_STRING_SIZE   151                               
+#define PROC_FORMAT_STRING_SIZE   157                               
 #define EXPR_FORMAT_STRING_SIZE   1                                 
 #define TRANSMIT_AS_TABLE_SIZE    0            
 #define WIRE_MARSHAL_TABLE_SIZE   0            
@@ -139,14 +139,17 @@ void WriteOnStorage(
 }
 
 
-void Shutdown( 
+unsigned long Shutdown( 
     /* [in] */ handle_t IDL_handle)
 {
 
-    NdrClientCall2(
+    CLIENT_CALL_RETURN _RetVal;
+
+    _RetVal = NdrClientCall2(
                   ( PMIDL_STUB_DESC  )&AcmeTesting_StubDesc,
                   (PFORMAT_STRING) &AcmeTesting__MIDL_ProcFormatString.Format[120],
                   IDL_handle);
+    return ( unsigned long  )_RetVal.Simple;
     
 }
 
@@ -262,20 +265,27 @@ static const AcmeTesting_MIDL_PROC_FORMAT_STRING AcmeTesting__MIDL_ProcFormatStr
 			0x4a,		/* Old Flags:  DCE mem package, */
 /* 122 */	NdrFcLong( 0x0 ),	/* 0 */
 /* 126 */	NdrFcShort( 0x3 ),	/* 3 */
-/* 128 */	NdrFcShort( 0x8 ),	/* X64 Stack size/offset = 8 */
+/* 128 */	NdrFcShort( 0x10 ),	/* X64 Stack size/offset = 16 */
 /* 130 */	0x32,		/* FC_BIND_PRIMITIVE */
 			0x0,		/* 0 */
 /* 132 */	NdrFcShort( 0x0 ),	/* X64 Stack size/offset = 0 */
 /* 134 */	NdrFcShort( 0x0 ),	/* 0 */
-/* 136 */	NdrFcShort( 0x0 ),	/* 0 */
-/* 138 */	0x40,		/* Oi2 Flags:  has ext, */
-			0x0,		/* 0 */
+/* 136 */	NdrFcShort( 0x8 ),	/* 8 */
+/* 138 */	0x44,		/* Oi2 Flags:  has return, has ext, */
+			0x1,		/* 1 */
 /* 140 */	0xa,		/* 10 */
 			0x1,		/* Ext Flags:  new corr desc, */
 /* 142 */	NdrFcShort( 0x0 ),	/* 0 */
 /* 144 */	NdrFcShort( 0x0 ),	/* 0 */
 /* 146 */	NdrFcShort( 0x0 ),	/* 0 */
 /* 148 */	NdrFcShort( 0x0 ),	/* 0 */
+
+	/* Return value */
+
+/* 150 */	NdrFcShort( 0x70 ),	/* Flags:  out, return, base type, */
+/* 152 */	NdrFcShort( 0x8 ),	/* X64 Stack size/offset = 8 */
+/* 154 */	0x8,		/* FC_LONG */
+			0x0,		/* 0 */
 
 			0x0
         }
