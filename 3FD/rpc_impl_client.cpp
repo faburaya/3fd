@@ -119,13 +119,16 @@ namespace rpc
 
         core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
     }
-    catch (core::IAppException &)
+    catch (core::IAppException &ex)
     {
-        throw; // just forward an exception regarding an error known to have been already handled
+        CALL_STACK_TRACE;
+        HelpFreeBindingHandle(&m_bindingHandle);
+        throw core::AppException<std::runtime_error>("Failed to instantiate RPC client", ex);
     }
     catch (std::exception &ex)
     {
         CALL_STACK_TRACE;
+        HelpFreeBindingHandle(&m_bindingHandle);
         std::ostringstream oss;
         oss << "Generic failure when instantiating RPC client: " << ex.what();
         throw core::AppException<std::runtime_error>(oss.str());
@@ -152,17 +155,15 @@ namespace rpc
     /// <param name="endpoint">The endpoint: for local RPC is the application or service
     /// name, while for TCP this is the port number. Specifying the endpoint is optional
     /// if the server has registered its bindings with the endpoint mapper.</param>
-    RpcClient::RpcClient(
-        ProtocolSequence protSeq,
-        const string &objUUID,
-        const string &destination,
-        AuthenticationSecurity authnSecurity,
-        AuthenticationLevel authnLevel,
-        ImpersonationLevel impLevel,
-        const string &spn,
-        const string &endpoint)
-    try :
-        RpcClient(protSeq, objUUID, destination, endpoint)
+    RpcClient::RpcClient(ProtocolSequence protSeq,
+                         const string &objUUID,
+                         const string &destination,
+                         AuthenticationSecurity authnSecurity,
+                         AuthenticationLevel authnLevel,
+                         ImpersonationLevel impLevel,
+                         const string &spn,
+                         const string &endpoint)
+    : RpcClient(protSeq, objUUID, destination, endpoint)
     {
         // Invalid arguments:
         _ASSERTE(
@@ -173,149 +174,149 @@ namespace rpc
 
         CALL_STACK_TRACE;
 
-        if (authnSecurity != AuthenticationSecurity::NTLM
-            && authnSecurity != AuthenticationSecurity::TryKerberos
-            && authnSecurity != AuthenticationSecurity::RequireMutualAuthn)
+        try
         {
-            throw core::AppException<std::invalid_argument>(
-                "Invalid argument: the constructor overload was meant to be used only "
-                "with authentication services Microsoft NTLM/Negotiate/Kerberos SSP"
-            );
-        }
-
-        /* Kerberos security package is preferable over NTLM, however, Kerberos is not
-        supported in local RPC, and it requires SPN registration, which is only available
-        with Microsoft Active Directory services: */
-
-        DirSvcBinding dirSvcBinding;
-        bool useActDirSec(false);
-
-        /* Only try to detect AD...
-
-         + if RPC over TCP and mutual authentication is preferable 
-           or required, because AD is needed for that
-         OR
-         + if local RPC and mutual authentication was required,
-           because the protocol does not support Kerberos,
-           but there is mutual authentication for NTLM using SPN's */
-
-        if ((protSeq == ProtocolSequence::TCP && authnSecurity != AuthenticationSecurity::NTLM)
-            || (protSeq == ProtocolSequence::Local && authnSecurity == AuthenticationSecurity::RequireMutualAuthn))
-        {
-            useActDirSec = DetectActiveDirectoryServices(dirSvcBinding, true);
-        }
-
-        std::ostringstream oss;
-        std::wstring ucs2spn;
-        std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
-
-        if (useActDirSec)
-        {
-            if (spn == "")
+            if (authnSecurity != AuthenticationSecurity::NTLM
+                && authnSecurity != AuthenticationSecurity::TryKerberos
+                && authnSecurity != AuthenticationSecurity::RequireMutualAuthn)
             {
-                throw core::AppException<std::runtime_error>(
-                    "No SPN was provided to RPC client for mutual authentication"
+                throw core::AppException<std::invalid_argument>(
+                    "Invalid argument: the constructor overload was meant to be used only "
+                    "with authentication services Microsoft NTLM/Negotiate/Kerberos SSP"
                 );
             }
 
-            ucs2spn = transcoder.from_bytes(spn);
+            /* Kerberos security package is preferable over NTLM, however, Kerberos is not
+            supported in local RPC, and it requires SPN registration, which is only available
+            with Microsoft Active Directory services: */
 
-            oss << "RPC client has to authenticate server '" << spn << '\'';
-            core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
-            oss.str("");
-        }
-        // AD not available, but mutual authentication was required:
-        else if (authnSecurity == AuthenticationSecurity::RequireMutualAuthn)
-        {
-            oss << "Could not fulfill mutual authentication requirement of "
-                   "RPC client for object " << objUUID << " in " << destination
-                << " because Microsoft Active Directory services are not available";
+            DirSvcBinding dirSvcBinding;
+            bool useActDirSec(false);
 
-            throw core::AppException<std::runtime_error>(oss.str());
-        }
+            /* Only try to detect AD...
 
-        /* Sets the client binding handle's authentication,
-        authorization, and security quality-of-service: */
+            + if RPC over TCP and mutual authentication is preferable
+            or required, because AD is needed for that
+            OR
+            + if local RPC and mutual authentication was required,
+            because the protocol does not support Kerberos,
+            but there is mutual authentication for NTLM using SPN's */
 
-        RPC_SECURITY_QOS secQOS = { 0 };
-        secQOS.Version = 1;
-        secQOS.ImpersonationType = static_cast<unsigned long> (impLevel);
-
-        /* Authentication impact on performance on identity tracking
-        is negligible unless a remote protocol is in use: */
-        if (protSeq == ProtocolSequence::TCP)
-            secQOS.IdentityTracking = RPC_C_QOS_IDENTITY_STATIC;
-        else
-            secQOS.IdentityTracking = RPC_C_QOS_IDENTITY_DYNAMIC;
-
-        /* This client negotiates to use Kerberos if such security package is
-        available. When RPC is local, Kerberos is not supported disregarding
-        AD availability, so NTLM is used. Regarding the support for mutual
-        authentication, both Kerberos and NTLM (only for local RPC) support
-        it, but it requires SPN registration, hence can only be used when AD
-        is present: */
-
-        unsigned long authnService;
-
-        if (protSeq == ProtocolSequence::Local)
-        {
-            authnService = RPC_C_AUTHN_WINNT;
-
-            if (useActDirSec && authnSecurity == AuthenticationSecurity::RequireMutualAuthn)
+            if ((protSeq == ProtocolSequence::TCP && authnSecurity != AuthenticationSecurity::NTLM)
+                || (protSeq == ProtocolSequence::Local && authnSecurity == AuthenticationSecurity::RequireMutualAuthn))
             {
-                secQOS.Capabilities =
-                    RPC_C_QOS_CAPABILITIES_MUTUAL_AUTH | RPC_C_QOS_CAPABILITIES_LOCAL_MA_HINT;
+                useActDirSec = DetectActiveDirectoryServices(dirSvcBinding, true);
             }
-        }
-        else
-        {
+
+            std::ostringstream oss;
+            std::wstring ucs2spn;
+            std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
+
             if (useActDirSec)
             {
-                authnService = static_cast<unsigned long> (authnSecurity);
+                if (spn == "")
+                {
+                    throw core::AppException<std::runtime_error>(
+                        "No SPN was provided to RPC client for mutual authentication"
+                    );
+                }
 
-                if (authnSecurity != AuthenticationSecurity::NTLM)
-                    secQOS.Capabilities = RPC_C_QOS_CAPABILITIES_MUTUAL_AUTH;
+                ucs2spn = transcoder.from_bytes(spn);
+
+                oss << "RPC client has to authenticate server '" << spn << '\'';
+                core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
+                oss.str("");
+            }
+            // AD not available, but mutual authentication was required:
+            else if (authnSecurity == AuthenticationSecurity::RequireMutualAuthn)
+            {
+                oss << "Could not fulfill mutual authentication requirement of "
+                    "RPC client for object " << objUUID << " in " << destination
+                    << " because Microsoft Active Directory services are not available";
+
+                throw core::AppException<std::runtime_error>(oss.str());
+            }
+
+            /* Sets the client binding handle's authentication,
+            authorization, and security quality-of-service: */
+
+            RPC_SECURITY_QOS secQOS = { 0 };
+            secQOS.Version = 1;
+            secQOS.ImpersonationType = static_cast<unsigned long> (impLevel);
+
+            /* Authentication impact on performance on identity tracking
+            is negligible unless a remote protocol is in use: */
+            if (protSeq == ProtocolSequence::TCP)
+                secQOS.IdentityTracking = RPC_C_QOS_IDENTITY_STATIC;
+            else
+                secQOS.IdentityTracking = RPC_C_QOS_IDENTITY_DYNAMIC;
+
+            /* This client negotiates to use Kerberos if such security package is
+            available. When RPC is local, Kerberos is not supported disregarding
+            AD availability, so NTLM is used. Regarding the support for mutual
+            authentication, both Kerberos and NTLM (only for local RPC) support
+            it, but it requires SPN registration, hence can only be used when AD
+            is present: */
+
+            unsigned long authnService;
+
+            if (protSeq == ProtocolSequence::Local)
+            {
+                authnService = RPC_C_AUTHN_WINNT;
+
+                if (useActDirSec && authnSecurity == AuthenticationSecurity::RequireMutualAuthn)
+                {
+                    secQOS.Capabilities =
+                        RPC_C_QOS_CAPABILITIES_MUTUAL_AUTH | RPC_C_QOS_CAPABILITIES_LOCAL_MA_HINT;
+                }
             }
             else
-                authnService = RPC_C_AUTHN_WINNT;
+            {
+                if (useActDirSec)
+                {
+                    authnService = static_cast<unsigned long> (authnSecurity);
+
+                    if (authnSecurity != AuthenticationSecurity::NTLM)
+                        secQOS.Capabilities = RPC_C_QOS_CAPABILITIES_MUTUAL_AUTH;
+                }
+                else
+                    authnService = RPC_C_AUTHN_WINNT;
+            }
+
+            auto status = RpcBindingSetAuthInfoExW(
+                m_bindingHandle,
+                const_cast<RPC_WSTR> (ucs2spn.empty() ? nullptr : ucs2spn.c_str()),
+                static_cast<unsigned long> (authnLevel),
+                authnService,
+                nullptr, // no explicit credentials, use context
+                RPC_C_AUTHZ_DEFAULT,
+                &secQOS
+            );
+
+            ThrowIfError(status, "Failed to set security for binding handle of RPC client");
+
+            oss << "RPC client binding security was set to use "
+                << ConvertAuthnSvcOptToString(authnService) << " ";
+
+            AppendSecQosOptsDescription(secQOS, oss);
+
+            oss << ", " << ToString(authnLevel)
+                << " and " << ToString(impLevel);
+
+            core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
         }
-
-        auto status = RpcBindingSetAuthInfoExW(
-            m_bindingHandle,
-            const_cast<RPC_WSTR> (ucs2spn.empty() ? nullptr : ucs2spn.c_str()),
-            static_cast<unsigned long> (authnLevel),
-            authnService,
-            nullptr, // no explicit credentials, use context
-            RPC_C_AUTHZ_DEFAULT,
-            &secQOS
-        );
-
-        ThrowIfError(status, "Failed to set security for binding handle of RPC client");
-
-        oss << "RPC client binding security was set to use "
-            << ConvertAuthnSvcOptToString(authnService) << " ";
-
-        AppendSecQosOptsDescription(secQOS, oss);
-
-        oss << ", " << ToString(authnLevel)
-            << " and " << ToString(impLevel);
-
-        core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
-    }
-    catch (core::IAppException &)
-    {
-        CALL_STACK_TRACE;
-        HelpFreeBindingHandle(&m_bindingHandle);
-        throw; // just forward an exception regarding an error known to have been already handled
-    }
-    catch (std::exception &ex)
-    {
-        CALL_STACK_TRACE;
-        HelpFreeBindingHandle(&m_bindingHandle);
-
-        std::ostringstream oss;
-        oss << "Generic failure when creating RPC client: " << ex.what();
-        throw core::AppException<std::runtime_error>(oss.str());
+        catch (core::IAppException &ex)
+        {
+            HelpFreeBindingHandle(&m_bindingHandle);
+            throw core::AppException<std::runtime_error>("Failed to instantiate RPC client", ex);
+        }
+        catch (std::exception &ex)
+        {
+            HelpFreeBindingHandle(&m_bindingHandle);
+            std::ostringstream oss;
+            oss << "Generic failure when creating RPC client: " << ex.what();
+            throw core::AppException<std::runtime_error>(oss.str());
+        }
     }
 
     /// <summary>
@@ -335,70 +336,69 @@ namespace rpc
     /// <remarks>Because Schannel SSP is only compatible with transport
     /// over TCP/IP, that is the implicitly chosen protocol sequence.</remarks>
     RpcClient::RpcClient(const string &objUUID,
-                         const string &destination,
-                         const CertInfo &certInfoX509,
-                         AuthenticationLevel authnLevel,
-                         const string &endpoint)
-    try :
-        RpcClient(ProtocolSequence::TCP, objUUID, destination, endpoint)
+        const string &destination,
+        const CertInfo &certInfoX509,
+        AuthenticationLevel authnLevel,
+        const string &endpoint)
+        : RpcClient(ProtocolSequence::TCP, objUUID, destination, endpoint)
     {
         CALL_STACK_TRACE;
 
-        SystemCertificateStore certStore(certInfoX509.storeLocation, certInfoX509.storeName);
-        auto certX509 = certStore.FindCertBySubject(certInfoX509.subject);
-
-        if (certX509 == nullptr)
+        try
         {
-            std::ostringstream oss;
-            oss << "Could not get from system store code " << certInfoX509.storeLocation
-                << " the specified X.509 certificate (subject = '" << certInfoX509.subject << "')";
+            SystemCertificateStore certStore(certInfoX509.storeLocation, certInfoX509.storeName);
+            auto certX509 = certStore.FindCertBySubject(certInfoX509.subject);
 
-            throw core::AppException<std::runtime_error>(
-                "Certificate for RPC client was not found in store",
-                oss.str()
+            if (certX509 == nullptr)
+            {
+                std::ostringstream oss;
+                oss << "Could not get from system store code " << certInfoX509.storeLocation
+                    << " the specified X.509 certificate (subject = '" << certInfoX509.subject << "')";
+
+                throw core::AppException<std::runtime_error>(
+                    "Certificate for RPC client was not found in store",
+                    oss.str()
+                );
+            }
+
+            auto authnService = static_cast<unsigned long> (AuthenticationSecurity::SecureChannel);
+
+            m_schannelCred.reset(
+                new SChannelCredWrapper(certX509, certInfoX509.strongerSecurity)
             );
+
+            auto status = RpcBindingSetAuthInfoW(
+                m_bindingHandle,
+                nullptr,
+                static_cast<unsigned long> (authnLevel),
+                authnService,
+                m_schannelCred->GetCredential(),
+                RPC_C_AUTHZ_DEFAULT
+            );
+
+            ThrowIfError(status, "Failed to set security for binding handle of RPC client");
+
+            std::ostringstream oss;
+            oss << "RPC client binding security was set to use "
+                << ConvertAuthnSvcOptToString(authnService)
+                << " with X.509 certificate (subject = '" << certInfoX509.subject
+                << "' in store '" << certInfoX509.storeName
+                << "') and " << ToString(authnLevel);
+
+            core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
         }
-
-        auto authnService = static_cast<unsigned long> (AuthenticationSecurity::SecureChannel);
-
-        m_schannelCred.reset(
-            new SChannelCredWrapper(certX509, certInfoX509.strongerSecurity)
-        );
-
-        auto status = RpcBindingSetAuthInfoW(
-            m_bindingHandle,
-            nullptr,
-            static_cast<unsigned long> (authnLevel),
-            authnService,
-            m_schannelCred->GetCredential(),
-            RPC_C_AUTHZ_DEFAULT
-        );
-
-        ThrowIfError(status, "Failed to set security for binding handle of RPC client");
-
-        std::ostringstream oss;
-        oss << "RPC client binding security was set to use "
-            << ConvertAuthnSvcOptToString(authnService)
-            << " with X.509 certificate (subject = '" << certInfoX509.subject
-            << "' in store '" << certInfoX509.storeName
-            << "') and " << ToString(authnLevel);
-
-        core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
-    }
-    catch (core::IAppException &)
-    {
-        CALL_STACK_TRACE;
-        HelpFreeBindingHandle(&m_bindingHandle);
-        throw; // just forward an exception regarding an error known to have been already handled
-    }
-    catch (std::exception &ex)
-    {
-        CALL_STACK_TRACE;
-        HelpFreeBindingHandle(&m_bindingHandle);
-
-        std::ostringstream oss;
-        oss << "Generic failure when creating RPC client: " << ex.what();
-        throw core::AppException<std::runtime_error>(oss.str());
+        catch (core::IAppException &)
+        {
+            HelpFreeBindingHandle(&m_bindingHandle);
+            throw core::AppException<std::runtime_error>("Failed to instantiate RPC client", ex);
+        }
+        catch (std::exception &ex)
+        {
+            HelpFreeBindingHandle(&m_bindingHandle);
+            std::ostringstream oss;
+            oss << "Generic failure when creating RPC client: " << ex.what();
+            throw core::AppException<std::runtime_error>(oss.str());
+        }
     }
 
     /// <summary>

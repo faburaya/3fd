@@ -338,8 +338,7 @@ namespace integration_tests
 
             auto stopTimeSrvSetupAndStart = system_clock().now();
 
-            if (RpcServer::Wait() == STATUS_FAIL)
-                return false;
+            RpcServer::Wait();
 
             auto t1 = system_clock().now();
 

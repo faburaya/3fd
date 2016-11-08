@@ -816,7 +816,7 @@ namespace rpc
 
                 oss << " [com:" << GetComponentLabel(errInfoEntry.GeneratingComponent)
                     << "/loc:" << GetDetectionLocationLabel(errInfoEntry.DetectionLocation)
-                    << "/sta=" << errInfoEntry.Status << ']';
+                    << "/status=" << errInfoEntry.Status << ']';
 
                 oss << " { ";
 
@@ -836,10 +836,10 @@ namespace rpc
                         oss << '\"' << transcoder.to_bytes(value.UnicodeString) << '\"';
                         break;
                     case eeptLongVal:
-                        oss << value.LVal;
+                        oss << std::dec << value.LVal;
                         break;
                     case eeptShortVal:
-                        oss << value.SVal;
+                        oss << std::dec << value.SVal;
                         break;
                     case eeptPointerVal:
                         oss << std::hex << value.PVal;

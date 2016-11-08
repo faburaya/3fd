@@ -321,8 +321,8 @@ namespace wws
     /// <param name="senderWinToken">Where to save the windows token for the authenticated sender.
     /// A null value is set when processing an empty message, which has no token.</param>
     /// <param name="wsErrorHandle">Handle for the rich error info utility.</param>
-    /// <returns><c>STATUS_OKAY</c> if token retrieval was succesfull or no token
-    /// was expected for the message, otherwise, <c>STATUS_FAIL</c>.</returns>
+    /// <returns><see cref="STATUS_OKAY"/> if token retrieval was succesfull or no token
+    /// was expected for the message, otherwise, <see cref="STATUS_FAIL"/>.</returns>
     bool HelpAuthorizeSender(
         const WS_OPERATION_CONTEXT *wsOperContextHandle,
         HANDLE *senderWinToken,

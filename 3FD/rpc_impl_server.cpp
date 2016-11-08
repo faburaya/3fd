@@ -168,66 +168,66 @@ namespace rpc
     RpcServerImpl::RpcServerImpl(ProtocolSequence protSeq,
                                  const string &serviceName,
                                  AuthenticationLevel authnLevel)
-    try :
-        RpcServerImpl(protSeq, serviceName, true)
+    : RpcServerImpl(protSeq, serviceName, true)
     {
         CALL_STACK_TRACE;
 
-        /* Kerberos security package is preferable over NTLM because it offers mutual
-        authentication, however, that requires SPN registration, which is only available
-        with Microsoft Active Directory services. */
-
-        RPC_STATUS status;
-        DirSvcBinding dirSvcBinding;
-        bool useActDirSec = DetectActiveDirectoryServices(dirSvcBinding, false);
-
-        if (!useActDirSec)
+        try
         {
-            // Use Microsoft NTLM SSP
-            status = RpcServerRegisterAuthInfoW(nullptr, RPC_C_AUTHN_WINNT, nullptr, nullptr);
-            ThrowIfError(status, "Could not set RPC server authentication to use NTLM security package");
+            /* Kerberos security package is preferable over NTLM because it offers
+            mutual authentication, however, that requires SPN registration, which is
+            only available with Microsoft Active Directory services. */
+
+            RPC_STATUS status;
+            DirSvcBinding dirSvcBinding;
+            bool useActDirSec = DetectActiveDirectoryServices(dirSvcBinding, false);
+
+            if (!useActDirSec)
+            {
+                // Use Microsoft NTLM SSP
+                status = RpcServerRegisterAuthInfoW(nullptr, RPC_C_AUTHN_WINNT, nullptr, nullptr);
+                ThrowIfError(status, "Could not set RPC server authentication to use NTLM security package");
+            }
+            else
+            {
+                // Get the default principal name for this server:
+                RpcString spn;
+                status = RpcServerInqDefaultPrincNameW(RPC_C_AUTHN_GSS_KERBEROS, &spn.data);
+                ThrowIfError(status, "Could not get default SPN for RPC server");
+
+                // Use Microsoft SSP Negotiate, so provide the SPN in case Kerberos is used:
+                auto authnService = static_cast<unsigned long> (RPC_C_AUTHN_GSS_NEGOTIATE);
+                status = RpcServerRegisterAuthInfoW(spn.data, authnService, nullptr, nullptr);
+
+                std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
+                string utf8spn = transcoder.to_bytes(spn.data);
+
+                ThrowIfError(status,
+                    "Could not register authentication information with Microsoft Negotiate SSP",
+                    utf8spn);
+
+                // Notify registration in authentication service:
+                std::ostringstream oss;
+                oss << "RPC server '" << serviceName
+                    << "' has been registered with  "
+                    << ConvertAuthnSvcOptToString(authnService)
+                    << " [SPN = " << utf8spn << "]";
+
+                core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
+            }// end if using AD
+
+            m_cliReqAuthnLevel = authnLevel;
         }
-        else
+        catch (core::IAppException &ex)
         {
-            // Get the default principal name for this server:
-            RpcString spn;
-            status = RpcServerInqDefaultPrincNameW(RPC_C_AUTHN_GSS_KERBEROS, &spn.data);
-            ThrowIfError(status, "Could not get default SPN for RPC server");
-
-            // Use Microsoft SSP Negotiate, so provide the SPN in case Kerberos is used:
-            auto authnService = static_cast<unsigned long> (RPC_C_AUTHN_GSS_NEGOTIATE);
-            status = RpcServerRegisterAuthInfoW(spn.data, authnService, nullptr, nullptr);
-
-            std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
-            string utf8spn = transcoder.to_bytes(spn.data);
-
-            ThrowIfError(status,
-                "Could not register authentication information with Microsoft Negotiate SSP",
-                utf8spn);
-
-            // Notify registration in authentication service:
+            throw core::AppException<std::runtime_error>("Failed to instantiate RPC server", ex);
+        }
+        catch (std::exception &ex)
+        {
             std::ostringstream oss;
-            oss << "RPC server '" << serviceName
-                << "' has been registered with  "
-                << ConvertAuthnSvcOptToString(authnService)
-                << " [SPN = " << utf8spn << "]";
-
-            core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
-        }// end if using AD
-
-        m_cliReqAuthnLevel = authnLevel;
-    }
-    catch (core::IAppException &ex)
-    {
-        CALL_STACK_TRACE;
-        throw core::AppException<std::runtime_error>("Failed to instantiate RPC server", ex);
-    }
-    catch (std::exception &ex)
-    {
-        CALL_STACK_TRACE;
-        std::ostringstream oss;
-        oss << "Generic failure prevented RPC server instantiation: " << ex.what();
-        throw core::AppException<std::runtime_error>(oss.str());
+            oss << "Generic failure prevented RPC server instantiation: " << ex.what();
+            throw core::AppException<std::runtime_error>(oss.str());
+        }
     }
 
     /// <summary>
@@ -270,78 +270,78 @@ namespace rpc
     RpcServerImpl::RpcServerImpl(const string &serviceName,
                                  const CertInfo *certInfoX509,
                                  AuthenticationLevel authnLevel)
-    try :
-        RpcServerImpl(ProtocolSequence::TCP, serviceName, true)
+    : RpcServerImpl(ProtocolSequence::TCP, serviceName, true)
     {
         CALL_STACK_TRACE;
 
-        if (certInfoX509 != nullptr)
+        try
         {
-            m_sysCertStore.reset(
-                new SystemCertificateStore(certInfoX509->storeLocation, certInfoX509->storeName)
-            );
-
-            auto certX509 = m_sysCertStore->FindCertBySubject(certInfoX509->subject);
-
-            if (certX509 == nullptr)
+            if (certInfoX509 != nullptr)
             {
-                std::ostringstream oss;
-                oss << "Could not get from system store code "
-                    << certInfoX509->storeLocation
-                    << " named '" << certInfoX509->storeName
-                    << "' the specified X.509 certificate (subject = '"
-                    << certInfoX509->subject << "')";
+                m_sysCertStore.reset(
+                    new SystemCertificateStore(certInfoX509->storeLocation, certInfoX509->storeName)
+                );
 
-                throw core::AppException<std::runtime_error>(
-                    "Certificate for RPC server was not found in store", oss.str()
+                auto certX509 = m_sysCertStore->FindCertBySubject(certInfoX509->subject);
+
+                if (certX509 == nullptr)
+                {
+                    std::ostringstream oss;
+                    oss << "Could not get from system store code "
+                        << certInfoX509->storeLocation
+                        << " named '" << certInfoX509->storeName
+                        << "' the specified X.509 certificate (subject = '"
+                        << certInfoX509->subject << "')";
+
+                    throw core::AppException<std::runtime_error>(
+                        "Certificate for RPC server was not found in store", oss.str()
+                        );
+                }
+
+                m_schannelCred.reset(
+                    new SChannelCredWrapper(certX509, certInfoX509->strongerSecurity)
                 );
             }
 
-            m_schannelCred.reset(
-                new SChannelCredWrapper(certX509, certInfoX509->strongerSecurity)
+            auto authnService = static_cast<unsigned long> (AuthenticationSecurity::SecureChannel);
+
+            auto status = RpcServerRegisterAuthInfoW(
+                nullptr,
+                authnService,
+                nullptr,
+                m_schannelCred ? m_schannelCred->GetCredential() : nullptr
             );
+
+            ThrowIfError(status,
+                "Could not register authentication information with Schannel SSP");
+
+            std::ostringstream oss;
+            oss << "RPC server " << serviceName
+                << "has been registered with "
+                << ConvertAuthnSvcOptToString(authnService);
+
+            if (certInfoX509 != nullptr)
+            {
+                oss << " and X.509 certificate (subject = '" << certInfoX509->subject
+                    << "' in store '" << certInfoX509->storeName << "')";
+            }
+            else
+                oss << " and a default X.509 certificate";
+
+            core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
+
+            m_cliReqAuthnLevel = authnLevel;
         }
-
-        auto authnService = static_cast<unsigned long> (AuthenticationSecurity::SecureChannel);
-
-        auto status = RpcServerRegisterAuthInfoW(
-            nullptr,
-            authnService,
-            nullptr,
-            m_schannelCred ? m_schannelCred->GetCredential() : nullptr
-        );
-
-        ThrowIfError(status,
-            "Could not register authentication information with Schannel SSP");
-
-        std::ostringstream oss;
-        oss << "RPC server " << serviceName
-            << "has been registered with "
-            << ConvertAuthnSvcOptToString(authnService);
-        
-        if (certInfoX509 != nullptr)
+        catch (core::IAppException &ex)
         {
-            oss << " and X.509 certificate (subject = '" << certInfoX509->subject
-                << "' in store '" << certInfoX509->storeName << "')";
+            throw core::AppException<std::runtime_error>("Failed to instantiate RPC server", ex);
         }
-        else
-            oss << " and a default X.509 certificate";
-
-        core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
-
-        m_cliReqAuthnLevel = authnLevel;
-    }
-    catch (core::IAppException &ex)
-    {
-        CALL_STACK_TRACE;
-        throw core::AppException<std::runtime_error>("Failed to instantiate RPC server", ex);
-    }
-    catch (std::exception &ex)
-    {
-        CALL_STACK_TRACE;
-        std::ostringstream oss;
-        oss << "Generic failure prevented RPC server instantiation: " << ex.what();
-        throw core::AppException<std::runtime_error>(oss.str());
+        catch (std::exception &ex)
+        {
+            std::ostringstream oss;
+            oss << "Generic failure prevented RPC server instantiation: " << ex.what();
+            throw core::AppException<std::runtime_error>(oss.str());
+        }
     }
 
     /// <summary>
