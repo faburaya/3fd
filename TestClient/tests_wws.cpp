@@ -134,13 +134,24 @@ namespace integration_tests
         }
 	};
 
+    /// <summary>
+    /// Test case for WWS module.
+    /// </summary>
+    class Framework_WWS_TestCase : public ::testing::Test
+    {
+    public:
+
+        static void SetUpTestCase()
+        {
+            system("pause"); // wait until web service host becomes available
+        }
+    };
+
 	/// <summary>
 	/// Tests synchronous web service access without transport security.
 	/// </summary>
-	TEST(Framework_WWS_TestCase, Proxy_TransportUnsecure_SyncTest)
+	TEST_F(Framework_WWS_TestCase, Proxy_TransportUnsecure_SyncTest)
 	{
-        system("pause");
-
 		// Ensures proper initialization/finalization of the framework
 		_3fd::core::FrameworkInstance _framework;
 
@@ -177,7 +188,7 @@ namespace integration_tests
 	/// <summary>
 	/// Tests asynchronous web service access without transport security.
 	/// </summary>
-	TEST(Framework_WWS_TestCase, Proxy_TransportUnsecure_AsyncTest)
+    TEST_F(Framework_WWS_TestCase, Proxy_TransportUnsecure_AsyncTest)
 	{
 		// Ensures proper initialization/finalization of the framework
 		_3fd::core::FrameworkInstance _framework;
@@ -366,7 +377,7 @@ namespace integration_tests
 	/// Tests synchronous web service access
 	/// with SSL over HTTP and no client certificate.
 	/// </summary>
-	TEST(Framework_WWS_TestCase, Proxy_TransportSSL_NoClientCert_SyncTest)
+    TEST_F(Framework_WWS_TestCase, Proxy_TransportSSL_NoClientCert_SyncTest)
 	{
 		// Ensures proper initialization/finalization of the framework
 		_3fd::core::FrameworkInstance _framework;
@@ -405,7 +416,7 @@ namespace integration_tests
 	/// Tests asynchronous web service access with
 	/// SSL over HTTP and no client certificate.
 	/// </summary>
-	TEST(Framework_WWS_TestCase, Proxy_TransportSSL_NoClientCert_AsyncTest)
+    TEST_F(Framework_WWS_TestCase, Proxy_TransportSSL_NoClientCert_AsyncTest)
 	{
 		// Ensures proper initialization/finalization of the framework
 		_3fd::core::FrameworkInstance _framework;
@@ -464,7 +475,7 @@ namespace integration_tests
 	/// Tests synchronous web service access, with
 	/// SSL over HTTP and a client certificate.
 	/// </summary>
-	TEST(Framework_WWS_TestCase, Proxy_TransportSSL_WithClientCert_SyncTest)
+    TEST_F(Framework_WWS_TestCase, Proxy_TransportSSL_WithClientCert_SyncTest)
 	{
 		// Ensures proper initialization/finalization of the framework
 		_3fd::core::FrameworkInstance _framework;
@@ -511,7 +522,7 @@ namespace integration_tests
 	/// Tests asynchronous web service access, with
 	/// SSL over HTTP and a client certificate.
 	/// </summary>
-	TEST(Framework_WWS_TestCase, Proxy_TransportSSL_WithClientCert_AsyncTest)
+    TEST_F(Framework_WWS_TestCase, Proxy_TransportSSL_WithClientCert_AsyncTest)
 	{
 		// Ensures proper initialization/finalization of the framework
 		_3fd::core::FrameworkInstance _framework;
@@ -692,7 +703,7 @@ namespace integration_tests
     /// Tests synchronous web service access, with HTTP
     /// header authorization, SSL and a client certificate.
     /// </summary>
-    TEST(Framework_WWS_TestCase, Proxy_HeaderAuthTransportSSL_WithClientCert_SyncTest)
+    TEST_F(Framework_WWS_TestCase, Proxy_HeaderAuthTransportSSL_WithClientCert_SyncTest)
     {
         // Ensures proper initialization/finalization of the framework
         _3fd::core::FrameworkInstance _framework;
@@ -739,7 +750,7 @@ namespace integration_tests
     /// Tests asynchronous web service access, with HTTP
     /// header authorization, SSL and a client certificate.
     /// </summary>
-    TEST(Framework_WWS_TestCase, Proxy_HeaderAuthTransportSSL_WithClientCert_AsyncTest)
+    TEST_F(Framework_WWS_TestCase, Proxy_HeaderAuthTransportSSL_WithClientCert_AsyncTest)
     {
         // Ensures proper initialization/finalization of the framework
         _3fd::core::FrameworkInstance _framework;
@@ -805,7 +816,7 @@ namespace integration_tests
 	/// <summary>
 	/// Tests SOAP fault transmission in web service synchronous access.
 	/// </summary>
-	TEST(Framework_WWS_TestCase, Proxy_SoapFault_SyncTest)
+    TEST_F(Framework_WWS_TestCase, Proxy_SoapFault_SyncTest)
 	{
 		// Ensures proper initialization/finalization of the framework
 		_3fd::core::FrameworkInstance _framework;
@@ -888,7 +899,7 @@ namespace integration_tests
 	/// <summary>
 	/// Tests SOAP fault transmission in web service asynchronous access.
 	/// </summary>
-	TEST(Framework_WWS_TestCase, Proxy_SoapFault_AsyncTest)
+    TEST_F(Framework_WWS_TestCase, Proxy_SoapFault_AsyncTest)
 	{
 		// Ensures proper initialization/finalization of the framework
 		_3fd::core::FrameworkInstance _framework;

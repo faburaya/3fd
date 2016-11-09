@@ -100,9 +100,22 @@ namespace integration_tests
     };
 
     /// <summary>
+    /// Test case for RPC client without authentication.
+    /// </summary>
+    class Framework_RpcNoAuth_TestCase : public ::testing::Test
+    {
+    public:
+
+        static void SetUpTestCase()
+        {
+            system("pause"); // wait until RPC server becomes available
+        }
+    };
+
+    /// <summary>
     /// Tests RPC client issuing requests without authentication.
     /// </summary>
-    TEST(Framework_RpcNoAuth_TestCase1, ClientRun_RequestTest)
+    TEST_F(Framework_RpcNoAuth_TestCase, ClientRun_RequestTest)
     {
         // Ensures proper initialization/finalization of the framework
         FrameworkInstance _framework;
@@ -111,9 +124,6 @@ namespace integration_tests
 
         try
         {
-            // Wait for RPC server to become available
-            system("pause");
-
             AcmeRpcClient client1(
                 ProtocolSequence::Local,
                 objectsUuidsImpl1[5],
@@ -132,7 +142,9 @@ namespace integration_tests
             EXPECT_EQ(696.0, client2.Operate(606.0, 90.0));
             EXPECT_EQ("squirrel", client2.ChangeCase("SQUIRREL"));
 
-            client2.Shutdown();
+            auto timeout = client2.Shutdown();
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(timeout));
         }
         catch (...)
         {
@@ -158,9 +170,11 @@ namespace integration_tests
     class Framework_RpcAuthn_TestCase :
         public ::testing::TestWithParam<AuthnTestOptions>
     {
+    public:
+
         static void SetUpTestCase()
         {
-            system("pause");
+            system("pause"); // wait until RPC server becomes available
         }
     };
 
@@ -168,7 +182,7 @@ namespace integration_tests
     /// Tests RPC client issuing requests for several scenarios of
     /// protocol sequence and authentication level.
     /// </summary>
-    TEST_P(Framework_RpcAuthn_TestCase, ClientRun_AuthnSec_RequestTest)
+    TEST_P(Framework_RpcAuthn_TestCase, ClientRun_RequestTest)
     {
         // Ensures proper initialization/finalization of the framework
         FrameworkInstance _framework;
@@ -258,9 +272,11 @@ namespace integration_tests
     class Framework_RpcSchannel_TestCase :
         public ::testing::TestWithParam<SchannelTestOptions>
     {
+    public:
+
         static void SetUpTestCase()
         {
-            system("pause");
+            system("pause"); // wait until RPC server becomes available
         }
     };
 

@@ -161,6 +161,107 @@ namespace integration_tests
     void HandleException();
 
     /// <summary>
+    /// Basic test timer for the RPC module.
+    /// This implements simple timing for RPC server cycles.
+    /// </summary>
+    class RpcTestTimer
+    {
+    private:
+
+        static std::chrono::time_point<std::chrono::system_clock> startTimeForSrvSetupAndStart;
+        static std::chrono::time_point<std::chrono::system_clock> startTimeForSrvShutdown;
+
+        static std::chrono::milliseconds maxTimeSpanForSrvSetupAndStart;
+        static std::chrono::milliseconds maxTimeSpanForSrvShutdown;
+
+    public:
+
+        /// <summary>
+        /// Starts counting time for RPC server setup and start.
+        /// </summary>
+        static void StartTimeCountServerSetupAndStart()
+        {
+            startTimeForSrvSetupAndStart = std::chrono::system_clock().now();
+        }
+
+        /// <summary>
+        /// Stops counting time for RPC server setup and start.
+        /// </summary>
+        static void StopTimeCountServerSetupAndStart()
+        {
+            using namespace std::chrono;
+
+            auto now = system_clock().now();
+
+            auto setupAndStartTimeSpan = duration_cast<milliseconds>(
+                now - startTimeForSrvSetupAndStart
+                );
+
+            if (setupAndStartTimeSpan > maxTimeSpanForSrvSetupAndStart)
+                maxTimeSpanForSrvSetupAndStart = setupAndStartTimeSpan;
+        }
+
+        /// <summary>
+        /// Starts counting time for RPC server shutdown.
+        /// </summary>
+        static void StartTimeCountServerShutdown()
+        {
+            startTimeForSrvShutdown = std::chrono::system_clock().now();
+        }
+
+        /// <summary>
+        /// Stops counting time for RPC server shutdown.
+        /// </summary>
+        static void StopTimeCountServerShutdown()
+        {
+            using namespace std::chrono;
+
+            auto now = system_clock().now();
+
+            auto shutdownTimeSpan = duration_cast<milliseconds>(
+                now - startTimeForSrvShutdown
+                );
+
+            if (shutdownTimeSpan > maxTimeSpanForSrvShutdown)
+                maxTimeSpanForSrvShutdown = shutdownTimeSpan;
+
+            auto maxCycleTime = static_cast<uint32_t> (
+                maxTimeSpanForSrvShutdown.count()
+                + maxTimeSpanForSrvSetupAndStart.count()
+            );
+
+            std::ostringstream oss;
+            oss << "Max registered time span for RPC server cycle shutdown-setup-start is "
+                << maxCycleTime << " ms";
+
+            Logger::Write(oss.str(), Logger::PRIO_NOTICE);
+        }
+
+        /// <summary>
+        /// Retrieves the maximum cycle time for
+        /// the RPC server registered so far.
+        /// </summary>
+        /// <return>
+        /// The maximum cycle time in milliseconds.
+        /// </return>
+        static uint32_t GetMaxCycleTime()
+        {
+            auto maxCycleTime = static_cast<uint32_t> (
+                maxTimeSpanForSrvShutdown.count()
+                + maxTimeSpanForSrvSetupAndStart.count()
+            );
+
+            return maxCycleTime > 0 ? maxCycleTime : 32U;
+        }
+    };
+
+    std::chrono::time_point<std::chrono::system_clock> RpcTestTimer::startTimeForSrvSetupAndStart;
+    std::chrono::time_point<std::chrono::system_clock> RpcTestTimer::startTimeForSrvShutdown;
+
+    std::chrono::milliseconds RpcTestTimer::maxTimeSpanForSrvSetupAndStart(0);
+    std::chrono::milliseconds RpcTestTimer::maxTimeSpanForSrvShutdown(0);
+
+    /// <summary>
     /// Tests the cycle init/start/stop/resume/stop/finalize of the RPC server,
     /// for local RPC and without authentication security.
     /// </summary>
@@ -173,6 +274,8 @@ namespace integration_tests
 
         try
         {
+            RpcTestTimer::StartTimeCountServerSetupAndStart();
+
             // Initialize the RPC server (resource allocation takes place)
             RpcServer::Initialize(ProtocolSequence::Local, "TestClient3FD");
 
@@ -200,13 +303,20 @@ namespace integration_tests
             );
 
             // Now cycle through the states:
+
             EXPECT_EQ(STATUS_OKAY, RpcServer::Start(objects));
+            RpcTestTimer::StopTimeCountServerSetupAndStart();
+
             EXPECT_EQ(STATUS_OKAY, RpcServer::Stop());
             EXPECT_EQ(STATUS_OKAY, RpcServer::Resume());
-            EXPECT_EQ(STATUS_OKAY, RpcServer::Stop());
 
-            // Finalize the RPC server (resources will be released)
-            RpcServer::Finalize();
+            RpcTestTimer::StartTimeCountServerShutdown();
+
+            // Upon finalization (shutdown), resources will be released:
+            EXPECT_EQ(STATUS_OKAY, RpcServer::Stop());
+            EXPECT_EQ(STATUS_OKAY, RpcServer::Finalize());
+
+            RpcTestTimer::StopTimeCountServerShutdown();
         }
         catch (...)
         {
@@ -240,6 +350,8 @@ namespace integration_tests
 
         try
         {
+            RpcTestTimer::StartTimeCountServerSetupAndStart();
+
             // Initialize the RPC server (authn svc reg & resource allocation takes place)
             RpcServer::Initialize(
                 GetParam().protocolSequence,
@@ -271,13 +383,20 @@ namespace integration_tests
             );
 
             // Now cycle through the states:
+
             EXPECT_EQ(STATUS_OKAY, RpcServer::Start(objects));
+            RpcTestTimer::StopTimeCountServerSetupAndStart();
+
             EXPECT_EQ(STATUS_OKAY, RpcServer::Stop());
             EXPECT_EQ(STATUS_OKAY, RpcServer::Resume());
-            EXPECT_EQ(STATUS_OKAY, RpcServer::Stop());
 
-            // Finalize the RPC server (resources will be released)
-            RpcServer::Finalize();
+            RpcTestTimer::StartTimeCountServerShutdown();
+
+            // Upon finalization (shutdown), resources will be released:
+            EXPECT_EQ(STATUS_OKAY, RpcServer::Stop());
+            EXPECT_EQ(STATUS_OKAY, RpcServer::Finalize());
+
+            RpcTestTimer::StopTimeCountServerShutdown();
         }
         catch (...)
         {
@@ -299,99 +418,13 @@ namespace integration_tests
         )
     );
 
-    /// <summary>
-    /// Basic test timer for the RPC module.
-    /// This implements simple timing for RPC server cycles.
-    /// </summary>
-    class RpcTestTimer
-    {
-    private:
-
-        static std::chrono::time_point<std::chrono::system_clock> startTimeSrvSetupAndStart;
-
-        static std::chrono::milliseconds maxTimeSpanForSrvCycle;
-
-    public:
-
-        /// <summary>
-        /// Starts the counting time for RPC server setup and start.
-        /// </summary>
-        static void StartTimeCountServerSetupAndStart()
-        {
-            startTimeSrvSetupAndStart = std::chrono::system_clock().now();
-        }
-
-        /// <summary>
-        /// Stop counting time for RPC server setup and start,
-        /// then wait for signal to shut it down.
-        /// Once the signal is received, stop it and measure how long that takes.
-        /// The maximum cycle time (setup, start & shutdown) is kept to respond RPC clients that
-        /// need to know how long to wait before the server in the next test is available.
-        /// </summary>
-        /// <returns>
-        /// <c>true</c> when the signal was received and the RPC server
-        /// was succesfully shutdown, otherwise, <c>false</c>.
-        /// </returns>
-        static bool WaitSignalAndShutdown()
-        {
-            using namespace std::chrono;
-
-            auto stopTimeSrvSetupAndStart = system_clock().now();
-
-            RpcServer::Wait();
-
-            auto t1 = system_clock().now();
-
-            if (RpcServer::Finalize() == STATUS_FAIL)
-                return false;
-
-            auto t2 = system_clock().now();
-
-            auto shutdownTimeSpan = duration_cast<milliseconds>(t2 - t1);
-
-            auto setupAndStartTimeSpan = duration_cast<milliseconds>(
-                stopTimeSrvSetupAndStart - startTimeSrvSetupAndStart
-            );
-
-            auto cycleTimeSpan = setupAndStartTimeSpan + shutdownTimeSpan;
-
-            if (cycleTimeSpan > maxTimeSpanForSrvCycle)
-                maxTimeSpanForSrvCycle = cycleTimeSpan;
-
-            std::ostringstream oss;
-            oss << "Max registered time span for RPC server cycle shutdown-setup-start is "
-                << maxTimeSpanForSrvCycle.count() << " ms";
-
-            Logger::Write(oss.str(), Logger::PRIO_NOTICE);
-
-            return true;
-        }
-
-        /// <summary>
-        /// Retrieves the maximum cycle time for
-        /// the RPC server registered so far.
-        /// </summary>
-        /// <return>
-        /// The maximum cycle time in milliseconds.
-        /// </return>
-        static uint32_t GetMaxCycleTime()
-        {
-            auto maxCycleTime = static_cast<uint32_t> (maxTimeSpanForSrvCycle.count());
-            return maxCycleTime > 0 ? maxCycleTime : 32U;
-        }
-    };
-
-    std::chrono::time_point<std::chrono::system_clock> RpcTestTimer::startTimeSrvSetupAndStart;
-
-    std::chrono::milliseconds RpcTestTimer::maxTimeSpanForSrvCycle(0);
-
-    class Framework_RpcNoAuth_TestCase : public ::testing::Test {};
+    class Framework_RpcNoAuth2_TestCase : public ::testing::Test {};
 
     /// <summary>
     /// Tests the RPC server normal operation (responding requests), trying
     /// several combinations of protocol sequence and authentication level.
     /// </summary>
-    TEST_F(Framework_RpcNoAuth_TestCase, ServerRun_ResponseTest)
+    TEST_F(Framework_RpcNoAuth2_TestCase, ServerRun_ResponseTest)
     {
         // Ensures proper initialization/finalization of the framework
         FrameworkInstance _framework;
@@ -400,8 +433,6 @@ namespace integration_tests
 
         try
         {
-            RpcTestTimer::StartTimeCountServerSetupAndStart();
-
             // Initialize the RPC server (resource allocation takes place)
             RpcServer::Initialize(ProtocolSequence::Local, "TestClient3FD");
 
@@ -428,10 +459,9 @@ namespace integration_tests
                 &intfImplFuncTable2
             );
 
-            // Now wait for the client:
             EXPECT_EQ(STATUS_OKAY, RpcServer::Start(objects));
-            
-            RpcTestTimer::WaitSignalAndShutdown();
+            EXPECT_EQ(STATUS_OKAY, RpcServer::Wait());
+            EXPECT_EQ(STATUS_OKAY, RpcServer::Finalize());
         }
         catch (...)
         {
@@ -457,8 +487,6 @@ namespace integration_tests
 
         try
         {
-            RpcTestTimer::StartTimeCountServerSetupAndStart();
-
             // Initialize the RPC server (authn svc reg & resource allocation takes place)
             RpcServer::Initialize(
                 GetParam().protocolSequence,
@@ -489,10 +517,9 @@ namespace integration_tests
                 &intfImplFuncTable2
             );
 
-            // Now wait for the client:
             EXPECT_EQ(STATUS_OKAY, RpcServer::Start(objects));
-
-            RpcTestTimer::WaitSignalAndShutdown();
+            EXPECT_EQ(STATUS_OKAY, RpcServer::Wait());
+            EXPECT_EQ(STATUS_OKAY, RpcServer::Finalize());
         }
         catch (...)
         {
@@ -561,8 +588,6 @@ namespace integration_tests
                 GetParam().useStrongSec
             );
 
-            RpcTestTimer::StartTimeCountServerSetupAndStart();
-
             // Initialize the RPC server (resource allocation takes place)
             RpcServer::Initialize(
                 "TestClient3FD",
@@ -593,10 +618,9 @@ namespace integration_tests
                 &intfImplFuncTable2
             );
 
-            // Now wait for the client:
             EXPECT_EQ(STATUS_OKAY, RpcServer::Start(objects));
-            
-            RpcTestTimer::WaitSignalAndShutdown();
+            EXPECT_EQ(STATUS_OKAY, RpcServer::Wait());
+            EXPECT_EQ(STATUS_OKAY, RpcServer::Finalize());
         }
         catch (...)
         {

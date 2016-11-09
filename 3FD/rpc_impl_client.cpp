@@ -387,7 +387,7 @@ namespace rpc
 
             core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
         }
-        catch (core::IAppException &)
+        catch (core::IAppException &ex)
         {
             HelpFreeBindingHandle(&m_bindingHandle);
             throw core::AppException<std::runtime_error>("Failed to instantiate RPC client", ex);

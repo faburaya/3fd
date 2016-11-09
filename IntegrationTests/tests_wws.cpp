@@ -94,6 +94,7 @@ namespace integration_tests
         static std::unique_ptr<utils::Event> closeServiceRequestEvent;
 
         static std::chrono::time_point<std::chrono::system_clock> startTimeSvcSetupAndOpen;
+        static std::chrono::time_point<std::chrono::system_clock> timeCloseSvcSignalEmission;
 
         static std::chrono::milliseconds maxTimeSpanForSvcCycle;
 
@@ -104,6 +105,7 @@ namespace integration_tests
         /// </summary>
         static void SignalWebServiceClosureEvent()
         {
+            timeCloseSvcSignalEmission = std::chrono::system_clock().now();
             closeServiceRequestEvent->Signalize();
         }
 
@@ -138,14 +140,12 @@ namespace integration_tests
 
             closeServiceRequestEvent->Reset();
 
-            auto t1 = system_clock().now();
-
             if (!svc.Close())
                 return false;
 
-            auto t2 = system_clock().now();
-
-            auto closureTimeSpan = duration_cast<milliseconds>(t2 - t1);
+            auto closureTimeSpan = duration_cast<milliseconds>(
+                system_clock().now() - timeCloseSvcSignalEmission
+            );
 
             auto setupAndOpenTimeSpan = duration_cast<milliseconds>(
                 stopTimeSvcSetupAndOpen - startTimeSvcSetupAndOpen
@@ -401,6 +401,7 @@ namespace integration_tests
     std::unique_ptr<utils::Event> Framework_WWS_TestCase::closeServiceRequestEvent;
 
     std::chrono::time_point<std::chrono::system_clock> Framework_WWS_TestCase::startTimeSvcSetupAndOpen;
+    std::chrono::time_point<std::chrono::system_clock> Framework_WWS_TestCase::timeCloseSvcSignalEmission;
 
     std::chrono::milliseconds Framework_WWS_TestCase::maxTimeSpanForSvcCycle(0);
 
