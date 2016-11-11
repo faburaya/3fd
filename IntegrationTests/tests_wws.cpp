@@ -174,7 +174,16 @@ namespace integration_tests
         /// </return>
         static uint32_t GetMaxCycleTime()
         {
-            return static_cast<uint32_t> (maxTimeSpanForSvcCycle.count());
+            if (maxTimeSpanForSvcCycle.count() > 0)
+            {
+                /* In practice, measured time must be proportionally
+                augmented for adjustment (using field data), because
+                apparently the server takes longer to be available,
+                which is a little after WebServiceHost::Open returns... */
+                return static_cast<uint32_t> (maxTimeSpanForSvcCycle.count() * 4);
+            }
+            
+            return 500U;
         }
 
         /// <summary>

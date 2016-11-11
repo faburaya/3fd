@@ -2,7 +2,7 @@
 
 namespace _3fd
 {
-namespace rpc
+namespace integration_tests
 {
     const std::array<const char *, 20> objectsUuidsImpl1 =
     {
@@ -52,5 +52,5 @@ namespace rpc
         "97273BD4-45CB-47B4-B03A-6C3597EB8F86"
     };
 
-}// end of namespace rpc
+}// end of namespace integration_tests
 }// end of namespace _3fd

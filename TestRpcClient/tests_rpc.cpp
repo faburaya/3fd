@@ -144,6 +144,8 @@ namespace integration_tests
 
             auto timeout = client2.Shutdown();
 
+            /* Awaits for the setup and start of the RPC server in the
+            next test, using data measured in the server side... */
             std::this_thread::sleep_for(std::chrono::milliseconds(timeout));
         }
         catch (...)
@@ -221,6 +223,8 @@ namespace integration_tests
 
             auto timeout = client2.Shutdown();
 
+            /* Awaits for the setup and start of the RPC server in the
+            next test, using data measured in the server side... */
             std::this_thread::sleep_for(std::chrono::milliseconds(timeout));
         }
         catch (...)
@@ -244,26 +248,17 @@ namespace integration_tests
             AuthnTestOptions{ ProtocolSequence::Local, objectsUuidsImpl1[11], objectsUuidsImpl2[11], AuthenticationLevel::Privacy, AuthenticationSecurity::RequireMutualAuthn, ImpersonationLevel::Impersonate }
             */
             /*,
-            AuthnTestOptions{ ProtocolSequence::TCP, objectsUuidsImpl1[5], objectsUuidsImpl2[5], AuthenticationLevel::Integrity, AuthenticationSecurity::NTLM, ImpersonationLevel::Impersonate },
-            AuthnTestOptions{ ProtocolSequence::TCP, objectsUuidsImpl1[6], objectsUuidsImpl2[6], AuthenticationLevel::Privacy, AuthenticationSecurity::NTLM, ImpersonationLevel::Impersonate },
-            AuthnTestOptions{ ProtocolSequence::TCP, objectsUuidsImpl1[7], objectsUuidsImpl2[7], AuthenticationLevel::Integrity, AuthenticationSecurity::TryKerberos, ImpersonationLevel::Impersonate },
-            AuthnTestOptions{ ProtocolSequence::TCP, objectsUuidsImpl1[8], objectsUuidsImpl2[8], AuthenticationLevel::Privacy, AuthenticationSecurity::TryKerberos, ImpersonationLevel::Impersonate }
+            AuthnTestOptions{ ProtocolSequence::TCP, objectsUuidsImpl1[6], objectsUuidsImpl2[6], AuthenticationLevel::Integrity, AuthenticationSecurity::NTLM, ImpersonationLevel::Impersonate },
+            AuthnTestOptions{ ProtocolSequence::TCP, objectsUuidsImpl1[7], objectsUuidsImpl2[7], AuthenticationLevel::Privacy, AuthenticationSecurity::NTLM, ImpersonationLevel::Impersonate },
+            AuthnTestOptions{ ProtocolSequence::TCP, objectsUuidsImpl1[8], objectsUuidsImpl2[8], AuthenticationLevel::Integrity, AuthenticationSecurity::TryKerberos, ImpersonationLevel::Impersonate },
+            AuthnTestOptions{ ProtocolSequence::TCP, objectsUuidsImpl1[9], objectsUuidsImpl2[9], AuthenticationLevel::Privacy, AuthenticationSecurity::TryKerberos, ImpersonationLevel::Impersonate }
             */
             /*,
-            AuthnTestOptions{ ProtocolSequence::TCP, objectsUuidsImpl1[9], objectsUuidsImpl2[9], AuthenticationLevel::Integrity, AuthenticationSecurity::RequireMutualAuthn, ImpersonationLevel::Impersonate },
-            AuthnTestOptions{ ProtocolSequence::TCP, objectsUuidsImpl1[10], objectsUuidsImpl2[10], AuthenticationLevel::Privacy, AuthenticationSecurity::RequireMutualAuthn, ImpersonationLevel::Impersonate }
+            AuthnTestOptions{ ProtocolSequence::TCP, objectsUuidsImpl1[10], objectsUuidsImpl2[10], AuthenticationLevel::Integrity, AuthenticationSecurity::RequireMutualAuthn, ImpersonationLevel::Impersonate },
+            AuthnTestOptions{ ProtocolSequence::TCP, objectsUuidsImpl1[11], objectsUuidsImpl2[11], AuthenticationLevel::Privacy, AuthenticationSecurity::RequireMutualAuthn, ImpersonationLevel::Impersonate }
             */
         )
     );
-
-    // The set of options for each test template instantiation
-    struct SchannelTestOptions
-    {
-        const char *objectUUID1;
-        const char *objectUUID2;
-        AuthenticationLevel authenticationLevel;
-        bool useStrongSec;
-    };
 
     /// <summary>
     /// Test case for RPC client with SCHANNEL authentication.
@@ -322,6 +317,8 @@ namespace integration_tests
 
             auto timeout = client2.Shutdown();
 
+            /* Awaits for the setup and start of the RPC server in the
+            next test, using data measured in the server side... */
             std::this_thread::sleep_for(std::chrono::milliseconds(timeout));
         }
         catch (...)
@@ -330,17 +327,11 @@ namespace integration_tests
         }
     }
 
-    /* Implementation of test template takes care of switching
-    protocol sequences and authentication level: */
+    // Implementation of test template takes care of switching parameters:
     INSTANTIATE_TEST_CASE_P(
         SwitchProtAndAuthLevel,
         Framework_RpcSchannel_TestCase,
-        ::testing::Values(
-            SchannelTestOptions{ objectsUuidsImpl1[12], objectsUuidsImpl2[12], AuthenticationLevel::Privacy, false },
-            SchannelTestOptions{ objectsUuidsImpl1[13], objectsUuidsImpl2[13], AuthenticationLevel::Privacy, true },
-            SchannelTestOptions{ objectsUuidsImpl1[14], objectsUuidsImpl2[14], AuthenticationLevel::Integrity, false },
-            SchannelTestOptions{ objectsUuidsImpl1[15], objectsUuidsImpl2[15], AuthenticationLevel::Integrity, true }
-        )
+        paramsForSchannelTests // shared by both client & server side
     );
 
 }// end of namespace integration_tests

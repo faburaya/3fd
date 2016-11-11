@@ -36,15 +36,9 @@
     <ClInclude Include="..\TestShared\rpc_test_shared.h">
       <Filter>Shared</Filter>
     </ClInclude>
-    <ClInclude Include="calculator.wsdl.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="TestClient.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="AcmeTesting_w32_cli.c">
@@ -59,10 +53,7 @@
     <ClCompile Include="..\TestShared\rpc_test_shared.cpp">
       <Filter>Shared</Filter>
     </ClCompile>
-    <ClCompile Include="tests_wws.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="calculator.wsdl.c">
+    <ClCompile Include="TestRpcClient.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

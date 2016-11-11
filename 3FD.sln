@@ -57,7 +57,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "IntegrationTestsApp.WinRT.W
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "IntegrationTestsApp.WinRT.WindowsPhone", "IntegrationTestsApp.WinRT\IntegrationTestsApp.WinRT.WindowsPhone\IntegrationTestsApp.WinRT.WindowsPhone.vcxproj", "{CEB9F9FD-5E2A-49FB-AC14-2DEF01DC80B8}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestClient", "TestClient\TestClient.vcxproj", "{6ADF3A4B-1E22-41BA-9293-96593E6A45BE}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestRpcClient", "TestRpcClient\TestRpcClient.vcxproj", "{6ADF3A4B-1E22-41BA-9293-96593E6A45BE}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestWwsClient", "TestWwsClient\TestWwsClient.vcxproj", "{4913E097-136E-4BC4-BF8C-D3341FB1425A}"
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
@@ -291,6 +293,20 @@ Global
 		{6ADF3A4B-1E22-41BA-9293-96593E6A45BE}.Release|Win32.Build.0 = Release|Win32
 		{6ADF3A4B-1E22-41BA-9293-96593E6A45BE}.Release|x64.ActiveCfg = Release|x64
 		{6ADF3A4B-1E22-41BA-9293-96593E6A45BE}.Release|x64.Build.0 = Release|x64
+		{4913E097-136E-4BC4-BF8C-D3341FB1425A}.Debug|ARM.ActiveCfg = Debug|Win32
+		{4913E097-136E-4BC4-BF8C-D3341FB1425A}.Debug|Mixed Platforms.ActiveCfg = Debug|Win32
+		{4913E097-136E-4BC4-BF8C-D3341FB1425A}.Debug|Mixed Platforms.Build.0 = Debug|Win32
+		{4913E097-136E-4BC4-BF8C-D3341FB1425A}.Debug|Win32.ActiveCfg = Debug|Win32
+		{4913E097-136E-4BC4-BF8C-D3341FB1425A}.Debug|Win32.Build.0 = Debug|Win32
+		{4913E097-136E-4BC4-BF8C-D3341FB1425A}.Debug|x64.ActiveCfg = Debug|x64
+		{4913E097-136E-4BC4-BF8C-D3341FB1425A}.Debug|x64.Build.0 = Debug|x64
+		{4913E097-136E-4BC4-BF8C-D3341FB1425A}.Release|ARM.ActiveCfg = Release|Win32
+		{4913E097-136E-4BC4-BF8C-D3341FB1425A}.Release|Mixed Platforms.ActiveCfg = Release|Win32
+		{4913E097-136E-4BC4-BF8C-D3341FB1425A}.Release|Mixed Platforms.Build.0 = Release|Win32
+		{4913E097-136E-4BC4-BF8C-D3341FB1425A}.Release|Win32.ActiveCfg = Release|Win32
+		{4913E097-136E-4BC4-BF8C-D3341FB1425A}.Release|Win32.Build.0 = Release|Win32
+		{4913E097-136E-4BC4-BF8C-D3341FB1425A}.Release|x64.ActiveCfg = Release|x64
+		{4913E097-136E-4BC4-BF8C-D3341FB1425A}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -315,6 +331,7 @@ Global
 		{09ED5B36-D345-4D62-9F01-DC41168BCB35} = {35A12F43-25FF-406A-8CCF-B203F688A791}
 		{CEB9F9FD-5E2A-49FB-AC14-2DEF01DC80B8} = {35A12F43-25FF-406A-8CCF-B203F688A791}
 		{6ADF3A4B-1E22-41BA-9293-96593E6A45BE} = {8E00B911-43B2-49D5-9B4A-AB6E1ED097A1}
+		{4913E097-136E-4BC4-BF8C-D3341FB1425A} = {8E00B911-43B2-49D5-9B4A-AB6E1ED097A1}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		VisualSVNWorkingCopyRoot = .

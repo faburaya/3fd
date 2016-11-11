@@ -220,7 +220,7 @@ namespace integration_tests
 
             auto shutdownTimeSpan = duration_cast<milliseconds>(
                 now - startTimeForSrvShutdown
-                );
+            );
 
             if (shutdownTimeSpan > maxTimeSpanForSrvShutdown)
                 maxTimeSpanForSrvShutdown = shutdownTimeSpan;
@@ -246,12 +246,15 @@ namespace integration_tests
         /// </return>
         static uint32_t GetMaxCycleTime()
         {
-            auto maxCycleTime = static_cast<uint32_t> (
-                maxTimeSpanForSrvShutdown.count()
-                + maxTimeSpanForSrvSetupAndStart.count()
-            );
+            auto maxCycleTime =
+                maxTimeSpanForSrvShutdown.count() +
+                maxTimeSpanForSrvSetupAndStart.count();
 
-            return maxCycleTime > 0 ? maxCycleTime : 32U;
+            /* In practice, measured time must be linearly augmented
+            for adjustment (using field data), because apparently the
+            server takes longer to be available, which is a little
+            after RpcServer::Start returns... */
+            return maxCycleTime > 0 ? static_cast<uint32_t> (100 + 1.2 * maxCycleTime) : 150;
         }
     };
 
@@ -317,6 +320,58 @@ namespace integration_tests
             EXPECT_EQ(STATUS_OKAY, RpcServer::Finalize());
 
             RpcTestTimer::StopTimeCountServerShutdown();
+        }
+        catch (...)
+        {
+            RpcServer::Finalize();
+            HandleException();
+        }
+    }
+
+    class Framework_RpcNoAuth2_TestCase : public ::testing::Test {};
+
+    /// <summary>
+    /// Tests the RPC server normal operation (responding requests), trying
+    /// several combinations of protocol sequence and authentication level.
+    /// </summary>
+    TEST_F(Framework_RpcNoAuth2_TestCase, ServerRun_ResponseTest)
+    {
+        // Ensures proper initialization/finalization of the framework
+        FrameworkInstance _framework;
+
+        CALL_STACK_TRACE;
+
+        try
+        {
+            // Initialize the RPC server (resource allocation takes place)
+            RpcServer::Initialize(ProtocolSequence::Local, "TestClient3FD");
+
+            // RPC interface implementation 1:
+            AcmeTesting_v1_0_epv_t intfImplFuncTable1 = { Operate, ChangeCase, WriteOnStorage, Shutdown };
+
+            // RPC interface implementation 2:
+            AcmeTesting_v1_0_epv_t intfImplFuncTable2 = { Operate2, ChangeCase2, WriteOnStorage, Shutdown };
+
+            std::vector<RpcSrvObject> objects;
+            objects.reserve(2);
+
+            // This object will run impl 1:
+            objects.emplace_back(
+                objectsUuidsImpl1[5],
+                AcmeTesting_v1_0_s_ifspec, // this is the interface (generated from IDL)
+                &intfImplFuncTable1
+            );
+
+            // This object will run impl 2:
+            objects.emplace_back(
+                objectsUuidsImpl2[5],
+                AcmeTesting_v1_0_s_ifspec, // this is the interface (generated from IDL)
+                &intfImplFuncTable2
+            );
+
+            EXPECT_EQ(STATUS_OKAY, RpcServer::Start(objects));
+            EXPECT_EQ(STATUS_OKAY, RpcServer::Wait());
+            EXPECT_EQ(STATUS_OKAY, RpcServer::Finalize());
         }
         catch (...)
         {
@@ -418,58 +473,6 @@ namespace integration_tests
         )
     );
 
-    class Framework_RpcNoAuth2_TestCase : public ::testing::Test {};
-
-    /// <summary>
-    /// Tests the RPC server normal operation (responding requests), trying
-    /// several combinations of protocol sequence and authentication level.
-    /// </summary>
-    TEST_F(Framework_RpcNoAuth2_TestCase, ServerRun_ResponseTest)
-    {
-        // Ensures proper initialization/finalization of the framework
-        FrameworkInstance _framework;
-
-        CALL_STACK_TRACE;
-
-        try
-        {
-            // Initialize the RPC server (resource allocation takes place)
-            RpcServer::Initialize(ProtocolSequence::Local, "TestClient3FD");
-
-            // RPC interface implementation 1:
-            AcmeTesting_v1_0_epv_t intfImplFuncTable1 = { Operate, ChangeCase, WriteOnStorage, Shutdown };
-
-            // RPC interface implementation 2:
-            AcmeTesting_v1_0_epv_t intfImplFuncTable2 = { Operate2, ChangeCase2, WriteOnStorage, Shutdown };
-
-            std::vector<RpcSrvObject> objects;
-            objects.reserve(2);
-
-            // This object will run impl 1:
-            objects.emplace_back(
-                objectsUuidsImpl1[5],
-                AcmeTesting_v1_0_s_ifspec, // this is the interface (generated from IDL)
-                &intfImplFuncTable1
-            );
-
-            // This object will run impl 2:
-            objects.emplace_back(
-                objectsUuidsImpl2[5],
-                AcmeTesting_v1_0_s_ifspec, // this is the interface (generated from IDL)
-                &intfImplFuncTable2
-            );
-
-            EXPECT_EQ(STATUS_OKAY, RpcServer::Start(objects));
-            EXPECT_EQ(STATUS_OKAY, RpcServer::Wait());
-            EXPECT_EQ(STATUS_OKAY, RpcServer::Finalize());
-        }
-        catch (...)
-        {
-            RpcServer::Finalize();
-            HandleException();
-        }
-    }
-
     class Framework_RpcAuthn2_TestCase :
         public ::testing::TestWithParam<AuthnTestOptions> {};
 
@@ -555,16 +558,97 @@ namespace integration_tests
         )
     );
 
-    // The set of options for some test template instantiations
-    struct SchannelTestOptions
-    {
-        const char *objectUUID1;
-        const char *objectUUID2;
-        AuthenticationLevel authenticationLevel;
-        bool useStrongSec;
-    };
-
     class Framework_RpcSchannel_TestCase :
+        public ::testing::TestWithParam<SchannelTestOptions> {};
+
+    /// <summary>
+    /// Tests the cycle init/start/stop/resume/stop/finalize of the RPC server,
+    /// for several combinations of protocol sequence and authentication level
+    /// using Schannel SSP.
+    /// </summary>
+    TEST_P(Framework_RpcSchannel_TestCase, ServerRun_StatesCycleTest)
+    {
+        // Ensures proper initialization/finalization of the framework
+        FrameworkInstance _framework;
+
+        CALL_STACK_TRACE;
+
+        try
+        {
+            CertInfo certInfo(
+                CERT_SYSTEM_STORE_LOCAL_MACHINE,
+                "My",
+                "MySelfSignedCert4DevTestsServer",
+                GetParam().useStrongSec
+            );
+
+            // Initialize the RPC server (resource allocation takes place)
+            RpcServer::Initialize(
+                "TestClient3FD",
+                &certInfo,
+                GetParam().authenticationLevel
+            );
+
+            // RPC interface implementation 1:
+            AcmeTesting_v1_0_epv_t intfImplFuncTable1 = { Operate, ChangeCase, WriteOnStorage, Shutdown };
+
+            // RPC interface implementation 2:
+            AcmeTesting_v1_0_epv_t intfImplFuncTable2 = { Operate2, ChangeCase2, WriteOnStorage, Shutdown };
+
+            std::vector<RpcSrvObject> objects;
+            objects.reserve(2);
+
+            // This object will run impl 1:
+            objects.emplace_back(
+                GetParam().objectUUID1,
+                AcmeTesting_v1_0_s_ifspec, // this is the interface (generated from IDL)
+                &intfImplFuncTable1
+            );
+
+            // This object will run impl 2:
+            objects.emplace_back(
+                GetParam().objectUUID2,
+                AcmeTesting_v1_0_s_ifspec, // this is the interface (generated from IDL)
+                &intfImplFuncTable2
+            );
+
+            // Now cycle through the states:
+
+            EXPECT_EQ(STATUS_OKAY, RpcServer::Start(objects));
+            RpcTestTimer::StopTimeCountServerSetupAndStart();
+
+            EXPECT_EQ(STATUS_OKAY, RpcServer::Stop());
+            EXPECT_EQ(STATUS_OKAY, RpcServer::Resume());
+
+            RpcTestTimer::StartTimeCountServerShutdown();
+
+            // Upon finalization (shutdown), resources will be released:
+            EXPECT_EQ(STATUS_OKAY, RpcServer::Stop());
+            EXPECT_EQ(STATUS_OKAY, RpcServer::Finalize());
+
+            RpcTestTimer::StopTimeCountServerShutdown();
+        }
+        catch (...)
+        {
+            RpcServer::Finalize();
+            HandleException();
+        }
+    }
+
+    /* Implementation of test template takes care of switching
+    protocol sequences and authentication level: */
+    INSTANTIATE_TEST_CASE_P(
+        SwitchProtAndAuthLevel,
+        Framework_RpcSchannel_TestCase,
+        ::testing::Values(
+            SchannelTestOptions{ objectsUuidsImpl1[12], objectsUuidsImpl2[12], AuthenticationLevel::Privacy, false },
+            SchannelTestOptions{ objectsUuidsImpl1[13], objectsUuidsImpl2[13], AuthenticationLevel::Privacy, true },
+            SchannelTestOptions{ objectsUuidsImpl1[14], objectsUuidsImpl2[14], AuthenticationLevel::Integrity, false },
+            SchannelTestOptions{ objectsUuidsImpl1[15], objectsUuidsImpl2[15], AuthenticationLevel::Integrity, true }
+        )
+    );
+
+    class Framework_RpcSchannel2_TestCase :
         public ::testing::TestWithParam<SchannelTestOptions> {};
 
     /// <summary>
@@ -572,7 +656,7 @@ namespace integration_tests
     /// several combinations of protocol sequence and authentication level
     /// using Schannel SSP.
     /// </summary>
-    TEST_P(Framework_RpcSchannel_TestCase, ServerRun_Schannel_ResponseTest)
+    TEST_P(Framework_RpcSchannel2_TestCase, ServerRun_ResponseTest)
     {
         // Ensures proper initialization/finalization of the framework
         FrameworkInstance _framework;
@@ -629,18 +713,13 @@ namespace integration_tests
         }
     }
 
-    /* Implementation of test template takes care of switching
-    protocol sequences and authentication level: */
+    // Implementation of test template takes care of switching parameters:
     INSTANTIATE_TEST_CASE_P(
         SwitchProtAndAuthLevel,
-        Framework_RpcSchannel_TestCase,
-        ::testing::Values(
-            SchannelTestOptions{ objectsUuidsImpl1[12], objectsUuidsImpl2[12], AuthenticationLevel::Privacy, false },
-            SchannelTestOptions{ objectsUuidsImpl1[13], objectsUuidsImpl2[13], AuthenticationLevel::Privacy, true },
-            SchannelTestOptions{ objectsUuidsImpl1[14], objectsUuidsImpl2[14], AuthenticationLevel::Integrity, false },
-            SchannelTestOptions{ objectsUuidsImpl1[15], objectsUuidsImpl2[15], AuthenticationLevel::Integrity, true }
-        )
+        Framework_RpcSchannel2_TestCase,
+        paramsForSchannelTests // shared by both client & server side
     );
+
 }// end of namespace integration_tests
 }// end of namespace _3fd
 

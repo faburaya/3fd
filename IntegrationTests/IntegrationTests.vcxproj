@@ -107,7 +107,7 @@
     </Link>
     <PostBuildEvent>
       <Command>copy "$(ProjectDir)application.config" "$(TargetPath).3fd.config"
-copy "$(ProjectDir)calculator.wsdl" "$(TargetDir)"</Command>
+copy "$(SolutionDir)TestShared\calculator.wsdl" "$(TargetDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -127,7 +127,7 @@ copy "$(ProjectDir)calculator.wsdl" "$(TargetDir)"</Command>
     </Link>
     <PostBuildEvent>
       <Command>copy "$(ProjectDir)application.config" "$(TargetPath).3fd.config"
-copy "$(ProjectDir)calculator.wsdl" "$(TargetDir)"</Command>
+copy "$(SolutionDir)TestShared\calculator.wsdl" "$(TargetDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -151,7 +151,7 @@ copy "$(ProjectDir)calculator.wsdl" "$(TargetDir)"</Command>
     </Link>
     <PostBuildEvent>
       <Command>copy "$(ProjectDir)application.config" "$(TargetPath).3fd.config"
-copy "$(ProjectDir)calculator.wsdl" "$(TargetDir)"</Command>
+copy "$(SolutionDir)TestShared\calculator.wsdl" "$(TargetDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -175,7 +175,7 @@ copy "$(ProjectDir)calculator.wsdl" "$(TargetDir)"</Command>
     </Link>
     <PostBuildEvent>
       <Command>copy "$(ProjectDir)application.config" "$(TargetPath).3fd.config"
-copy "$(ProjectDir)calculator.wsdl" "$(TargetDir)"</Command>
+copy "$(SolutionDir)TestShared\calculator.wsdl" "$(TargetDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
