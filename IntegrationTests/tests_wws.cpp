@@ -135,7 +135,7 @@ namespace integration_tests
 
             auto stopTimeSvcSetupAndOpen = system_clock().now();
 
-            if (!closeServiceRequestEvent->WaitFor(60000))
+            if (!closeServiceRequestEvent->WaitFor(15000))
                 return false;
 
             closeServiceRequestEvent->Reset();
@@ -186,7 +186,7 @@ namespace integration_tests
             apparently the server takes much longer to be available
             than what the measures point out. It happens a little
             after WebServiceHost::Open returns... */
-            return static_cast<uint32_t> (maxTimeSpanForSvcCycle.count() + 250);
+            return static_cast<uint32_t> (maxTimeSpanForSvcCycle.count() + 50);
         }
 
         /// <summary>

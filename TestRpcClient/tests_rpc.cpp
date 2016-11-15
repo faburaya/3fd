@@ -115,7 +115,7 @@ namespace integration_tests
     /// <summary>
     /// Tests RPC client issuing requests without authentication.
     /// </summary>
-    TEST_F(Framework_RpcNoAuth_TestCase, DISABLED_ClientRun_RequestTest)
+    TEST_F(Framework_RpcNoAuth_TestCase, ClientRun_RequestTest)
     {
         // Ensures proper initialization/finalization of the framework
         FrameworkInstance _framework;
@@ -196,11 +196,11 @@ namespace integration_tests
             AcmeRpcClient client1(
                 GetParam().protocolSequence,
                 GetParam().objectUUID1,
-                "MyVirtualSpare.MyDomain.local",
+                "TARS", //"MyVirtualSpare.MyDomain.local",
                 GetParam().authenticationSecurity,
                 GetParam().authenticationLevel,
                 GetParam().impersonationLevel,
-                "Felipe@MyDomain.local"
+                "Felipe@MyDomain.local" // not used for NTLM
             );
 
             EXPECT_EQ(696.0, client1.Operate(6.0, 116.0));
@@ -209,11 +209,11 @@ namespace integration_tests
             AcmeRpcClient client2(
                 GetParam().protocolSequence,
                 GetParam().objectUUID2,
-                "MyVirtualSpare.MyDomain.local",
+                "TARS", //"MyVirtualSpare.MyDomain.local",
                 GetParam().authenticationSecurity,
                 GetParam().authenticationLevel,
                 GetParam().impersonationLevel,
-                "Felipe@MyDomain.local"
+                "Felipe@MyDomain.local" // not used for NTLM
             );
 
             EXPECT_EQ(696.0, client2.Operate(606.0, 90.0));
@@ -239,20 +239,20 @@ namespace integration_tests
         SwitchProtAndAuthLevel,
         Framework_RpcAuthn_TestCase,
         ::testing::Values(
-            /*
             AuthnTestOptions{ ProtocolSequence::Local, objectsUuidsImpl1[6], objectsUuidsImpl2[6], AuthenticationLevel::Integrity, AuthenticationSecurity::NTLM, ImpersonationLevel::Impersonate },
             AuthnTestOptions{ ProtocolSequence::Local, objectsUuidsImpl1[7], objectsUuidsImpl2[7], AuthenticationLevel::Privacy, AuthenticationSecurity::NTLM, ImpersonationLevel::Impersonate },
             AuthnTestOptions{ ProtocolSequence::Local, objectsUuidsImpl1[8], objectsUuidsImpl2[8], AuthenticationLevel::Integrity, AuthenticationSecurity::TryKerberos, ImpersonationLevel::Impersonate },
-            AuthnTestOptions{ ProtocolSequence::Local, objectsUuidsImpl1[9], objectsUuidsImpl2[9], AuthenticationLevel::Privacy, AuthenticationSecurity::TryKerberos, ImpersonationLevel::Impersonate },
+            AuthnTestOptions{ ProtocolSequence::Local, objectsUuidsImpl1[9], objectsUuidsImpl2[9], AuthenticationLevel::Privacy, AuthenticationSecurity::TryKerberos, ImpersonationLevel::Impersonate }
+            /*
             AuthnTestOptions{ ProtocolSequence::Local, objectsUuidsImpl1[10], objectsUuidsImpl2[10], AuthenticationLevel::Integrity, AuthenticationSecurity::RequireMutualAuthn, ImpersonationLevel::Impersonate },
             AuthnTestOptions{ ProtocolSequence::Local, objectsUuidsImpl1[11], objectsUuidsImpl2[11], AuthenticationLevel::Privacy, AuthenticationSecurity::RequireMutualAuthn, ImpersonationLevel::Impersonate }
-            */
             AuthnTestOptions{ ProtocolSequence::TCP, objectsUuidsImpl1[6], objectsUuidsImpl2[6], AuthenticationLevel::Integrity, AuthenticationSecurity::NTLM, ImpersonationLevel::Impersonate },
             AuthnTestOptions{ ProtocolSequence::TCP, objectsUuidsImpl1[7], objectsUuidsImpl2[7], AuthenticationLevel::Privacy, AuthenticationSecurity::NTLM, ImpersonationLevel::Impersonate },
             AuthnTestOptions{ ProtocolSequence::TCP, objectsUuidsImpl1[8], objectsUuidsImpl2[8], AuthenticationLevel::Integrity, AuthenticationSecurity::TryKerberos, ImpersonationLevel::Impersonate },
             AuthnTestOptions{ ProtocolSequence::TCP, objectsUuidsImpl1[9], objectsUuidsImpl2[9], AuthenticationLevel::Privacy, AuthenticationSecurity::TryKerberos, ImpersonationLevel::Impersonate },
             AuthnTestOptions{ ProtocolSequence::TCP, objectsUuidsImpl1[10], objectsUuidsImpl2[10], AuthenticationLevel::Integrity, AuthenticationSecurity::RequireMutualAuthn, ImpersonationLevel::Impersonate },
             AuthnTestOptions{ ProtocolSequence::TCP, objectsUuidsImpl1[11], objectsUuidsImpl2[11], AuthenticationLevel::Privacy, AuthenticationSecurity::RequireMutualAuthn, ImpersonationLevel::Impersonate }
+            */
         )
     );
 
@@ -287,13 +287,13 @@ namespace integration_tests
             CertInfo certInfo(
                 CERT_SYSTEM_STORE_LOCAL_MACHINE,
                 "My",
-                "MySelfSignedCert4DevTests",
+                "MySelfSignedCert4DevTestsClient",
                 GetParam().useStrongSec
             );
 
             AcmeRpcClient client1(
                 GetParam().objectUUID1,
-                "MyVirtualSpare.MyDomain.local",
+                "TARS", //"MyVirtualSpare.MyDomain.local",
                 certInfo,
                 GetParam().authenticationLevel
             );
@@ -303,7 +303,7 @@ namespace integration_tests
 
             AcmeRpcClient client2(
                 GetParam().objectUUID2,
-                "MyVirtualSpare.MyDomain.local",
+                "TARS", //"MyVirtualSpare.MyDomain.local",
                 certInfo,
                 GetParam().authenticationLevel
             );

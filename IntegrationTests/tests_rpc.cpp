@@ -195,7 +195,7 @@ namespace integration_tests
 
             auto setupAndStartTimeSpan = duration_cast<milliseconds>(
                 now - startTimeForSrvSetupAndStart
-                );
+            );
 
             if (setupAndStartTimeSpan > maxTimeSpanForSrvSetupAndStart)
                 maxTimeSpanForSrvSetupAndStart = setupAndStartTimeSpan;
@@ -244,7 +244,7 @@ namespace integration_tests
         /// <return>
         /// The maximum cycle time in milliseconds.
         /// </return>
-        static uint32_t GetMaxCycleTime()
+        static uint32_t GetEstimateCycleTime()
         {
             auto maxCycleTime =
                 maxTimeSpanForSrvShutdown.count() +
@@ -254,7 +254,7 @@ namespace integration_tests
             for adjustment (using field data), because apparently the
             server takes longer to be available, which is a little
             after RpcServer::Start returns... */
-            return maxCycleTime > 0 ? static_cast<uint32_t> (100 + 1.2 * maxCycleTime) : 150;
+            return static_cast<uint32_t> (50 + maxCycleTime);
         }
     };
 
@@ -268,7 +268,7 @@ namespace integration_tests
     /// Tests the cycle init/start/stop/resume/stop/finalize of the RPC server,
     /// for local RPC and without authentication security.
     /// </summary>
-    TEST(Framework_RpcNoAuth_TestCase, DISABLED_ServerRun_StatesCycleTest)
+    TEST(Framework_RpcNoAuth_TestCase, ServerRun_StatesCycleTest)
     {
         // Ensures proper initialization/finalization of the framework
         FrameworkInstance _framework;
@@ -334,7 +334,7 @@ namespace integration_tests
     /// Tests the RPC server normal operation (responding requests), trying
     /// several combinations of protocol sequence and authentication level.
     /// </summary>
-    TEST_F(Framework_RpcNoAuth2_TestCase, DISABLED_ServerRun_ResponseTest)
+    TEST_F(Framework_RpcNoAuth2_TestCase, ServerRun_ResponseTest)
     {
         // Ensures proper initialization/finalization of the framework
         FrameworkInstance _framework;
@@ -537,20 +537,20 @@ namespace integration_tests
         SwitchProtAndAuthLevel,
         Framework_RpcAuthn2_TestCase,
         ::testing::Values(
-            /*
             AuthnTestOptions{ ProtocolSequence::Local, objectsUuidsImpl1[6], objectsUuidsImpl2[6], AuthenticationLevel::Integrity },
             AuthnTestOptions{ ProtocolSequence::Local, objectsUuidsImpl1[7], objectsUuidsImpl2[7], AuthenticationLevel::Privacy },
             AuthnTestOptions{ ProtocolSequence::Local, objectsUuidsImpl1[8], objectsUuidsImpl2[8], AuthenticationLevel::Integrity },
-            AuthnTestOptions{ ProtocolSequence::Local, objectsUuidsImpl1[9], objectsUuidsImpl2[9], AuthenticationLevel::Privacy },
+            AuthnTestOptions{ ProtocolSequence::Local, objectsUuidsImpl1[9], objectsUuidsImpl2[9], AuthenticationLevel::Privacy }
+            /*
             AuthnTestOptions{ ProtocolSequence::Local, objectsUuidsImpl1[10], objectsUuidsImpl2[10], AuthenticationLevel::Integrity },
-            AuthnTestOptions{ ProtocolSequence::Local, objectsUuidsImpl1[11], objectsUuidsImpl2[11], AuthenticationLevel::Privacy }
-            */
+            AuthnTestOptions{ ProtocolSequence::Local, objectsUuidsImpl1[11], objectsUuidsImpl2[11], AuthenticationLevel::Privacy },
             AuthnTestOptions{ ProtocolSequence::TCP, objectsUuidsImpl1[6], objectsUuidsImpl2[6], AuthenticationLevel::Integrity },
             AuthnTestOptions{ ProtocolSequence::TCP, objectsUuidsImpl1[7], objectsUuidsImpl2[7], AuthenticationLevel::Privacy },
             AuthnTestOptions{ ProtocolSequence::TCP, objectsUuidsImpl1[8], objectsUuidsImpl2[8], AuthenticationLevel::Integrity },
             AuthnTestOptions{ ProtocolSequence::TCP, objectsUuidsImpl1[9], objectsUuidsImpl2[9], AuthenticationLevel::Privacy },
             AuthnTestOptions{ ProtocolSequence::TCP, objectsUuidsImpl1[10], objectsUuidsImpl2[10], AuthenticationLevel::Integrity },
             AuthnTestOptions{ ProtocolSequence::TCP, objectsUuidsImpl1[11], objectsUuidsImpl2[11], AuthenticationLevel::Privacy }
+            */
         )
     );
 
@@ -576,7 +576,7 @@ namespace integration_tests
             CertInfo certInfo(
                 CERT_SYSTEM_STORE_LOCAL_MACHINE,
                 "My",
-                "MySelfSignedCert4DevTests",
+                "MySelfSignedCert4DevTestsServer",
                 GetParam().useStrongSec
             );
 
@@ -666,7 +666,7 @@ namespace integration_tests
             CertInfo certInfo(
                 CERT_SYSTEM_STORE_LOCAL_MACHINE,
                 "My",
-                "MySelfSignedCert4DevTests",
+                "MySelfSignedCert4DevTestsServer",
                 GetParam().useStrongSec
             );
 
@@ -726,5 +726,5 @@ unsigned long ::Shutdown(
     /* [in] */ handle_t IDL_handle)
 {
     RpcMgmtStopServerListening(nullptr); // emits signal to stop RPC server
-    return _3fd::integration_tests::RpcTestTimer::GetMaxCycleTime();
+    return _3fd::integration_tests::RpcTestTimer::GetEstimateCycleTime();
 }

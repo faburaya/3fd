@@ -213,12 +213,7 @@ copy "$(SolutionDir)TestShared\calculator.wsdl" "$(TargetDir)"</Command>
     <ClCompile Include="tests_core.cpp" />
     <ClCompile Include="tests_gc.cpp" />
     <ClCompile Include="tests_isam.cpp" />
-    <ClCompile Include="tests_opencl.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
+    <ClCompile Include="tests_opencl.cpp" />
     <ClCompile Include="tests_rpc.cpp" />
     <ClCompile Include="tests_sqlite.cpp" />
     <ClCompile Include="tests_wws.cpp">
