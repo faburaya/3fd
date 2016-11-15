@@ -1,0 +1,20 @@
+
+                /* Creates an LDAP distinguished name (DN) for this host, to be used as ID for
+                the local computer account.
+                (According to http://msdn.microsoft.com/en-us/library/windows/desktop/ms676056,
+                DsWriteAccountSpn is allowed to register an SPN with a domain controller even
+                when not running with privileges of domain administrator, as long as the SPN is
+                registered in the local computer account and is relative to its computer name.) */
+
+                ULONG localCompDnStrSize(0UL);
+                auto rv = GetComputerObjectNameW(NameFullyQualifiedDN, nullptr, &localCompDnStrSize);
+                if (rv == FALSE && GetLastError() != ERROR_INSUFFICIENT_BUFFER)
+                {
+                    oss << "Could not retrieve DN for local computer - ";
+                    core::WWAPI::AppendDWordErrorMessage(GetLastError(), "GetComputerObjectName", oss);
+                    throw core::AppException<std::runtime_error>(oss.str());
+                }
+
+                std::unique_ptr<wchar_t[]> localCompDnCStr(new wchar_t [localCompDnStrSize]);
+                rv = GetComputerObjectNameW(NameFullyQualifiedDN, localCompDnCStr.get(), &localCompDnStrSize);
+                _ASSERTE(rv == TRUE);
