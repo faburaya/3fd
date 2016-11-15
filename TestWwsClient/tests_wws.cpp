@@ -4,6 +4,7 @@
 #include "calculator.wsdl.h"
 
 #include <vector>
+#include <thread>
 
 namespace _3fd
 {
@@ -14,7 +15,9 @@ namespace integration_tests
 
 	void HandleException();
 
-	const size_t proxyOperHeapSize(4096);
+    const size_t proxyOperHeapSize(4096);
+    const auto sleepTimeCallAttempt = std::chrono::milliseconds(500);
+    const auto numCallAttempts = static_cast<uint32_t> (15000 / sleepTimeCallAttempt.count());
 
 	/////////////////////////////////////
 	// Proxy without transport security
@@ -29,7 +32,7 @@ namespace integration_tests
 
 		CalcSvcProxyUnsecure(const SvcProxyConfig &config) :
 			WebServiceProxy(
-				"http://TARS:81/calculator",
+				"http://MyVirtualSpare:81/calculator",
 				config,
 				&CreateWSProxy<WS_HTTP_BINDING_TEMPLATE, CalcBindingUnsecure_CreateServiceProxy>
 			)
@@ -43,17 +46,18 @@ namespace integration_tests
 			double result;
 			WSHeap heap(proxyOperHeapSize);
 			WSError err;
-			HRESULT hr =
-				CalcBindingUnsecure_Add(
-					GetHandle(),
-					first,
-					second,
-					&result,
-					heap.GetHandle(),
-					nullptr, 0,
-					nullptr,
-					err.GetHandle()
-				);
+            HRESULT hr;
+
+            hr = CalcBindingUnsecure_Add(
+                GetHandle(),
+                first,
+                second,
+                &result,
+                heap.GetHandle(),
+                nullptr, 0,
+                nullptr,
+                err.GetHandle()
+            );
 
 			err.RaiseExClientNotOK(hr, "Calculator web service returned an error", heap);
 
@@ -68,17 +72,18 @@ namespace integration_tests
 			double result;
 			WSHeap heap(proxyOperHeapSize);
 			WSError err;
-			HRESULT hr =
-				CalcBindingUnsecure_Multiply(
-					GetHandle(),
-					first,
-					second,
-					&result,
-					heap.GetHandle(),
-					nullptr, 0,
-					nullptr,
-					err.GetHandle()
-				);
+            HRESULT hr;
+
+            hr = CalcBindingUnsecure_Multiply(
+                GetHandle(),
+                first,
+                second,
+                &result,
+                heap.GetHandle(),
+                nullptr, 0,
+                nullptr,
+                err.GetHandle()
+            );
 
 			err.RaiseExClientNotOK(hr, "Calculator web service returned an error", heap);
 
@@ -94,7 +99,7 @@ namespace integration_tests
 			auto asyncOp = CreateAsyncOperation(proxyOperHeapSize);
 			auto asyncContext = asyncOp.GetContext();
 				
-			HRESULT hr = // this is immediately returned HRESULT code
+			HRESULT hr = // this immediately returns an HRESULT code
 				CalcBindingUnsecure_Multiply(
 					GetHandle(),
 					first,
@@ -118,15 +123,16 @@ namespace integration_tests
             int64_t result;
             WSHeap heap(proxyOperHeapSize);
             WSError err;
-            HRESULT hr =
-                CalcBindingUnsecure_CloseService(
-                    GetHandle(),
-                    &result,
-                    heap.GetHandle(),
-                    nullptr, 0,
-                    nullptr,
-                    err.GetHandle()
-                );
+            HRESULT hr;
+
+            hr = CalcBindingUnsecure_CloseService(
+                GetHandle(),
+                &result,
+                heap.GetHandle(),
+                nullptr, 0,
+                nullptr,
+                err.GetHandle()
+            );
 
             err.RaiseExClientNotOK(hr, "Calculator web service returned an error", heap);
 
@@ -211,6 +217,10 @@ namespace integration_tests
 			// Fire the asynchronous requests:
 			for (int idx = 0; idx < maxAsyncCalls; ++idx)
 			{
+                /* wait a little before making the request, otherwise
+                the server could refuse them while it is busy */
+                std::this_thread::sleep_for(std::chrono::milliseconds(150));
+
 				asyncOps.push_back(
 					client.MultiplyAsync(111.0, 6.0, results[idx])
 				);
@@ -257,7 +267,7 @@ namespace integration_tests
 		// Ctor for proxy without client certificate
 		CalcSvcProxySSL(const SvcProxyConfig &config) :
 			WebServiceProxy(
-				"https://TARS:8989/calculator",
+				"https://MyVirtualSpare:8989/calculator",
 				config,
 				&CreateWSProxy<WS_HTTP_SSL_BINDING_TEMPLATE, CalcBindingSSL_CreateServiceProxy>
 			)
@@ -266,7 +276,7 @@ namespace integration_tests
 		// Ctor for proxy using a client certificate
 		CalcSvcProxySSL(const SvcProxyConfig &config, const SvcProxyCertInfo &certInfo) :
 			WebServiceProxy(
-				"https://TARS:8989/calculator",
+				"https://MyVirtualSpare:8989/calculator",
 				config,
 				certInfo,
 				CalcBindingSSL_CreateServiceProxy
@@ -280,17 +290,18 @@ namespace integration_tests
 			double result;
 			WSHeap heap(proxyOperHeapSize);
 			WSError err;
-			HRESULT hr =
-				CalcBindingSSL_Add(
-					GetHandle(),
-					first,
-					second,
-					&result,
-					heap.GetHandle(),
-					nullptr, 0,
-					nullptr,
-					err.GetHandle()
-				);
+            HRESULT hr;
+
+            hr = CalcBindingSSL_Add(
+                GetHandle(),
+                first,
+                second,
+                &result,
+                heap.GetHandle(),
+                nullptr, 0,
+                nullptr,
+                err.GetHandle()
+            );
 
 			err.RaiseExClientNotOK(hr, "Calculator web service returned an error", heap);
 
@@ -304,17 +315,18 @@ namespace integration_tests
 			double result;
 			WSHeap heap(proxyOperHeapSize);
 			WSError err;
-			HRESULT hr =
-				CalcBindingSSL_Multiply(
-					GetHandle(),
-					first,
-					second,
-					&result,
-					heap.GetHandle(),
-					nullptr, 0,
-					nullptr,
-					err.GetHandle()
-				);
+            HRESULT hr;
+
+            hr = CalcBindingSSL_Multiply(
+                GetHandle(),
+                first,
+                second,
+                &result,
+                heap.GetHandle(),
+                nullptr, 0,
+                nullptr,
+                err.GetHandle()
+            );
 
 			err.RaiseExClientNotOK(hr, "Calculator web service returned an error", heap);
 
@@ -330,7 +342,7 @@ namespace integration_tests
 			auto asyncOp = CreateAsyncOperation(proxyOperHeapSize);
 			auto asyncContext = asyncOp.GetContext();
 
-			HRESULT hr = // this is immediately returned HRESULT code
+			HRESULT hr = // this immediately returns an HRESULT code
 				CalcBindingSSL_Multiply(
 					GetHandle(),
 					first,
@@ -354,15 +366,16 @@ namespace integration_tests
             int64_t result;
             WSHeap heap(proxyOperHeapSize);
             WSError err;
-            HRESULT hr =
-                CalcBindingSSL_CloseService(
-                    GetHandle(),
-                    &result,
-                    heap.GetHandle(),
-                    nullptr, 0,
-                    nullptr,
-                    err.GetHandle()
-                );
+            HRESULT hr;
+
+            hr = CalcBindingSSL_CloseService(
+                GetHandle(),
+                &result,
+                heap.GetHandle(),
+                nullptr, 0,
+                nullptr,
+                err.GetHandle()
+            );
 
             err.RaiseExClientNotOK(hr, "Calculator web service returned an error", heap);
 
@@ -371,7 +384,7 @@ namespace integration_tests
 	};
 
 	// Thumbprint of client side certificate for transport security
-	const char *clientCertificateThumbprint = "b4ca5fb6227dca20cb6842bfb02e04a772dbbb12";
+	const char *clientCertificateThumbprint = "173ca3539d60540c73e33aa75c4d048b929c5ec1";
 
 	/// <summary>
 	/// Tests synchronous web service access
@@ -390,6 +403,10 @@ namespace integration_tests
 			SvcProxyConfig proxyCfg;
 			CalcSvcProxySSL client(proxyCfg);
 			client.Open();
+
+            /* Wait some extra time for the web service to become available. It seems
+            that when transport security is on the play, it takes more time... */
+            std::this_thread::sleep_for(std::chrono::seconds(5));
 
 			for (int count = 0; count < 10; ++count)
 			{
@@ -430,6 +447,10 @@ namespace integration_tests
 			CalcSvcProxySSL client(proxyCfg);
 			client.Open();
 
+            /* Wait some extra time for the web service to become available. It seems
+            that when transport security is on the play it might take A LOT of time... */
+            std::this_thread::sleep_for(std::chrono::seconds(5));
+
 			const int maxAsyncCalls = 5;
 
 			std::vector<double> results(maxAsyncCalls);
@@ -439,6 +460,10 @@ namespace integration_tests
 			// Fire the asynchronous requests:
 			for (int idx = 0; idx < maxAsyncCalls; ++idx)
 			{
+                /* wait a little before making the request, otherwise
+                the server could refuse them while it is busy */
+                std::this_thread::sleep_for(std::chrono::milliseconds(150));
+
 				asyncOps.push_back(
 					client.MultiplyAsync(111.0, 6.0, results[idx])
 				);
@@ -497,6 +522,10 @@ namespace integration_tests
 			CalcSvcProxySSL client(proxyCfg, proxyCertInfo);
 			client.Open();
 
+            /* Wait some extra time for the web service to become available. It seems
+            that when transport security is on the play it might take A LOT of time... */
+            std::this_thread::sleep_for(std::chrono::seconds(5));
+
 			for (int count = 0; count < 10; ++count)
 			{
 				EXPECT_EQ(666.0, client.Add(606.0, 60.0));
@@ -544,6 +573,10 @@ namespace integration_tests
 			CalcSvcProxySSL client(proxyCfg, proxyCertInfo);
 			client.Open();
 
+            /* Wait some extra time for the web service to become available. It seems
+            that when transport security is on the play it might take A LOT of time... */
+            std::this_thread::sleep_for(std::chrono::seconds(5));
+
 			const int maxAsyncCalls = 5;
 
 			std::vector<double> results(maxAsyncCalls);
@@ -553,6 +586,10 @@ namespace integration_tests
 			// Fire the asynchronous requests:
 			for (int idx = 0; idx < maxAsyncCalls; ++idx)
 			{
+                /* wait a little before making the request, otherwise
+                the server could refuse them while it is busy */
+                std::this_thread::sleep_for(std::chrono::milliseconds(150));
+
 				asyncOps.push_back(
 					client.MultiplyAsync(111.0, 6.0, results[idx])
 				);
@@ -595,7 +632,7 @@ namespace integration_tests
         // Ctor for proxy using a client certificate
         CalcSvcProxyHeaderAuthSSL(const SvcProxyConfig &config, const SvcProxyCertInfo &certInfo) :
             WebServiceProxy(
-                "https://TARS:8888/calculator",
+                "https://MyVirtualSpare:8888/calculator",
                 config,
                 certInfo,
                 CalcBindingHeaderAuthSSL_CreateServiceProxy
@@ -609,17 +646,18 @@ namespace integration_tests
             double result;
             WSHeap heap(proxyOperHeapSize);
             WSError err;
-            HRESULT hr =
-                CalcBindingHeaderAuthSSL_Add(
-                    GetHandle(),
-                    first,
-                    second,
-                    &result,
-                    heap.GetHandle(),
-                    nullptr, 0,
-                    nullptr,
-                    err.GetHandle()
-                );
+            HRESULT hr;
+
+            hr = CalcBindingHeaderAuthSSL_Add(
+                GetHandle(),
+                first,
+                second,
+                &result,
+                heap.GetHandle(),
+                nullptr, 0,
+                nullptr,
+                err.GetHandle()
+            );
 
             err.RaiseExClientNotOK(hr, "Calculator web service returned an error", heap);
 
@@ -633,17 +671,18 @@ namespace integration_tests
             double result;
             WSHeap heap(proxyOperHeapSize);
             WSError err;
-            HRESULT hr =
-                CalcBindingHeaderAuthSSL_Multiply(
-                    GetHandle(),
-                    first,
-                    second,
-                    &result,
-                    heap.GetHandle(),
-                    nullptr, 0,
-                    nullptr,
-                    err.GetHandle()
-                );
+            HRESULT hr;
+
+            hr = CalcBindingHeaderAuthSSL_Multiply(
+                GetHandle(),
+                first,
+                second,
+                &result,
+                heap.GetHandle(),
+                nullptr, 0,
+                nullptr,
+                err.GetHandle()
+            );
 
             err.RaiseExClientNotOK(hr, "Calculator web service returned an error", heap);
 
@@ -659,7 +698,7 @@ namespace integration_tests
             auto asyncOp = CreateAsyncOperation(proxyOperHeapSize);
             auto asyncContext = asyncOp.GetContext();
 
-            HRESULT hr = // this is immediately returned HRESULT code
+            HRESULT hr = // this immediately returns an HRESULT code
                 CalcBindingHeaderAuthSSL_Multiply(
                     GetHandle(),
                     first,
@@ -683,15 +722,16 @@ namespace integration_tests
             int64_t result;
             WSHeap heap(proxyOperHeapSize);
             WSError err;
-            HRESULT hr =
-                CalcBindingHeaderAuthSSL_CloseService(
-                    GetHandle(),
-                    &result,
-                    heap.GetHandle(),
-                    nullptr, 0,
-                    nullptr,
-                    err.GetHandle()
-                );
+            HRESULT hr;
+
+            hr = CalcBindingHeaderAuthSSL_CloseService(
+                GetHandle(),
+                &result,
+                heap.GetHandle(),
+                nullptr, 0,
+                nullptr,
+                err.GetHandle()
+            );
 
             err.RaiseExClientNotOK(hr, "Calculator web service returned an error", heap);
 
@@ -724,6 +764,10 @@ namespace integration_tests
             SvcProxyConfig proxyCfg;
             CalcSvcProxyHeaderAuthSSL client(proxyCfg, proxyCertInfo);
             client.Open();
+
+            /* Wait some extra time for the web service to become available. It seems
+            that when transport security is on the play it might take A LOT of time... */
+            std::this_thread::sleep_for(std::chrono::seconds(5));
 
             for (int count = 0; count < 10; ++count)
             {
@@ -772,6 +816,10 @@ namespace integration_tests
             CalcSvcProxyHeaderAuthSSL client(proxyCfg, proxyCertInfo);
             client.Open();
 
+            /* Wait some extra time for the web service to become available. It seems
+            that when transport security is on the play it might take A LOT of time... */
+            std::this_thread::sleep_for(std::chrono::seconds(5));
+
             const int maxAsyncCalls = 5;
 
             std::vector<double> results(maxAsyncCalls);
@@ -781,6 +829,10 @@ namespace integration_tests
             // Fire the asynchronous requests:
             for (int idx = 0; idx < maxAsyncCalls; ++idx)
             {
+                /* wait a little before making the request, otherwise
+                the server could refuse them while it is busy */
+                std::this_thread::sleep_for(std::chrono::milliseconds(150));
+
                 asyncOps.push_back(
                     client.MultiplyAsync(111.0, 6.0, results[idx])
                 );
@@ -825,6 +877,10 @@ namespace integration_tests
 
 		try
 		{
+            /* Wait some extra time for the web service to become available. It seems
+            that when transport security is on the play it might take A LOT of time... */
+            std::this_thread::sleep_for(std::chrono::seconds(5));
+
 			SvcProxyConfig proxyCfg; // proxy configuration with default values
 
             // Create a proxy (client) without transport security:
@@ -908,6 +964,10 @@ namespace integration_tests
 
 		try
 		{
+            /* Wait some extra time for the web service to become available. It seems
+            that when transport security is on the play it might take A LOT of time... */
+            std::this_thread::sleep_for(std::chrono::seconds(5));
+
 			SvcProxyConfig proxyCfg; // proxy configuration with default values
 
             // Create a proxy without transport security:

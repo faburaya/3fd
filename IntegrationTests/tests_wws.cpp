@@ -135,10 +135,15 @@ namespace integration_tests
 
             auto stopTimeSvcSetupAndOpen = system_clock().now();
 
-            if (!closeServiceRequestEvent->WaitFor(10000))
+            if (!closeServiceRequestEvent->WaitFor(60000))
                 return false;
 
             closeServiceRequestEvent->Reset();
+
+            /* Wait a little for the client to close its proxy. Otherwise, tests
+            have shown that the proxy will fail due to a connection "abnormally
+            terminated". */
+            std::this_thread::sleep_for(std::chrono::milliseconds(8));
 
             if (!svc.Close())
                 return false;
@@ -166,24 +171,22 @@ namespace integration_tests
         }
 
         /// <summary>
-        /// Retrieves the maximum closure time for the
-        /// web service host registered so far.
+        /// Retrieves the amount of time expected to last
+        /// a full cycle in server of close-setup-open, based
+        /// on the maximum closure time for the web service
+        /// host registered so far.
         /// </summary>
         /// <return>
         /// Retrieves the maximum closure time in milliseconds.
         /// </return>
-        static uint32_t GetMaxCycleTime()
+        static uint32_t GetEstimateCycleTime()
         {
-            if (maxTimeSpanForSvcCycle.count() > 0)
-            {
-                /* In practice, measured time must be proportionally
-                augmented for adjustment (using field data), because
-                apparently the server takes longer to be available,
-                which is a little after WebServiceHost::Open returns... */
-                return static_cast<uint32_t> (maxTimeSpanForSvcCycle.count() * 4);
-            }
-            
-            return 500U;
+            /* In practice, measured time must be linearly
+            augmented for adjustment (using field data), because
+            apparently the server takes much longer to be available
+            than what the measures point out. It happens a little
+            after WebServiceHost::Open returns... */
+            return static_cast<uint32_t> (maxTimeSpanForSvcCycle.count() + 250);
         }
 
         /// <summary>
@@ -448,7 +451,7 @@ namespace integration_tests
         _In_ WS_ERROR *wsErrorHandle)
     {
         Framework_WWS_TestCase::SignalWebServiceClosureEvent();
-        *result = Framework_WWS_TestCase::GetMaxCycleTime();
+        *result = Framework_WWS_TestCase::GetEstimateCycleTime();
         return S_OK;
     }
 

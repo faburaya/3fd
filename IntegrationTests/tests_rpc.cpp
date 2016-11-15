@@ -268,7 +268,7 @@ namespace integration_tests
     /// Tests the cycle init/start/stop/resume/stop/finalize of the RPC server,
     /// for local RPC and without authentication security.
     /// </summary>
-    TEST(Framework_RpcNoAuth_TestCase, ServerRun_StatesCycleTest)
+    TEST(Framework_RpcNoAuth_TestCase, DISABLED_ServerRun_StatesCycleTest)
     {
         // Ensures proper initialization/finalization of the framework
         FrameworkInstance _framework;
@@ -334,7 +334,7 @@ namespace integration_tests
     /// Tests the RPC server normal operation (responding requests), trying
     /// several combinations of protocol sequence and authentication level.
     /// </summary>
-    TEST_F(Framework_RpcNoAuth2_TestCase, ServerRun_ResponseTest)
+    TEST_F(Framework_RpcNoAuth2_TestCase, DISABLED_ServerRun_ResponseTest)
     {
         // Ensures proper initialization/finalization of the framework
         FrameworkInstance _framework;
@@ -537,24 +537,20 @@ namespace integration_tests
         SwitchProtAndAuthLevel,
         Framework_RpcAuthn2_TestCase,
         ::testing::Values(
+            /*
             AuthnTestOptions{ ProtocolSequence::Local, objectsUuidsImpl1[6], objectsUuidsImpl2[6], AuthenticationLevel::Integrity },
             AuthnTestOptions{ ProtocolSequence::Local, objectsUuidsImpl1[7], objectsUuidsImpl2[7], AuthenticationLevel::Privacy },
             AuthnTestOptions{ ProtocolSequence::Local, objectsUuidsImpl1[8], objectsUuidsImpl2[8], AuthenticationLevel::Integrity },
-            AuthnTestOptions{ ProtocolSequence::Local, objectsUuidsImpl1[9], objectsUuidsImpl2[9], AuthenticationLevel::Privacy }
-            /*,
+            AuthnTestOptions{ ProtocolSequence::Local, objectsUuidsImpl1[9], objectsUuidsImpl2[9], AuthenticationLevel::Privacy },
             AuthnTestOptions{ ProtocolSequence::Local, objectsUuidsImpl1[10], objectsUuidsImpl2[10], AuthenticationLevel::Integrity },
-            AuthnTestOptions{ ProtocolSequence::Local, objectsUuidsImpl1[11], objectsUuidsImpl2[11], AuthenticationLevel::Privacy },
+            AuthnTestOptions{ ProtocolSequence::Local, objectsUuidsImpl1[11], objectsUuidsImpl2[11], AuthenticationLevel::Privacy }
             */
-            /*
             AuthnTestOptions{ ProtocolSequence::TCP, objectsUuidsImpl1[6], objectsUuidsImpl2[6], AuthenticationLevel::Integrity },
             AuthnTestOptions{ ProtocolSequence::TCP, objectsUuidsImpl1[7], objectsUuidsImpl2[7], AuthenticationLevel::Privacy },
             AuthnTestOptions{ ProtocolSequence::TCP, objectsUuidsImpl1[8], objectsUuidsImpl2[8], AuthenticationLevel::Integrity },
-            AuthnTestOptions{ ProtocolSequence::TCP, objectsUuidsImpl1[9], objectsUuidsImpl2[9], AuthenticationLevel::Privacy }
-            */
-            /*,
+            AuthnTestOptions{ ProtocolSequence::TCP, objectsUuidsImpl1[9], objectsUuidsImpl2[9], AuthenticationLevel::Privacy },
             AuthnTestOptions{ ProtocolSequence::TCP, objectsUuidsImpl1[10], objectsUuidsImpl2[10], AuthenticationLevel::Integrity },
             AuthnTestOptions{ ProtocolSequence::TCP, objectsUuidsImpl1[11], objectsUuidsImpl2[11], AuthenticationLevel::Privacy }
-            */
         )
     );
 
@@ -575,10 +571,12 @@ namespace integration_tests
 
         try
         {
+            RpcTestTimer::StartTimeCountServerSetupAndStart();
+
             CertInfo certInfo(
                 CERT_SYSTEM_STORE_LOCAL_MACHINE,
                 "My",
-                "MySelfSignedCert4DevTestsServer",
+                "MySelfSignedCert4DevTests",
                 GetParam().useStrongSec
             );
 
@@ -668,7 +666,7 @@ namespace integration_tests
             CertInfo certInfo(
                 CERT_SYSTEM_STORE_LOCAL_MACHINE,
                 "My",
-                "MySelfSignedCert4DevTestsServer",
+                "MySelfSignedCert4DevTests",
                 GetParam().useStrongSec
             );
 

@@ -82,7 +82,6 @@ namespace wws
         bool m_allowRelease;
 
         void Initialize();
-        void Reset();
 
     public:
 
@@ -125,6 +124,8 @@ namespace wws
             WSHeap &heap);
 
         WS_ERROR *GetHandle();
+
+        void Reset();
     };
 
 	/// <summary>

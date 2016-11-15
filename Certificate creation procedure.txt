@@ -4,28 +4,50 @@
 
 (1) In the Visual Studio developer prompt, type:
 
-makecert -pe -n "CN=Certification Authority for Development" -ss My -sr LocalMachine -a sha256 -r CertAuth4Dev.cer
+makecert -pe -n "CN=Certification Authority for Development" -cy authority -ss root -sr LocalMachine -a sha256 -r CertAuth4Dev.cer
 
-This creates a certification authority capable of issuing certificates.
+This creates a certification authority and install it under "Trusted Root Certification Authorities\Certificates" (in management console).
 
 (2) Then, use the new CA to create a new certificate for your local machine. Notice you must use your computer name in the command below:
 
-makecert -pe -n "CN=MyComputerName" -ss My -sr LocalMachine -a sha256 -in "Certification Authority for Development" -is My -ir LocalMachine SignedByCA4Dev.cer
+[In server machine]
 
-(3) In the management console (mmc.exe), use the snap-in for certificate management to look for the certificate you have just created. The thumbprint is the hash you will use in the command below. This command will assign the new certificate to the endpoint localhost:8989. The application ID can be any GUID.
+makecert -pe -n "CN=MyComputerName" -ss My -sr LocalMachine -a sha256 -in "Certification Authority for Development" -is root -ir LocalMachine -eku 1.3.6.1.5.5.7.3.1 SignedByCA4Dev.cer
 
-netsh http add sslcert ipport=0.0.0.0:8989 certhash=b4ca5fb6227dca20cb6842bfb02e04a772dbbb12 appid={04EBD759-F3FF-4992-8D02-C1BFDB027A58}
+[In client machine]
 
-Still in the management console, move the CA to "Trusted Root Certification Authorities\Certificates".
+makecert -pe -n "CN=MyComputerName" -ss My -sr LocalMachine -a sha256 -in "Certification Authority for Development" -is root -ir LocalMachine -eku 1.3.6.1.5.5.7.3.2 SignedByCA4Dev.cer
+
+(In a development environment confined within a single box, you can choose to have only one certificate for both client and server authentication, hence eliminating the "-eku" option.)
+
+Because both client and server must rely in the same certificate CA, when you create the CA in one box, you must export the certificate to a file (including the private key) and import it into the other box. This way, the certificates create in both boxes will have been issued by a common trusted CA.
+
+(3) SERVER ONLY - In the management console (mmc.exe), use the snap-in for certificate management to look for the certificate you have just created. The thumbprint is the hash you will use in the command below. These commands will assign the new certificate to the endpoints SomeName:8888 and SomeName:8989:
+
+netsh http add sslcert ipport=0.0.0.0:8888 certhash=8f43288ad272f3103b6fb1428485ea3014c0bcfe appid={04EBD759-F3FF-4992-8D02-C1BFDB027A58} clientcertnegotiation=enable
+
+netsh http add sslcert ipport=0.0.0.0:8989 certhash=8f43288ad272f3103b6fb1428485ea3014c0bcfe appid={0670F436-50EA-4B8A-B62A-02EF8B39F9C9} clientcertnegotiation=enable
+
+(The application ID can be any GUID.)
 
 You are done!
 
-////////////////////////////////
-// Alternative for RPC module //
-////////////////////////////////
+//////////////////////////////////////////////////////////
+// How to issue a certificate for testing of RPC module //
+//////////////////////////////////////////////////////////
 
-In Powershell prompt, elevated with admin priviledges:
+The following procedure requires Windows 8.1 and later.
 
-New-SelfSignedCertificate -Type SSLServerAuthentication -Subject "CN=MySelfSignedCert4DevTestsClient" -Provider "Microsoft Strong Cryptographic Provider" -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.2","2.5.29.17={text}upn=felipe.aburaya@hotmail.com") -KeyUsage DataEncipherment -KeyAlgorithm RSA -KeyLength 2048 -CertStoreLocation "Cert:\LocalMachine\My" -NotAfter $(get-date -year 2026)
+In Powershell prompt elevated with admin privileges:
 
-New-SelfSignedCertificate -Type SSLServerAuthentication -Subject "CN=MySelfSignedCert4DevTestsServer" -Provider "Microsoft Strong Cryptographic Provider" -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.1","2.5.29.17={text}upn=felipe.aburaya@hotmail.com") -KeyUsage DataEncipherment -KeyAlgorithm RSA -KeyLength 2048 -CertStoreLocation "Cert:\LocalMachine\My" -NotAfter $(get-date -year 2026)
+[Server machine]
+
+New-SelfSignedCertificate -Type SSLServerAuthentication -Subject "CN=MySelfSignedCert4DevTestsClient" -Provider "Microsoft Strong Cryptographic Provider" -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.2","2.5.29.17={text}upn=felipe.aburaya@hotmail.com") -KeyUsage DataEncipherment -KeyAlgorithm RSA -KeyExportPolicy ExportableEncrypted -KeyLength 2048 -CertStoreLocation "Cert:\LocalMachine\My" -NotAfter $(get-date -year 2026)
+
+[Client machine]
+
+New-SelfSignedCertificate -Type SSLServerAuthentication -Subject "CN=MySelfSignedCert4DevTestsServer" -Provider "Microsoft Strong Cryptographic Provider" -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.1","2.5.29.17={text}upn=felipe.aburaya@hotmail.com") -KeyUsage DataEncipherment -KeyAlgorithm RSA -KeyExportPolicy ExportableEncrypted -KeyLength 2048 -CertStoreLocation "Cert:\LocalMachine\My" -NotAfter $(get-date -year 2026)
+
+In case you are running the tests in an older Windows version, you will need to find a Win8.1+ box to generate a single certificate with the command below, than you can export it to a pfx file (including the private key) and import in your test machine(s):
+
+New-SelfSignedCertificate -Type SSLServerAuthentication -Subject "CN=MySelfSignedCert4DevTests" -Provider "Microsoft Strong Cryptographic Provider" -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.2,1.3.6.1.5.5.7.3.1","2.5.29.17={text}upn=felipe.aburaya@hotmail.com") -KeyUsage DataEncipherment -KeyAlgorithm RSA -KeyExportPolicy ExportableEncrypted -KeyLength 2048 -CertStoreLocation "Cert:\LocalMachine\My" -NotAfter $(get-date -year 2026)

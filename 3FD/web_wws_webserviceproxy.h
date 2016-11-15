@@ -18,14 +18,16 @@ namespace wws
 
 		unsigned long
 			timeoutDnsResolve, // limits the amount of time (in milliseconds) that will be spent resolving the DNS name
+            timeoutConnect, // limits the amount of time (in milliseconds) that will be spent to connect to the HTTP server
 			timeoutSend, // limits the amount of time (in milliseconds) that will be spent sending the HTTP headers and the bytes of the message
 			timeoutReceive, // limits the amount of time (in milliseconds) that will be spent receiving the the bytes of the message
 			timeoutCall, // The maximum amount of time in milliseconds for a call to remain pending.
-			timeoutClose; /* The amount of time in milliseconds the service proxy will wait for the pending calls
-								to complete. Once the timeout expires, the service proxy will abort itself. */
+			timeoutClose; /* The amount of time in milliseconds the service proxy will wait for the pending
+							 calls to complete. Once the timeout expires, the service proxy will abort itself. */
 		SvcProxyConfig() : 
 			reservedMemory(1024),
 			timeoutDnsResolve(60000),
+            timeoutConnect(15000),
 			timeoutSend(15000),
 			timeoutReceive(15000),
 			timeoutCall(15000),

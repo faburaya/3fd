@@ -46,7 +46,7 @@ namespace wws
 	static WS_CHANNEL_PROPERTIES PrepareChannelProperties(const SvcProxyConfig &config, WSHeap &heap)
 	{
 		WS_CHANNEL_PROPERTIES channel;
-		channel.propertyCount = 3;
+		channel.propertyCount = 4;
 		channel.properties = heap.Alloc<WS_CHANNEL_PROPERTY>(channel.propertyCount);
 
 		size_t idxProp = 0;
@@ -56,6 +56,13 @@ namespace wws
 				WS_HEAP_NEW(heap, decltype(config.timeoutDnsResolve), (config.timeoutDnsResolve)),
 				sizeof config.timeoutDnsResolve
 			};
+
+        channel.properties[idxProp++] =
+            WS_CHANNEL_PROPERTY {
+                WS_CHANNEL_PROPERTY_CONNECT_TIMEOUT,
+                WS_HEAP_NEW(heap, decltype(config.timeoutConnect), (config.timeoutConnect)),
+                sizeof config.timeoutConnect
+            };
 
 		channel.properties[idxProp++] =
 			WS_CHANNEL_PROPERTY {

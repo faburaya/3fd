@@ -82,7 +82,7 @@ namespace wws
 		/// Sets default values for configuration, except mapping of bindings to callbacks.
 		/// </summary>
 		SvcEndpointsConfig() : 
-			maxAcceptingChannels(1),
+			maxAcceptingChannels(2),
 			maxConcurrency(1),
 			timeoutSend(15000),
 			timeoutReceive(15000),
