@@ -216,11 +216,9 @@ namespace _3fd
 				settings.framework.opencl.maxSourceCodeLineLength = config->getInt("framework.opencl.maxSourceCodeLineLength", 128);
 				settings.framework.opencl.maxBuildLogSize = config->getInt("framework.opencl.maxBuildLogSize", 5120);
 #	endif
-
 #	ifdef _3FD_ESENT_SUPPORT
 				settings.framework.isam.useWindowsFileCache = config->getBool("framework.isam.useWindowsFileCache", true);
 #	endif
-
 			}
 			catch (std::system_error &ex)
 			{
@@ -355,6 +353,10 @@ namespace _3fd
 				settings.framework.gc.sptrObjectsHashTable.initialSizeLog2 = GetInteger(node, L"./initialSizeLog2", 8);
 				settings.framework.gc.sptrObjectsHashTable.loadFactorThreshold = GetFloat(node, L"./loadFactorThreshold", 0.7F);
 			}
+            catch (core::IAppException &)
+            {
+                throw; // forward exceptions known to have been already handled
+            }
 			catch (Platform::Exception ^ex)
 			{
 				ostringstream oss;

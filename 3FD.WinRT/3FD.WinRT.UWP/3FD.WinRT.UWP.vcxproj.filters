@@ -1,0 +1,219 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="core">
+      <UniqueIdentifier>{f96e0896-01b4-4c7e-abd7-900a188be107}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GC">
+      <UniqueIdentifier>{127ea4fd-ba9e-4f3f-ad03-4f5b251f708d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="pch">
+      <UniqueIdentifier>{b516adf8-6dab-4c65-b3d4-9c5a0a060c56}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="SQLite">
+      <UniqueIdentifier>{ce26fe85-a19e-4a84-a0f2-673923402439}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="SQLite\sqlite3">
+      <UniqueIdentifier>{86475f07-dd93-4583-9234-ac573fbba25b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Utils">
+      <UniqueIdentifier>{fbfda489-fa19-422f-97db-c90830a30e66}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ISAM">
+      <UniqueIdentifier>{caae35e4-4acc-451c-b8f3-cff4cfee6afa}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\3FD\callstacktracer.cpp">
+      <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\3FD\configuration.cpp">
+      <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\3FD\dependencies.cpp">
+      <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\3FD\exceptions.cpp">
+      <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\3FD\logger.cpp">
+      <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\3FD\runtime.cpp">
+      <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\3FD.WinRT.Shared\logger_winrt.cpp">
+      <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\3FD\gc_addresseshashtable.cpp">
+      <Filter>GC</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\3FD\gc_arrayofedges.cpp">
+      <Filter>GC</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\3FD\gc_garbagecollector.cpp">
+      <Filter>GC</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\3FD\gc_memorydigraph.cpp">
+      <Filter>GC</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\3FD\gc_messages.cpp">
+      <Filter>GC</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\3FD\gc_vertex.cpp">
+      <Filter>GC</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\3FD\gc_vertexstore.cpp">
+      <Filter>GC</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\3FD\stdafx.cpp">
+      <Filter>pch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\3FD\sqlite_databaseconn.cpp">
+      <Filter>SQLite</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\3FD\sqlite_dbconnpool.cpp">
+      <Filter>SQLite</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\3FD\sqlite_prepstatement.cpp">
+      <Filter>SQLite</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\3FD\sqlite_transaction.cpp">
+      <Filter>SQLite</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\3FD\sqlite3.c">
+      <Filter>SQLite\sqlite3</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\3FD\utils_asynchronous.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\3FD\utils_dynmempool.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\3FD\utils_event.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\3FD\utils_memorypool.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\3FD.WinRT.Shared\utils_winrt.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\3FD\isam_impl.cpp">
+      <Filter>ISAM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\3FD\isam_impl_cursor.cpp">
+      <Filter>ISAM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\3FD\isam_impl_database.cpp">
+      <Filter>ISAM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\3FD\isam_impl_databaseconn.cpp">
+      <Filter>ISAM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\3FD\isam_impl_errorhelper.cpp">
+      <Filter>ISAM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\3FD\isam_impl_instance.cpp">
+      <Filter>ISAM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\3FD\isam_impl_recordreader.cpp">
+      <Filter>ISAM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\3FD\isam_impl_session.cpp">
+      <Filter>ISAM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\3FD\isam_impl_table.cpp">
+      <Filter>ISAM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\3FD\isam_impl_tablewriter.cpp">
+      <Filter>ISAM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\3FD\isam_impl_transaction.cpp">
+      <Filter>ISAM</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\3FD\base.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\3FD\callstacktracer.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\3FD\configuration.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\3FD\dependencies.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\3FD\exceptions.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\3FD\logger.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\3FD\preprocessing.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\3FD\runtime.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\3FD\gc.h">
+      <Filter>GC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\3FD\gc_addresseshashtable.h">
+      <Filter>GC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\3FD\gc_arrayofedges.h">
+      <Filter>GC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\3FD\gc_common.h">
+      <Filter>GC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\3FD\gc_memaddress.h">
+      <Filter>GC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\3FD\gc_memorydigraph.h">
+      <Filter>GC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\3FD\gc_messages.h">
+      <Filter>GC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\3FD\gc_vertex.h">
+      <Filter>GC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\3FD\gc_vertexstore.h">
+      <Filter>GC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\3FD\sptr.h">
+      <Filter>GC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\3FD\stdafx.h">
+      <Filter>pch</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\3FD\targetver.h">
+      <Filter>pch</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\3FD\sqlite.h">
+      <Filter>SQLite</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\3FD\sqlite3.h">
+      <Filter>SQLite\sqlite3</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\3FD\utils.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\3FD\utils_lockfreequeue.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\3FD.WinRT.Shared\utils_winrt.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\3FD\isam.h">
+      <Filter>ISAM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\3FD\isam_impl.h">
+      <Filter>ISAM</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

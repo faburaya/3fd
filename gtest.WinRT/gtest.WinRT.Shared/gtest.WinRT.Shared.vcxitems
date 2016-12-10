@@ -14,12 +14,10 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="$(MSBuildThisFileDirectory)gtest.WinRT.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)targetver.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)pch.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="$(MSBuildThisFileDirectory)gtest.WinRT.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>

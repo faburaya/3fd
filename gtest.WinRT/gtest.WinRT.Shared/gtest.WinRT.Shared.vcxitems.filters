@@ -3,12 +3,10 @@
   <ItemGroup>
     <ClInclude Include="$(MSBuildThisFileDirectory)targetver.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)pch.h" />
-    <ClInclude Include="$(MSBuildThisFileDirectory)gtest.WinRT.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="$(MSBuildThisFileDirectory)pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="$(MSBuildThisFileDirectory)gtest.WinRT.cpp" />
   </ItemGroup>
 </Project>

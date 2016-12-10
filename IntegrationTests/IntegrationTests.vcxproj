@@ -99,6 +99,7 @@
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(SolutionDir)3FD;$(SolutionDir)TestShared;$(SolutionDir)OpenCL;$(SolutionDir)gtest\include;$(SolutionDir)btree;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/D POCO_STATIC /D _VARIADIC_MAX=10 %(AdditionalOptions)</AdditionalOptions>
+      <DisableSpecificWarnings>4244</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -119,6 +120,7 @@ copy "$(SolutionDir)TestShared\calculator.wsdl" "$(TargetDir)"</Command>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(SolutionDir)3FD;$(SolutionDir)TestShared;$(SolutionDir)OpenCL;$(SolutionDir)gtest\include;$(SolutionDir)btree;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/D POCO_STATIC /D _VARIADIC_MAX=10 %(AdditionalOptions)</AdditionalOptions>
+      <DisableSpecificWarnings>4244</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -141,6 +143,7 @@ copy "$(SolutionDir)TestShared\calculator.wsdl" "$(TargetDir)"</Command>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(SolutionDir)3FD;$(SolutionDir)TestShared;$(SolutionDir)OpenCL;$(SolutionDir)gtest\include;$(SolutionDir)btree;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/D POCO_STATIC /D _VARIADIC_MAX=10 %(AdditionalOptions)</AdditionalOptions>
+      <DisableSpecificWarnings>4244</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -165,6 +168,7 @@ copy "$(SolutionDir)TestShared\calculator.wsdl" "$(TargetDir)"</Command>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(SolutionDir)3FD;$(SolutionDir)TestShared;$(SolutionDir)OpenCL;$(SolutionDir)gtest\include;$(SolutionDir)btree;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/D POCO_STATIC /D _VARIADIC_MAX=10 %(AdditionalOptions)</AdditionalOptions>
+      <DisableSpecificWarnings>4244</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

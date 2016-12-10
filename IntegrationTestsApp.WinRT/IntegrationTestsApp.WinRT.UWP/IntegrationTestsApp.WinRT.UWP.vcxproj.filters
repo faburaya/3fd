@@ -1,0 +1,78 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Common">
+      <UniqueIdentifier>c427c362-4b09-4c3f-8578-f58521328df0</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Assets">
+      <UniqueIdentifier>0982afa8-e805-4994-859c-70805f27b96f</UniqueIdentifier>
+      <Extensions>bmp;fbx;gif;jpg;jpeg;tga;tiff;tif;png</Extensions>
+    </Filter>
+    <Filter Include="Tests">
+      <UniqueIdentifier>{3275cd94-6ec7-4d1a-8019-89ada9dad714}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ApplicationDefinition Include="App.xaml" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="App.xaml.cpp" />
+    <ClCompile Include="MainPage.xaml.cpp" />
+    <ClCompile Include="pch.cpp" />
+    <ClCompile Include="..\..\IntegrationTests\IntegrationTests.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\IntegrationTests\tests_core.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\IntegrationTests\tests_gc.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\IntegrationTests\tests_isam.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\IntegrationTests\tests_sqlite.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="App.xaml.h" />
+    <ClInclude Include="MainPage.xaml.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Assets\LockScreenLogo.scale-200.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\SplashScreen.scale-200.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\Square150x150Logo.scale-200.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\Square44x44Logo.scale-200.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\StoreLogo.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\Wide310x150Logo.scale-200.png">
+      <Filter>Assets</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <AppxManifest Include="Package.appxmanifest" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="IntegrationTestsApp.WinRT.UWP_TemporaryKey.pfx" />
+  </ItemGroup>
+  <ItemGroup>
+    <Page Include="MainPage.xaml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="0f748d13-8fa1-4fb5-9239-70aaa2312607.3fd.config" />
+  </ItemGroup>
+</Project>

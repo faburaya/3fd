@@ -5,7 +5,6 @@
 
 #include "pch.h"
 #include "MainPage.xaml.h"
-#include <gtest/gtest.h>
 #include <cstdio>
 
 using namespace UnitTestsApp_WinRT;

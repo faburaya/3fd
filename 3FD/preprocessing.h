@@ -41,11 +41,11 @@
 #       define _3FD_ESENT_SUPPORT
 #   	define _3FD_OPENCL_SUPPORT
 #       define _3FD_CONSOLE_AVAILABLE
-#   elif WINAPI_FAMILY == WINAPI_FAMILY_PC_APP // Windows Store Apps only:
+#   elif WINAPI_FAMILY == WINAPI_FAMILY_PC_APP // Windows Store Apps (& UWP) only:
 #       define _3FD_PLATFORM_WINRT
 #       define _3FD_PLATFORM_WINRT_PC
 #       define _3FD_ESENT_SUPPORT
-#   elif WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP // Windows Phone Store Apps only:
+#   elif WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP // Windows Phone 8 Store Apps only:
 #       define _3FD_PLATFORM_WINRT
 #       define _3FD_PLATFORM_WINRT_PHONE
 #   endif
