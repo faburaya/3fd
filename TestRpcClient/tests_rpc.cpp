@@ -122,6 +122,8 @@ namespace integration_tests
 
         CALL_STACK_TRACE;
 
+        uint32_t timeout(0);
+
         try
         {
             AcmeRpcClient client1(
@@ -142,16 +144,16 @@ namespace integration_tests
             EXPECT_EQ(696.0, client2.Operate(606.0, 90.0));
             EXPECT_EQ("squirrel", client2.ChangeCase("SQUIRREL"));
 
-            auto timeout = client2.Shutdown();
-
-            /* Awaits for the setup and start of the RPC server in the
-            next test, using data measured in the server side... */
-            std::this_thread::sleep_for(std::chrono::milliseconds(timeout));
+            timeout = client2.Shutdown();
         }
         catch (...)
         {
             HandleException();
         }
+
+        /* Awaits for the setup and start of the RPC server in the
+        next test, using data measured in the server side... */
+        std::this_thread::sleep_for(std::chrono::milliseconds(timeout));
     }
 
     // The set of options for each test template instantiation
@@ -191,6 +193,8 @@ namespace integration_tests
 
         CALL_STACK_TRACE;
 
+        uint32_t timeout(0);
+
         try
         {
             AcmeRpcClient client1(
@@ -221,16 +225,16 @@ namespace integration_tests
 
             client2.WriteOnStorage();
 
-            auto timeout = client2.Shutdown();
-
-            /* Awaits for the setup and start of the RPC server in the
-            next test, using data measured in the server side... */
-            std::this_thread::sleep_for(std::chrono::milliseconds(timeout));
+            timeout = client2.Shutdown();
         }
         catch (...)
         {
             HandleException();
         }
+
+        /* Awaits for the setup and start of the RPC server in the
+        next test, using data measured in the server side... */
+        std::this_thread::sleep_for(std::chrono::milliseconds(timeout));
     }
 
     /* Implementation of test template takes care of switching
@@ -282,6 +286,8 @@ namespace integration_tests
 
         CALL_STACK_TRACE;
 
+        uint32_t timeout(0);
+
         try
         {
             CertInfo certInfo(
@@ -311,16 +317,16 @@ namespace integration_tests
             EXPECT_EQ(696.0, client2.Operate(606.0, 90.0));
             EXPECT_EQ("squirrel", client2.ChangeCase("SQUIRREL"));
 
-            auto timeout = client2.Shutdown();
-
-            /* Awaits for the setup and start of the RPC server in the
-            next test, using data measured in the server side... */
-            std::this_thread::sleep_for(std::chrono::milliseconds(timeout));
+            timeout = client2.Shutdown();
         }
         catch (...)
         {
             HandleException();
         }
+
+        /* Awaits for the setup and start of the RPC server in the
+        next test, using data measured in the server side... */
+        std::this_thread::sleep_for(std::chrono::milliseconds(timeout));
     }
 
     // Implementation of test template takes care of switching parameters:

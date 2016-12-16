@@ -28,11 +28,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "3FD.WinRT.Windows", "3FD.Wi
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "3FD.WinRT.WindowsPhone", "3FD.WinRT\3FD.WinRT.WindowsPhone\3FD.WinRT.WindowsPhone.vcxproj", "{D4D1D2D5-7594-49BB-9427-FF7D770F5AE8}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{6FE4019E-19FF-4D78-80F1-F44C0BF271BB}"
-	ProjectSection(SolutionItems) = preProject
-		Performance1.psess = Performance1.psess
-	EndProjectSection
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "gtest.WinRT", "gtest.WinRT", "{EE86AB66-09DF-45EB-A42A-ED426AF3266E}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gtest.WinRT.Shared", "gtest.WinRT\gtest.WinRT.Shared\gtest.WinRT.Shared.vcxitems", "{DB9A7788-5840-496C-AF13-6100450D9C32}"

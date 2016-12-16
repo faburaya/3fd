@@ -254,7 +254,7 @@ namespace integration_tests
             for adjustment (using field data), because apparently the
             server takes longer to be available, which is a little
             after RpcServer::Start returns... */
-            return static_cast<uint32_t> (50 + maxCycleTime);
+            return static_cast<uint32_t> (200 + maxCycleTime);
         }
     };
 

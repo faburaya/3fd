@@ -8,7 +8,7 @@
       <UniqueIdentifier>956a2eea-08f9-4a04-9a40-1a10b09e4ff0</UniqueIdentifier>
       <Extensions>bmp;fbx;gif;jpg;jpeg;tga;tiff;tif;png</Extensions>
     </Filter>
-    <Filter Include="Tests">
+    <Filter Include="Backend">
       <UniqueIdentifier>{6e2b857f-80a9-4a8e-9a37-fd920ab537f9}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -18,30 +18,34 @@
   <ItemGroup>
     <ClCompile Include="App.xaml.cpp" />
     <ClCompile Include="MainPage.xaml.cpp" />
-    <ClCompile Include="pch.cpp" />
     <ClCompile Include="..\..\UnitTests\tests_gc_arrayofedges.cpp">
-      <Filter>Tests</Filter>
+      <Filter>Backend</Filter>
     </ClCompile>
     <ClCompile Include="..\..\UnitTests\tests_gc_hashtable.cpp">
-      <Filter>Tests</Filter>
+      <Filter>Backend</Filter>
     </ClCompile>
     <ClCompile Include="..\..\UnitTests\tests_gc_vertex.cpp">
-      <Filter>Tests</Filter>
+      <Filter>Backend</Filter>
     </ClCompile>
     <ClCompile Include="..\..\UnitTests\tests_gc_vertexstore.cpp">
-      <Filter>Tests</Filter>
+      <Filter>Backend</Filter>
     </ClCompile>
     <ClCompile Include="..\..\UnitTests\tests_utils_lockfreequeue.cpp">
-      <Filter>Tests</Filter>
+      <Filter>Backend</Filter>
     </ClCompile>
     <ClCompile Include="..\..\UnitTests\tests_utils_pool.cpp">
-      <Filter>Tests</Filter>
+      <Filter>Backend</Filter>
+    </ClCompile>
+    <ClCompile Include="pch.cpp">
+      <Filter>Backend</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="pch.h" />
     <ClInclude Include="App.xaml.h" />
     <ClInclude Include="MainPage.xaml.h" />
+    <ClInclude Include="pch.h">
+      <Filter>Backend</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\LockScreenLogo.scale-200.png">
