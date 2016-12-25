@@ -64,6 +64,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UnitTestsApp.WinRT.UWP", "U
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "IntegrationTestsApp.WinRT.UWP", "IntegrationTestsApp.WinRT\IntegrationTestsApp.WinRT.UWP\IntegrationTestsApp.WinRT.UWP.vcxproj", "{C427C362-4B09-4C3F-8578-F58521328DF0}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VideoTranscoder", "VideoTranscoder\VideoTranscoder.vcxproj", "{84D2D4D4-0A88-477D-B645-C972EEB97464}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		IntegrationTestsApp.WinRT\IntegrationTestsApp.WinRT.Shared\IntegrationTestsApp.WinRT.Shared.vcxitems*{09ed5b36-d345-4d62-9f01-dc41168bcb35}*SharedItemsImports = 4
@@ -390,6 +392,20 @@ Global
 		{C427C362-4B09-4C3F-8578-F58521328DF0}.Release|x64.ActiveCfg = Release|x64
 		{C427C362-4B09-4C3F-8578-F58521328DF0}.Release|x64.Build.0 = Release|x64
 		{C427C362-4B09-4C3F-8578-F58521328DF0}.Release|x64.Deploy.0 = Release|x64
+		{84D2D4D4-0A88-477D-B645-C972EEB97464}.Debug|ARM.ActiveCfg = Debug|Win32
+		{84D2D4D4-0A88-477D-B645-C972EEB97464}.Debug|Mixed Platforms.ActiveCfg = Debug|Win32
+		{84D2D4D4-0A88-477D-B645-C972EEB97464}.Debug|Mixed Platforms.Build.0 = Debug|Win32
+		{84D2D4D4-0A88-477D-B645-C972EEB97464}.Debug|Win32.ActiveCfg = Debug|Win32
+		{84D2D4D4-0A88-477D-B645-C972EEB97464}.Debug|Win32.Build.0 = Debug|Win32
+		{84D2D4D4-0A88-477D-B645-C972EEB97464}.Debug|x64.ActiveCfg = Debug|x64
+		{84D2D4D4-0A88-477D-B645-C972EEB97464}.Debug|x64.Build.0 = Debug|x64
+		{84D2D4D4-0A88-477D-B645-C972EEB97464}.Release|ARM.ActiveCfg = Release|Win32
+		{84D2D4D4-0A88-477D-B645-C972EEB97464}.Release|Mixed Platforms.ActiveCfg = Release|Win32
+		{84D2D4D4-0A88-477D-B645-C972EEB97464}.Release|Mixed Platforms.Build.0 = Release|Win32
+		{84D2D4D4-0A88-477D-B645-C972EEB97464}.Release|Win32.ActiveCfg = Release|Win32
+		{84D2D4D4-0A88-477D-B645-C972EEB97464}.Release|Win32.Build.0 = Release|Win32
+		{84D2D4D4-0A88-477D-B645-C972EEB97464}.Release|x64.ActiveCfg = Release|x64
+		{84D2D4D4-0A88-477D-B645-C972EEB97464}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -419,6 +435,7 @@ Global
 		{B650C884-6640-4FEE-9C5B-62E4D84D9E0F} = {EE86AB66-09DF-45EB-A42A-ED426AF3266E}
 		{AD508BAA-0192-4EDB-B1F5-23DC9CC2EC0C} = {673DD1A8-1AC7-4549-BAF3-1F1DAFD2FAF8}
 		{C427C362-4B09-4C3F-8578-F58521328DF0} = {35A12F43-25FF-406A-8CCF-B203F688A791}
+		{84D2D4D4-0A88-477D-B645-C972EEB97464} = {8E00B911-43B2-49D5-9B4A-AB6E1ED097A1}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		VisualSVNWorkingCopyRoot = .

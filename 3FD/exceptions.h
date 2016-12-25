@@ -41,6 +41,8 @@ namespace _3fd
 
 			static string GetHResultLabel(HRESULT errCode);
 
+            static string GetDetailsFromHResult(HRESULT errCode);
+
 #   ifdef _3FD_PLATFORM_WIN32API
             static void AppendDWordErrorMessage(
                 DWORD errCode,

@@ -25,153 +25,157 @@
 
 namespace _3fd
 {
-	namespace utils
-	{
-        /////////////////////////////////
-        // Memory Allocation Utilities
-        /////////////////////////////////
+namespace utils
+{
+    /////////////////////////////////
+    // Memory Allocation Utilities
+    /////////////////////////////////
 
 #ifdef _MSC_VER
-		_ALLOCATOR_DECL(CACHE_CHUNKLIST, stdext::allocators::sync_none, unsafe_pool_allocator);
+	_ALLOCATOR_DECL(CACHE_CHUNKLIST, stdext::allocators::sync_none, unsafe_pool_allocator);
 #endif
-	    /// <summary>
-	    /// Provides uninitialized and contiguous memory.
-	    /// There is a limit 4 GB, which is far more than enough.
-	    /// The pool was designed for single-thread access.
-	    /// </summary>
-	    class MemoryPool : notcopiable
-	    {
-	    private:
 
-		    void	*m_baseAddr,
-				    *m_nextAddr,
-				    *m_end;
+	/// <summary>
+	/// Provides uninitialized and contiguous memory.
+	/// There is a limit 4 GB, which is far more than enough.
+	/// The pool was designed for single-thread access.
+	/// </summary>
+	class MemoryPool : notcopiable
+	{
+	private:
 
-		    const uint32_t m_blockSize;
+		void	*m_baseAddr,
+				*m_nextAddr,
+				*m_end;
 
-		    /// <summary>
-		    /// Keeps available memory blocks as offset integers to the base address.
-		    /// Because the offset is a 32 bit integer, this imposes the practical limit of 4 GB to the pool.
-		    /// </summary>
-		    std::stack<uint32_t> m_availableAddrsAsOffset;
+		const uint32_t m_blockSize;
 
-	    public:
+		/// <summary>
+		/// Keeps available memory blocks as offset integers to the base address.
+		/// Because the offset is a 32 bit integer, this imposes the practical limit of 4 GB to the pool.
+		/// </summary>
+		std::stack<uint32_t> m_availableAddrsAsOffset;
 
-		    MemoryPool(uint32_t numBlocks, uint32_t blockSize);
+	public:
 
-		    MemoryPool(MemoryPool &&ob);
+		MemoryPool(uint32_t numBlocks, uint32_t blockSize);
 
-		    ~MemoryPool();
+		MemoryPool(MemoryPool &&ob);
 
-		    size_t GetNumBlocks() const throw();
+		~MemoryPool();
 
-		    void *GetBaseAddress() const throw();
+		size_t GetNumBlocks() const throw();
 
-		    bool Contains(void *addr) const throw();
+		void *GetBaseAddress() const throw();
 
-		    bool IsFull() const throw();
+		bool Contains(void *addr) const throw();
 
-		    bool IsEmpty() const throw();
+		bool IsFull() const throw();
 
-		    void *GetFreeBlock() throw();
+		bool IsEmpty() const throw();
 
-		    void ReturnBlock(void *addr);
-	    };
+		void *GetFreeBlock() throw();
 
-	    /// <summary>
-	    /// A template class for a memory pool that expands dynamically.
-	    /// The pool was designed for single-thread access.
-	    /// </summary>
-	    class DynamicMemPool : notcopiable
-	    {
-	    private:
+		void ReturnBlock(void *addr);
+	};
 
-		    const float		m_increasingFactor;
-		    const size_t	m_initialSize,
-						    m_blockSize;
+	/// <summary>
+	/// A template class for a memory pool that expands dynamically.
+	/// The pool was designed for single-thread access.
+	/// </summary>
+	class DynamicMemPool : notcopiable
+	{
+	private:
 
-		    std::map<void *, MemoryPool>	m_memPools;
-		    std::queue<MemoryPool *>		m_availableMemPools;
+		const float		m_increasingFactor;
+		const size_t	m_initialSize,
+						m_blockSize;
 
-	    public:
+		std::map<void *, MemoryPool>	m_memPools;
+		std::queue<MemoryPool *>		m_availableMemPools;
 
-		    DynamicMemPool(size_t initialSize,
-			    size_t blockSize,
-			    float increasingFactor);
+	public:
 
-		    void *GetFreeBlock();
+		DynamicMemPool(size_t initialSize,
+			size_t blockSize,
+			float increasingFactor);
 
-		    void ReturnBlock(void *object);
+		void *GetFreeBlock();
 
-		    void Shrink();
-	    };
+		void ReturnBlock(void *object);
 
-        ////////////////////////////////////////////////
-        // Multi-thread and Synchronization Utilities
-        ////////////////////////////////////////////////
+		void Shrink();
+	};
 
-        /// <summary>
-        /// Implements an event for thread synchronization making 
-        /// use of a lightweight mutex and a condition variable.
-        /// </summary>
-        class Event
-        {
-        private:
+    ////////////////////////////////////////////////
+    // Multi-thread and Synchronization Utilities
+    ////////////////////////////////////////////////
 
-            std::mutex m_mutex;
-            std::condition_variable	m_condition;
-            bool m_flag;
+    /// <summary>
+    /// Implements an event for thread synchronization making 
+    /// use of a lightweight mutex and a condition variable.
+    /// </summary>
+    class Event
+    {
+    private:
 
-        public:
+        std::mutex m_mutex;
+        std::condition_variable	m_condition;
+        bool m_flag;
 
-            Event();
-            ~Event();
+    public:
 
-            void Signalize();
+        Event();
+        ~Event();
 
-            void Reset();
+        void Signalize();
 
-            void Wait(const std::function<bool()> &predicate);
+        void Reset();
 
-            bool WaitFor(unsigned long millisecs);
-        };
+        void Wait(const std::function<bool()> &predicate);
 
-        /// <summary>
-        /// Provides helpers for asynchronous callbacks.
-        /// </summary>
-        class Asynchronous
-        {
-        public:
+        bool WaitFor(unsigned long millisecs);
+    };
 
-            static void InvokeAndLeave(const std::function<void()> &callback);
-        };
+    /// <summary>
+    /// Provides helpers for asynchronous callbacks.
+    /// </summary>
+    class Asynchronous
+    {
+    public:
+
+        static void InvokeAndLeave(const std::function<void()> &callback);
+    };
 
 #   ifdef _WIN32
-        /// <summary>
-        /// Alternative implementation for std::shared_mutex from C++14 Std library.
-        /// </summary>
-        class shared_mutex : notcopiable
-        {
-        private:
 
-            enum LockType : short { None, Shared, Exclusive };
+    /// <summary>
+    /// Alternative implementation for std::shared_mutex from C++14 Std library.
+    /// </summary>
+    class shared_mutex : notcopiable
+    {
+    private:
 
-            SRWLOCK m_srwLockHandle;
-            LockType m_curLockType;
+        enum LockType : short { None, Shared, Exclusive };
 
-        public:
+        SRWLOCK m_srwLockHandle;
+        LockType m_curLockType;
 
-            shared_mutex();
-            ~shared_mutex();
+    public:
 
-            void lock_shared();
-            void unlock_shared();
+        shared_mutex();
+        ~shared_mutex();
 
-            void lock();
-            void unlock();
-        };
+        void lock_shared();
+        void unlock_shared();
+
+        void lock();
+        void unlock();
+    };
+
 #   endif
-	}// end of namespace utils
+
+}// end of namespace utils
 }// end of namespace _3fd
 
 #endif // end of header guard

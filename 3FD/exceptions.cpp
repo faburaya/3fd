@@ -3,6 +3,10 @@
 #include <codecvt>
 #include <sstream>
 
+#ifdef _WIN32
+#   include <comdef.h>
+#endif
+
 namespace _3fd
 {
 	namespace core
@@ -42,16 +46,29 @@ namespace _3fd
 		///////////////////////////////////////
 
 		/// <summary>
-		/// Get a description label for an HRESULT code.
+		/// Get a label for an HRESULT code.
 		/// </summary>
 		/// <param name="errCode">The HRESULT code.</param>
-		/// <returns>A label with a brief description of the code.</returns>
+		/// <returns>A label with the HRESULT code.</returns>
 		string WWAPI::GetHResultLabel(HRESULT errCode)
 		{
 			std::ostringstream oss;
 			oss << "HRESULT error code = 0x" << std::hex << errCode << std::flush;
 			return oss.str();
 		}
+
+        /// <summary>
+        /// Get a description for an HRESULT code.
+        /// </summary>
+        /// <param name="errCode">The HRESULT code.</param>
+        /// <returns>A description of the HRESULT code.</returns>
+        string WWAPI::GetDetailsFromHResult(HRESULT errCode)
+        {
+            _ASSERTE(FAILED(errCode));
+            std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
+            _com_error comErrObj(errCode);
+            return transcoder.to_bytes(comErrObj.ErrorMessage());
+        }
 
 #   ifdef _3FD_PLATFORM_WIN32API // only for classic desktop apps:
         /// <summary>
@@ -60,10 +77,9 @@ namespace _3fd
         /// <param name="errCode">The error code.</param>
         /// <param name="funcName">Name of the function from Win32 API.</param>
         /// <param name="oss">The string stream where the error message will be appended to.</param>
-        void WWAPI::AppendDWordErrorMessage(
-            DWORD errCode,
-            const char *funcName,
-            std::ostringstream &oss)
+        void WWAPI::AppendDWordErrorMessage(DWORD errCode,
+                                            const char *funcName,
+                                            std::ostringstream &oss)
         {
             wchar_t *wErrMsgPtr;
             

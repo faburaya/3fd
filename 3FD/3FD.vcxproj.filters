@@ -200,6 +200,9 @@
     <ClInclude Include="web_wws_utils.h">
       <Filter>Header Files\WWS</Filter>
     </ClInclude>
+    <ClInclude Include="cmdline.h">
+      <Filter>Header Files\core</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="sqlite3.c">
@@ -360,6 +363,9 @@
     </ClCompile>
     <ClCompile Include="web_wws_impl_utils_wsasyncoper.cpp">
       <Filter>Source Files\WWS</Filter>
+    </ClCompile>
+    <ClCompile Include="cmdline.cpp">
+      <Filter>Source Files\core</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

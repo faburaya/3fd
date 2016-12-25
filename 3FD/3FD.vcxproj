@@ -249,6 +249,7 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="cmdline.h" />
     <ClInclude Include="gc_arrayofedges.h" />
     <ClInclude Include="gc_vertexstore.h" />
     <ClInclude Include="base.h" />
@@ -292,6 +293,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="callstacktracer.cpp" />
+    <ClCompile Include="cmdline.cpp" />
     <ClCompile Include="configuration.cpp" />
     <ClCompile Include="dependencies.cpp" />
     <ClCompile Include="exceptions.cpp" />
