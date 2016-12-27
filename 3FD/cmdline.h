@@ -21,7 +21,7 @@ namespace core
     /// <summary>
     /// Flexible parser of command lines arguments.
     /// </summary>
-    class CommandLineArguments
+    class CommandLineArguments : notcopiable
     {
     public:
 
@@ -77,7 +77,7 @@ namespace core
             ArgPlacement placement;  // placement for argument
             ArgValType valueType;    // type of argument value
             char optChar;            // single character representing the option
-            const char *optName;     // long name that represents the option
+            const char *optName;     // name label that represents the option or value
             const char *description; // description of argument purpose
         };
 
@@ -156,25 +156,10 @@ namespace core
 
     public:
 
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="CommandLineArguments" /> class.
-        /// </summary>
-        /// <param name="minCmdLineWidth">Minimum width of the command line.</param>
-        /// <param name="argValSeparator">The character separator to use between option label and value.</param>
-        /// <param name="useOptSignSlash">if set to <c>true</c>, use option sign slash (Windows prompt style) instead of dash.</param>
-        /// <param name="optCaseSensitive">if set to <c>true</c>, make case sensitive the parsing of option labels.</param>
         CommandLineArguments(uint8_t minCmdLineWidth,
                              ArgValSeparator argValSeparator,
                              bool useOptSignSlash,
-                             bool optCaseSensitive) :
-            m_minCmdLineWidth(minCmdLineWidth),
-            m_argValSeparator(argValSeparator),
-            m_useOptSignSlash(useOptSignSlash),
-            m_isOptCaseSensitive(optCaseSensitive),
-            m_lastPositionIsTaken(false),
-            m_largestNameLabel(0)
-        {}
+                             bool optCaseSensitive);
 
         ~CommandLineArguments();
 
@@ -188,7 +173,7 @@ namespace core
 
         void PrintUsage() const;
 
-        bool Parse(int argCount, const char *arguments[]);
+        //bool Parse(int argCount, const char *arguments[]);
     };
 
 }// end of namespace core
