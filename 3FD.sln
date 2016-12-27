@@ -66,6 +66,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "IntegrationTestsApp.WinRT.U
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VideoTranscoder", "VideoTranscoder\VideoTranscoder.vcxproj", "{84D2D4D4-0A88-477D-B645-C972EEB97464}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Real Applications", "Real Applications", "{81644728-0859-4738-A153-9130F614BE9F}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		IntegrationTestsApp.WinRT\IntegrationTestsApp.WinRT.Shared\IntegrationTestsApp.WinRT.Shared.vcxitems*{09ed5b36-d345-4d62-9f01-dc41168bcb35}*SharedItemsImports = 4
@@ -435,7 +437,7 @@ Global
 		{B650C884-6640-4FEE-9C5B-62E4D84D9E0F} = {EE86AB66-09DF-45EB-A42A-ED426AF3266E}
 		{AD508BAA-0192-4EDB-B1F5-23DC9CC2EC0C} = {673DD1A8-1AC7-4549-BAF3-1F1DAFD2FAF8}
 		{C427C362-4B09-4C3F-8578-F58521328DF0} = {35A12F43-25FF-406A-8CCF-B203F688A791}
-		{84D2D4D4-0A88-477D-B645-C972EEB97464} = {8E00B911-43B2-49D5-9B4A-AB6E1ED097A1}
+		{84D2D4D4-0A88-477D-B645-C972EEB97464} = {81644728-0859-4738-A153-9130F614BE9F}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		VisualSVNWorkingCopyRoot = .

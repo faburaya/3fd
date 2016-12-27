@@ -2,8 +2,12 @@
 #define CMDLINE_H
 
 #include "exceptions.h"
+#include "callstacktracer.h"
 #include <cinttypes>
 #include <initializer_list>
+#include <stdexcept>
+#include <sstream>
+#include <string>
 #include <memory>
 #include <vector>
 #include <map>
@@ -12,6 +16,8 @@ namespace _3fd
 {
 namespace core
 {
+    using std::string;
+
     /// <summary>
     /// Flexible parser of command lines arguments.
     /// </summary>
@@ -40,7 +46,6 @@ namespace core
         enum class ArgPlacement : int8_t
         {
             Anywhere = 0,  // argument has no required position
-            MustComeFirst, // argument has to be the first
             MustComeLast   // argument has to be the last
         };
 
@@ -56,10 +61,10 @@ namespace core
             String = 1,   // string value (UTF-8)
             Integer = 2,  // long signed integer value
             Float = 3,    // double precision floating point value
-            RangeInteger = 2 | argValIsRangedTypeFlag, // range limited integer value
-            RangeFloat = 3 | argValIsRangedTypeFlag,   // range limited double precision floating point value
+            EnumString = 1 | argValIsEnumTypeFlag,     // string limited to set of values
             EnumInteger = 2 | argValIsEnumTypeFlag,    // integer limited to a set of values
-            EnumString = 1 | argValIsEnumTypeFlag      // string limited to set of values
+            RangeInteger = 2 | argValIsRangedTypeFlag, // range limited integer value
+            RangeFloat = 3 | argValIsRangedTypeFlag    // range limited double precision floating point value
         };
 
         /// <summary>
@@ -67,12 +72,13 @@ namespace core
         /// </summary>
         struct ArgDeclaration
         {
-            int code;               // argument ID
-            ArgType type;           // type of argument
-            ArgPlacement placement; // placement for argument
-            ArgValType valueType;   // type of argument value
-            char optChar;           // single character representing the option
-            const char *optName;    // long name that represents the option
+            int id;                  // argument ID
+            ArgType type;            // type of argument
+            ArgPlacement placement;  // placement for argument
+            ArgValType valueType;    // type of argument value
+            char optChar;            // single character representing the option
+            const char *optName;     // long name that represents the option
+            const char *description; // description of argument purpose
         };
 
         /// <summary>
@@ -97,6 +103,10 @@ namespace core
         };
 
         std::map<int, ArgDeclExtended> m_expectedArgs;
+        std::map<char, int> m_argsByCharLabel;
+        std::map<string, int> m_argsByNameLabel;
+
+        void ValidateArgDescAndLabels(const ArgDeclaration &argDecl, const char *stdExMsg);
 
         /// <summary>
         /// Adds a previously consistency-verified argument specification into the map.
@@ -109,8 +119,12 @@ namespace core
                                        const std::initializer_list<ValType> &argValCfg,
                                        const char *stdExMsg)
         {
+            CALL_STACK_TRACE;
+
             try
             {
+                ValidateArgDescAndLabels(argDecl, stdExMsg);
+
                 if (m_expectedArgs.find(argDecl.code) == m_expectedArgs.end())
                 {
                     std::unique_ptr<std::initializer_list<ValType>> temp;
@@ -121,21 +135,23 @@ namespace core
                 else
                 {// Collision of argument codes (ID's):
                     std::ostringstream oss;
-                    oss << "Argument code " << argDecl.code << ": collision of ID";
+                    oss << "Argument ID " << argDecl.id << ": collision of ID";
                     throw AppException<std::invalid_argument>(stdExMsg, oss.str());
                 }
             }
-            catch (std::bad_alloc &ex)
+            catch (std::exception &ex)
             {
-                throw AppException<std::runtime_error>(
-                    "Could not add specification of command line argument: memory allocation failure"
-                );
+                std::ostringstream oss;
+                oss << "Could not add specification of command line argument: " << ex.what();
+                throw AppException<std::runtime_error>(oss.str());
             }
         }
 
-        char m_argValSeparator;
+        ArgValSeparator m_argValSeparator;
+        uint8_t m_largestNameLabel;
         bool m_useOptSignSlash;
         bool m_isOptCaseSensitive;
+        bool m_lastPositionIsTaken;
 
     public:
 
@@ -148,9 +164,11 @@ namespace core
         CommandLineArguments(ArgValSeparator argValSeparator,
                              bool useOptSignSlash,
                              bool optCaseSensitive) :
-            m_argValSeparator(static_cast<char> (argValSeparator)),
+            m_argValSeparator(argValSeparator),
+            m_largestNameLabel(0),
             m_useOptSignSlash(useOptSignSlash),
-            m_isOptCaseSensitive(optCaseSensitive)
+            m_isOptCaseSensitive(optCaseSensitive),
+            m_lastPositionIsTaken(false)
         {}
 
         ~CommandLineArguments();
