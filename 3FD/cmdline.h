@@ -148,6 +148,7 @@ namespace core
         }
 
         ArgValSeparator m_argValSeparator;
+        uint8_t m_minCmdLineWidth;
         uint8_t m_largestNameLabel;
         bool m_useOptSignSlash;
         bool m_isOptCaseSensitive;
@@ -155,20 +156,24 @@ namespace core
 
     public:
 
+
         /// <summary>
-        /// Initializes a new instance of the <see cref="CommandLineArguments"/> class.
+        /// Initializes a new instance of the <see cref="CommandLineArguments" /> class.
         /// </summary>
+        /// <param name="minCmdLineWidth">Minimum width of the command line.</param>
         /// <param name="argValSeparator">The character separator to use between option label and value.</param>
         /// <param name="useOptSignSlash">if set to <c>true</c>, use option sign slash (Windows prompt style) instead of dash.</param>
         /// <param name="optCaseSensitive">if set to <c>true</c>, make case sensitive the parsing of option labels.</param>
-        CommandLineArguments(ArgValSeparator argValSeparator,
+        CommandLineArguments(uint8_t minCmdLineWidth,
+                             ArgValSeparator argValSeparator,
                              bool useOptSignSlash,
                              bool optCaseSensitive) :
+            m_minCmdLineWidth(minCmdLineWidth),
             m_argValSeparator(argValSeparator),
-            m_largestNameLabel(0),
             m_useOptSignSlash(useOptSignSlash),
             m_isOptCaseSensitive(optCaseSensitive),
-            m_lastPositionIsTaken(false)
+            m_lastPositionIsTaken(false),
+            m_largestNameLabel(0)
         {}
 
         ~CommandLineArguments();

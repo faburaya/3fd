@@ -83,7 +83,7 @@ namespace core
     {
         CALL_STACK_TRACE;
 
-        const uint32_t maxLengthArgDesc(1024);
+        const uint32_t maxLengthArgDesc(2000);
 
         // is description too large?
         if (strlen(argDecl.description) > maxLengthArgDesc)
@@ -134,6 +134,14 @@ namespace core
             throw AppException<std::invalid_argument>(stdExMsg, oss.str());
         }
 
+        /* Windows notation in command line normally uses a slash to mark options,
+           and adopts an underline when composing names like 'no_warnings', which
+           otherwise would require undesired camel notation for better readability.
+           POSIX notation, in the other hand, chooses a dash for the same purpose,
+           like in '--no-warnings'. Those practices are enforced as rules here, so
+           the application is made compliant with these standards. */
+        const char dash = (m_useOptSignSlash) ? '_' : '-';
+
         char ch;
         uint32_t nameCharCount(0);
         
@@ -141,7 +149,7 @@ namespace core
         while ((ch = *(argDecl.optName + nameCharCount)) != 0)
         {
             // alphanumeric ASCII chars are allowed
-            if (isalnum(ch))
+            if (isalnum(ch) || ch == dash)
                 ++nameCharCount;
             // spaces are allowed when the argument is a list of values:
             else if (iswspace(ch))
@@ -161,7 +169,9 @@ namespace core
             {
                 std::ostringstream oss;
                 oss << "Argument ID " << argDecl.id
-                    << ": only alphanumeric ASCII characters are allowed in name label";
+                    << ": only alphanumeric ASCII characters (and dash for POSIX "
+                       "option notation which also uses dash, or underline for Windows "
+                       "option notation which uses slash)  are allowed in name label";
 
                 throw AppException<std::invalid_argument>(stdExMsg, oss.str());
             }
@@ -541,7 +551,7 @@ namespace core
                 inIter += idx; // move input iterator past the slice
                 length -= idx; // update remaining length
 
-                               // skip white space:
+                // skip white space:
                 if (whiteSpaceFound)
                 {
                     ++inIter;
@@ -565,7 +575,7 @@ namespace core
 
             } while (length > width); // continue breaking lines?
 
-                                      // copy the last line to output:
+            // copy the last line to output:
             if (length > 0)
             {
                 // check for room before writing to output:
@@ -596,6 +606,41 @@ namespace core
     /// </summary>
     void CommandLineArguments::PrintUsage() const
     {
+        CALL_STACK_TRACE;
+
+        const char *spaceAdvLeftBorder(" "), // space advanced by left border of table column 1
+                   *optCharSign(m_useOptSignSlash ? "/" : "-"), // sign for option with single char label
+                   *commaBetweenLabels(", "), // comma placed between single char and name labels
+                   *optNameSign(m_useOptSignSlash ? "/" : "--"), // sign for option with name label
+                   *spaceBetweenCols("   "); // space between tables columns 1 & 2
+
+        uint16_t widthTableCol1;
+
+        // any name label is present?
+        if (m_largestNameLabel > 0)
+        {
+            widthTableCol1 = static_cast<uint16_t> (
+                strlen(spaceAdvLeftBorder) + 2
+                + strlen(commaBetweenLabels)
+                + strlen(optNameSign)
+                + m_largestNameLabel
+                + (m_argValSeparator == ArgValSeparator::Space) ? 0 : 2
+            );
+        }
+        else
+        {
+            widthTableCol1 = static_cast<uint16_t> (
+                strlen(spaceAdvLeftBorder) + 2
+                + (m_argValSeparator == ArgValSeparator::Space) ? 0 : 1
+            );
+        }
+
+        // amount of spaces a paragraph in col 2 is advanced to the right
+        auto nSpacesAdvCol2 = static_cast<uint16_t> (widthTableCol1 + strlen(spaceBetweenCols));
+
+        // width of table col 2, where the paragraphs must be formatted
+        auto widthTableCol2 = static_cast<uint16_t> (m_minCmdLineWidth - nSpacesAdvCol2);
+
         for (auto &entry : m_expectedArgs)
         {
             auto &argDecl = entry.second.common;
