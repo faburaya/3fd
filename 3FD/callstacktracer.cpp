@@ -115,10 +115,12 @@ namespace _3fd
 
                     return STATUS_OKAY;
 				}
-				catch(IAppException &appEx)
+				catch(IAppException &ex)
 				{
                     // If the framework settings could not be initialized, this is a fatal error:
-                    AttemptConsoleOutput(appEx.ToString());
+                    std::ostringstream oss;
+                    oss << "Registration of thread with call stack tracer failed with an exception - " << ex.ToString();
+                    AttemptConsoleOutput(oss.str());
                     exit(EXIT_FAILURE);
 				}
 				catch(std::exception &ex)
