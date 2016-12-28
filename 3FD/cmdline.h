@@ -57,14 +57,14 @@ namespace core
         /// </summary>
         enum class ArgValType : uint8_t
         {
-            None = 0, // option has no accompanying value
-            String = 1,   // string value (UTF-8)
-            Integer = 2,  // long signed integer value
-            Float = 3,    // double precision floating point value
-            EnumString = 1 | argValIsEnumTypeFlag,     // string limited to set of values
-            EnumInteger = 2 | argValIsEnumTypeFlag,    // integer limited to a set of values
-            RangeInteger = 2 | argValIsRangedTypeFlag, // range limited integer value
-            RangeFloat = 3 | argValIsRangedTypeFlag    // range limited double precision floating point value
+            None = 0,      // option has no accompanying value
+            String = 0x1,  // string value (UTF-8)
+            Integer = 0x2, // long signed integer value
+            Float = 0x4,   // double precision floating point value
+            EnumString = 0x1 | argValIsEnumTypeFlag,     // string limited to set of values
+            EnumInteger = 0x2 | argValIsEnumTypeFlag,    // integer limited to a set of values
+            RangeInteger = 0x2 | argValIsRangedTypeFlag, // range limited integer value
+            RangeFloat = 0x4 | argValIsRangedTypeFlag    // range limited double precision floating point value
         };
 
         /// <summary>
@@ -138,6 +138,10 @@ namespace core
                     oss << "Argument ID " << argDecl.id << ": collision of ID";
                     throw AppException<std::invalid_argument>(stdExMsg, oss.str());
                 }
+            }
+            catch (IAppException &)
+            {
+                throw; // just forward exceptions from errors known to have been alread handled
             }
             catch (std::exception &ex)
             {

@@ -36,4 +36,9 @@
   <ItemGroup>
     <Text Include="ReadMe.txt" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="application.config">
+      <Filter>Resource Files</Filter>
+    </None>
+  </ItemGroup>
 </Project>

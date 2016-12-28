@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
     {
         using core::CommandLineArguments;
 
-        CommandLineArguments cmdLineArgs(80, CommandLineArguments::ArgValSeparator::Colon, true, false);
+        CommandLineArguments cmdLineArgs(80, CommandLineArguments::ArgValSeparator::Space, false, false);
 
         enum { ArgOptHelp, ArgValEncoder, ArgValTgtSizeFactor, ArgValsListIO };
 
@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
             CommandLineArguments::ArgPlacement::Anywhere,
             CommandLineArguments::ArgValType::None,
             'h', "help",
-            "Displays these informations about usage of application command line arguments"
+            "Displays these information about usage of application command line arguments"
         });
 
         cmdLineArgs.AddExpectedArgument(CommandLineArguments::ArgDeclaration{
@@ -52,7 +52,8 @@ int main(int argc, char *argv[])
             CommandLineArguments::ArgPlacement::Anywhere,
             CommandLineArguments::ArgValType::EnumString,
             'e', "encoder",
-            "What encoder to use, always with high profiles for better compression"
+            "What encoder to use, always with the highest profile made available "
+            "by Microsoft Media Foundation, for better compression"
         }, { "h264", "hevc", "vc1" });
 
         cmdLineArgs.AddExpectedArgument(CommandLineArguments::ArgDeclaration{
@@ -60,7 +61,7 @@ int main(int argc, char *argv[])
             CommandLineArguments::ArgType::OptionWithNonReqValue,
             CommandLineArguments::ArgPlacement::Anywhere,
             CommandLineArguments::ArgValType::RangeFloat,
-            't', "target_size_factor",
+            't', "target-size-factor",
             "The target size of the output transcoded video, as a fraction of the original size"
         }, { 0.5, 0.001, 1.0 });
 

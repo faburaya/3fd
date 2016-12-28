@@ -42,7 +42,7 @@ namespace core
         CALL_STACK_TRACE;
 
         // Argument is an option, but no valid label (single char or long name) is specified:
-        if (static_cast<uint8_t> (argDecl.type) & CommandLineArguments::argIsOptionFlag != 0
+        if ((static_cast<uint8_t> (argDecl.type) & CommandLineArguments::argIsOptionFlag) != 0
             && isNullOrEmpty(argDecl.optName)
             && !isalnum(argDecl.optChar))
         {
@@ -53,7 +53,7 @@ namespace core
             throw AppException<std::invalid_argument>(stdExMsg, oss.str());
         }
 
-        if (static_cast<uint8_t> (argDecl.type) & CommandLineArguments::argIsOptionFlag == 0)
+        if ((static_cast<uint8_t> (argDecl.type) & CommandLineArguments::argIsOptionFlag) == 0)
         {
             // Single char label was specified, bur argument is a value:
             if (argDecl.optChar != 0)
@@ -110,9 +110,9 @@ namespace core
         uint32_t charCount(0);
 
         // Compute length of description while checking content:
-        while ((ch = *(argDecl.optName + charCount)) != 0)
+        while ((ch = *(argDecl.description + charCount)) != 0)
         {
-            nonWhiteSpaceFound = (iswspace(ch) != 0);
+            nonWhiteSpaceFound = (iswspace(ch) == 0);
             ++charCount;
         }
 
@@ -269,8 +269,8 @@ namespace core
         }
 
         // Argument is value limited to a range, but this function overload does not handle this case:
-        if (static_cast<uint8_t> (argDecl.type) & argIsValueFlag != 0
-            && static_cast<uint8_t> (argDecl.valueType) & argValIsRangedTypeFlag != 0)
+        if ((static_cast<uint8_t> (argDecl.type) & argIsValueFlag) != 0
+            && (static_cast<uint8_t> (argDecl.valueType) & argValIsRangedTypeFlag) != 0)
         {
             std::ostringstream oss;
             oss << "Argument ID " << argDecl.id
@@ -280,8 +280,8 @@ namespace core
         }
 
         // Argument is value limited to enumeration, but this function overload does not handle this case:
-        if (static_cast<uint8_t> (argDecl.type) & argIsValueFlag != 0
-            && static_cast<uint8_t> (argDecl.valueType) & argValIsEnumTypeFlag != 0)
+        if ((static_cast<uint8_t> (argDecl.type) & argIsValueFlag) != 0
+            && (static_cast<uint8_t> (argDecl.valueType) & argValIsEnumTypeFlag) != 0)
         {
             std::ostringstream oss;
             oss << "Argument ID " << argDecl.id
@@ -323,8 +323,8 @@ namespace core
 
         // Argument value does not use default, range or enumeration:
         if (argDecl.type != CommandLineArguments::ArgType::OptionWithNonReqValue
-            && static_cast<uint8_t> (argDecl.valueType) & CommandLineArguments::argValIsRangedTypeFlag == 0
-            && static_cast<uint8_t> (argDecl.valueType) & CommandLineArguments::argValIsEnumTypeFlag == 0)
+            && (static_cast<uint8_t> (argDecl.valueType) & CommandLineArguments::argValIsRangedTypeFlag) == 0
+            && (static_cast<uint8_t> (argDecl.valueType) & CommandLineArguments::argValIsEnumTypeFlag) == 0)
         {
             std::ostringstream oss;
             oss << "Argument ID " << argDecl.id
@@ -335,7 +335,7 @@ namespace core
         }
 
         // Argument values is limited to an enumeration
-        if (static_cast<uint8_t> (argDecl.valueType) & CommandLineArguments::argValIsEnumTypeFlag != 0)
+        if ((static_cast<uint8_t> (argDecl.valueType) & CommandLineArguments::argValIsEnumTypeFlag) != 0)
         {
             // Configuration of values needs at least 1 value, which is also default:
             if (argValCfg.size() < 1)
@@ -346,7 +346,7 @@ namespace core
             }
         }
         // Argument values are limited to a range
-        else if (static_cast<uint8_t> (argDecl.valueType) & CommandLineArguments::argValIsRangedTypeFlag != 0)
+        else if ((static_cast<uint8_t> (argDecl.valueType) & CommandLineArguments::argValIsRangedTypeFlag) != 0)
         {
             unsigned int expCountValConfigItems(2); // needs min & max
 
@@ -397,7 +397,7 @@ namespace core
         const char *stdExMsg("Failed to add declaration of expected command line argument");
 
         // Argument declaration conflicts with value configuration:
-        if (static_cast<uint8_t> (argDecl.valueType) & static_cast<uint8_t> (ArgValType::Integer) == 0)
+        if ((static_cast<uint8_t> (argDecl.valueType) & static_cast<uint8_t> (ArgValType::Integer)) == 0)
         {
             std::ostringstream oss;
             oss << "Argument ID " << argDecl.id
@@ -431,7 +431,7 @@ namespace core
         const char *stdExMsg("Failed to add declaration of expected command line argument");
 
         // Argument declaration conflicts with value configuration:
-        if (static_cast<uint8_t> (argDecl.valueType) & static_cast<uint8_t> (ArgValType::Float) == 0)
+        if ((static_cast<uint8_t> (argDecl.valueType) & static_cast<uint8_t> (ArgValType::Float)) == 0)
         {
             std::ostringstream oss;
             oss << "Argument ID " << argDecl.id
@@ -465,7 +465,7 @@ namespace core
         const char *stdExMsg("Failed to add declaration of expected command line argument");
 
         // Argument declaration conflicts with value configuration:
-        if (static_cast<uint8_t> (argDecl.valueType) & static_cast<uint8_t> (ArgValType::String) == 0)
+        if ((static_cast<uint8_t> (argDecl.valueType) & static_cast<uint8_t> (ArgValType::String)) == 0)
         {
             std::ostringstream oss;
             oss << "Argument ID " << argDecl.id
@@ -525,22 +525,26 @@ namespace core
 
         auto iter = argValCfg.begin();
 
-        oss << '(';
+        oss << " (";
 
         if (argDecl.type == CommandLineArguments::ArgType::OptionWithNonReqValue)
             oss << "optional value, default = " << *iter++ << (argValCfg.size() > 1 ? "; " : ")");
 
-        if (static_cast<uint8_t> (argDecl.valueType) & CommandLineArguments::argValIsRangedTypeFlag != 0)
+        if ((static_cast<uint8_t> (argDecl.valueType) & CommandLineArguments::argValIsRangedTypeFlag) != 0)
         {
             auto rangeMinIter = iter;
-            auto rangeMaxIter = iter++;
+            auto rangeMaxIter = iter + 1;
             oss << "min = " << *rangeMinIter << "; max = " << *rangeMaxIter << ')';
         }
-        else if (static_cast<uint8_t> (argDecl.valueType) & CommandLineArguments::argValIsEnumTypeFlag != 0)
+        else if ((static_cast<uint8_t> (argDecl.valueType) & CommandLineArguments::argValIsEnumTypeFlag) != 0)
         {
             oss << "allowed: [";
             iter = argValCfg.begin();
-            do { oss << (argValCfg.end() != iter + 1 ? ", " : "])"); } while (argValCfg.end() != ++iter);
+            do
+            {
+                oss << *iter << (argValCfg.end() != iter + 1 ? ", " : "])");
+            }
+            while (argValCfg.end() != ++iter);
         }
     }
 
@@ -593,7 +597,7 @@ namespace core
             // Break text into lines not bigger than paragraph width:
             do
             {
-                bool whiteSpaceFound;
+                bool whiteSpaceFound(false);
 
                 /* search the line backwards to find a white space
                 to break the line, but do not go past the middle: */
@@ -706,14 +710,14 @@ namespace core
                 + strlen(commaBetweenLabels)
                 + strlen(optNameSign)
                 + m_largestNameLabel
-                + (m_argValSeparator == ArgValSeparator::Space) ? 0 : 2
+                + (m_argValSeparator == ArgValSeparator::Space ? 0 : 2)
             );
         }
         else
         {
             widthTableCol1 = static_cast<uint16_t> (
                 strlen(spaceAdvLeftBorder) + 2
-                + (m_argValSeparator == ArgValSeparator::Space) ? 0 : 1
+                + (m_argValSeparator == ArgValSeparator::Space ? 0 : 1)
             );
         }
 
@@ -744,22 +748,26 @@ namespace core
                         oss << static_cast<char> (m_argValSeparator);
 
                     // name label present?
-                    if (isNullOrEmpty(argDecl.optName))
+                    if (!isNullOrEmpty(argDecl.optName))
                         oss << commaBetweenLabels;
                 }
 
                 // name label present?
-                if (isNullOrEmpty(argDecl.optName))
+                if (!isNullOrEmpty(argDecl.optName))
                 {
                     // option?
-                    if (static_cast<uint8_t> (argDecl.type) & argIsOptionFlag != 0)
+                    if ((static_cast<uint8_t> (argDecl.type) & argIsOptionFlag) != 0)
                         oss << optNameSign;
 
                     oss << argDecl.optName;
 
                     // value separator needed?
-                    if (argDecl.valueType != ArgValType::None && m_argValSeparator != ArgValSeparator::Space)
+                    if ((static_cast<uint8_t> (argDecl.type) & argIsOptionFlag) != 0
+                        && argDecl.valueType != ArgValType::None
+                        && m_argValSeparator != ArgValSeparator::Space)
+                    {
                         oss << static_cast<char> (m_argValSeparator);
+                    }
                 }
 
                 std::cout << std::setw(widthTableCol1) << oss.str() << spaceBetweenCols;
@@ -774,19 +782,19 @@ namespace core
                 if (entry.second.typedExtInfo != nullptr)
                 {
                     // is value an integer?
-                    if (static_cast<uint8_t> (argDecl.valueType) & static_cast<uint8_t> (ArgValType::Integer) == 0)
+                    if ((static_cast<uint8_t> (argDecl.valueType) & static_cast<uint8_t> (ArgValType::Integer)) != 0)
                     {
                         auto &argValCfg = *static_cast<std::initializer_list<long long> *> (entry.second.typedExtInfo);
                         PrintArgValuesConfig(argDecl, argValCfg, oss, stdExMsg);
                     }
                     // is value a floating point?
-                    else if (static_cast<uint8_t> (argDecl.valueType) & static_cast<uint8_t> (ArgValType::Float) == 0)
+                    else if ((static_cast<uint8_t> (argDecl.valueType) & static_cast<uint8_t> (ArgValType::Float)) != 0)
                     {
                         auto &argValCfg = *static_cast<std::initializer_list<double> *> (entry.second.typedExtInfo);
                         PrintArgValuesConfig(argDecl, argValCfg, oss, stdExMsg);
                     }
                     // is value a string?
-                    else if (static_cast<uint8_t> (argDecl.valueType) & static_cast<uint8_t> (ArgValType::String) == 0)
+                    else if ((static_cast<uint8_t> (argDecl.valueType) & static_cast<uint8_t> (ArgValType::String)) != 0)
                     {
                         auto &argValCfg = *static_cast<std::initializer_list<const char *> *> (entry.second.typedExtInfo);
                         PrintArgValuesConfig(argDecl, argValCfg, oss, stdExMsg);
