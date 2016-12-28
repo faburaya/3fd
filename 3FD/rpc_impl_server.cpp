@@ -960,8 +960,6 @@ namespace rpc
                 uniqueObject.reset(nullptr);
                 return STATUS_OKAY;
             }
-            else
-                return STATUS_FAIL;
         }
         catch (core::IAppException &ex)
         {
@@ -981,6 +979,8 @@ namespace rpc
             oss << "Generic failure prevented RPC server finalization: " << ex.what();
             core::Logger::Write(oss.str(), core::Logger::PRIO_CRITICAL, true);
         }
+
+        return STATUS_FAIL;
     }
 
 }// end of namespace rpc

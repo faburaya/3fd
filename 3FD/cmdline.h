@@ -125,11 +125,11 @@ namespace core
             {
                 ValidateArgDescAndLabels(argDecl, stdExMsg);
 
-                if (m_expectedArgs.find(argDecl.code) == m_expectedArgs.end())
+                if (m_expectedArgs.find(argDecl.id) == m_expectedArgs.end())
                 {
                     std::unique_ptr<std::initializer_list<ValType>> temp;
                     temp.reset(new std::initializer_list<ValType>(std::move(argValCfg)));
-                    m_expectedArgs[argDecl.code] = ArgDeclExtended{ argDecl, temp.get() };
+                    m_expectedArgs[argDecl.id] = ArgDeclExtended{ argDecl, temp.get() };
                     temp.release();
                 }
                 else
@@ -147,6 +147,7 @@ namespace core
             }
         }
 
+        const char *m_appName;
         ArgValSeparator m_argValSeparator;
         uint8_t m_minCmdLineWidth;
         uint8_t m_largestNameLabel;
@@ -171,7 +172,7 @@ namespace core
 
         void AddExpectedArgument(const ArgDeclaration &argDecl, std::initializer_list<const char *> &&argValCfg);
 
-        void PrintUsage() const;
+        void PrintArgsInfo() const;
 
         //bool Parse(int argCount, const char *arguments[]);
     };

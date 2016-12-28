@@ -403,7 +403,7 @@ namespace wws
         {
             m_pimpl = new WebServiceHostImpl(reservedMemory);
         }
-        catch (std::bad_alloc &ex)
+        catch (std::bad_alloc &)
         {
             throw AppException<std::runtime_error>(
                 "Failed to allocate memory for instantiation of web service host"

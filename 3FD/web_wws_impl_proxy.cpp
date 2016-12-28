@@ -165,7 +165,7 @@ namespace wws
         {
             m_pimpl = new WebServiceProxyImpl(svcEndpointAddress, config, callback);
         }
-        catch (std::bad_alloc &ex)
+        catch (std::bad_alloc &)
         {
             throw AppException<std::runtime_error>(
                 "Failed to allocate memory for instantiation of web service proxy"
@@ -271,7 +271,7 @@ namespace wws
         {
             m_pimpl = new WebServiceProxyImpl(svcEndpointAddress, config, certInfo, callback);
         }
-        catch (std::bad_alloc &ex)
+        catch (std::bad_alloc &)
         {
             throw AppException<std::runtime_error>(
                 "Failed to allocate memory for instantiation of web service proxy"
@@ -395,7 +395,7 @@ namespace wws
         {
             m_pimpl = new WebServiceProxyImpl(svcEndpointAddress, config, certInfo, callback);
         }
-        catch (std::bad_alloc &ex)
+        catch (std::bad_alloc &)
         {
             throw AppException<std::runtime_error>(
                 "Failed to allocate memory for instantiation of web service proxy"

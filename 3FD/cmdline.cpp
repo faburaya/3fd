@@ -16,6 +16,7 @@ namespace core
     /// <summary>
     /// Initializes a new instance of the <see cref="CommandLineArguments" /> class.
     /// </summary>
+    /// <param name="appName">Name of the application executable.</param>
     /// <param name="minCmdLineWidth">Minimum width of the command line.</param>
     /// <param name="argValSeparator">The character separator to use between option label and value.</param>
     /// <param name="useOptSignSlash">if set to <c>true</c>, use option sign slash (Windows prompt style) instead of dash.</param>
@@ -24,7 +25,7 @@ namespace core
                                                ArgValSeparator argValSeparator,
                                                bool useOptSignSlash,
                                                bool optCaseSensitive) :
-        m_minCmdLineWidth(minCmdLineWidth),
+        m_minCmdLineWidth(minCmdLineWidth > 80 ? minCmdLineWidth : 80),
         m_argValSeparator(argValSeparator),
         m_useOptSignSlash(useOptSignSlash),
         m_isOptCaseSensitive(optCaseSensitive),
@@ -333,24 +334,47 @@ namespace core
             throw AppException<std::invalid_argument>(stdExMsg, oss.str());
         }
 
-        unsigned int minCountValConfigItems(0);
-
-        if (argDecl.type == CommandLineArguments::ArgType::OptionWithNonReqValue)
-            ++minCountValConfigItems;
-
+        // Argument values is limited to an enumeration
         if (static_cast<uint8_t> (argDecl.valueType) & CommandLineArguments::argValIsEnumTypeFlag != 0)
-            ++minCountValConfigItems;
-        else if (static_cast<uint8_t> (argDecl.valueType) & CommandLineArguments::argValIsRangedTypeFlag != 0)
-            minCountValConfigItems += 2;
-
-        // Argument is supposed to receive configuration of values, but that is incomplete:
-        if (argValCfg.size() < minCountValConfigItems)
         {
-            std::ostringstream oss;
-            oss << "Argument ID " << argDecl.id
-                << ": configuration of values has too few items (default, range boundaries, allowed values)";
+            // Configuration of values needs at least 1 value, which is also default:
+            if (argValCfg.size() < 1)
+            {
+                std::ostringstream oss;
+                oss << "Argument ID " << argDecl.id << ": configuration of values must specify at least one allowed value";
+                throw AppException<std::invalid_argument>(stdExMsg, oss.str());
+            }
+        }
+        // Argument values are limited to a range
+        else if (static_cast<uint8_t> (argDecl.valueType) & CommandLineArguments::argValIsRangedTypeFlag != 0)
+        {
+            unsigned int expCountValConfigItems(2); // needs min & max
 
-            throw AppException<std::invalid_argument>(stdExMsg, oss.str());
+            if (argDecl.type == CommandLineArguments::ArgType::OptionWithNonReqValue)
+                ++expCountValConfigItems;
+
+            // Configuration of range of values for arguments is wrong:
+            if (argValCfg.size() != expCountValConfigItems)
+            {
+                std::ostringstream oss;
+                oss << "Argument ID " << argDecl.id << ": configuration of values must be [default,] min, max";
+                throw AppException<std::invalid_argument>(stdExMsg, oss.str());
+            }
+
+            // Default values does not fall inside defined range:
+            if (argDecl.type == CommandLineArguments::ArgType::OptionWithNonReqValue)
+            {
+                auto default = *(argValCfg.begin());
+                auto min = *(argValCfg.begin() + 1);
+                auto max = *(argValCfg.begin() + 2);
+
+                if (default < min || default > max)
+                {
+                    std::ostringstream oss;
+                    oss << "Argument ID " << argDecl.id << ": default values does not fall inside defined range";
+                    throw AppException<std::invalid_argument>(stdExMsg, oss.str());
+                }
+            }
         }
     }
 
@@ -492,7 +516,8 @@ namespace core
        the validation has already taken place, so it is possible to handle info
        without so many checks for null pointers and boundaries. */
     template <typename ValType>
-    static void PrintArgValuesConfig(const std::initializer_list<ValType> &argValCfg,
+    static void PrintArgValuesConfig(const CommandLineArguments::ArgDeclaration &argDecl,
+                                     const std::initializer_list<ValType> &argValCfg,
                                      std::ostringstream &oss,
                                      const char *stdExMsg)
     {
@@ -514,7 +539,8 @@ namespace core
         else if (static_cast<uint8_t> (argDecl.valueType) & CommandLineArguments::argValIsEnumTypeFlag != 0)
         {
             oss << "allowed: [";
-            do { oss << (argValCfg.end() != iter++ + 1 ? ", " : "])"); } while (argValCfg.end() != iter);
+            iter = argValCfg.begin();
+            do { oss << (argValCfg.end() != iter + 1 ? ", " : "])"); } while (argValCfg.end() != ++iter);
         }
     }
 
@@ -653,9 +679,9 @@ namespace core
     }
 
     /// <summary>
-    /// Prints the usage of command line arguments.
+    /// Prints information about command line arguments.
     /// </summary>
-    void CommandLineArguments::PrintUsage() const
+    void CommandLineArguments::PrintArgsInfo() const
     {
         CALL_STACK_TRACE;
 
@@ -749,19 +775,19 @@ namespace core
                     if (static_cast<uint8_t> (argDecl.valueType) & static_cast<uint8_t> (ArgValType::Integer) == 0)
                     {
                         auto &argValCfg = *static_cast<std::initializer_list<long long> *> (entry.second.typedExtInfo);
-                        PrintArgValuesConfig(argValCfg, oss, stdExMsg);
+                        PrintArgValuesConfig(argDecl, argValCfg, oss, stdExMsg);
                     }
                     // is value a floating point?
                     else if (static_cast<uint8_t> (argDecl.valueType) & static_cast<uint8_t> (ArgValType::Float) == 0)
                     {
                         auto &argValCfg = *static_cast<std::initializer_list<double> *> (entry.second.typedExtInfo);
-                        PrintArgValuesConfig(argValCfg, oss, stdExMsg);
+                        PrintArgValuesConfig(argDecl, argValCfg, oss, stdExMsg);
                     }
                     // is value a string?
                     else if (static_cast<uint8_t> (argDecl.valueType) & static_cast<uint8_t> (ArgValType::String) == 0)
                     {
                         auto &argValCfg = *static_cast<std::initializer_list<const char *> *> (entry.second.typedExtInfo);
-                        PrintArgValuesConfig(argValCfg, oss, stdExMsg);
+                        PrintArgValuesConfig(argDecl, argValCfg, oss, stdExMsg);
                     }
                 }
 
