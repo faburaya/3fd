@@ -130,7 +130,7 @@ namespace rpc
     /// <param name="oss">The output string stream.</param>
     void AppendSecQosOptsDescription(const RPC_SECURITY_QOS &secQOS, std::ostringstream &oss)
     {
-        if (secQOS.Capabilities & RPC_C_QOS_CAPABILITIES_MUTUAL_AUTH != 0)
+        if ((secQOS.Capabilities & RPC_C_QOS_CAPABILITIES_MUTUAL_AUTH) != 0)
             oss << "with mutual authentication, ";
         else
             oss << "with NO mutual authentication, ";
@@ -797,7 +797,7 @@ namespace rpc
             {
                 oss << "\r\n";
 
-                if (errInfoEntry.Flags & EEInfoPreviousRecordsMissing != 0)
+                if ((errInfoEntry.Flags & EEInfoPreviousRecordsMissing) != 0)
                     oss << "$ *** missing record(s) ***";
 
                 oss << "$ host " << (errInfoEntry.ComputerName != nullptr)
@@ -856,7 +856,7 @@ namespace rpc
 
                 oss << " }";
 
-                if (errInfoEntry.Flags & EEInfoNextRecordsMissing != 0)
+                if ((errInfoEntry.Flags & EEInfoNextRecordsMissing) != 0)
                     oss << "\r\n$ *** missing record(s) ***";
 
                 errInfoEntry.Version = RPC_EEINFO_VERSION;
