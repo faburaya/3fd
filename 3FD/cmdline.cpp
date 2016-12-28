@@ -134,7 +134,7 @@ namespace core
                 << ": description is too large (limit is "
                 << maxLengthArgDesc << " UTF-8 characters)";
 
-            throw AppException<std::invalid_argument>(stdExMsg, oss.str());
+            throw AppException<std::length_error>(stdExMsg, oss.str());
         }
 
         // single char label specified?
@@ -226,7 +226,7 @@ namespace core
                 << ": name label is too large (limit is "
                 << maxLengthNameLabel << " UTF-8 characters)";
 
-            throw AppException<std::invalid_argument>(stdExMsg, oss.str());
+            throw AppException<std::length_error>(stdExMsg, oss.str());
         }
 
         /* Keep the largest name label. Later this will be used to plan
@@ -600,7 +600,9 @@ namespace core
                 uint16_t idx(width - 1);
                 while (idx > width / 2)
                 {
-                    whiteSpaceFound = iswspace(*(inIter + idx));
+                    if (iswspace(*(inIter + idx)) != 0)
+                        whiteSpaceFound = true;
+
                     if (!whiteSpaceFound)
                         --idx;
                     else

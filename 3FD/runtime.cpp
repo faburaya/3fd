@@ -49,7 +49,6 @@ namespace _3fd
 		FrameworkInstance::~FrameworkInstance()
 		{
 			memory::GarbageCollector::Shutdown();
-			CallStackTracer::Shutdown();
 
 			Logger::Write("3FD was shutdown", core::Logger::PRIO_DEBUG);
 			Logger::Shutdown();

@@ -64,17 +64,17 @@ namespace utils
 
 		~MemoryPool();
 
-		size_t GetNumBlocks() const throw();
+		size_t GetNumBlocks() const NOEXCEPT;
 
-		void *GetBaseAddress() const throw();
+		void *GetBaseAddress() const NOEXCEPT;
 
-		bool Contains(void *addr) const throw();
+		bool Contains(void *addr) const NOEXCEPT;
 
-		bool IsFull() const throw();
+		bool IsFull() const NOEXCEPT;
 
-		bool IsEmpty() const throw();
+		bool IsEmpty() const NOEXCEPT;
 
-		void *GetFreeBlock() throw();
+		void *GetFreeBlock() NOEXCEPT;
 
 		void ReturnBlock(void *addr);
 	};

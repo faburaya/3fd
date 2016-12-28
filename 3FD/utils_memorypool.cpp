@@ -109,7 +109,7 @@ namespace _3fd
 		/// Gets the number of memory blocks in the pool.
 		/// </summary>
 		/// <returns>How many memory blocks, with the size set in pool construction, are there in the pool.</returns>
-		size_t MemoryPool::GetNumBlocks() const throw()
+		size_t MemoryPool::GetNumBlocks() const NOEXCEPT
 		{
 			return (reinterpret_cast<uintptr_t> (m_end) - reinterpret_cast<uintptr_t> (m_baseAddr)) / m_blockSize;
 		}
@@ -118,7 +118,7 @@ namespace _3fd
 		/// Gets the base memory address of the pool.
 		/// </summary>
 		/// <returns>The memory address of the chunk allocated by this pool.</returns>
-		void * MemoryPool::GetBaseAddress() const throw()
+		void * MemoryPool::GetBaseAddress() const NOEXCEPT
 		{
 			return m_baseAddr;
 		}
@@ -130,7 +130,7 @@ namespace _3fd
 		/// <returns>
 		/// <c>true</c> if the given address belongs to the memory chunk in the pool, otherwise, <c>false</c>.
 		/// </returns>
-		bool MemoryPool::Contains(void *addr) const throw()
+		bool MemoryPool::Contains(void *addr) const NOEXCEPT
 		{
 			return addr >= m_baseAddr && addr < m_end;
 		}
@@ -139,7 +139,7 @@ namespace _3fd
 		/// Determines whether the pool is full.
 		/// </summary>
 		/// <returns><c>true</c> if all the memory is available, otherwise, <c>false</c>.</returns>
-		bool MemoryPool::IsFull() const throw()
+		bool MemoryPool::IsFull() const NOEXCEPT
 		{
 			return m_availableAddrsAsOffset.size() == GetNumBlocks() || m_nextAddr == m_baseAddr;
 		}
@@ -148,7 +148,7 @@ namespace _3fd
 		/// Determines whether the pool is empty.
 		/// </summary>
 		/// <returns><c>true</c> if the pool has no memory available, otherwise, <c>false</c>.</returns>
-		bool MemoryPool::IsEmpty() const throw()
+		bool MemoryPool::IsEmpty() const NOEXCEPT
 		{
 			return m_nextAddr == m_end && m_availableAddrsAsOffset.empty();
 		}
@@ -157,7 +157,7 @@ namespace _3fd
 		/// Gets a free block of memory.
 		/// </summary>
 		/// <returns></returns>
-		void * MemoryPool::GetFreeBlock() throw()
+		void * MemoryPool::GetFreeBlock() NOEXCEPT
 		{
 			if (!m_availableAddrsAsOffset.empty())
 			{

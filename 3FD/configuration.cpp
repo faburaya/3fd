@@ -64,13 +64,18 @@ namespace _3fd
 				catch(std::system_error &ex)
 				{
 					std::ostringstream oss;
-					oss << "Failed to acquire lock before loading framework configurations: " << core::StdLibExt::GetDetailsFromSystemError(ex);
+					oss << "3FD function is compromised by a fatal error! "
+                           "Failed to acquire lock before loading framework configurations: "
+                        << core::StdLibExt::GetDetailsFromSystemError(ex);
+
 					throw AppException<std::runtime_error>(oss.str());
 				}
 				catch (std::exception &ex)
 				{
 					std::ostringstream oss;
-					oss << "Generic failure when initializing framework configurations: " << ex.what();
+					oss << "3FD function is compromised by a fatal error! "
+                           "Generic failure when initializing framework configurations: " << ex.what();
+
 					throw AppException<std::runtime_error>(oss.str());
 				}
 			}
@@ -223,14 +228,21 @@ namespace _3fd
 			catch (std::system_error &ex)
 			{
 				std::ostringstream oss;
-				oss << "Failed to initialize the application settings: " << ex.what();
+				oss << "3FD function is compromised by a fatal error! "
+                       "Failed to initialize the application settings: " << ex.what();
+
 				throw AppException<std::runtime_error>(oss.str());
 			}
 			catch (Poco::Exception &ex)
 			{
 				ostringstream oss;
 				oss << "POCO C++ library reported: " << ex.message();
-				throw AppException<std::runtime_error>("Failed to initialize the application settings", oss.str());
+
+				throw AppException<std::runtime_error>(
+                    "3FD function is compromised by a fatal error! "
+                    "Failed to initialize the application settings",
+                    oss.str()
+                );
 			}
 		}
 
@@ -361,12 +373,19 @@ namespace _3fd
 			{
 				ostringstream oss;
 				oss << "Windows Runtime library reported: " << WWAPI::GetDetailsFromWinRTEx(ex);
-				throw AppException<std::runtime_error>("Failed to initialize the application settings", oss.str());
+
+				throw AppException<std::runtime_error>(
+                    "3FD function is compromised by a fatal error! "
+                    "Failed to initialize the application settings",
+                    oss.str()
+                );
 			}
 			catch (std::exception &ex)
 			{
 				std::ostringstream oss;
-				oss << "Generic failure when initializing the application settings: " << ex.what();
+				oss << "3FD function is compromised by a fatal error! "
+                       "Generic failure when initializing the application settings: " << ex.what();
+
 				throw AppException<std::runtime_error>(oss.str());
 			}
 		}

@@ -2,6 +2,7 @@
 #include "callstacktracer.h"
 #include "configuration.h"
 #include "exceptions.h"
+#include "logger.h"
 #include <sstream>
 
 namespace _3fd
@@ -29,7 +30,7 @@ namespace _3fd
 		/// <param name="function">The function of the frame.</param>
 		void CallStack::RegisterFrame(const char *file, 
 									  unsigned long line, 
-									  const char *function) throw()
+									  const char *function) NOEXCEPT
 		{
 			m_stackFrames.push_back(
 				Frame(file, function, line)
@@ -40,7 +41,7 @@ namespace _3fd
 		/// Pops the last added stack frame.
 		/// </summary>
 		/// <returns>Whether the stack log is empty after popping an entry from it.</returns>
-		bool CallStack::PopStackFrameEntry() throw()
+		bool CallStack::PopStackFrameEntry() NOEXCEPT
 		{
 			m_stackFrames.pop_back();
 			return m_stackFrames.empty();
@@ -96,68 +97,13 @@ namespace _3fd
 
         thread_local_def CallStack * CallStackTracer::callStack(nullptr);
 
-		CallStackTracer	* CallStackTracer::uniqueObject(nullptr);
-
-		std::mutex CallStackTracer::singleInstanceCreationMutex;
-
-		/// <summary>
-		/// Creates the singleton instance.
-		/// </summary>
-		/// <returns>A pointer to the newly created singleton of <see cref="CallStackTracer" /></returns>
-		CallStackTracer * CallStackTracer::CreateInstance()
-		{
-			try
-			{
-				std::lock_guard<std::mutex> lock(singleInstanceCreationMutex);
-
-				if(uniqueObject == nullptr)
-					uniqueObject = new CallStackTracer ();
-
-				return uniqueObject;
-			}
-			catch(IAppException &)
-			{
-				throw; // just forward exceptions known to have been previously handled
-			}
-			catch(std::system_error &ex)
-			{
-				std::ostringstream oss;
-				oss << "Failed to acquire lock when creating the call stack tracer: " << core::StdLibExt::GetDetailsFromSystemError(ex);
-				throw AppException<std::runtime_error>(oss.str());
-			}
-			catch(std::bad_alloc &)
-			{
-				throw AppException<std::runtime_error>("Failed to allocate memory to create the call stack tracer");
-			}
-		}
-
-		/// <summary>
-		/// Gets the singleton instance.
-		/// </summary>
-		/// <returns></returns>
-		CallStackTracer & CallStackTracer::GetInstance()
-		{
-			// If there is no object, create one and returns a reference to it. If there is an object, return its reference.
-			if(uniqueObject != nullptr)
-				return *uniqueObject;
-			else
-				return *CreateInstance();
-		}
-
-		/// <summary>
-		/// Shutdowns the call stack tracer instance releasing all associated resources.
-		/// </summary>
-		void CallStackTracer::Shutdown()
-		{
-			delete uniqueObject; // Call the destructor
-			uniqueObject = nullptr;
-		}
-
 		/// <summary>
 		/// Registers the current thread to have its stack traced.
 		/// </summary>
 		/// <returns>
-		void CallStackTracer::RegisterThread()
+        /// <see cref="STATUS_OKAY"/> whenever successful, otherwise, <see cref="STATUS_FAIL"/>
+        /// </returns>
+		bool CallStackTracer::RegisterThread()
 		{
 			if(callStack == nullptr)
 			{
@@ -166,17 +112,23 @@ namespace _3fd
 					callStack = new CallStack (
 						AppConfig::GetSettings().framework.stackTracing.stackLogInitialCap
 					);
+
+                    return STATUS_OKAY;
 				}
-				catch(IAppException &)
+				catch(IAppException &appEx)
 				{
-					throw; // just forward exceptions known to have been previously handled
+                    // If the framework settings could not be initialized, this is a fatal error:
+                    AttemptConsoleOutput(appEx.ToString());
+                    exit(EXIT_FAILURE);
 				}
 				catch(std::exception &ex)
 				{
 					std::ostringstream oss;
-					oss << "Generic failure when registering thread for call stack tracing: " << ex.what();
-					throw AppException<std::runtime_error>(oss.str());
+					oss << "Generic failure when attempting to register thread for call stack tracing: " << ex.what();
+                    AttemptConsoleOutput(oss.str());
 				}
+
+                return STATUS_FAIL;
 			}
 		}
 
@@ -204,18 +156,15 @@ namespace _3fd
 		{
 			if(callStack != nullptr)
 				callStack->RegisterFrame(file, line, function);
-			else
-			{
-				RegisterThread();
-				callStack->RegisterFrame(file, line, function);
-			}
+			else if (RegisterThread() == STATUS_OKAY)
+                callStack->RegisterFrame(file, line, function);
 		}
 
 		/// <summary>
 		/// Pops the last added stack frame.
 		/// If the stack become empty, this object will be destroyed.
 		/// </summary>
-		void CallStackTracer::PopStackFrameEntry() throw()
+		void CallStackTracer::PopStackFrameEntry() NOEXCEPT
 		{
 			if(callStack->PopStackFrameEntry() == false)
 				return;
@@ -227,7 +176,7 @@ namespace _3fd
 		/// Gets the stack frame report.
 		/// </summary>
 		/// <returns>A text encoded report of the stack frame.</returns>
-		string CallStackTracer::GetStackReport() const
+		string CallStackTracer::GetStackReport()
 		{
 			return callStack->GetReport();
 		}

@@ -22,8 +22,11 @@ int main(int argc, char *argv[])
 
     if (FAILED(hr))
     {
-        std::cout << "Failed to initialize Windows Runtime API! " << core::WWAPI::GetDetailsFromHResult(hr);
-        return -1;
+        std::cerr << "Failed to initialize Windows Runtime API! "
+                  << core::WWAPI::GetDetailsFromHResult(hr)
+                  << std::endl;
+
+        return EXIT_FAILURE;
     }
 
     try
@@ -75,11 +78,11 @@ int main(int argc, char *argv[])
     catch (core::IAppException &ex)
     {
         core::Logger::Write(ex, core::Logger::PRIO_FATAL);
-        return -2;
+        return EXIT_FAILURE;
     }
 
     Windows::Foundation::Uninitialize();
 
-    return 0;
+    return EXIT_SUCCESS;
 }
 

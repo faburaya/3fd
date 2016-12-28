@@ -49,7 +49,7 @@ namespace wws
             ob.m_wsHeapHandle = nullptr;
         }
 
-        void Reset() throw();
+        void Reset() NOEXCEPT;
 
         void *Alloc(size_t qtBytes);
 
@@ -116,7 +116,7 @@ namespace wws
         void LogApiError(
             HRESULT hres,
             const char *funcName,
-            const char *message) throw();
+            const char *message) NOEXCEPT;
 
         void RaiseExClientNotOK(
             HRESULT hres,

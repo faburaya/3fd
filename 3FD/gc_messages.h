@@ -29,7 +29,7 @@ namespace _3fd
 			NewObjectMsg(void *sptrObjaddr,
 						 void *pointedAddr,
 						 size_t blockSize,
-						 FreeMemProc freeMemCallback) throw() :
+						 FreeMemProc freeMemCallback) NOEXCEPT :
 				m_sptrObjectAddr(sptrObjaddr),
 				m_pointedAddr(pointedAddr),
 				m_blockSize(blockSize),
@@ -65,7 +65,7 @@ namespace _3fd
 			/// The address of the <see cref="sptr"/> object in
 			/// the right side of the assignment operation.
 			/// </param>
-			ReferenceUpdateMsg(void *leftSptrObjAddr, void *rightSptrObjAddr) throw() :
+			ReferenceUpdateMsg(void *leftSptrObjAddr, void *rightSptrObjAddr) NOEXCEPT :
 				m_leftSptrObjAddr(leftSptrObjAddr),
 				m_rightSptrObjAddr(rightSptrObjAddr)
 			{}
@@ -117,7 +117,7 @@ namespace _3fd
 			/// The memory address of the <see cref="sptr"/> object
 			/// whose referred object experienced failure during construction.
 			/// </param>
-			AbortedObjectMsg(void *sptrObjAddr) throw() :
+			AbortedObjectMsg(void *sptrObjAddr) NOEXCEPT :
 				m_sptrObjAddr(sptrObjAddr)
 			{}
 
@@ -137,7 +137,7 @@ namespace _3fd
 
 		public:
 
-			SptrRegistrationMsg(void *sptrObjAddr, void *pointedAddr) throw() :
+			SptrRegistrationMsg(void *sptrObjAddr, void *pointedAddr) NOEXCEPT :
 				m_sptrObjAddr(sptrObjAddr),
 				m_pointedAddr(pointedAddr)
 			{}
@@ -158,7 +158,7 @@ namespace _3fd
 
 		public:
 
-			SptrCopyRegistrationMsg(void *leftSptrObjAddr, void *rightSptrObjAddr) throw() :
+			SptrCopyRegistrationMsg(void *leftSptrObjAddr, void *rightSptrObjAddr) NOEXCEPT :
 				m_leftSptrObjAddr(leftSptrObjAddr),
 				m_rightSptrObjAddr(rightSptrObjAddr)
 			{}
@@ -178,7 +178,7 @@ namespace _3fd
 
 		public:
 
-			SptrUnregistrationMsg(void *sptrObjAddr) throw() :
+			SptrUnregistrationMsg(void *sptrObjAddr) NOEXCEPT :
 				m_sptrObjAddr(sptrObjAddr)
 			{}
 

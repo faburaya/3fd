@@ -90,7 +90,7 @@
 // These are the calls that should be used for handling errors: it uses the RuntimeManager class:
 #ifdef ENABLE_3FD_CST
 #   // Obligatory use if you want call stack tracing feature:
-#	define CALL_STACK_TRACE _3fd::core::CallStackTracer::GetInstance().TrackCall(__FILE__, __LINE__, __FUNCTION__); _3fd::core::StackDeactivationTrigger _stackDeactTrigObj;
+#	define CALL_STACK_TRACE _3fd::core::CallStackTracer::TrackCall(__FILE__, __LINE__, __FUNCTION__); _3fd::core::StackDeactivationTrigger _stackDeactTrigObj;
 #else
 #	define CALL_STACK_TRACE
 #endif

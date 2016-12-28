@@ -5,7 +5,6 @@
 #include "preprocessing.h"
 #include <string>
 #include <vector>
-#include <mutex>
 
 namespace _3fd
 {
@@ -52,41 +51,33 @@ namespace _3fd
 
 			void RegisterFrame(const char *file, 
 							   unsigned long line, 
-							   const char *function) throw();
+							   const char *function) NOEXCEPT;
 
-			bool PopStackFrameEntry() throw();
+			bool PopStackFrameEntry() NOEXCEPT;
 
 			string GetReport();
 		};
 
 		
 		/// <summary>
-		/// A class for the call stack tracer, which is operated through macros defined on 'preprocessing.h'
+		/// A facade for the call stack tracer, which is operated through macros defined on 'preprocessing.h'
 		/// </summary>
-		class CallStackTracer : notcopiable
+		class CallStackTracer
 		{
 		private:
 
             thread_local_decl static CallStack *callStack;
-
-			static std::mutex			singleInstanceCreationMutex;
-			static CallStackTracer		*uniqueObject;
-			static CallStackTracer		*CreateInstance();
 
 			/// <summary>
 			/// Prevents a default instance of the <see cref="CallStackTracer"/> class from being created.
 			/// </summary>
 			CallStackTracer() {}
 
-			void RegisterThread();
-			void UnregisterThread();
+			static bool RegisterThread();
+			static void UnregisterThread();
 
 		public:
 
-			static CallStackTracer &GetInstance();
-
-			static void Shutdown();
-		
 			/// <summary>
 			/// Determines whether call stack tracing is ready for the calling thread.
 			/// </summary>
@@ -104,13 +95,13 @@ namespace _3fd
 				return callStack != nullptr;
 			}
 
-			void TrackCall(const char *file, 
-						   unsigned long line, 
-						   const char *function);
+			static void TrackCall(const char *file, 
+						          unsigned long line, 
+						          const char *function);
 
-			void PopStackFrameEntry() throw();
+			static void PopStackFrameEntry() NOEXCEPT;
 
-			string GetStackReport() const;
+			static string GetStackReport();
 		};
 
 		/// <summary>
@@ -125,7 +116,7 @@ namespace _3fd
 			/// </summary>
 			~StackDeactivationTrigger()
 			{
-				CallStackTracer::GetInstance().PopStackFrameEntry();
+				CallStackTracer::PopStackFrameEntry();
 			}
 		};
 

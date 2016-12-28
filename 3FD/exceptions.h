@@ -108,7 +108,7 @@ namespace _3fd
 			{
 #			ifdef ENABLE_3FD_CST
 				if (CallStackTracer::IsReady())
-					m_cst = CallStackTracer::GetInstance().GetStackReport();
+					m_cst = CallStackTracer::GetStackReport();
 #			endif	
 			}
 
@@ -119,7 +119,7 @@ namespace _3fd
 			{
 #			ifdef ENABLE_3FD_CST
 				if (CallStackTracer::IsReady())
-					m_cst = CallStackTracer::GetInstance().GetStackReport();
+					m_cst = CallStackTracer::GetStackReport();
 #			endif
 			}
 
@@ -130,7 +130,7 @@ namespace _3fd
 			{
 #			ifdef ENABLE_3FD_CST
 				if (CallStackTracer::IsReady())
-					m_cst = CallStackTracer::GetInstance().GetStackReport();
+					m_cst = CallStackTracer::GetStackReport();
 #			endif
 			}
 
@@ -142,7 +142,7 @@ namespace _3fd
 			{
 #			ifdef ENABLE_3FD_CST
 				if (CallStackTracer::IsReady())
-					m_cst = CallStackTracer::GetInstance().GetStackReport();
+					m_cst = CallStackTracer::GetStackReport();
 #			endif
 			}
 

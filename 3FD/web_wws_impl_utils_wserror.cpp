@@ -71,7 +71,7 @@ namespace wws
 	/// <summary>
 	/// Resets the error object so as to be reused.
 	/// </summary>
-	void WSError::Reset() throw()
+	void WSError::Reset() NOEXCEPT
 	{
 		if (m_wsErrorHandle != nullptr)
 		{
@@ -194,7 +194,7 @@ namespace wws
 	void WSError::LogApiError(
 		HRESULT hres,
 		const char *funcName,
-		const char *message) throw()
+		const char *message) NOEXCEPT
 	{
 		if (hres == S_OK || hres == WS_S_ASYNC)
 			return;
