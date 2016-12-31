@@ -33,20 +33,10 @@ namespace core
         /// </summary>
         enum class ArgType : uint8_t
         {
-            OptionSwitch = 0 | argIsOptionFlag,            // arg is switch-type option (no accompanying value)
-            OptionWithRequiredValue = 1 | argIsOptionFlag, // arg is option that requires an adjacent value
-            OptionWithNonReqValue = 2 | argIsOptionFlag,   // arg is option that can have an optional adjacent value
-            SingleValue = 3 | argIsValueFlag,              // arg is single value
-            ValuesList = 4 | argIsValueFlag                // arg is list of values
-        };
-
-        /// <summary>
-        /// Enumerates the expected placements for arguments.
-        /// </summary>
-        enum class ArgPlacement : int8_t
-        {
-            Anywhere = 0,  // argument has no required position
-            MustComeLast   // argument has to be the last
+            OptionSwitch = 0 | argIsOptionFlag,       // arg is switch-type option (no accompanying value)
+            OptionWithReqValue = 1 | argIsOptionFlag, // arg is option that requires an adjacent value
+            SingleValue = 2 | argIsValueFlag,         // arg is single value
+            ValuesList = 3 | argIsValueFlag           // arg is list of values
         };
 
         static const uint8_t argValIsRangedTypeFlag = 0x80;
@@ -72,9 +62,8 @@ namespace core
         /// </summary>
         struct ArgDeclaration
         {
-            int id;                  // argument ID
+            uint16_t id;             // argument ID
             ArgType type;            // type of argument
-            ArgPlacement placement;  // placement for argument
             ArgValType valueType;    // type of argument value
             char optChar;            // single character representing the option
             const char *optName;     // name label that represents the option or value
@@ -91,6 +80,16 @@ namespace core
             EqualSign = '=' // expected format: --option=value
         };
 
+        /// <summary>
+        /// Holds the value of a parsed argument of any type.
+        /// </summary>
+        union ParsedValue
+        {
+            long long asInteger;
+            double asFloat;
+            const char *asString;
+        };
+
     private:
 
         /// <summary>
@@ -102,9 +101,9 @@ namespace core
             void *typedExtInfo;
         };
 
-        std::map<int, ArgDeclExtended> m_expectedArgs;
-        std::map<char, int> m_argsByCharLabel;
-        std::map<string, int> m_argsByNameLabel;
+        std::map<uint16_t, ArgDeclExtended> m_expectedArgs;
+        std::map<char, uint16_t> m_argsByCharLabel;
+        std::map<string, uint16_t> m_argsByNameLabel;
 
         void ValidateArgDescAndLabels(const ArgDeclaration &argDecl, const char *stdExMsg);
 
@@ -125,6 +124,24 @@ namespace core
             {
                 ValidateArgDescAndLabels(argDecl, stdExMsg);
 
+                // Argument is value...
+                if ((static_cast<uint8_t> (argDecl.valueType) & argIsValueFlag) != 0)
+                {
+                    // ... but one has already been provided:
+                    if (m_idValueTypeArg >= 0)
+                    {
+                        std::ostringstream oss;
+                        oss << "Argument ID " << argDecl.id
+                            << ": cannot have more than one argument which is a value! "
+                               "(obs.: if you need it, than declare an argument which is a list of values)";
+
+                        throw AppException<std::invalid_argument>(stdExMsg, oss.str());
+                    }
+
+                    m_idValueTypeArg = argDecl.id;
+                }
+
+                // Finally insert declaration in main dictionary:
                 if (m_expectedArgs.find(argDecl.id) == m_expectedArgs.end())
                 {
                     std::unique_ptr<std::initializer_list<ValType>> temp;
@@ -151,13 +168,22 @@ namespace core
             }
         }
 
-        const char *m_appName;
         ArgValSeparator m_argValSeparator;
         uint8_t m_minCmdLineWidth;
         uint8_t m_largestNameLabel;
         bool m_useOptSignSlash;
         bool m_isOptCaseSensitive;
-        bool m_lastPositionIsTaken;
+        int m_idValueTypeArg;
+
+        /// <summary>
+        /// The parsed values for arguments that are options
+        /// </summary>
+        std::map<uint16_t, ParsedValue> m_parsedOptVals;
+
+        /// <summary>
+        /// This will accumulate value arguments in order of appearance
+        /// </summary>
+        std::vector<ParsedValue> m_parsedValArgs;
 
     public:
 
@@ -176,9 +202,21 @@ namespace core
 
         void AddExpectedArgument(const ArgDeclaration &argDecl, std::initializer_list<const char *> &&argValCfg);
 
+        void AddExpectedArgument(const ArgDeclaration &argDecl, std::initializer_list<uint16_t> &&argValCfg);
+
         void PrintArgsInfo() const;
 
-        //bool Parse(int argCount, const char *arguments[]);
+        bool Parse(int argCount, const char *arguments[]);
+
+        bool GetArgSwitchOptionValue(uint16_t id) const;
+        
+        const char *GetArgOptionValueString(uint16_t id, bool &isPresent) const;
+
+        long long GetArgOptionValueInteger(uint16_t id, bool &isPresent) const;
+
+        double GetArgOptionValueFloat(uint16_t id, bool &isPresent) const;
+
+
     };
 
 }// end of namespace core
