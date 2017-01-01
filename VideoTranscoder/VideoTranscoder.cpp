@@ -9,14 +9,14 @@
 #include "3FD\cmdline.h"
 #include <iostream>
 
-int main(int argc, char *argv[])
+int main(int argc, const char *argv[])
 {
     using namespace _3fd;
 
     core::FrameworkInstance frameworkInstance;
 
     CALL_STACK_TRACE;
-
+    
     // Initialize Windows Runtime API for COM usage of Microsoft Media Foundation
     auto hr = Windows::Foundation::Initialize(RO_INIT_MULTITHREADED);
 
@@ -33,14 +33,13 @@ int main(int argc, char *argv[])
     {
         using core::CommandLineArguments;
 
-        CommandLineArguments cmdLineArgs(80, CommandLineArguments::ArgValSeparator::Space, false, false);
+        CommandLineArguments cmdLineArgs(80, CommandLineArguments::ArgValSeparator::Colon, true, false);
 
         enum { ArgOptHelp, ArgValEncoder, ArgValTgtSizeFactor, ArgValsListIO };
 
         cmdLineArgs.AddExpectedArgument(CommandLineArguments::ArgDeclaration{
             ArgOptHelp,
             CommandLineArguments::ArgType::OptionSwitch,
-            CommandLineArguments::ArgPlacement::Anywhere,
             CommandLineArguments::ArgValType::None,
             'h', "help",
             "Displays these information about usage of application command line arguments"
@@ -48,8 +47,7 @@ int main(int argc, char *argv[])
 
         cmdLineArgs.AddExpectedArgument(CommandLineArguments::ArgDeclaration{
             ArgValEncoder,
-            CommandLineArguments::ArgType::OptionWithNonReqValue,
-            CommandLineArguments::ArgPlacement::Anywhere,
+            CommandLineArguments::ArgType::OptionWithReqValue,
             CommandLineArguments::ArgValType::EnumString,
             'e', "encoder",
             "What encoder to use, always with the highest profile made available "
@@ -58,23 +56,25 @@ int main(int argc, char *argv[])
 
         cmdLineArgs.AddExpectedArgument(CommandLineArguments::ArgDeclaration{
             ArgValTgtSizeFactor,
-            CommandLineArguments::ArgType::OptionWithNonReqValue,
-            CommandLineArguments::ArgPlacement::Anywhere,
+            CommandLineArguments::ArgType::OptionWithReqValue,
             CommandLineArguments::ArgValType::RangeFloat,
-            't', "target-size-factor",
+            't', "target_size_factor",
             "The target size of the output transcoded video, as a fraction of the original size"
         }, { 0.5, 0.001, 1.0 });
 
         cmdLineArgs.AddExpectedArgument(CommandLineArguments::ArgDeclaration{
             ArgValsListIO,
             CommandLineArguments::ArgType::ValuesList,
-            CommandLineArguments::ArgPlacement::MustComeLast,
             CommandLineArguments::ArgValType::String,
             0, "input output",
             "input & output files"
-        });
+        }, { (uint16_t)2, (uint16_t) 2 });
 
-        cmdLineArgs.PrintArgsInfo();
+        if (cmdLineArgs.Parse(argc, argv) == STATUS_FAIL)
+        {
+            std::cerr << "\nUsage:\n\n VideoTranscoder [/e:encoder] [/t:target_size_factor] input output\n\n";
+            cmdLineArgs.PrintArgsInfo();
+        }
     }
     catch (core::IAppException &ex)
     {

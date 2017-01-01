@@ -4,7 +4,6 @@
 #include <iostream>
 #include <iomanip>
 #include <vector>
-#include <regex>
 
 namespace _3fd
 {
@@ -26,7 +25,8 @@ namespace core
     CommandLineArguments::CommandLineArguments(uint8_t minCmdLineWidth,
                                                ArgValSeparator argValSeparator,
                                                bool useOptSignSlash,
-                                               bool optCaseSensitive) :
+                                               bool optCaseSensitive)
+    try :
         m_minCmdLineWidth(minCmdLineWidth > 80 ? minCmdLineWidth : 80),
         m_argValSeparator(argValSeparator),
         m_useOptSignSlash(useOptSignSlash),
@@ -34,6 +34,59 @@ namespace core
         m_largestNameLabel(0),
         m_idValueTypeArg(-1)
     {
+        CALL_STACK_TRACE;
+
+        static const char *rgxOptCharLabelCStr[][3] =
+        {
+            { "/([a-zA-Z\\d])", "/([a-zA-Z\\d])(:(.+))?", "/([a-zA-Z\\d])(=(.+))?" }, // windows notation
+            { "-([a-zA-Z\\d])", "-([a-zA-Z\\d])(:(.+))?", "-([a-zA-Z\\d])(=(.+))?" } // posix notation
+        };
+
+        uint16_t idxSeparator;
+        switch (m_argValSeparator)
+        {
+        case ArgValSeparator::Space:
+            idxSeparator = 0;
+            break;
+        case ArgValSeparator::Colon:
+            idxSeparator = 1;
+            break;
+        case ArgValSeparator::EqualSign:
+            idxSeparator = 2;
+            break;
+        default:
+            _ASSERTE(false); // unexpected separator char
+            break;
+        }
+        
+        const uint16_t idxNotation(m_useOptSignSlash ? 0 : 1);
+
+        // regex for option single char label (might be case sensitive)
+        m_rgxOptCharLabel = std::regex(rgxOptCharLabelCStr[idxNotation][idxSeparator],
+            std::regex_constants::ECMAScript | std::regex_constants::optimize | (m_isOptCaseSensitive ? 0 : std::regex_constants::icase)
+        );
+
+        static const char *rgxOptNameLabelCStr[][3] =
+        {
+            {  "/([a-z\\d_]{2,})",  "/([a-z\\d_]{2,})(:(.+))?",  "/([a-z\\d_]{2,})(=(.+))?" }, // windows notation
+            { "--([a-z\\d-]{2,})", "--([a-z\\d-]{2,})(:(.+))?", "--([a-z\\d-]{2,})(=(.+))?" } // posix notation
+        };
+
+        // regex for option name label
+        m_rgxOptNameLabel = std::regex(rgxOptNameLabelCStr[idxNotation][idxSeparator],
+            std::regex_constants::ECMAScript | std::regex_constants::optimize | std::regex_constants::icase
+        );
+    }
+    catch (IAppException &)
+    {
+        throw; // just forward exceptions from errors known to have been already handled
+    }
+    catch (std::exception &ex)
+    {
+        CALL_STACK_TRACE;
+        std::ostringstream oss;
+        oss << "Generic error when instantiating command line arguments parser: " << ex.what();
+        throw AppException<std::runtime_error>(oss.str());
     }
 
     // Looks for inconsistencies that are common to declarations of all types of arguments
@@ -340,8 +393,9 @@ namespace core
                 throw AppException<std::invalid_argument>(stdExMsg, oss.str());
             }
 
-            auto min = *(argValCfg.begin() + (argValCfg.size() == 3 ? 1 : 0));
-            auto max = *(min + 1);
+            auto minIter = argValCfg.begin() + (argValCfg.size() == 3 ? 1 : 0);
+            auto min = *(minIter);
+            auto max = *(minIter + 1);
 
             // range boundaries in wrong order?
             if (min >= max)
@@ -376,7 +430,7 @@ namespace core
             }
 
             auto min = *(argValCfg.begin());
-            auto max = *(min + 1);
+            auto max = *(argValCfg.begin() + 1);
 
             // min and max in wrong order?
             if (min == 0 || min > max)
@@ -632,7 +686,7 @@ namespace core
         // Value is limited to enumeration
         else if ((static_cast<uint8_t> (argDecl.valueType) & CommandLineArguments::argValIsEnumTypeFlag) != 0)
         {
-            oss << "(allowed: [(default = )";
+            oss << " (allowed: [(default = )";
             iter = argValCfg.begin();
             do
             {
@@ -647,9 +701,9 @@ namespace core
             auto maxCountIter = iter + 1;
 
             if (*minCountIter != *maxCountIter)
-                oss << "(from  " << *minCountIter << " to " << *maxCountIter << " values";
+                oss << " (from  " << *minCountIter << " to " << *maxCountIter << " values";
             else
-                oss << "(expects " << *minCountIter << " values)";
+                oss << " (expects " << *minCountIter << " values)";
         }
     }
 
@@ -893,7 +947,7 @@ namespace core
                         PrintArgValuesConfig(argDecl, argValCfg, oss, stdExMsg);
                     }
                     // is value an integer?
-                    if ((static_cast<uint8_t> (argDecl.valueType) & static_cast<uint8_t> (ArgValType::Integer)) != 0)
+                    else if ((static_cast<uint8_t> (argDecl.valueType) & static_cast<uint8_t> (ArgValType::Integer)) != 0)
                     {
                         auto &argValCfg = *static_cast<std::initializer_list<long long> *> (entry.second.typedExtInfo);
                         PrintArgValuesConfig(argDecl, argValCfg, oss, stdExMsg);
@@ -960,13 +1014,13 @@ namespace core
 
     // Helps validating whether an argument value belongs to its set of allowed value
     template <typename ValType>
-    static void ValidateEnumValue(const CommandLineArguments::ArgDeclaration &argDecl,
+    static bool ValidateEnumValue(const CommandLineArguments::ArgDeclaration &argDecl,
                                   const std::initializer_list<ValType> &argValCfg,
                                   ValType value)
     {
         auto iter = std::find(argValCfg.begin(), argValCfg.end(), value);
 
-        if (iter == end)
+        if (argValCfg.end() == iter)
         {
             std::cerr << "Parser error: '" << value
                       << "' does not belong to the allowed set of values for command line option '";
@@ -985,7 +1039,7 @@ namespace core
 
     // Helps validating whether an argument value falls into the configured range
     template <typename ValType>
-    static void ValidateRangedValue(const CommandLineArguments::ArgDeclaration &argDecl,
+    static bool ValidateRangedValue(const CommandLineArguments::ArgDeclaration &argDecl,
                                     const std::initializer_list<ValType> &argValCfg,
                                     ValType value)
     {
@@ -1020,8 +1074,6 @@ namespace core
 
         CALL_STACK_TRACE;
 
-        char *strEnd;
-
         switch (argDecl.valueType)
         {
             case CommandLineArguments::ArgValType::String:
@@ -1040,7 +1092,10 @@ namespace core
                 must be a configuration to provide the set of allowed values */
                 _ASSERTE(argValCfg != nullptr);
                 auto &typedArgValCfg = *static_cast<std::initializer_list<const char *> *> (argValCfg);
-                ValidateEnumValue(argDecl, typedArgValCfg, matchVal.first);
+                
+                if (ValidateEnumValue(argDecl, typedArgValCfg, matchVal.first) == STATUS_FAIL)
+                    return STATUS_FAIL;
+
                 parsedValue.asString = matchVal.first;
                 return STATUS_OKAY;
             }
@@ -1055,7 +1110,10 @@ namespace core
                 must be a configuration to provide the set of allowed values */
                 _ASSERTE(argValCfg != nullptr);
                 auto &typedArgValCfg = *static_cast<std::initializer_list<long long> *> (argValCfg);
-                ValidateEnumValue(argDecl, typedArgValCfg, value);
+
+                if (ValidateEnumValue(argDecl, typedArgValCfg, value) == STATUS_FAIL)
+                    return STATUS_FAIL;
+
                 parsedValue.asInteger = value;
                 return STATUS_OKAY;
             }
@@ -1070,7 +1128,10 @@ namespace core
                 must be a configuration to provide the range boundaries */
                 _ASSERTE(argValCfg != nullptr);
                 auto &typedArgValCfg = *static_cast<std::initializer_list<long long> *> (argValCfg);
-                ValidateRangedValue(argDecl, typedArgValCfg, value);
+                
+                if (ValidateRangedValue(argDecl, typedArgValCfg, value) == STATUS_FAIL)
+                    return STATUS_FAIL;
+
                 parsedValue.asInteger = value;
                 return STATUS_OKAY;
             }
@@ -1085,7 +1146,10 @@ namespace core
                 must be a configuration to provide the range boundaries */
                 _ASSERTE(argValCfg != nullptr);
                 auto &typedArgValCfg = *static_cast<std::initializer_list<double> *> (argValCfg);
-                ValidateRangedValue(argDecl, typedArgValCfg, value);
+
+                if (ValidateRangedValue(argDecl, typedArgValCfg, value) == STATUS_FAIL)
+                    return STATUS_FAIL;
+
                 parsedValue.asFloat = value;
                 return STATUS_OKAY;
             }
@@ -1106,9 +1170,12 @@ namespace core
     /// </returns>
     bool CommandLineArguments::Parse(int argCount, const char *arguments[])
     {
-        _ASSERTE(argCount > 1 && arguments != nullptr && arguments[argCount] == nullptr);
+        _ASSERTE(argCount > 0 && arguments != nullptr && arguments[argCount] == nullptr);
 
         CALL_STACK_TRACE;
+
+        m_parsedValArgs.clear();
+        m_parsedOptVals.clear();
 
         try
         {
@@ -1120,32 +1187,6 @@ namespace core
             // arguments that are options come with the value when the separator is not space
             bool optValueInSameArg(m_argValSeparator != ArgValSeparator::Space);
 
-            std::ostringstream oss;
-            oss << (m_useOptSignSlash ? '/' : '-') << R"(([a-z|\d]))";
-
-            if (optValueInSameArg)
-                oss << '(' << static_cast<char> (m_argValSeparator) << "(.+))?";
-
-            // regex for option single char label (might be case sensitive)
-            std::regex rgxOptCharLabel(oss.str().c_str(),
-                std::regex_constants::ECMAScript | (m_isOptCaseSensitive ? 0 : std::regex_constants::icase)
-            );
-
-            oss.str("");
-
-            if (m_useOptSignSlash)
-                oss << R"(/([a-z|\d|_]{2,}))";
-            else
-                oss << R"(--([a-z|\d|-]{2,}))";
-
-            if (optValueInSameArg)
-                oss << '(' << static_cast<char> (m_argValSeparator) << "(.+))?";
-
-            // regex for option name label
-            std::regex rgxOptNameLabel(oss.str().c_str(),
-                std::regex_constants::ECMAScript | std::regex_constants::icase
-            );
-
             // Now parse the arguments:
             uint16_t idx(1);
             while (idx < argCount)
@@ -1155,27 +1196,27 @@ namespace core
                 uint16_t argId;
                 std::cmatch match;
 
-                // does the argument looks like an option with name label?
-                if (std::regex_match(arg, match, rgxOptNameLabel))
-                {
-                    string optName = match[1].str();
-                    auto iter = m_argsByNameLabel.find(optName);
-                    if (m_argsByNameLabel.end() == iter)
-                    {
-                        std::cerr << "Parser error: command line option '" << optName << "' is unknown" << std::endl;
-                        return STATUS_FAIL;
-                    }
-
-                    argId = iter->second;
-                }
                 // does the argument looks like an option with single char label?
-                else if (std::regex_match(arg, match, rgxOptCharLabel))
+                if (std::regex_match(arg, match, m_rgxOptCharLabel))
                 {
                     auto optChar = *(match[1].first);
                     auto iter = m_argsByCharLabel.find(optChar);
                     if (m_argsByCharLabel.end() == iter)
                     {
                         std::cerr << "Parser error: command line option '" << optChar << "' is unknown" << std::endl;
+                        return STATUS_FAIL;
+                    }
+
+                    argId = iter->second;
+                }
+                // does the argument looks like an option with name label?
+                else if (std::regex_match(arg, match, m_rgxOptNameLabel))
+                {
+                    string optName = match[1].str();
+                    auto iter = m_argsByNameLabel.find(optName);
+                    if (m_argsByNameLabel.end() == iter)
+                    {
+                        std::cerr << "Parser error: command line option '" << optName << "' is unknown" << std::endl;
                         return STATUS_FAIL;
                     }
 
@@ -1208,6 +1249,7 @@ namespace core
                     }
 
                     m_parsedValArgs.push_back(parsedValue);
+                    ++idx;
                     continue;
                 }
 
@@ -1294,13 +1336,14 @@ namespace core
                 // wrong number of items?
                 if (m_parsedValArgs.size() < minCount || m_parsedValArgs.size() > maxCount)
                 {
-                    std::cerr << "Parser error: list of values '" << valArgIter->second.common.optName << "' can only have ";
+                    std::cerr << "Parser error: list of values '" << valArgIter->second.common.optName << "' expected ";
 
                     if (minCount != maxCount)
-                        std::cerr << "from " << minCount << " to " << maxCount << " items";
+                        std::cerr << "from " << minCount << " to " << maxCount;
                     else
-                        std::cerr << minCount << " items" << std::endl;
+                        std::cerr << minCount;
 
+                    std::cerr << " items, but received " << m_parsedValArgs.size() << std::endl;
                     return STATUS_FAIL;
                 }
             }
@@ -1342,13 +1385,14 @@ namespace core
     }
 
     /// <summary>
-    /// Gets the string value for a command line argument option.
+    /// Gets the string value for a command line argument option or value.
     /// </summary>
     /// <param name="id">The argument identifier.</param>
     /// <param name="isPresent">Tells whether the argument was present in the command line.</param>
-    /// <returns>When not present in command line, the configured default. If no default
-    /// has been configured, zero/null. When present, the provided accompanying value.</returns>
-    const char * CommandLineArguments::GetArgOptionValueString(uint16_t id, bool &isPresent) const
+    /// <returns>The provided value for the argument. When not present in command line,
+    /// the configured default for the option. If the option has no configured default,
+    /// or not an option, then zero/null.</returns>
+    const char * CommandLineArguments::GetArgValueString(uint16_t id, bool &isPresent) const
     {
         CALL_STACK_TRACE;
 
@@ -1364,7 +1408,17 @@ namespace core
 
         // is this call ppropriate for the argument value type?
         _ASSERTE((static_cast<uint8_t> (extArgDecl.common.valueType) & static_cast<uint8_t> (ArgValType::String)) != 0
-                 && (static_cast<uint8_t> (extArgDecl.common.type) & argIsOptionFlag) != 0);
+                 && extArgDecl.common.type != ArgType::ValuesList);
+
+        // is the argument a value?
+        if (id == m_idValueTypeArg)
+        {
+            if (!m_parsedValArgs.empty())
+                return m_parsedValArgs[0].asString;
+            
+            isPresent = false;
+            return nullptr;
+        }
 
         auto parsedOptValsIter = m_parsedOptVals.find(id);
         if (m_parsedOptVals.end() != parsedOptValsIter)
@@ -1378,8 +1432,8 @@ namespace core
 
         if (argValCfg != nullptr)
             return *(argValCfg->begin());
-        else
-            return nullptr;
+        
+        return nullptr;
     }
     
     /// <summary>
@@ -1387,9 +1441,10 @@ namespace core
     /// </summary>
     /// <param name="id">The argument identifier.</param>
     /// <param name="isPresent">Whether the argument was present in the command line.</param>
-    /// <returns>When not present in command line, the configured default. If no default
-    /// has been configured, zero/null. When present, the provided accompanying value.</returns>
-    long long CommandLineArguments::GetArgOptionValueInteger(uint16_t id, bool &isPresent) const
+    /// <returns>The provided value for the argument. When not present in command line,
+    /// the configured default for the option. If the option has no configured default,
+    /// or not an option, then zero/null.</returns>
+    long long CommandLineArguments::GetArgValueInteger(uint16_t id, bool &isPresent) const
     {
         CALL_STACK_TRACE;
 
@@ -1405,7 +1460,17 @@ namespace core
         
         // is this call ppropriate for the argument value type?
         _ASSERTE((static_cast<uint8_t> (extArgDecl.common.valueType) & static_cast<uint8_t> (ArgValType::Integer)) != 0
-                 && (static_cast<uint8_t> (extArgDecl.common.type) & argIsOptionFlag) != 0);
+                 && extArgDecl.common.type != ArgType::ValuesList);
+
+        // is the argument a value?
+        if (id == m_idValueTypeArg)
+        {
+            if (!m_parsedValArgs.empty())
+                return m_parsedValArgs[0].asInteger;
+            
+            isPresent = false;
+            return 0;
+        }
 
         auto parsedOptValsIter = m_parsedOptVals.find(id);
         if (m_parsedOptVals.end() != parsedOptValsIter)
@@ -1427,8 +1492,8 @@ namespace core
         {
             return *(argValCfg->begin());
         }
-        else
-            return 0;
+        
+        return 0;
     }
 
     /// <summary>
@@ -1436,9 +1501,10 @@ namespace core
     /// </summary>
     /// <param name="id">The argument identifier.</param>
     /// <param name="isPresent">Whether the argument was present in the command line.</param>
-    /// <returns>When not present in command line, the configured default. If no default
-    /// has been configured, zero/null. When present, the provided accompanying value.</returns>
-    double CommandLineArguments::GetArgOptionValueFloat(uint16_t id, bool &isPresent) const
+    /// <returns>The provided value for the argument. When not present in command line,
+    /// the configured default for the option. If the option has no configured default,
+    /// or not an option, then zero/null.</returns>
+    double CommandLineArguments::GetArgValueFloat(uint16_t id, bool &isPresent) const
     {
         CALL_STACK_TRACE;
 
@@ -1454,7 +1520,17 @@ namespace core
 
         // is this call ppropriate for the argument value type?
         _ASSERTE((static_cast<uint8_t> (extArgDecl.common.valueType) & static_cast<uint8_t> (ArgValType::Float)) != 0
-                 && (static_cast<uint8_t> (extArgDecl.common.type) & argIsOptionFlag) != 0);
+                 && extArgDecl.common.type != ArgType::ValuesList);
+
+        // is the argument a value?
+        if (id == m_idValueTypeArg)
+        {
+            if (!m_parsedValArgs.empty())
+                return m_parsedValArgs[0].asFloat;
+            
+            isPresent = false;
+            return 0.0;
+        }
 
         auto parsedOptValsIter = m_parsedOptVals.find(id);
         if (m_parsedOptVals.end() != parsedOptValsIter)
@@ -1476,8 +1552,119 @@ namespace core
         {
             return *(argValCfg->begin());
         }
-        else
-            return 0;
+        
+        return 0.0;
+    }
+
+    /// <summary>
+    /// Makes a copy of the parsed values for an argument which is a list of string values.
+    /// </summary>
+    /// <param name="values">Where the values will be copied to.</param>
+    /// <returns>Whether the argument was present in the command line.</returns>
+    bool CommandLineArguments::GetArgListOfValues(std::vector<const char *> &values) const
+    {
+        CALL_STACK_TRACE;
+
+        if (m_idValueTypeArg < 0)
+        {
+            std::ostringstream oss;
+            oss << "Cannot retrieve list of values from command line because no such argument has been declared";
+            throw AppException<std::invalid_argument>(oss.str());
+        }
+
+        // is this call ppropriate for the argument value type?
+        std::map<uint16_t, ArgDeclExtended>::const_iterator argDeclIter;
+        _ASSERTE(
+            (argDeclIter = m_expectedArgs.find(m_idValueTypeArg)) != m_expectedArgs.end()
+            && (static_cast<uint8_t> (argDeclIter->second.common.valueType) & static_cast<uint8_t> (ArgValType::String)) != 0
+        );
+
+        values.clear();
+
+        if (m_parsedValArgs.empty())
+            return false;
+
+        values.reserve(m_parsedValArgs.size());
+        for (auto value : m_parsedValArgs)
+        {
+            values.push_back(value.asString);
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Makes a copy of the parsed values for an argument which is a list of integer values.
+    /// </summary>
+    /// <param name="values">Where the values will be copied to.</param>
+    /// <returns>Whether the argument was present in the command line.</returns>
+    bool CommandLineArguments::GetArgListOfValues(std::vector<long long> &values) const
+    {
+        CALL_STACK_TRACE;
+
+        if (m_idValueTypeArg < 0)
+        {
+            std::ostringstream oss;
+            oss << "Cannot retrieve list of values from command line because no such argument has been declared";
+            throw AppException<std::invalid_argument>(oss.str());
+        }
+
+        // is this call ppropriate for the argument value type?
+        std::map<uint16_t, ArgDeclExtended>::const_iterator argDeclIter;
+        _ASSERTE(
+            (argDeclIter = m_expectedArgs.find(m_idValueTypeArg)) != m_expectedArgs.end()
+            && (static_cast<uint8_t> (argDeclIter->second.common.valueType) & static_cast<uint8_t> (ArgValType::Integer)) != 0
+        );
+
+        values.clear();
+
+        if (m_parsedValArgs.empty())
+            return false;
+
+        values.reserve(m_parsedValArgs.size());
+        for (auto value : m_parsedValArgs)
+        {
+            values.push_back(value.asInteger);
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Makes a copy of the parsed values for an argument which is a list of floating point values.
+    /// </summary>
+    /// <param name="values">Where the values will be copied to.</param>
+    /// <returns>Whether the argument was present in the command line.</returns>
+    bool CommandLineArguments::GetArgListOfValues(std::vector<double> &values) const
+    {
+        CALL_STACK_TRACE;
+
+        if (m_idValueTypeArg < 0)
+        {
+            std::ostringstream oss;
+            oss << "Cannot retrieve list of values from command line because no such argument has been declared";
+            throw AppException<std::invalid_argument>(oss.str());
+        }
+
+        // is this call ppropriate for the argument value type?
+        std::map<uint16_t, ArgDeclExtended>::const_iterator argDeclIter;
+        _ASSERTE(
+            (argDeclIter = m_expectedArgs.find(m_idValueTypeArg)) != m_expectedArgs.end()
+            && (static_cast<uint8_t> (argDeclIter->second.common.valueType) & static_cast<uint8_t> (ArgValType::Float)) != 0
+        );
+
+        values.clear();
+
+        if (m_parsedValArgs.empty())
+            return false;
+
+        values.reserve(m_parsedValArgs.size());
+        for (auto value : m_parsedValArgs)
+        {
+            values.push_back(value.asFloat);
+        }
+
+        return true;
     }
 
 }// end of namespace core

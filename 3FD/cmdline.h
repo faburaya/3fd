@@ -8,6 +8,7 @@
 #include <stdexcept>
 #include <sstream>
 #include <string>
+#include <regex>
 #include <memory>
 #include <vector>
 #include <map>
@@ -125,7 +126,7 @@ namespace core
                 ValidateArgDescAndLabels(argDecl, stdExMsg);
 
                 // Argument is value...
-                if ((static_cast<uint8_t> (argDecl.valueType) & argIsValueFlag) != 0)
+                if ((static_cast<uint8_t> (argDecl.type) & argIsValueFlag) != 0)
                 {
                     // ... but one has already been provided:
                     if (m_idValueTypeArg >= 0)
@@ -175,6 +176,9 @@ namespace core
         bool m_isOptCaseSensitive;
         int m_idValueTypeArg;
 
+        std::regex m_rgxOptCharLabel;
+        std::regex m_rgxOptNameLabel;
+
         /// <summary>
         /// The parsed values for arguments that are options
         /// </summary>
@@ -210,13 +214,17 @@ namespace core
 
         bool GetArgSwitchOptionValue(uint16_t id) const;
         
-        const char *GetArgOptionValueString(uint16_t id, bool &isPresent) const;
+        const char *GetArgValueString(uint16_t id, bool &isPresent) const;
 
-        long long GetArgOptionValueInteger(uint16_t id, bool &isPresent) const;
+        long long GetArgValueInteger(uint16_t id, bool &isPresent) const;
 
-        double GetArgOptionValueFloat(uint16_t id, bool &isPresent) const;
+        double GetArgValueFloat(uint16_t id, bool &isPresent) const;
 
+        bool GetArgListOfValues(std::vector<const char *> &values) const;
 
+        bool GetArgListOfValues(std::vector<long long> &values) const;
+
+        bool GetArgListOfValues(std::vector<double> &values) const;
     };
 
 }// end of namespace core
