@@ -18,7 +18,7 @@ namespace core
     /// Initializes a new instance of the <see cref="CommandLineArguments" /> class.
     /// </summary>
     /// <param name="appName">Name of the application executable.</param>
-    /// <param name="minCmdLineWidth">Minimum width of the command line.</param>
+    /// <param name="minCmdLineWidth">Minimum width of the command line. Anything less than 80 columns is ignored.</param>
     /// <param name="argValSeparator">The character separator to use between option label and value.</param>
     /// <param name="useOptSignSlash">if set to <c>true</c>, use option sign slash (Windows prompt style) instead of dash.</param>
     /// <param name="optCaseSensitive">if set to <c>true</c>, make case sensitive the parsing of single character labels for options.</param>
@@ -184,7 +184,7 @@ namespace core
             std::ostringstream oss;
             oss << "Argument ID " << argDecl.id
                 << ": description is too large (limit is "
-                << maxLengthArgDesc << " UTF-8 characters)";
+                << maxLengthArgDesc << " UTF-8 encoded bytes)";
 
             throw AppException<std::length_error>(stdExMsg, oss.str());
         }
@@ -276,7 +276,7 @@ namespace core
             std::ostringstream oss;
             oss << "Argument ID " << argDecl.id
                 << ": name label is too large (limit is "
-                << maxLengthNameLabel << " UTF-8 characters)";
+                << maxLengthNameLabel << " UTF-8 encoded bytes)";
 
             throw AppException<std::length_error>(stdExMsg, oss.str());
         }
@@ -992,7 +992,9 @@ namespace core
             return STATUS_OKAY;
         else
         {
-            std::cerr << "Parser error: '" << matchVal.first << "' is not a valid integer value";
+            std::cerr << "Parser error: '" << matchVal.first
+                      << "' is not a valid integer value" << std::endl;
+
             return STATUS_FAIL;
         }
     }
@@ -1007,7 +1009,9 @@ namespace core
             return STATUS_OKAY;
         else
         {
-            std::cerr << "Parser error: '" << matchVal.first << "' is not a valid floating point value";
+            std::cerr << "Parser error: '" << matchVal.first
+                      << "' is not a valid floating point value" << std::endl;
+
             return STATUS_FAIL;
         }
     }
@@ -1188,11 +1192,11 @@ namespace core
 
         CALL_STACK_TRACE;
 
-        m_parsedValArgs.clear();
-        m_parsedOptVals.clear();
-
         try
         {
+            std::vector<ParsedValue> parsedValArgs; // temporarily hold results for parsed value arguments
+            std::map<uint16_t, ParsedValue> parsedOptVals; // temporarily hold results for parsed option arguments
+
             boost::csub_match matchVal; // regex sub-match for value
 
             // iterator for the only allowed argument to be a value or list of values (if declared at all)
@@ -1239,11 +1243,11 @@ namespace core
                 else // is the argument a value or list of values?
                 {
                     /* no argument which is a value or list of values has been declared
-                    OR
-                    there is one, but it is not a list, and more than one value has been caught here already */
+                       OR
+                       there is one, but it is not a list, and more than one value has been caught here already */
                     if (valArgIter == m_expectedArgs.end()
                         || (valArgIter->second.common.type != ArgType::ValuesList
-                            && m_parsedValArgs.size() != 0))
+                            && parsedValArgs.size() != 0))
                     {
                         std::cerr << "Parser error: value '" << arg << "' was unexpected" << std::endl;
                         return STATUS_FAIL;
@@ -1262,7 +1266,7 @@ namespace core
                         return STATUS_FAIL;
                     }
 
-                    m_parsedValArgs.push_back(parsedValue);
+                    parsedValArgs.push_back(parsedValue);
                     ++idx;
                     continue;
                 }
@@ -1274,7 +1278,7 @@ namespace core
                 auto &argDecl = expArg.common;
 
                 // repeated option?
-                auto insertResult = m_parsedOptVals.insert(std::make_pair(argId, ParsedValue{ 0 }));
+                auto insertResult = parsedOptVals.insert(std::make_pair(argId, ParsedValue{ 0 }));
                 if (!insertResult.second)
                 {
                     std::cerr << "Parser error: command line option '" << match[1].str()
@@ -1304,8 +1308,8 @@ namespace core
                 case ArgType::OptionWithReqValue:
 
                     /* accompanying value should have appeared in this arg, but it didn't
-                    OR
-                    accompanying value should appear in the next arg, but there is none */
+                       OR
+                       accompanying value should appear in the next arg, but there is none */
                     if ((optValueInSameArg && !match[2].matched)
                         || (!optValueInSameArg && (arg = arguments[++idx]) == nullptr))
                     {
@@ -1334,7 +1338,7 @@ namespace core
                     return STATUS_FAIL;
                 }
 
-                m_parsedOptVals[argId] = parsedVal;
+                parsedOptVals[argId] = parsedVal;
                 ++idx;
             }// while loop end
 
@@ -1348,9 +1352,9 @@ namespace core
                 auto maxCount = *(argValCfg.begin() + 1);
                 
                 // wrong number of items?
-                if (m_parsedValArgs.size() != 0
-                    && (m_parsedValArgs.size() < minCount
-                        || m_parsedValArgs.size() > maxCount))
+                if (parsedValArgs.size() != 0
+                    && (parsedValArgs.size() < minCount
+                        || parsedValArgs.size() > maxCount))
                 {
                     std::cerr << "Parser error: list of values '" << valArgIter->second.common.optName << "' expected ";
 
@@ -1359,10 +1363,14 @@ namespace core
                     else
                         std::cerr << minCount;
 
-                    std::cerr << " items, but received " << m_parsedValArgs.size() << std::endl;
+                    std::cerr << " items, but received " << parsedValArgs.size() << std::endl;
                     return STATUS_FAIL;
                 }
             }
+
+            // At the end, if everyting went okay, change the state of the object:
+            m_parsedOptVals.swap(parsedOptVals);
+            m_parsedValArgs.swap(parsedValArgs);
 
             return STATUS_OKAY;
         }
@@ -1504,7 +1512,7 @@ namespace core
             && ((static_cast<uint8_t> (extArgDecl.common.valueType) & static_cast<uint8_t> (argValIsEnumTypeFlag)) != 0
                 // there is default value in configuration of range
                 || (static_cast<uint8_t> (extArgDecl.common.valueType) & static_cast<uint8_t> (argValIsRangedTypeFlag)) != 0
-                && argValCfg->size() > 2))
+                    && argValCfg->size() > 2))
         {
             return *(argValCfg->begin());
         }
@@ -1564,7 +1572,7 @@ namespace core
             && ((static_cast<uint8_t> (extArgDecl.common.valueType) & static_cast<uint8_t> (argValIsEnumTypeFlag)) != 0
                 // there is default value in configuration of range
                 || (static_cast<uint8_t> (extArgDecl.common.valueType) & static_cast<uint8_t> (argValIsRangedTypeFlag)) != 0
-                && argValCfg->size() > 2))
+                    && argValCfg->size() > 2))
         {
             return *(argValCfg->begin());
         }

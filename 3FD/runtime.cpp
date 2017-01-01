@@ -94,5 +94,6 @@ namespace core
             Windows::Foundation::Uninitialize();
 #endif
 	}
-}
-}
+
+}// end of namespace core
+}// end of namespace _3fd
