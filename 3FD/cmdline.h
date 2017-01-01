@@ -3,12 +3,12 @@
 
 #include "exceptions.h"
 #include "callstacktracer.h"
+#include <boost\regex.hpp>
 #include <cinttypes>
 #include <initializer_list>
 #include <stdexcept>
 #include <sstream>
 #include <string>
-#include <regex>
 #include <memory>
 #include <vector>
 #include <map>
@@ -176,8 +176,8 @@ namespace core
         bool m_isOptCaseSensitive;
         int m_idValueTypeArg;
 
-        std::regex m_rgxOptCharLabel;
-        std::regex m_rgxOptNameLabel;
+        boost::regex m_rgxOptCharLabel;
+        boost::regex m_rgxOptNameLabel;
 
         /// <summary>
         /// The parsed values for arguments that are options

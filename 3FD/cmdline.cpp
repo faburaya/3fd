@@ -62,8 +62,8 @@ namespace core
         const uint16_t idxNotation(m_useOptSignSlash ? 0 : 1);
 
         // regex for option single char label (might be case sensitive)
-        m_rgxOptCharLabel = std::regex(rgxOptCharLabelCStr[idxNotation][idxSeparator],
-            std::regex_constants::ECMAScript | std::regex_constants::optimize | (m_isOptCaseSensitive ? 0 : std::regex_constants::icase)
+        m_rgxOptCharLabel = boost::regex(rgxOptCharLabelCStr[idxNotation][idxSeparator],
+            boost::regex_constants::ECMAScript | (m_isOptCaseSensitive ? 0 : boost::regex_constants::icase)
         );
 
         static const char *rgxOptNameLabelCStr[][3] =
@@ -73,8 +73,8 @@ namespace core
         };
 
         // regex for option name label
-        m_rgxOptNameLabel = std::regex(rgxOptNameLabelCStr[idxNotation][idxSeparator],
-            std::regex_constants::ECMAScript | std::regex_constants::optimize | std::regex_constants::icase
+        m_rgxOptNameLabel = boost::regex(rgxOptNameLabelCStr[idxNotation][idxSeparator],
+            boost::regex_constants::ECMAScript | boost::regex_constants::icase
         );
     }
     catch (IAppException &)
@@ -983,7 +983,7 @@ namespace core
     }
 
     // Parses the string of a regex submatch into an integer value
-    static bool ParseInteger(const std::csub_match &matchVal, long long &value)
+    static bool ParseInteger(const boost::csub_match &matchVal, long long &value)
     {
         char *strEnd;
         value = strtoll(matchVal.first, &strEnd, 0);
@@ -998,7 +998,7 @@ namespace core
     }
 
     // Parses the string of a regex submatch into a floating point value
-    static bool ParseFloat(const std::csub_match &matchVal, double &value)
+    static bool ParseFloat(const boost::csub_match &matchVal, double &value)
     {
         char *strEnd;
         value = strtod(matchVal.first, &strEnd);
@@ -1066,7 +1066,7 @@ namespace core
     // Helps parsing a value of given type, then validates it against configuration
     static bool ParseAndValidateValue(const CommandLineArguments::ArgDeclaration &argDecl,
                                       void *argValCfg,
-                                      const std::csub_match &matchVal,
+                                      const boost::csub_match &matchVal,
                                       CommandLineArguments::ParsedValue &parsedValue)
     {
         // this implementation should only be called to parse values of arguments that expect and matched one
@@ -1179,7 +1179,7 @@ namespace core
 
         try
         {
-            std::csub_match matchVal; // regex sub-match for value
+            boost::csub_match matchVal; // regex sub-match for value
 
             // iterator for the only allowed argument to be a value or list of values (if declared at all)
             auto valArgIter = (m_idValueTypeArg >= 0) ? m_expectedArgs.find(m_idValueTypeArg) : m_expectedArgs.end();
@@ -1194,10 +1194,10 @@ namespace core
                 const char *arg = arguments[idx];
 
                 uint16_t argId;
-                std::cmatch match;
+                boost::cmatch match;
 
                 // does the argument looks like an option with single char label?
-                if (std::regex_match(arg, match, m_rgxOptCharLabel))
+                if (boost::regex_match(arg, match, m_rgxOptCharLabel))
                 {
                     auto optChar = *(match[1].first);
                     auto iter = m_argsByCharLabel.find(optChar);
@@ -1210,7 +1210,7 @@ namespace core
                     argId = iter->second;
                 }
                 // does the argument looks like an option with name label?
-                else if (std::regex_match(arg, match, m_rgxOptNameLabel))
+                else if (boost::regex_match(arg, match, m_rgxOptNameLabel))
                 {
                     string optName = match[1].str();
                     auto iter = m_argsByNameLabel.find(optName);
@@ -1260,8 +1260,8 @@ namespace core
                 auto &argDecl = expArg.common;
 
                 // repeated option?
-                auto parsedValIter = m_parsedOptVals.find(argId);
-                if (m_parsedOptVals.end() != parsedValIter)
+                auto insertResult = m_parsedOptVals.insert(std::make_pair(argId, ParsedValue{ 0 }));
+                if (!insertResult.second)
                 {
                     std::cerr << "Parser error: command line option '" << match[1].str()
                               << "' appears more than once" << std::endl;
@@ -1269,7 +1269,7 @@ namespace core
                     return STATUS_FAIL;
                 }
 
-                auto &parsedVal = parsedValIter->second;
+                auto &parsedVal = insertResult.first->second;
 
                 switch (argDecl.type)
                 {
