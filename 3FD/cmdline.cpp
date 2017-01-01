@@ -262,7 +262,7 @@ namespace core
                 oss << "Argument ID " << argDecl.id
                     << ": only alphanumeric ASCII characters (and dash for POSIX "
                        "option notation which also uses dash, or underline for Windows "
-                       "option notation which uses slash)  are allowed in name label";
+                       "option notation which uses slash) are allowed in name label";
 
                 throw AppException<std::invalid_argument>(stdExMsg, oss.str());
             }
@@ -531,7 +531,7 @@ namespace core
             std::ostringstream oss;
             oss << "Argument ID " << argDecl.id
                 << ": list of values requires configured values to be min and max "
-                "count of items, expressed as unsigned integers 16 bits long";
+                   "count of items, expressed as unsigned integers 16 bits long";
 
             throw AppException<std::invalid_argument>(stdExMsg, oss.str());
         }
@@ -576,7 +576,7 @@ namespace core
             std::ostringstream oss;
             oss << "Argument ID " << argDecl.id
                 << ": list of values requires configured values to be min and max "
-                "count of items, expressed as unsigned integers 16 bits long";
+                   "count of items, expressed as unsigned integers 16 bits long";
 
             throw AppException<std::invalid_argument>(stdExMsg, oss.str());
         }
@@ -686,11 +686,11 @@ namespace core
         // Value is limited to enumeration
         else if ((static_cast<uint8_t> (argDecl.valueType) & CommandLineArguments::argValIsEnumTypeFlag) != 0)
         {
-            oss << " (allowed: [(default = )";
+            oss << " - allowed: [(default = )";
             iter = argValCfg.begin();
             do
             {
-                oss << *iter << (argValCfg.end() != iter + 1 ? ", " : "])");
+                oss << *iter << (argValCfg.end() != iter + 1 ? ", " : "]");
             }
             while (argValCfg.end() != ++iter);
         }
@@ -701,7 +701,7 @@ namespace core
             auto maxCountIter = iter + 1;
 
             if (*minCountIter != *maxCountIter)
-                oss << " (from  " << *minCountIter << " to " << *maxCountIter << " values";
+                oss << " (expects from  " << *minCountIter << " to " << *maxCountIter << " values)";
             else
                 oss << " (expects " << *minCountIter << " values)";
         }
@@ -1348,7 +1348,9 @@ namespace core
                 auto maxCount = *(argValCfg.begin() + 1);
                 
                 // wrong number of items?
-                if (m_parsedValArgs.size() < minCount || m_parsedValArgs.size() > maxCount)
+                if (m_parsedValArgs.size() != 0
+                    && (m_parsedValArgs.size() < minCount
+                        || m_parsedValArgs.size() > maxCount))
                 {
                     std::cerr << "Parser error: list of values '" << valArgIter->second.common.optName << "' expected ";
 

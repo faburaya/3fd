@@ -5,22 +5,33 @@
 #include "callstacktracer.h"
 #include "logger.h"
 
+#ifdef _3FD_PLATFORM_WIN32API
+#   include <roapi.h>
+#endif
+
 namespace _3fd
 {
-	namespace core
+namespace core
+{
+	/// <summary>
+	/// An object to be allocated on the stack which is responsible for 
+	/// starting or stopping the framework instance for the current thread.
+	/// </summary>
+	class FrameworkInstance
 	{
-		/// <summary>
-		/// An object to be allocated on the stack which is responsible for 
-		/// starting or stopping the framework instance for the current thread.
-		/// </summary>
-		class FrameworkInstance
-		{
-		public:
+    private:
+#   ifdef _3FD_PLATFORM_WIN32API
+        bool m_isComLibInitialized;
+#   endif
+	public:
 
-			FrameworkInstance();
-			~FrameworkInstance();
-		};
-	}
+		FrameworkInstance();
+#   ifdef _3FD_PLATFORM_WIN32API
+        FrameworkInstance(RO_INIT_TYPE comThreadModel);
+#   endif
+		~FrameworkInstance();
+	};
+}
 }
 
 #endif // header guard

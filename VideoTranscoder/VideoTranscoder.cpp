@@ -13,21 +13,9 @@ int main(int argc, const char *argv[])
 {
     using namespace _3fd;
 
-    core::FrameworkInstance frameworkInstance;
+    core::FrameworkInstance frameworkInstance(RO_INIT_MULTITHREADED);
 
     CALL_STACK_TRACE;
-    
-    // Initialize Windows Runtime API for COM usage of Microsoft Media Foundation
-    auto hr = Windows::Foundation::Initialize(RO_INIT_MULTITHREADED);
-
-    if (FAILED(hr))
-    {
-        std::cerr << "Failed to initialize Windows Runtime API! "
-                  << core::WWAPI::GetDetailsFromHResult(hr)
-                  << std::endl;
-
-        return EXIT_FAILURE;
-    }
 
     try
     {
@@ -58,7 +46,7 @@ int main(int argc, const char *argv[])
             ArgValTgtSizeFactor,
             CommandLineArguments::ArgType::OptionWithReqValue,
             CommandLineArguments::ArgValType::RangeFloat,
-            't', "target_size_factor",
+            't', "tsf",
             "The target size of the output transcoded video, as a fraction of the original size"
         }, { 0.5, 0.001, 1.0 });
 
@@ -74,15 +62,33 @@ int main(int argc, const char *argv[])
         {
             std::cerr << "\nUsage:\n\n VideoTranscoder [/e:encoder] [/t:target_size_factor] input output\n\n";
             cmdLineArgs.PrintArgsInfo();
+            return EXIT_FAILURE;
         }
+
+        bool isPresent;
+
+        std::cout << "encoder = " << cmdLineArgs.GetArgValueString(ArgValEncoder, isPresent);
+        std::cout << (isPresent ? " " : " (default)") << std::endl;
+
+        std::cout << "target = " << cmdLineArgs.GetArgValueFloat(ArgValTgtSizeFactor, isPresent);
+        std::cout << (isPresent ? " " : " (default)") << std::endl;
+        
+        std::cout << "io = ";
+        std::vector<const char *> filesNames;
+        cmdLineArgs.GetArgListOfValues(filesNames);
+
+        for (auto fname : filesNames)
+        {
+            std::cout << fname << " ";
+        }
+
+        std::cout << std::endl;
     }
     catch (core::IAppException &ex)
     {
         core::Logger::Write(ex, core::Logger::PRIO_FATAL);
         return EXIT_FAILURE;
     }
-
-    Windows::Foundation::Uninitialize();
 
     return EXIT_SUCCESS;
 }
