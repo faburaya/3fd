@@ -1012,13 +1012,27 @@ namespace core
         }
     }
 
+    template <typename ValType> bool IsEqual(ValType left, ValType right)
+    {
+        return left == right;
+    }
+
+    template <> bool IsEqual<const char *>(const char *left, const char *right)
+    {
+        return strcmp(left, right) == 0;
+    }
+
     // Helps validating whether an argument value belongs to its set of allowed value
     template <typename ValType>
     static bool ValidateEnumValue(const CommandLineArguments::ArgDeclaration &argDecl,
                                   const std::initializer_list<ValType> &argValCfg,
                                   ValType value)
     {
-        auto iter = std::find(argValCfg.begin(), argValCfg.end(), value);
+        auto iter = std::find_if(
+            argValCfg.begin(),
+            argValCfg.end(),
+            [value](ValType entry) { return IsEqual(entry, value); }
+        );
 
         if (argValCfg.end() == iter)
         {
