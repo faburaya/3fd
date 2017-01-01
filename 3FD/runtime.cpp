@@ -10,6 +10,8 @@
 #	include <codecvt>
 #endif
 
+#include <sstream>
+
 namespace _3fd
 {
 namespace core
@@ -60,9 +62,12 @@ namespace core
 
         if (FAILED(hr))
         {
-            std::cerr << "Failed to initialize Windows Runtime API! "
-                      << core::WWAPI::GetDetailsFromHResult(hr)
-                      << std::endl;
+            std::ostringstream oss;
+            oss << "Failed to initialize Windows Runtime API! " << core::WWAPI::GetDetailsFromHResult(hr);
+
+            Logger::Write(oss.str(), Logger::PRIO_ERROR);
+            Logger::Write("3FD was shutdown", core::Logger::PRIO_DEBUG);
+            Logger::Shutdown();
 
             exit(EXIT_FAILURE);
         }
