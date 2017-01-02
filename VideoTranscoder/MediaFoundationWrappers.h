@@ -34,6 +34,7 @@ namespace application
     public:
 
         MFSourceReader(const string &url, UINT idxVideoAdapter);
+
         ~MFSourceReader();
     };
 
