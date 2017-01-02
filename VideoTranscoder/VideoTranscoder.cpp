@@ -5,9 +5,54 @@
 #include "3FD\runtime.h"
 #include "3FD\exceptions.h"
 #include "3FD\callstacktracer.h"
+#include "3FD\exceptions.h"
 #include "3FD\logger.h"
 #include "3FD\cmdline.h"
+
 #include <iostream>
+#include <mfapi.h>
+
+#include "MediaFoundationWrappers.h"
+
+namespace application
+{
+    using namespace _3fd::core;
+
+    //////////////////////////////
+    // Class MediaFoundationLib
+    //////////////////////////////
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="MediaFoundationLib"/> class.
+    /// </summary>
+    MediaFoundationLib::MediaFoundationLib()
+    {
+        CALL_STACK_TRACE;
+
+        HRESULT hr = MFStartup(MF_VERSION, MFSTARTUP_LITE);
+
+        if (FAILED(hr))
+            WWAPI::RaiseHResultException(hr, "Failed to initialize Microsoft Media Foundation platform", "MFStartup");
+    }
+
+    /// <summary>
+    /// Finalizes an instance of the <see cref="MediaFoundationLib"/> class.
+    /// </summary>
+    MediaFoundationLib::~MediaFoundationLib()
+    {
+        HRESULT hr = MFShutdown();
+
+        if (FAILED(hr))
+        {
+            Logger::Write(hr,
+                "Failed to shut down Microsoft Media Foundation platform",
+                "MFShutdown",
+                Logger::PRIO_CRITICAL
+            );
+        }
+    }
+
+}// end of namespace application
 
 int main(int argc, const char *argv[])
 {
@@ -92,4 +137,3 @@ int main(int argc, const char *argv[])
 
     return EXIT_SUCCESS;
 }
-

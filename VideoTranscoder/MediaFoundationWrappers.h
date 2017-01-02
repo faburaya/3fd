@@ -29,14 +29,14 @@ namespace application
     {
     private:
 
-        ComPtr<IMFAttributes> m_mfAttrStore;
         ComPtr<IMFSourceReader> m_mfSourceReader;
 
     public:
 
-        MFSourceReader(const string &url);
+        MFSourceReader(const string &url, UINT idxVideoAdapter);
         ~MFSourceReader();
     };
-}
+
+}// end of namespace application
 
 #endif // end of header guard
