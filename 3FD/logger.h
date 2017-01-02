@@ -108,7 +108,9 @@ namespace core
 		// Private implementations:
 
 		void WriteImpl(IAppException &ex, Priority prio);
-
+#ifdef _WIN32
+        void WriteImpl(HRESULT hr, const char *message, const char *function, Priority prio);
+#endif
 		void WriteImpl(string &&message, Priority prio, bool cst);
 
 		void WriteImpl(string &&what, string &&details, Priority prio, bool cst);
@@ -130,7 +132,21 @@ namespace core
 			if (singleton != nullptr)
 				singleton->WriteImpl(ex, prio);
 		}
-
+#ifdef _WIN32
+        /// <summary>
+        /// Writes an HRESULT error to the log output.
+        /// </summary>
+        /// <param name="hr">The HRESULT code.</param>
+        /// <param name="message">The main error message.</param>
+        /// <param name="function">The name function of the function that returned the error code.</param>
+        /// <param name="prio">The priority of the message.</param>
+        static void Write(HRESULT hr, const char *message, const char *function, Priority prio)
+        {
+            Logger * const singleton = GetInstance();
+            if (singleton != nullptr)
+                singleton->WriteImpl(hr, message, function, prio);
+        }
+#endif
 		/// <summary>
 		/// Writes a message to the log output.
 		/// </summary>

@@ -70,6 +70,25 @@ namespace _3fd
             return transcoder.to_bytes(comErrObj.ErrorMessage());
         }
 
+        /// <summary>
+        /// Raises an exception for an HRESULT error code.
+        /// </summary>
+        /// <param name="errCode">The HRESULT code.</param>
+        /// <param name="message">The main error message.</param>
+        /// <param name="function">The name function of the function that returned the error code.</param>
+        void WWAPI::RaiseHResultException(HRESULT errCode, const char *message, const char *function)
+        {
+            _ASSERTE(FAILED(errCode));
+            std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
+            _com_error comErrObj(errCode);
+            std::ostringstream oss;
+            oss << message << " - API call "
+                << function << " returned: "
+                << transcoder.to_bytes(comErrObj.ErrorMessage());
+
+            throw AppException<std::runtime_error>(oss.str());
+        }
+
 #   ifdef _3FD_PLATFORM_WIN32API // only for classic desktop apps:
         /// <summary>
         /// Generates an error message for a DWORD error code.

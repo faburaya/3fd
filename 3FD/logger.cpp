@@ -3,10 +3,15 @@
 #include "configuration.h"
 
 #include <iostream>
+#include <codecvt>
 #include <stack>
 #include <array>
 #include <chrono>
 #include <ctime>
+
+#ifdef _WIN32
+#   include <comdef.h>
+#endif
 
 namespace _3fd
 {
@@ -117,6 +122,25 @@ namespace core
 			
 		WriteImpl(ex.ToString(), prio, false);
 	}
+
+#ifdef _WIN32
+    /// <summary>
+    /// Writes an HRESULT error to the log output.
+    /// </summary>
+    /// <param name="hr">The HRESULT code.</param>
+    /// <param name="message">The main error message.</param>
+    /// <param name="function">The name function of the function that returned the error code.</param>
+    /// <param name="prio">The priority of the message.</param>
+    void Logger::WriteImpl(HRESULT hr, const char *message, const char *function, Priority prio)
+    {
+        _ASSERTE(FAILED(hr));
+        std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
+        _com_error comErrObj(hr);
+        std::ostringstream oss;
+        oss << "API call " << function << " returned: " << transcoder.to_bytes(comErrObj.ErrorMessage());
+        WriteImpl(std::move(message), oss.str(), prio, true);
+    }
+#endif
 
 	/// <summary>
 	/// Writes a message to the log output.

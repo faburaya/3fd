@@ -43,6 +43,8 @@ namespace _3fd
 
             static string GetDetailsFromHResult(HRESULT errCode);
 
+            static void RaiseHResultException(HRESULT errCode, const char *message, const char *function);
+
 #   ifdef _3FD_PLATFORM_WIN32API
             static void AppendDWordErrorMessage(
                 DWORD errCode,
