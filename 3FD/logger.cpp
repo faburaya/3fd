@@ -1,17 +1,19 @@
 #include "stdafx.h"
+
+/* Need to place COM headers here, because some lines
+   below POCO interferes undefining Windows macros */
+#ifdef _WIN32
+#   include <comdef.h>
+#endif
+
 #include "logger.h"
 #include "configuration.h"
-
 #include <iostream>
 #include <codecvt>
 #include <stack>
 #include <array>
 #include <chrono>
 #include <ctime>
-
-#ifdef _WIN32
-#   include <comdef.h>
-#endif
 
 namespace _3fd
 {

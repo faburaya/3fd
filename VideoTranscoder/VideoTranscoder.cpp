@@ -2,6 +2,7 @@
 //
 
 #include "stdafx.h"
+#include "MediaFoundationWrappers.h"
 #include "3FD\runtime.h"
 #include "3FD\exceptions.h"
 #include "3FD\callstacktracer.h"
@@ -10,9 +11,8 @@
 #include "3FD\cmdline.h"
 
 #include <iostream>
+#include <iomanip>
 #include <mfapi.h>
-
-#include "MediaFoundationWrappers.h"
 
 namespace application
 {
@@ -51,20 +51,25 @@ namespace application
             );
         }
     }
+    
+    //////////////////////////////
+    // Command line arguments
+    //////////////////////////////
 
-}// end of namespace application
-
-int main(int argc, const char *argv[])
-{
-    using namespace _3fd;
-
-    core::FrameworkInstance frameworkInstance(RO_INIT_MULTITHREADED);
-
-    CALL_STACK_TRACE;
-
-    try
+    struct CmdLineParams
     {
-        using core::CommandLineArguments;
+        double tgtSizeFactor;
+        string encoder;
+        const char *inputFName;
+        const char *outputFName;
+    };
+
+    // Parse arguments from command line
+    static bool ParseCommandLineArgs(int argc, const char *argv[], CmdLineParams &params)
+    {
+        CALL_STACK_TRACE;
+
+        using _3fd::core::CommandLineArguments;
 
         CommandLineArguments cmdLineArgs(80, CommandLineArguments::ArgValSeparator::Colon, true, false);
 
@@ -101,37 +106,63 @@ int main(int argc, const char *argv[])
             CommandLineArguments::ArgValType::String,
             0, "input output",
             "input & output files"
-        }, { (uint16_t)2, (uint16_t) 2 });
+        }, { (uint16_t)2, (uint16_t)2 });
 
         if (cmdLineArgs.Parse(argc, argv) == STATUS_FAIL)
         {
             std::cerr << "\nUsage:\n\n VideoTranscoder [/e:encoder] [/t:target_size_factor] input output\n\n";
             cmdLineArgs.PrintArgsInfo();
-            return EXIT_FAILURE;
+            return STATUS_FAIL;
         }
 
         bool isPresent;
+        params.encoder = cmdLineArgs.GetArgValueString(ArgValEncoder, isPresent);
+        std::cout << '\n' << std::setw(22) << "encoder = " << params.encoder
+                  << (isPresent ? " " : " (default)");
 
-        std::cout << "encoder = " << cmdLineArgs.GetArgValueString(ArgValEncoder, isPresent);
-        std::cout << (isPresent ? " " : " (default)") << std::endl;
+        params.tgtSizeFactor = cmdLineArgs.GetArgValueFloat(ArgValTgtSizeFactor, isPresent);
+        std::cout << '\n' << std::setw(22) << "target size factor = " << params.tgtSizeFactor
+                  << (isPresent ? " " : " (default)");
 
-        std::cout << "target = " << cmdLineArgs.GetArgValueFloat(ArgValTgtSizeFactor, isPresent);
-        std::cout << (isPresent ? " " : " (default)") << std::endl;
-        
-        std::cout << "io = ";
         std::vector<const char *> filesNames;
         cmdLineArgs.GetArgListOfValues(filesNames);
 
-        for (auto fname : filesNames)
-        {
-            std::cout << fname << " ";
-        }
+        if (filesNames.size() != 2)
+            return STATUS_FAIL;
 
-        std::cout << std::endl;
+        params.inputFName = filesNames[0];
+        std::cout << '\n' << std::setw(22)
+                  << "input = " << params.inputFName;
+
+        params.outputFName = filesNames[1];
+        std::cout << '\n' << std::setw(22)
+                  << "input = " << params.outputFName << '\n' << std::endl;
+
+        return STATUS_OKAY;
+    }
+    
+}// end of namespace application
+
+int main(int argc, const char *argv[])
+{
+    using namespace _3fd;
+
+    core::FrameworkInstance frameworkInstance(RO_INIT_MULTITHREADED);
+
+    CALL_STACK_TRACE;
+
+    try
+    {
+        application::CmdLineParams params;
+        if (application::ParseCommandLineArgs(argc, argv, params) == STATUS_FAIL)
+            return EXIT_FAILURE;
+
+        application::MediaFoundationLib msmflib;
+        application::MFSourceReader sourceReader(".\\sample.wmv", 0);
     }
     catch (core::IAppException &ex)
     {
-        core::Logger::Write(ex, core::Logger::PRIO_FATAL);
+        core::Logger::Write(ex, core::Logger::PRIO_CRITICAL);
         return EXIT_FAILURE;
     }
 

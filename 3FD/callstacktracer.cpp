@@ -132,6 +132,8 @@ namespace _3fd
 
                 return STATUS_FAIL;
 			}
+
+            return STATUS_OKAY;
 		}
 
 		/// <summary>

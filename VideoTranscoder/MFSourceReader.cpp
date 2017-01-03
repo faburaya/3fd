@@ -3,10 +3,10 @@
 #include "3FD\callstacktracer.h"
 #include "3FD\exceptions.h"
 #include "3FD\logger.h"
-
 #include <iostream>
 #include <algorithm>
 #include <codecvt>
+
 #include <d3d11.h>
 #include <mfapi.h>
 
@@ -34,7 +34,7 @@ namespace application
         }
 
         // This function only works with video!
-        _ASSERTE(majorType != MFMediaType_Video);
+        _ASSERTE(majorType == MFMediaType_Video);
 #endif
         ComPtr<IMFMediaType> uncompVideoMType;
 
@@ -124,7 +124,7 @@ namespace application
         }
 
         // This function only works with audio!
-        _ASSERTE(majorType != MFMediaType_Audio);
+        _ASSERTE(majorType == MFMediaType_Audio);
 #endif
         // Get subtype of input:
         GUID subType = { 0 };
@@ -246,7 +246,7 @@ namespace application
             D3D_FEATURE_LEVEL_9_1,
         };
 
-        const auto nFeatLevels = static_cast<UINT> (
+        constexpr auto nFeatLevels = static_cast<UINT> (
             (sizeof d3dFeatureLevels) / sizeof(D3D_FEATURE_LEVEL)
         );
 
@@ -255,7 +255,7 @@ namespace application
         ComPtr<ID3D11Device> d3dDx11Device;
         hr = D3D11CreateDevice(
             dxgiAdapter.Get(),
-            D3D_DRIVER_TYPE_HARDWARE,
+            D3D_DRIVER_TYPE_UNKNOWN,
             nullptr,
             D3D11_CREATE_DEVICE_VIDEO_SUPPORT,
             d3dFeatureLevels,
@@ -272,7 +272,7 @@ namespace application
             // Try again without Direct3D 11.1:
             hr = D3D11CreateDevice(
                 dxgiAdapter.Get(),
-                D3D_DRIVER_TYPE_HARDWARE,
+                D3D_DRIVER_TYPE_UNKNOWN,
                 nullptr,
                 D3D11_CREATE_DEVICE_VIDEO_SUPPORT,
                 d3dFeatureLevels + 1,
@@ -291,7 +291,7 @@ namespace application
         auto d3dFLNameKVPairIter = std::find_if(
             d3dFLevelNames,
             d3dFLevelNames + nFeatLevels,
-            [d3dFeatureLevels, featLevelCodeSuccess](const KeyValPair &entry)
+            [featLevelCodeSuccess](const KeyValPair &entry)
             {
                 return entry.code == featLevelCodeSuccess;
             }
@@ -301,6 +301,100 @@ namespace application
         
         return d3dDx11Device;
     }
+
+    ///////////////////////////////////////////
+    // Source Reader Callback Implementation
+    ///////////////////////////////////////////
+
+    using namespace Microsoft::WRL::Wrappers;
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <seealso cref="IMFSourceReaderCallback" />
+    class MFSourceReaderCallbackImpl : public IMFSourceReaderCallback
+    {
+    private:
+
+        long                m_nRefCount;
+        CRITICAL_SECTION    m_critsec;
+        HANDLE              m_hEvent;
+        BOOL                m_bEOS;
+        HRESULT             m_hrStatus;
+
+        /// <summary>
+        /// Finalizes an instance of the <see cref="MFSourceReaderCallbackImpl"/> class.
+        /// </summary>
+        /// <remarks>Destructor is private. Caller should call <see cref="Release"/>.</remarks>
+        virtual ~MFSourceReaderCallbackImpl() {}
+
+    public:
+
+        MFSourceReaderCallbackImpl(HANDLE hEvent) :
+            m_nRefCount(1), m_hEvent(hEvent), m_bEOS(FALSE), m_hrStatus(S_OK)
+        {
+            InitializeCriticalSection(&m_critsec);
+        }
+
+        // IUnknown methods
+        STDMETHODIMP QueryInterface(REFIID iid, void** ppv)
+        {
+            static const QITAB qit[] =
+            {
+                QITABENT(MFSourceReaderCallbackImpl, IMFSourceReaderCallback),
+                { 0 },
+            };
+            return QISearch(this, qit, iid, ppv);
+        }
+        STDMETHODIMP_(ULONG) AddRef()
+        {
+            return InterlockedIncrement(&m_nRefCount);
+        }
+        STDMETHODIMP_(ULONG) Release()
+        {
+            ULONG uCount = InterlockedDecrement(&m_nRefCount);
+            if (uCount == 0)
+            {
+                delete this;
+            }
+            return uCount;
+        }
+
+        // IMFSourceReaderCallback methods
+        STDMETHODIMP OnReadSample(HRESULT hrStatus, DWORD dwStreamIndex,
+            DWORD dwStreamFlags, LONGLONG llTimestamp, IMFSample *pSample);
+
+        STDMETHODIMP OnEvent(DWORD, IMFMediaEvent *)
+        {
+            return S_OK;
+        }
+
+        STDMETHODIMP OnFlush(DWORD)
+        {
+            return S_OK;
+        }
+
+    public:
+
+        HRESULT Wait(DWORD dwMilliseconds, BOOL *pbEOS)
+        {
+            *pbEOS = FALSE;
+
+            DWORD dwResult = WaitForSingleObject(m_hEvent, dwMilliseconds);
+            if (dwResult == WAIT_TIMEOUT)
+            {
+                return E_PENDING;
+            }
+            else if (dwResult != WAIT_OBJECT_0)
+            {
+                return HRESULT_FROM_WIN32(GetLastError());
+            }
+
+            *pbEOS = m_bEOS;
+            return m_hrStatus;
+        }
+
+    };
 
     //////////////////////////////
     // Class MFSourceReader
@@ -413,10 +507,10 @@ namespace application
         }
 
         // Will MFT use DXVA?
-        std::cout << "Media source reader selected video MFT "
+        std::cout << "Media source reader selected a video MFT "
                   << (MFGetAttributeUINT32(mftAttrStore.Get(), MF_SA_D3D_AWARE, FALSE) == TRUE
-                      ? "will use DVA"
-                      : "will NOT use DXVA") << std::endl;
+                      ? "that uses DXVA"
+                      : "NOT accelerated by hardware") << std::endl;
 
         PWSTR mftFriendlyName;
         hr = MFGetAttributeString(mftAttrStore.Get(), MFT_FRIENDLY_NAME_Attribute, &mftFriendlyName);
@@ -442,7 +536,7 @@ namespace application
 
         if (uncompAudioMType)
         {
-            hr = m_mfSourceReader->SetCurrentMediaType(MF_SOURCE_READER_FIRST_AUDIO_STREAM, NULL, uncompAudioMType.Get());
+            hr = m_mfSourceReader->SetCurrentMediaType(MF_SOURCE_READER_FIRST_AUDIO_STREAM, nullptr, uncompAudioMType.Get());
             if (FAILED(hr))
             {
                 WWAPI::RaiseHResultException(hr,

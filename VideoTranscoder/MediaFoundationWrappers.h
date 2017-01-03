@@ -3,8 +3,8 @@
 
 #include "3FD\base.h"
 #include <string>
-#include <mfreadwrite.h>
 #include <wrl.h>
+#include <mfreadwrite.h>
 
 namespace application
 {
@@ -35,7 +35,7 @@ namespace application
 
         MFSourceReader(const string &url, UINT idxVideoAdapter);
 
-        ~MFSourceReader();
+        //~MFSourceReader();
     };
 
 }// end of namespace application
