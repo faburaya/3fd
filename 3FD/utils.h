@@ -126,11 +126,8 @@ namespace utils
     public:
 
         Event();
-        ~Event();
 
         void Signalize();
-
-        void Reset();
 
         void Wait(const std::function<bool()> &predicate);
 

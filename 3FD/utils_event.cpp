@@ -31,14 +31,6 @@ namespace _3fd
 		}
 
 		/// <summary>
-		/// Finalizes an instance of the <see cref="Event"/> class.
-		/// </summary>
-		Event::~Event()
-		{
-			Reset();
-		}
-
-		/// <summary>
 		/// Sets the event.
 		/// </summary>
 		void Event::Signalize()
@@ -46,15 +38,6 @@ namespace _3fd
 			std::unique_lock<std::mutex> lock(m_mutex);
 			m_condition.notify_all();
 			m_flag = true;
-		}
-
-		/// <summary>
-		/// Resets the event.
-		/// </summary>
-		void Event::Reset()
-		{
-			std::unique_lock<std::mutex> lock(m_mutex);
-			m_flag = false;
 		}
 
 		/// <summary>
@@ -72,13 +55,8 @@ namespace _3fd
 			{
 				if (m_flag)
 				{
-					if (predicate())
-						return true;
-					else
-					{
-						m_flag = false;
-						return false;
-					}
+                    m_flag = false;
+                    return predicate();
 				}
 				else
 					return false;
