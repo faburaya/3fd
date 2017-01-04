@@ -4,11 +4,13 @@
 #include "3FD\base.h"
 #include <string>
 #include <wrl.h>
+#include <d3d11.h>
 #include <mfreadwrite.h>
 
 namespace application
 {
     using std::string;
+
     using namespace Microsoft::WRL;
 
     /// <summary>
@@ -29,13 +31,19 @@ namespace application
     {
     private:
 
+        DWORD m_streamCount;
         ComPtr<IMFSourceReader> m_mfSourceReader;
+        ComPtr<MFSourceReaderCallbackImpl> m_srcReadCallback;
+
+        void ConfigureDecoderTransforms(bool mustReconfigAll);
 
     public:
 
-        MFSourceReader(const string &url, UINT idxVideoAdapter);
+        MFSourceReader(const string &url, ComPtr<IMFDXGIDeviceManager> &mfDXGIDevMan);
 
-        //~MFSourceReader();
+        void ReadSampleAsync();
+
+        ComPtr<IMFSample> GetSample();
     };
 
 }// end of namespace application

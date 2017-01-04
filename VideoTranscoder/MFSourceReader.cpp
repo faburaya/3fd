@@ -3,12 +3,16 @@
 #include "3FD\callstacktracer.h"
 #include "3FD\exceptions.h"
 #include "3FD\logger.h"
+#include "3FD\utils.h"
 #include <iostream>
 #include <algorithm>
 #include <codecvt>
+#include <atomic>
+#include <memory>
 
-#include <d3d11.h>
+#include <Shlwapi.h>
 #include <mfapi.h>
+#include <Mferror.h>
 
 namespace application
 {
@@ -18,28 +22,10 @@ namespace application
     static ComPtr<IMFMediaType> CreateUncompressedVideoMediaTypeFrom(const ComPtr<IMFMediaType> &srcEncVideoMType)
     {
         CALL_STACK_TRACE;
-
-        HRESULT hr;
-
-#ifndef NDEBUG
-        // Get major type of input:
-        GUID majorType = { 0 };
-        hr = srcEncVideoMType->GetMajorType(&majorType);
-        if (FAILED(hr))
-        {
-            WWAPI::RaiseHResultException(hr,
-                "Failed to retrieve major media type from original source media type",
-                "IMFMediaType::GetMajorType"
-            );
-        }
-
-        // This function only works with video!
-        _ASSERTE(majorType == MFMediaType_Video);
-#endif
-        ComPtr<IMFMediaType> uncompVideoMType;
-
+        
         // Create the uncompressed media type:
-        hr = MFCreateMediaType(uncompVideoMType.GetAddressOf());
+        ComPtr<IMFMediaType> uncompVideoMType;
+        HRESULT hr = MFCreateMediaType(uncompVideoMType.GetAddressOf());
         if (FAILED(hr))
             WWAPI::RaiseHResultException(hr, "Failed to create uncompressed media type for source", "MFCreateMediaType");
 
@@ -49,8 +35,7 @@ namespace application
         {
             WWAPI::RaiseHResultException(hr,
                 "Failed to copy attributes from original source media type",
-                "IMFMediaType::CopyAllItems"
-            );
+                "IMFMediaType::CopyAllItems");
         }
 
         // Set uncompressed video format:
@@ -60,8 +45,7 @@ namespace application
         {
             WWAPI::RaiseHResultException(hr,
                 "Failed to set video format YUY2 on uncompressed media type for source",
-                "IMFMediaType::SetGUID"
-            );
+                "IMFMediaType::SetGUID");
         }
 
         hr = uncompVideoMType->SetUINT32(MF_MT_ALL_SAMPLES_INDEPENDENT, TRUE);
@@ -69,8 +53,7 @@ namespace application
         {
             WWAPI::RaiseHResultException(hr,
                 "Failed to set video media type as uncompressed",
-                "IMFMediaType::SetUINT32"
-            );
+                "IMFMediaType::SetUINT32");
         }
 
         // Fix up PAR if not set on the original media type:
@@ -96,8 +79,7 @@ namespace application
             {
                 WWAPI::RaiseHResultException(hr,
                     "Failed to set pixel aspect ratio of uncompressed media type for source",
-                    "IMFMediaType::SetGUID"
-                );
+                    "IMFMediaType::SetGUID");
             }
         }
 
@@ -109,32 +91,14 @@ namespace application
     {
         CALL_STACK_TRACE;
 
-        HRESULT hr;
-
-#ifndef NDEBUG
-        // Get major type of input:
-        GUID majorType = { 0 };
-        hr = srcEncAudioMType->GetMajorType(&majorType);
-        if (FAILED(hr))
-        {
-            WWAPI::RaiseHResultException(hr,
-                "Failed to retrieve major media type from original source media type",
-                "IMFMediaType::GetMajorType"
-            );
-        }
-
-        // This function only works with audio!
-        _ASSERTE(majorType == MFMediaType_Audio);
-#endif
         // Get subtype of input:
         GUID subType = { 0 };
-        hr = srcEncAudioMType->GetGUID(MF_MT_SUBTYPE, &subType);
+        HRESULT hr = srcEncAudioMType->GetGUID(MF_MT_SUBTYPE, &subType);
         if (FAILED(hr))
         {
             WWAPI::RaiseHResultException(hr,
                 "Failed to retrieve audio subtype from original source media type",
-                "IMFMediaType::GetGUID"
-            );
+                "IMFMediaType::GetGUID");
         }
 
         ComPtr<IMFMediaType> uncompAudioMType;
@@ -180,147 +144,49 @@ namespace application
         {
             WWAPI::RaiseHResultException(hr,
                 "Failed to set attribute in uncompressed media type for source",
-                "IMFMediaType::SetGUID / SetUINT32"
-            );
+                "IMFMediaType::SetGUID / SetUINT32");
         }
 
         return uncompAudioMType;
-    }
-
-    // Helps obtaining a Direct3D device for Microsoft DXGI
-    static ComPtr<ID3D11Device> GetDeviceDirect3D(UINT idxVideoAdapter)
-    {
-        CALL_STACK_TRACE;
-
-        // Create DXGI factory:
-        ComPtr<IDXGIFactory1> dxgiFactory;
-        HRESULT hr = CreateDXGIFactory1(IID_PPV_ARGS(dxgiFactory.GetAddressOf()));
-        if (FAILED(hr))
-            WWAPI::RaiseHResultException(hr, "Failed to create DXGI factory", "CreateDXGIFactory1");
-
-        // Get a video adapter:
-        ComPtr<IDXGIAdapter1> dxgiAdapter;
-        dxgiFactory->EnumAdapters1(idxVideoAdapter, dxgiAdapter.GetAddressOf());
-        if (FAILED(hr))
-            WWAPI::RaiseHResultException(hr, "Failed to enumerate video adapters", "IDXGIAdapter1::EnumAdapters1");
-
-        // Get video adapter description:
-        DXGI_ADAPTER_DESC1 dxgiAdapterDesc;
-        dxgiAdapter->GetDesc1(&dxgiAdapterDesc);
-        if (FAILED(hr))
-        {
-            WWAPI::RaiseHResultException(hr,
-                "Failed to retrieve DXGI video adapter description",
-                "IDXGIAdapter1::GetDesc1"
-            );
-        }
-        
-        std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
-        std::cout << "Selected DXGI video adapter is \'"
-                  << transcoder.to_bytes(dxgiAdapterDesc.Description) << '\'' << std::endl;
-
-        // Direct3D feature level codes and names:
-
-        struct KeyValPair { int code; const char *name; };
-
-        const KeyValPair d3dFLevelNames[] =
-        {
-            KeyValPair{ D3D_FEATURE_LEVEL_9_1, "Direct3D 9.1" },
-            KeyValPair{ D3D_FEATURE_LEVEL_9_2, "Direct3D 9.2" },
-            KeyValPair{ D3D_FEATURE_LEVEL_9_3, "Direct3D 9.3" },
-            KeyValPair{ D3D_FEATURE_LEVEL_10_0, "Direct3D 10.0" },
-            KeyValPair{ D3D_FEATURE_LEVEL_10_1, "Direct3D 10.1" },
-            KeyValPair{ D3D_FEATURE_LEVEL_11_0, "Direct3D 11.0" },
-            KeyValPair{ D3D_FEATURE_LEVEL_11_1, "Direct3D 11.1" },
-        };
-
-        // Feature levels for Direct3D support
-        const D3D_FEATURE_LEVEL d3dFeatureLevels[] =
-        {
-            D3D_FEATURE_LEVEL_11_1,
-            D3D_FEATURE_LEVEL_11_0,
-            D3D_FEATURE_LEVEL_10_1,
-            D3D_FEATURE_LEVEL_10_0,
-            D3D_FEATURE_LEVEL_9_3,
-            D3D_FEATURE_LEVEL_9_2,
-            D3D_FEATURE_LEVEL_9_1,
-        };
-
-        constexpr auto nFeatLevels = static_cast<UINT> (
-            (sizeof d3dFeatureLevels) / sizeof(D3D_FEATURE_LEVEL)
-        );
-
-        // Create Direct3D device:
-        D3D_FEATURE_LEVEL featLevelCodeSuccess;
-        ComPtr<ID3D11Device> d3dDx11Device;
-        hr = D3D11CreateDevice(
-            dxgiAdapter.Get(),
-            D3D_DRIVER_TYPE_UNKNOWN,
-            nullptr,
-            D3D11_CREATE_DEVICE_VIDEO_SUPPORT,
-            d3dFeatureLevels,
-            nFeatLevels,
-            D3D11_SDK_VERSION,
-            d3dDx11Device.GetAddressOf(),
-            &featLevelCodeSuccess,
-            nullptr
-        );
-
-        // Might have failed for lack of Direct3D 11.1 runtime:
-        if (hr == E_INVALIDARG)
-        {
-            // Try again without Direct3D 11.1:
-            hr = D3D11CreateDevice(
-                dxgiAdapter.Get(),
-                D3D_DRIVER_TYPE_UNKNOWN,
-                nullptr,
-                D3D11_CREATE_DEVICE_VIDEO_SUPPORT,
-                d3dFeatureLevels + 1,
-                nFeatLevels - 1,
-                D3D11_SDK_VERSION,
-                d3dDx11Device.GetAddressOf(),
-                &featLevelCodeSuccess,
-                nullptr
-            );
-        }
-
-        if (FAILED(hr))
-            WWAPI::RaiseHResultException(hr, "Failed to create Direct3D device", "D3D11CreateDevice");
-
-        // Get name of Direct3D feature level that succeeded upon device creation:
-        auto d3dFLNameKVPairIter = std::find_if(
-            d3dFLevelNames,
-            d3dFLevelNames + nFeatLevels,
-            [featLevelCodeSuccess](const KeyValPair &entry)
-            {
-                return entry.code == featLevelCodeSuccess;
-            }
-        );
-
-        std::cout << "Hardware device supports " << d3dFLNameKVPairIter->name << std::endl;
-        
-        return d3dDx11Device;
     }
 
     ///////////////////////////////////////////
     // Source Reader Callback Implementation
     ///////////////////////////////////////////
 
-    using namespace Microsoft::WRL::Wrappers;
-
     /// <summary>
-    /// 
+    /// Implementation of callback utilized by <see cref="MFSourceReader"/>.
     /// </summary>
     /// <seealso cref="IMFSourceReaderCallback" />
     class MFSourceReaderCallbackImpl : public IMFSourceReaderCallback
     {
     private:
 
-        long                m_nRefCount;
-        CRITICAL_SECTION    m_critsec;
-        HANDLE              m_hEvent;
-        BOOL                m_bEOS;
-        HRESULT             m_hrStatus;
+        std::atomic<ULONG> m_referenceCount;
+        _3fd::utils::Event m_resAvailableEvent;
+
+        struct ReadResult
+        {
+            HRESULT hres;
+            DWORD streamIndex;
+            DWORD streamFlags;
+            LONGLONG sampleTimestamp;
+            ComPtr<IMFSample> sample;
+
+            ReadResult(HRESULT pHRes,
+                       DWORD pStreamIndex,
+                       DWORD pStreamFlags,
+                       LONGLONG pSampleTimestamp,
+                       IMFSample *pSample) :
+                hres(pHRes),
+                streamIndex(pStreamIndex),
+                streamFlags(pStreamFlags),
+                sampleTimestamp(pSampleTimestamp),
+                sample(pSample)
+            {}
+        };
+
+        std::unique_ptr<ReadResult> m_result;
 
         /// <summary>
         /// Finalizes an instance of the <see cref="MFSourceReaderCallbackImpl"/> class.
@@ -330,13 +196,12 @@ namespace application
 
     public:
 
-        MFSourceReaderCallbackImpl(HANDLE hEvent) :
-            m_nRefCount(1), m_hEvent(hEvent), m_bEOS(FALSE), m_hrStatus(S_OK)
-        {
-            InitializeCriticalSection(&m_critsec);
-        }
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MFSourceReaderCallbackImpl"/> class.
+        /// </summary>
+        MFSourceReaderCallbackImpl() :
+            m_referenceCount(1UL) {}
 
-        // IUnknown methods
         STDMETHODIMP QueryInterface(REFIID iid, void** ppv)
         {
             static const QITAB qit[] =
@@ -346,23 +211,49 @@ namespace application
             };
             return QISearch(this, qit, iid, ppv);
         }
+
         STDMETHODIMP_(ULONG) AddRef()
         {
-            return InterlockedIncrement(&m_nRefCount);
-        }
-        STDMETHODIMP_(ULONG) Release()
-        {
-            ULONG uCount = InterlockedDecrement(&m_nRefCount);
-            if (uCount == 0)
-            {
-                delete this;
-            }
-            return uCount;
+            return m_referenceCount.fetch_add(1UL, std::memory_order_acq_rel);
         }
 
-        // IMFSourceReaderCallback methods
-        STDMETHODIMP OnReadSample(HRESULT hrStatus, DWORD dwStreamIndex,
-            DWORD dwStreamFlags, LONGLONG llTimestamp, IMFSample *pSample);
+        STDMETHODIMP_(ULONG) Release()
+        {
+            ULONG currentCount = m_referenceCount.fetch_sub(1UL, std::memory_order_acq_rel) - 1UL;
+            if (currentCount == 0)
+                delete this;
+
+            return currentCount;
+        }
+
+        STDMETHODIMP OnReadSample(HRESULT hr,
+                                  DWORD streamIndex,
+                                  DWORD streamFlags,
+                                  LONGLONG timestamp,
+                                  IMFSample *sample)
+        {
+            try
+            {
+                m_result.reset(
+                    new ReadResult(hr, streamIndex, streamFlags, timestamp, sample)
+                );
+
+                m_resAvailableEvent.Signalize();
+                return S_OK;
+            }
+            catch (IAppException &ex)
+            {
+                Logger::Write(ex, Logger::PRIO_CRITICAL);
+                return E_FAIL;
+            }
+            catch (std::exception &ex)
+            {
+                std::ostringstream oss;
+                oss << "Generic failure when retrieving sample read by media source reader: " << ex.what();
+                Logger::Write(oss.str(), Logger::PRIO_CRITICAL);
+                return E_FAIL;
+            }
+        }
 
         STDMETHODIMP OnEvent(DWORD, IMFMediaEvent *)
         {
@@ -376,111 +267,29 @@ namespace application
 
     public:
 
-        HRESULT Wait(DWORD dwMilliseconds, BOOL *pbEOS)
+        /// <summary>
+        /// Gets the result of the asynchronous call.
+        /// </summary>
+        /// <returns>An object holding all the values returned by the source reader.</returns>
+        std::unique_ptr<ReadResult> GetResult()
         {
-            *pbEOS = FALSE;
+            m_resAvailableEvent.Wait(
+                [this]() { return m_result.get() != nullptr; }
+            );
 
-            DWORD dwResult = WaitForSingleObject(m_hEvent, dwMilliseconds);
-            if (dwResult == WAIT_TIMEOUT)
-            {
-                return E_PENDING;
-            }
-            else if (dwResult != WAIT_OBJECT_0)
-            {
-                return HRESULT_FROM_WIN32(GetLastError());
-            }
-
-            *pbEOS = m_bEOS;
-            return m_hrStatus;
+            return std::move(m_result);
         }
-
     };
 
-    //////////////////////////////
-    // Class MFSourceReader
-    //////////////////////////////
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="MFSourceReader"/> class.
-    /// </summary>
-    /// <param name="url">The URL.</param>
-    /// <param name="idxVideoAdapter">The index of the video adapter whose device will be in use by DXVA.</param>
-    MFSourceReader::MFSourceReader(const string &url, UINT idxVideoAdapter)
-    try
+    // Prints information about source reader selected video MFT
+    static void PrintVideoTransformInfo(const ComPtr<IMFSourceReaderEx> &sourceReaderAltIntf)
     {
         CALL_STACK_TRACE;
-
-        // Create an instance of the Microsoft DirectX Graphics Infrastructure (DXGI) Device Manager:
-        ComPtr<IMFDXGIDeviceManager> mfDXGIDevMan;
-        UINT dxgiResetToken;
-        HRESULT hr = MFCreateDXGIDeviceManager(&dxgiResetToken, mfDXGIDevMan.GetAddressOf());
-        if (FAILED(hr))
-        {
-            WWAPI::RaiseHResultException(hr,
-                "Failed to create Microsoft DXGI Device Manager object for media source reader",
-                "MFCreateDXGIDeviceManager"
-            );
-        }
-
-        // Get Direct3D device and associate with DXGI device manager:
-        auto d3dDevice = GetDeviceDirect3D(idxVideoAdapter);
-        mfDXGIDevMan->ResetDevice(d3dDevice.Get(), dxgiResetToken);
-        
-        // Create attributes store, to set properties on the source reader:
-        ComPtr<IMFAttributes> srcReadAttrStore;
-        hr = MFCreateAttributes(srcReadAttrStore.GetAddressOf(), 2);
-        if (FAILED(hr))
-            WWAPI::RaiseHResultException(hr, "Failed to create attributes store", "MFCreateAttributes");
-
-        // enable DXVA encoding
-        srcReadAttrStore->SetUnknown(MF_SOURCE_READER_D3D_MANAGER, mfDXGIDevMan.Get());
-
-        // enable codec hardware acceleration
-        srcReadAttrStore->SetUINT32(MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS, TRUE);
-
-        std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
-        auto ucs2url = transcoder.from_bytes(url);
-
-        hr = MFCreateSourceReaderFromURL(ucs2url.c_str(),
-                                         srcReadAttrStore.Get(),
-                                         m_mfSourceReader.GetAddressOf());
-
-        if (FAILED(hr))
-            WWAPI::RaiseHResultException(hr, "Failed to create media source reader", "MFCreateSourceReaderFromURL");
-
-        // Get the encoded video media type:
-        ComPtr<IMFMediaType> srcEncVideoMType;
-        hr = m_mfSourceReader->GetNativeMediaType(MF_SOURCE_READER_FIRST_VIDEO_STREAM, 0, srcEncVideoMType.GetAddressOf());
-        if (FAILED(hr))
-            WWAPI::RaiseHResultException(hr, "Failed to get video media type from source", "IMFSourceReader::GetNativeMediaType");
-
-        auto uncompVideoMType = CreateUncompressedVideoMediaTypeFrom(srcEncVideoMType);
-
-        // Set the source reader to use the new uncompressed video media type:
-        hr = m_mfSourceReader->SetCurrentMediaType(MF_SOURCE_READER_FIRST_VIDEO_STREAM, nullptr, uncompVideoMType.Get());
-        if (FAILED(hr))
-        {
-            WWAPI::RaiseHResultException(hr,
-                "Failed to set source reader output to uncompressed video media type",
-                "IMFSourceReader::SetCurrentMediaType"
-            );
-        }
-
-        // Get an alternative interface for source reader:
-        ComPtr<IMFSourceReaderEx> sourceReaderAltIntf;
-        hr = m_mfSourceReader.CopyTo(IID_PPV_ARGS(sourceReaderAltIntf.GetAddressOf()));
-        if (FAILED(hr))
-        {
-            WWAPI::RaiseHResultException(hr,
-                "Failed to query for media source reader for alternative interface",
-                "IMFSourceReader::CopyTo"
-            );
-        }
 
         // From the alternative interface, obtain the selected MFT for decoding:
         GUID transformCategory;
         ComPtr<IMFTransform> videoTransform;
-        hr = sourceReaderAltIntf->GetTransformForStream(
+        HRESULT hr = sourceReaderAltIntf->GetTransformForStream(
             MF_SOURCE_READER_FIRST_VIDEO_STREAM,
             0,
             &transformCategory,
@@ -491,8 +300,7 @@ namespace application
         {
             WWAPI::RaiseHResultException(hr,
                 "Failed to get selected video MFT for source reader",
-                "IMFSourceReaderEx::GetTransformForStream"
-            );
+                "IMFSourceReaderEx::GetTransformForStream");
         }
 
         // Get video MFT attributes store:
@@ -502,15 +310,14 @@ namespace application
         {
             WWAPI::RaiseHResultException(hr,
                 "Failed to get attributes of video MFT selected by source reader",
-                "IMFAttributes::GetAttributes"
-            );
+                "IMFAttributes::GetAttributes");
         }
 
         // Will MFT use DXVA?
         std::cout << "Media source reader selected a video MFT "
-                  << (MFGetAttributeUINT32(mftAttrStore.Get(), MF_SA_D3D_AWARE, FALSE) == TRUE
-                      ? "that uses DXVA"
-                      : "NOT accelerated by hardware") << std::endl;
+            << (MFGetAttributeUINT32(mftAttrStore.Get(), MF_SA_D3D_AWARE, FALSE) == TRUE
+                ? "that supports DXVA"
+                : "does NOT support DXVA") << std::endl;
 
         PWSTR mftFriendlyName;
         hr = MFGetAttributeString(mftAttrStore.Get(), MFT_FRIENDLY_NAME_Attribute, &mftFriendlyName);
@@ -518,43 +325,201 @@ namespace application
         // Is MFT hardware based?
         if (SUCCEEDED(hr))
         {
+            std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
             std::cout << "Selected MFT is hardware based: " << transcoder.to_bytes(mftFriendlyName) << std::endl;
             CoTaskMemFree(mftFriendlyName);
         }
         else
             std::cout << "Selected MFT is NOT hardware based" << std::endl;
-        
-        // Get the encoded audio media type:
-        ComPtr<IMFMediaType> srcEncAudioMType;
-        hr = m_mfSourceReader->GetNativeMediaType(MF_SOURCE_READER_FIRST_AUDIO_STREAM, 0, srcEncAudioMType.GetAddressOf());
-        if (FAILED(hr))
-            WWAPI::RaiseHResultException(hr, "Failed to get media type from source", "IMFSourceReader::GetNativeMediaType");
+    }
 
-        // Set the source reader to use the new uncompressed audio media type, if not already uncompressed:
+    /// <summary>
+    /// Configures the video and audio decoders upon initialization or change of input media type.
+    /// </summary>
+    /// <param name="mustReconfigAll">if set to <c>true</c>, must reconfigure the decoders for all streams.</param>
+    void MFSourceReader::ConfigureDecoderTransforms(bool mustReconfigAll)
+    {
+        CALL_STACK_TRACE;
 
-        auto uncompAudioMType = CreateUncompressedAudioMediaTypeFrom(srcEncAudioMType);
+        ComPtr<IMFMediaType> srcEncodedMType;
+        HRESULT hr(S_OK);
+        DWORD idxStream(mustReconfigAll ? 0UL : m_streamCount);
 
-        if (uncompAudioMType)
+        // Iterate over streams:
+        while (SUCCEEDED(hr = m_mfSourceReader->GetNativeMediaType(idxStream, 0, srcEncodedMType.GetAddressOf())))
         {
-            hr = m_mfSourceReader->SetCurrentMediaType(MF_SOURCE_READER_FIRST_AUDIO_STREAM, nullptr, uncompAudioMType.Get());
+            // Get major type of input:
+            GUID majorType = { 0 };
+            hr = srcEncodedMType->GetMajorType(&majorType);
             if (FAILED(hr))
+                WWAPI::RaiseHResultException(hr, "Failed to retrieve major media type", "IMFMediaType::GetMajorType");
+
+            // Video stream?
+            if (majorType == MFMediaType_Video)
             {
-                WWAPI::RaiseHResultException(hr,
-                    "Failed to set source reader output to uncompressed audio media type",
-                    "IMFSourceReader::SetCurrentMediaType"
-                );
+                auto uncompVideoMType = CreateUncompressedVideoMediaTypeFrom(srcEncodedMType);
+
+                // Set the source reader to use the new uncompressed video media type:
+                HRESULT hr = m_mfSourceReader->SetCurrentMediaType(idxStream, nullptr, uncompVideoMType.Get());
+                if (FAILED(hr))
+                {
+                    WWAPI::RaiseHResultException(hr,
+                        "Failed to set source reader output to uncompressed video media type",
+                        "IMFSourceReader::SetCurrentMediaType");
+                }
+
+                // Get an alternative interface for source reader:
+                ComPtr<IMFSourceReaderEx> sourceReaderAltIntf;
+                hr = m_mfSourceReader.CopyTo(IID_PPV_ARGS(sourceReaderAltIntf.GetAddressOf()));
+                if (FAILED(hr))
+                {
+                    WWAPI::RaiseHResultException(hr,
+                        "Failed to query source reader for alternative interface",
+                        "IMFSourceReader::CopyTo");
+                }
+
+                PrintVideoTransformInfo(sourceReaderAltIntf);
             }
+            // Audio stream?
+            else if (majorType == MFMediaType_Audio)
+            {
+                auto uncompAudioMType = CreateUncompressedAudioMediaTypeFrom(srcEncodedMType);
+
+                // Set the source reader to use the new uncompressed audio media type, if not already uncompressed:
+                if (uncompAudioMType)
+                {
+                    hr = m_mfSourceReader->SetCurrentMediaType(idxStream, nullptr, uncompAudioMType.Get());
+                    if (FAILED(hr))
+                    {
+                        WWAPI::RaiseHResultException(hr,
+                            "Failed to set source reader output to uncompressed audio media type",
+                            "IMFSourceReader::SetCurrentMediaType");
+                    }
+                }
+            }
+
+            ++idxStream;
+        }// while loop end
+
+        if (hr != MF_E_INVALIDSTREAMNUMBER)
+        {
+            WWAPI::RaiseHResultException(hr,
+                "Failed to get video media type from source",
+                "IMFSourceReader::GetNativeMediaType");
         }
+
+        m_streamCount = idxStream;
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="MFSourceReader"/> class.
+    /// </summary>
+    /// <param name="url">The URL of the media source.</param>
+    /// <param name="mfDXGIDevMan">Microsoft DXGI device manager reference.</param>
+    MFSourceReader::MFSourceReader(const string &url, ComPtr<IMFDXGIDeviceManager> &mfDXGIDevMan)
+    try :
+        m_streamCount(0UL),
+        m_srcReadCallback(new MFSourceReaderCallbackImpl())
+    {
+        CALL_STACK_TRACE;
+
+        // Create attributes store, to set properties on the source reader:
+        ComPtr<IMFAttributes> srcReadAttrStore;
+        HRESULT hr = MFCreateAttributes(srcReadAttrStore.GetAddressOf(), 3);
+        if (FAILED(hr))
+            WWAPI::RaiseHResultException(hr, "Failed to create attributes store", "MFCreateAttributes");
+
+        // enable DXVA encoding
+        srcReadAttrStore->SetUnknown(MF_SOURCE_READER_D3D_MANAGER, mfDXGIDevMan.Get());
+
+        // enable codec hardware acceleration
+        srcReadAttrStore->SetUINT32(MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS, TRUE);
+
+        // register a callback for asynchronous reading of samples
+        srcReadAttrStore->SetUnknown(MF_SOURCE_READER_ASYNC_CALLBACK, m_srcReadCallback.Get());
+
+        std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
+        auto ucs2url = transcoder.from_bytes(url);
+
+        hr = MFCreateSourceReaderFromURL(ucs2url.c_str(),
+                                         srcReadAttrStore.Get(),
+                                         m_mfSourceReader.GetAddressOf());
+
+        if (FAILED(hr))
+            WWAPI::RaiseHResultException(hr, "Failed to create source reader", "MFCreateSourceReaderFromURL");
+
+        ConfigureDecoderTransforms(true);
     }
     catch (IAppException &ex)
     {
-        throw AppException<std::runtime_error>("Failed to create media source reader", ex);
+        throw AppException<std::runtime_error>("Failed to create source reader", ex);
     }
     catch (std::exception &ex)
     {
         std::ostringstream oss;
-        oss << "Generic failure when creating media source reader: " << ex.what();
+        oss << "Generic failure when creating source reader: " << ex.what();
         throw AppException<std::runtime_error>(oss.str());
+    }
+
+    /// <summary>
+    /// Reads a sample from source asynchronously.
+    /// </summary>
+    void MFSourceReader::ReadSampleAsync()
+    {
+        CALL_STACK_TRACE;
+
+        HRESULT hr = m_mfSourceReader->ReadSample(MF_SOURCE_READER_ANY_STREAM, 0, nullptr, nullptr, nullptr, nullptr);
+        if (FAILED(hr))
+        {
+            WWAPI::RaiseHResultException(hr,
+                "Source reader failed to request asynchronous read of sample",
+                "IMFSourceReader::ReadSample");
+        }
+    }
+
+    /// <summary>
+    /// Gets the sample.
+    /// </summary>
+    /// <returns></returns>
+    ComPtr<IMFSample> MFSourceReader::GetSample()
+    {
+        CALL_STACK_TRACE;
+
+        HRESULT hr;
+
+        auto result = m_srcReadCallback->GetResult();
+
+        // error?
+        if ((result->streamFlags & MF_SOURCE_READERF_ERROR) != 0)
+            WWAPI::RaiseHResultException(result->hres, "Source reader failed to read sample", "IMFSourceReader::ReadSample");
+
+        // new stream available:
+        if (result->streamFlags & MF_SOURCE_READERF_NEWSTREAM)
+        {
+            // Select all streams:
+            hr = m_mfSourceReader->SetStreamSelection(MF_SOURCE_READER_ALL_STREAMS, TRUE);
+            if (FAILED(hr))
+                WWAPI::RaiseHResultException(hr, "Failed to select streams for reading", "IMFSourceReader::SetStreamSelection");
+
+            ConfigureDecoderTransforms((result->streamFlags & MF_SOURCE_READERF_NATIVEMEDIATYPECHANGED) != 0);
+        }
+        // change of native media type in one or more streams:
+        else if ((result->streamFlags & MF_SOURCE_READERF_NATIVEMEDIATYPECHANGED) != 0)
+            ConfigureDecoderTransforms(true);
+
+        if ((result->streamFlags & MF_SOURCE_READERF_STREAMTICK) != 0)
+            ;
+
+        if ((result->streamFlags & MF_SOURCE_READERF_ALLEFFECTSREMOVED) != 0)
+            ;
+
+        if ((result->streamFlags & MF_SOURCE_READERF_ENDOFSTREAM) != 0)
+            ;
+
+        if (result)
+            return result->sample;
+
+        return ComPtr<IMFSample>();
     }
 
 }// end of namespace application
