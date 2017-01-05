@@ -26,32 +26,27 @@ namespace application
         ~MediaFoundationLib();
     };
 
-    const char *TranslateMFTCategory(const GUID &mftCategory);
-
-    ComPtr<ID3D11Device> GetDeviceDirect3D(UINT idxVideoAdapter);
-
-    struct AudioProperties
-    {
-
-    };
-
     /// <summary>
     /// Holds the most important information about a video stream.
     /// </summary>
     struct VideoProperties
     {
-        GUID videoDecFormat;
-        UINT32 videoEncAvgBitRate;
+        GUID videoFormat;
+        UINT32 videoAvgBitRate;
         UINT32 videoInterlaceMode;
         UINT32 videoWidth;
         UINT32 videoHeigth;
         MFRatio videoFPS;
-        
+
         std::chrono::microseconds GetVideoFrameDuration() const
         {
             return std::chrono::microseconds((long long)(videoFPS.Denominator * 1e6 / videoFPS.Numerator));
         };
     };
+
+    const char *TranslateMFTCategory(const GUID &mftCategory);
+
+    ComPtr<ID3D11Device> GetDeviceDirect3D(UINT idxVideoAdapter);
 
     /// <summary>
     /// Wraps Media Foundation Source Reader object.
@@ -70,9 +65,9 @@ namespace application
 
         MFSourceReader(const string &url, const ComPtr<IMFDXGIDeviceManager> &mfDXGIDevMan);
 
-        void GetMediaPropertiesFrom(DWORD idxStream,
-                                    std::map<DWORD, VideoProperties> &videoProps,
-                                    std::chrono::microseconds &duration) const;
+        void GetOutputMediaTypesFrom(DWORD idxStream,
+                                     std::map<DWORD, ComPtr<IMFMediaType>> &mediaTypes,
+                                     std::chrono::microseconds &duration) const;
 
         void ReadSampleAsync();
 
@@ -100,7 +95,7 @@ namespace application
     public:
 
         MFSinkWriter(const string &url,
-                     const std::map<DWORD, VideoProperties> &videoProps,
+                     const std::map<DWORD, ComPtr<IMFMediaType>> &inMediaTypes,
                      const ComPtr<IMFDXGIDeviceManager> &mfDXGIDevMan);
 
         void WriteSample();

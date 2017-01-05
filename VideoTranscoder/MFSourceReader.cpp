@@ -487,25 +487,25 @@ namespace application
         throw AppException<std::runtime_error>(oss.str());
     }
 
-    // Helps loading video properties from a stream
-    static void LoadVideoPropertiesFor(const ComPtr<IMFMediaType> &encVideoMType,
-                                       const ComPtr<IMFMediaType> &outVideoMType,
+    // Helps creating a video media type based in a model and parameters
+    void CreateVideoMediaTypeFromModel(const ComPtr<IMFMediaType> &baseVideoMType,
+                                       double targeSizeFactor,
                                        VideoProperties &props)
     {
         CALL_STACK_TRACE;
 
         HRESULT hr;
 
-        if (FAILED(hr = encVideoMType->GetUINT32(MF_MT_AVG_BITRATE, &props.videoEncAvgBitRate)) ||
-            FAILED(hr = outVideoMType->GetUINT32(MF_MT_INTERLACE_MODE, &props.videoInterlaceMode)) ||
-            FAILED(hr = outVideoMType->GetGUID(MF_MT_SUBTYPE, &props.videoDecFormat)) ||
+        if (FAILED(hr = baseVideoMType->GetUINT32(MF_MT_AVG_BITRATE, &props.videoAvgBitRate)) ||
+            FAILED(hr = baseVideoMType->GetUINT32(MF_MT_INTERLACE_MODE, &props.videoInterlaceMode)) ||
+            FAILED(hr = baseVideoMType->GetGUID(MF_MT_SUBTYPE, &props.videoFormat)) ||
 
-            FAILED(hr = MFGetAttributeSize(outVideoMType.Get(),
+            FAILED(hr = MFGetAttributeSize(baseVideoMType.Get(),
                                            MF_MT_FRAME_SIZE,
                                            &props.videoWidth,
                                            &props.videoHeigth)) ||
 
-            FAILED(hr = MFGetAttributeRatio(outVideoMType.Get(),
+            FAILED(hr = MFGetAttributeRatio(baseVideoMType.Get(),
                                             MF_MT_FRAME_RATE,
                                             reinterpret_cast<UINT32 *> (&props.videoFPS.Numerator),
                                             reinterpret_cast<UINT32 *> (&props.videoFPS.Denominator))))
@@ -517,15 +517,14 @@ namespace application
     }
 
     /// <summary>
-    /// Gets properties of video output for a given range of streams.
+    /// Gets the media types output by streams of a given range.
     /// </summary>
-    /// <param name="idxStream">Index of the first stream whose properties will be retrieved (from cache).</param>
-    /// <param name="videoProps">Will receive a dictionary of structures
-    /// with the main properties of video output, indexed by stream index.</param>
+    /// <param name="idxStream">Index of the first stream whose media type will be retrieved.</param>
+    /// <param name="mediaTypes">Will receive a dictionary of mediay types indexed by stream index.</param>
     /// <param name="duration">Will be set with the duration of the media file.</param>
-    void MFSourceReader::GetMediaPropertiesFrom(DWORD idxStream,
-                                                std::map<DWORD, VideoProperties> &videoProps,
-                                                std::chrono::microseconds &duration) const
+    void MFSourceReader::GetOutputMediaTypesFrom(DWORD idxStream,
+                                                 std::map<DWORD, ComPtr<IMFMediaType>> &mediaTypes,
+                                                 std::chrono::microseconds &duration) const
     {
         CALL_STACK_TRACE;
 
@@ -547,7 +546,7 @@ namespace application
 
         duration = std::chrono::microseconds(durationIn100ns / 10);
 
-        std::map<DWORD, VideoProperties> videoPropsByStreamIdx;
+        std::map<DWORD, ComPtr<IMFMediaType>> outMTypesByIndex;
         ComPtr<IMFMediaType> outputMType;
 
         // Iterate over streams:
@@ -568,42 +567,9 @@ namespace application
                 continue;
             }
 
-            // Get major type of input:
-            GUID majorType = { 0 };
-            hr = outputMType->GetMajorType(&majorType);
-            if (FAILED(hr))
-            {
-                WWAPI::RaiseHResultException(hr,
-                    "Failed to get major media type of source reader output stream",
-                    "IMFMediaType::GetMajorType");
-            }
+            auto insertResult = outMTypesByIndex.emplace(idxStream++, outputMType);
+            _ASSERTE(insertResult.second); // succesfully inserted?
 
-            // Get media type of original stream:
-            ComPtr<IMFMediaType> originalMType;
-            hr = m_mfSourceReader->GetNativeMediaType(idxStream, 0, originalMType.GetAddressOf());
-            if (FAILED(hr))
-            {
-                WWAPI::RaiseHResultException(hr,
-                    "Failed to get media type of original stream",
-                    "IMFSourceReader::GetCurrentMediaType");
-            }
-
-            // Video stream?
-            if (majorType == MFMediaType_Video)
-            {
-                // Read properties of original and output streams:
-                VideoProperties properties;
-                LoadVideoPropertiesFor(originalMType, outputMType, properties);
-                auto insertResult = videoPropsByStreamIdx.emplace(idxStream, properties);
-                _ASSERTE(insertResult.second); // succesfully inserted?
-            }
-            // Audio stream?
-            else if (majorType == MFMediaType_Audio)
-            {
-                // TO DO!!!
-            }
-
-            ++idxStream;
         }// while loop end
 
         if (hr != MF_E_INVALIDSTREAMNUMBER)
@@ -613,7 +579,7 @@ namespace application
                 "IMFSourceReader::GetNativeMediaType");
         }
 
-        videoProps.swap(videoPropsByStreamIdx);
+        mediaTypes.swap(outMTypesByIndex);
     }
 
     /// <summary>

@@ -17,10 +17,10 @@ namespace application
     /// Initializes a new instance of the <see cref="MFSinkWriter"/> class.
     /// </summary>
     /// <param name="url">The URL.</param>
-    /// <param name="videoProps">The video props.</param>
+    /// <param name="inMediaTypes">The video props.</param>
     /// <param name="mfDXGIDevMan">The mf dxgi dev man.</param>
     MFSinkWriter::MFSinkWriter(const string &url,
-                               const std::map<DWORD, VideoProperties> &videoProps,
+                               const std::map<DWORD, ComPtr<IMFMediaType>> &inMediaTypes,
                                const ComPtr<IMFDXGIDeviceManager> &mfDXGIDevMan)
     {
         CALL_STACK_TRACE;
