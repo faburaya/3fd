@@ -27,6 +27,10 @@ namespace application
         ~MediaFoundationLib();
     };
 
+    const char *TranslateMFTCategory(const GUID &mftCategory);
+
+    ComPtr<ID3D11Device> GetDeviceDirect3D(UINT idxVideoAdapter);
+
     /// <summary>
     /// Holds the most important information about a video stream.
     /// </summary>
@@ -45,8 +49,6 @@ namespace application
         };
     };
 
-    class MFSourceReaderCallbackImpl;
-
     /// <summary>
     /// Wraps Media Foundation Source Reader object.
     /// </summary>
@@ -54,11 +56,9 @@ namespace application
     {
     private:
 
-        ComPtr<IMFSourceReader> m_mfSourceReader;
-        ComPtr<MFSourceReaderCallbackImpl> m_srcReadCallback;
-
         DWORD m_streamCount;
-        std::map<DWORD, VideoProperties> m_videoPropsByStreamIdx;
+        ComPtr<IMFSourceReader> m_mfSourceReader;
+        ComPtr<IMFSourceReaderCallback> m_srcReadCallback;
 
         void ConfigureDecoderTransforms(bool mustReconfigAll);
 
@@ -66,11 +66,13 @@ namespace application
 
         MFSourceReader(const string &url, const ComPtr<IMFDXGIDeviceManager> &mfDXGIDevMan);
 
-        void GetMediaPropertiesFrom(DWORD idxStream, std::map<DWORD, VideoProperties> &videoProps) const;
+        void GetMediaPropertiesFrom(DWORD idxStream,
+                                    std::map<DWORD, VideoProperties> &videoProps,
+                                    std::chrono::microseconds &duration) const;
 
         void ReadSampleAsync();
 
-        enum class ReadStateFlags
+        enum ReadStateFlags
         {
             EndOfStream        = MF_SOURCE_READERF_ENDOFSTREAM,
             NewStreamAvailable = MF_SOURCE_READERF_NEWSTREAM,
@@ -80,7 +82,7 @@ namespace application
 
         ComPtr<IMFSample> GetSample(DWORD &state);
     };
-
+    /*
     /// <summary>
     /// Wraps Media Foundation Sink Writer object.
     /// </summary>
@@ -105,7 +107,7 @@ namespace application
         void SendStreamGapAsync();
 
         void Finalize();
-    };
+    };*/
 
 }// end of namespace application
 

@@ -10,6 +10,7 @@
 #include <memory>
 
 #include <Shlwapi.h>
+#include <propvarutil.h>
 #include <mfapi.h>
 #include <Mferror.h>
 
@@ -274,84 +275,67 @@ namespace application
         }
     };
 
-    // Prints information about source reader selected video MFT
-    static void PrintVideoTransformInfo(const ComPtr<IMFSourceReaderEx> &sourceReaderAltIntf)
+    // Prints information about source reader selected MFT
+    static void PrintTransformInfo(const ComPtr<IMFSourceReaderEx> &sourceReaderAltIntf, DWORD idxStream)
     {
         CALL_STACK_TRACE;
 
-        // From the alternative interface, obtain the selected MFT for decoding:
-        GUID transformCategory;
-        ComPtr<IMFTransform> videoTransform;
-        HRESULT hr = sourceReaderAltIntf->GetTransformForStream(
-            MF_SOURCE_READER_FIRST_VIDEO_STREAM,
-            0,
-            &transformCategory,
-            videoTransform.GetAddressOf()
-        );
-
-        if (FAILED(hr))
-        {
-            WWAPI::RaiseHResultException(hr,
-                "Failed to get selected video MFT for source reader",
-                "IMFSourceReaderEx::GetTransformForStream");
-        }
-
-        // Get video MFT attributes store:
-        ComPtr<IMFAttributes> mftAttrStore;
-        hr = videoTransform->GetAttributes(mftAttrStore.GetAddressOf());
-        if (FAILED(hr))
-        {
-            WWAPI::RaiseHResultException(hr,
-                "Failed to get attributes of video MFT selected by source reader",
-                "IMFAttributes::GetAttributes");
-        }
-
-        // Will MFT use DXVA?
-        std::cout << "Media source reader selected a video MFT "
-            << (MFGetAttributeUINT32(mftAttrStore.Get(), MF_SA_D3D_AWARE, FALSE) == TRUE
-                ? "that supports DXVA"
-                : "does NOT support DXVA") << std::endl;
-
-        PWSTR mftFriendlyName;
-        hr = MFGetAttributeString(mftAttrStore.Get(), MFT_FRIENDLY_NAME_Attribute, &mftFriendlyName);
-
-        // Is MFT hardware based?
-        if (SUCCEEDED(hr))
-        {
-            std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
-            std::cout << "Selected MFT is hardware based: " << transcoder.to_bytes(mftFriendlyName) << std::endl;
-            CoTaskMemFree(mftFriendlyName);
-        }
-        else
-            std::cout << "Selected MFT is NOT hardware based" << std::endl;
-    }
-
-    // Helps loading video properties from a stream
-    static void LoadVideoPropertiesFor(const ComPtr<IMFMediaType> &encVideoMType,
-        const ComPtr<IMFMediaType> &outVideoMType,
-        VideoProperties &props)
-    {
-        CALL_STACK_TRACE;
+        std::cout << "\n========== source stream #" << idxStream << " ==========\n";
 
         HRESULT hr;
+        GUID transformCategory;
+        ComPtr<IMFTransform> videoTransform;
+        DWORD idxMFT(0UL);
 
-        if (FAILED(hr = encVideoMType->GetUINT32(MF_MT_AVG_BITRATE, &props.videoEncAvgBitRate)) ||
-            FAILED(hr = outVideoMType->GetUINT32(MF_MT_INTERLACE_MODE, &props.videoInterlaceMode)) ||
-            FAILED(hr = outVideoMType->GetGUID(MF_MT_SUBTYPE, &props.videoDecFormat)) ||
+        // From the alternative interface, obtain the selected MFT for decoding:
+        while (SUCCEEDED(hr = sourceReaderAltIntf->GetTransformForStream(idxStream,
+                                                                         idxMFT,
+                                                                         &transformCategory,
+                                                                         videoTransform.GetAddressOf())))
+        {
+            std::cout << "MFT " << idxMFT << ": " << TranslateMFTCategory(transformCategory);
 
-            FAILED(hr = MFGetAttributeSize(outVideoMType.Get(),
-                                           MF_MT_FRAME_SIZE,
-                                           &props.videoWidth,
-                                           &props.videoHeigth)) ||
+            // Get video MFT attributes store:
+            ComPtr<IMFAttributes> mftAttrStore;
+            hr = videoTransform->GetAttributes(mftAttrStore.GetAddressOf());
 
-            FAILED(hr = MFGetAttributeRatio(outVideoMType.Get(),
-                                            MF_MT_FRAME_RATE,
-                                            reinterpret_cast<UINT32 *> (&props.videoFPS.Numerator),
-                                            reinterpret_cast<UINT32 *> (&props.videoFPS.Denominator))))
+            if (hr == E_NOTIMPL)
+            {
+                std::cout << std::endl;
+                ++idxMFT;
+                continue;
+            }
+            else if (FAILED(hr))
+            {
+                WWAPI::RaiseHResultException(hr,
+                    "Failed to get attributes of MFT selected by source reader",
+                    "IMFTransform::GetAttributes");
+            }
+
+            // Will MFT use DXVA?
+            if (MFGetAttributeUINT32(mftAttrStore.Get(), MF_SA_D3D_AWARE, FALSE) == TRUE)
+                std::cout << ", supports DXVA";
+
+            PWSTR mftFriendlyName;
+            hr = MFGetAttributeString(mftAttrStore.Get(), MFT_FRIENDLY_NAME_Attribute, &mftFriendlyName);
+
+            // Is MFT hardware based?
+            if (SUCCEEDED(hr))
+            {
+                std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
+                std::cout << ", hardware based (" << transcoder.to_bytes(mftFriendlyName) << ')';
+                CoTaskMemFree(mftFriendlyName);
+            }
+
+            std::cout << std::endl;
+            ++idxMFT;
+        }
+
+        if (hr != MF_E_INVALIDINDEX)
         {
             WWAPI::RaiseHResultException(hr,
-                "Failed to get an attribute of original video stream",
-                "IMFMediaType::GetUINT32 / GetGUID");
+                "Failed to get selected MFT for source reader",
+                "IMFSourceReaderEx::GetTransformForStream");
         }
     }
 
@@ -363,15 +347,18 @@ namespace application
     {
         CALL_STACK_TRACE;
 
-        HRESULT hr;
-        ComPtr<IMFMediaType> srcEncodedMType;
-        DWORD idxStream(m_streamCount);
-
-        if (mustReconfigAll)
+        // Get an alternative interface for source reader:
+        ComPtr<IMFSourceReaderEx> sourceReaderAltIntf;
+        HRESULT hr = m_mfSourceReader.CopyTo(IID_PPV_ARGS(sourceReaderAltIntf.GetAddressOf()));
+        if (FAILED(hr))
         {
-            m_videoPropsByStreamIdx.clear();
-            idxStream = 0UL;
+            WWAPI::RaiseHResultException(hr,
+                "Failed to query source reader for alternative interface",
+                "IMFSourceReader::CopyTo");
         }
+
+        ComPtr<IMFMediaType> srcEncodedMType;
+        DWORD idxStream(mustReconfigAll ? 0UL : m_streamCount);
 
         // Iterate over streams:
         while (SUCCEEDED(hr = m_mfSourceReader->GetNativeMediaType(idxStream, 0, srcEncodedMType.GetAddressOf())))
@@ -400,34 +387,7 @@ namespace application
                         "IMFSourceReader::SetCurrentMediaType");
                 }
 
-                // In case the last call made changes to the output media type, get it again:
-                ComPtr<IMFMediaType> outVideoMType;
-                hr = m_mfSourceReader->GetCurrentMediaType(idxStream, outVideoMType.GetAddressOf());
-                if (FAILED(hr))
-                {
-                    WWAPI::RaiseHResultException(hr,
-                        "Failed to get media type of output stream",
-                        "IMFSourceReader::GetCurrentMediaType");
-                }
-
-                // Read properties of output media type and keep it in cache:
-                VideoProperties properties;
-                LoadVideoPropertiesFor(srcEncodedMType, outVideoMType, properties);
-                auto insertResult = m_videoPropsByStreamIdx.emplace(idxStream, properties);
-
-                _ASSERTE(insertResult.second); // succesfully inserted?
-
-                // Get an alternative interface for source reader:
-                ComPtr<IMFSourceReaderEx> sourceReaderAltIntf;
-                hr = m_mfSourceReader.CopyTo(IID_PPV_ARGS(sourceReaderAltIntf.GetAddressOf()));
-                if (FAILED(hr))
-                {
-                    WWAPI::RaiseHResultException(hr,
-                        "Failed to query source reader for alternative interface",
-                        "IMFSourceReader::CopyTo");
-                }
-
-                PrintVideoTransformInfo(sourceReaderAltIntf);
+                PrintTransformInfo(sourceReaderAltIntf, idxStream);
             }
             // Audio stream?
             else if (majorType == MFMediaType_Audio)
@@ -445,6 +405,8 @@ namespace application
                             "IMFSourceReader::SetCurrentMediaType");
                     }
                 }
+
+                PrintTransformInfo(sourceReaderAltIntf, idxStream);
             }
             // Unknown type of stream:
             else
@@ -525,27 +487,133 @@ namespace application
         throw AppException<std::runtime_error>(oss.str());
     }
 
+    // Helps loading video properties from a stream
+    static void LoadVideoPropertiesFor(const ComPtr<IMFMediaType> &encVideoMType,
+                                       const ComPtr<IMFMediaType> &outVideoMType,
+                                       VideoProperties &props)
+    {
+        CALL_STACK_TRACE;
+
+        HRESULT hr;
+
+        if (FAILED(hr = encVideoMType->GetUINT32(MF_MT_AVG_BITRATE, &props.videoEncAvgBitRate)) ||
+            FAILED(hr = outVideoMType->GetUINT32(MF_MT_INTERLACE_MODE, &props.videoInterlaceMode)) ||
+            FAILED(hr = outVideoMType->GetGUID(MF_MT_SUBTYPE, &props.videoDecFormat)) ||
+
+            FAILED(hr = MFGetAttributeSize(outVideoMType.Get(),
+                                           MF_MT_FRAME_SIZE,
+                                           &props.videoWidth,
+                                           &props.videoHeigth)) ||
+
+            FAILED(hr = MFGetAttributeRatio(outVideoMType.Get(),
+                                            MF_MT_FRAME_RATE,
+                                            reinterpret_cast<UINT32 *> (&props.videoFPS.Numerator),
+                                            reinterpret_cast<UINT32 *> (&props.videoFPS.Denominator))))
+        {
+            WWAPI::RaiseHResultException(hr,
+                "Failed to get an attribute of original video stream",
+                "IMFMediaType::GetUINT32 / GetGUID");
+        }
+    }
+
     /// <summary>
     /// Gets properties of video output for a given range of streams.
     /// </summary>
     /// <param name="idxStream">Index of the first stream whose properties will be retrieved (from cache).</param>
     /// <param name="videoProps">Will receive a dictionary of structures
     /// with the main properties of video output, indexed by stream index.</param>
-    void MFSourceReader::GetMediaPropertiesFrom(DWORD idxStream, std::map<DWORD, VideoProperties> &videoProps) const
+    /// <param name="duration">Will be set with the duration of the media file.</param>
+    void MFSourceReader::GetMediaPropertiesFrom(DWORD idxStream,
+                                                std::map<DWORD, VideoProperties> &videoProps,
+                                                std::chrono::microseconds &duration) const
     {
         CALL_STACK_TRACE;
 
-        std::map<DWORD, VideoProperties> videoPropsByIdx; // temporary
+        // First get the duration of the media file:
 
-        for (auto iter = m_videoPropsByStreamIdx.find(idxStream);
-             iter != m_videoPropsByStreamIdx.end();
-             ++iter)
+        PROPVARIANT variant;
+        HRESULT hr = m_mfSourceReader->GetPresentationAttribute(MF_SOURCE_READER_MEDIASOURCE, MF_PD_DURATION, &variant);
+        if (FAILED(hr))
         {
-            auto insertResult = videoPropsByIdx.insert(*iter);
-            _ASSERTE(insertResult.second); // insertion successul?
+            WWAPI::RaiseHResultException(hr,
+                "Failed to get duration of source media file",
+                "IMFSourceReader::GetPresentationAttribute");
         }
 
-        videoProps.swap(videoPropsByIdx);
+        ULONGLONG durationIn100ns;
+        hr = PropVariantToUInt64(variant, &durationIn100ns);
+        if (FAILED(hr))
+            WWAPI::RaiseHResultException(hr, "Failed to cast value out of variant type", "PropVariantToUInt64");
+
+        duration = std::chrono::microseconds(durationIn100ns / 10);
+
+        std::map<DWORD, VideoProperties> videoPropsByStreamIdx;
+        ComPtr<IMFMediaType> outputMType;
+
+        // Iterate over streams:
+        while (SUCCEEDED(hr = m_mfSourceReader->GetCurrentMediaType(idxStream, outputMType.GetAddressOf())))
+        {
+            BOOL selected;
+            hr = m_mfSourceReader->GetStreamSelection(idxStream, &selected);
+            if (FAILED(hr))
+            {
+                WWAPI::RaiseHResultException(hr,
+                    "Failed to determine selection of source reader stream",
+                    "IMFSourceReader::GetStreamSelection");
+            }
+
+            if (!selected)
+            {
+                ++idxStream;
+                continue;
+            }
+
+            // Get major type of input:
+            GUID majorType = { 0 };
+            hr = outputMType->GetMajorType(&majorType);
+            if (FAILED(hr))
+            {
+                WWAPI::RaiseHResultException(hr,
+                    "Failed to get major media type of source reader output stream",
+                    "IMFMediaType::GetMajorType");
+            }
+
+            // Get media type of original stream:
+            ComPtr<IMFMediaType> originalMType;
+            hr = m_mfSourceReader->GetNativeMediaType(idxStream, 0, originalMType.GetAddressOf());
+            if (FAILED(hr))
+            {
+                WWAPI::RaiseHResultException(hr,
+                    "Failed to get media type of original stream",
+                    "IMFSourceReader::GetCurrentMediaType");
+            }
+
+            // Video stream?
+            if (majorType == MFMediaType_Video)
+            {
+                // Read properties of original and output streams:
+                VideoProperties properties;
+                LoadVideoPropertiesFor(originalMType, outputMType, properties);
+                auto insertResult = videoPropsByStreamIdx.emplace(idxStream, properties);
+                _ASSERTE(insertResult.second); // succesfully inserted?
+            }
+            // Audio stream?
+            else if (majorType == MFMediaType_Audio)
+            {
+                // TO DO!!!
+            }
+
+            ++idxStream;
+        }// while loop end
+
+        if (hr != MF_E_INVALIDSTREAMNUMBER)
+        {
+            WWAPI::RaiseHResultException(hr,
+                "Failed to get media type of source reader output stream",
+                "IMFSourceReader::GetNativeMediaType");
+        }
+
+        videoProps.swap(videoPropsByStreamIdx);
     }
 
     /// <summary>
@@ -573,10 +641,7 @@ namespace application
     {
         CALL_STACK_TRACE;
 
-        auto result = m_srcReadCallback->GetResult();
-
-        // change of current media type is not expected
-        _ASSERTE((result->streamFlags & MF_SOURCE_READERF_CURRENTMEDIATYPECHANGED) == 0);
+        auto result = static_cast<MFSourceReaderCallbackImpl *> (m_srcReadCallback.Get())->GetResult();
 
         // error?
         if ((result->streamFlags & MF_SOURCE_READERF_ERROR) != 0)
@@ -584,8 +649,11 @@ namespace application
 
         state = result->streamFlags;
 
+        // change of current media type is not expected
+        _ASSERTE((result->streamFlags & MF_SOURCE_READERF_CURRENTMEDIATYPECHANGED) == 0);
+
         // new stream available:
-        if ((result->streamFlags & MF_SOURCE_READERF_NEWSTREAM) != 0)
+        if ((state & MF_SOURCE_READERF_NEWSTREAM) != 0)
         {
             // select all streams:
             HRESULT hr = m_mfSourceReader->SetStreamSelection(MF_SOURCE_READER_ALL_STREAMS, TRUE);
@@ -594,10 +662,15 @@ namespace application
 
             // reconfigure decoders (all or just the new)
             ConfigureDecoderTransforms((result->streamFlags & MF_SOURCE_READERF_NATIVEMEDIATYPECHANGED) != 0);
+
+            std::cout << "\nNew stream is available in source reader!\n" << std::endl;
         }
         // change of native media type in one or more streams:
         else if ((result->streamFlags & MF_SOURCE_READERF_NATIVEMEDIATYPECHANGED) != 0)
+        {
             ConfigureDecoderTransforms(true);
+            std::cout << "\nNative media type has changed in source stream!\n" << std::endl;
+        }
 
         return result->sample;
     }
