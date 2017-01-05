@@ -4,7 +4,6 @@
 #include "3FD\base.h"
 #include <string>
 #include <chrono>
-#include <mutex>
 #include <map>
 #include <wrl.h>
 #include <d3d11.h>
@@ -30,6 +29,11 @@ namespace application
     const char *TranslateMFTCategory(const GUID &mftCategory);
 
     ComPtr<ID3D11Device> GetDeviceDirect3D(UINT idxVideoAdapter);
+
+    struct AudioProperties
+    {
+
+    };
 
     /// <summary>
     /// Holds the most important information about a video stream.
@@ -82,7 +86,7 @@ namespace application
 
         ComPtr<IMFSample> GetSample(DWORD &state);
     };
-    /*
+    
     /// <summary>
     /// Wraps Media Foundation Sink Writer object.
     /// </summary>
@@ -92,9 +96,6 @@ namespace application
 
         ComPtr<IMFSinkWriter> m_mfSinkWriter;
         std::map<DWORD, uint64_t> m_gapTrackByStreamIdx;
-        std::mutex m_gapTrackAccessMutex;
-
-        //void ConfigureEncoderTransforms(bool mustReconfigAll);
 
     public:
 
@@ -102,12 +103,12 @@ namespace application
                      const std::map<DWORD, VideoProperties> &videoProps,
                      const ComPtr<IMFDXGIDeviceManager> &mfDXGIDevMan);
 
-        void WriteSampleAsync();
+        void WriteSample();
 
-        void SendStreamGapAsync();
+        void SendStreamTick();
 
         void Finalize();
-    };*/
+    };
 
 }// end of namespace application
 
