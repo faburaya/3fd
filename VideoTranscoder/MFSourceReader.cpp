@@ -27,7 +27,7 @@ namespace application
         ComPtr<IMFMediaType> uncompVideoMType;
         HRESULT hr = MFCreateMediaType(uncompVideoMType.GetAddressOf());
         if (FAILED(hr))
-            WWAPI::RaiseHResultException(hr, "Failed to create uncompressed media type", "MFCreateMediaType");
+            WWAPI::RaiseHResultException(hr, "Failed to create media type", "MFCreateMediaType");
 
         // Setup uncompressed media type mainly as a copy from original encoded version...
         hr = srcEncVideoMType->CopyAllItems(uncompVideoMType.Get());
@@ -69,12 +69,7 @@ namespace application
         if (FAILED(hr))
         {
             // Default to square pixels:
-            hr = MFSetAttributeRatio(
-                uncompVideoMType.Get(),
-                MF_MT_PIXEL_ASPECT_RATIO,
-                1, 1
-            );
-
+            hr = MFSetAttributeRatio(uncompVideoMType.Get(), MF_MT_PIXEL_ASPECT_RATIO, 1, 1);
             if (FAILED(hr))
             {
                 WWAPI::RaiseHResultException(hr,
@@ -97,7 +92,7 @@ namespace application
         if (FAILED(hr))
         {
             WWAPI::RaiseHResultException(hr,
-                "Failed to retrieve audio subtype from original media type",
+                "Failed to get audio subtype of original media type",
                 "IMFMediaType::GetGUID");
         }
 
@@ -111,11 +106,12 @@ namespace application
            Note: Some encoded audio formats do not contain a value for bits/sample.
            In that case, use a default value of 16. Most codecs will accept this value. */
 
-        auto nChannels = MFGetAttributeUINT32(srcEncAudioMType.Get(), MF_MT_AUDIO_NUM_CHANNELS, 0UL);
+        auto channelMask = MFGetAttributeUINT32(srcEncAudioMType.Get(), MF_MT_AUDIO_CHANNEL_MASK, 0UL);
+        auto numChannels = MFGetAttributeUINT32(srcEncAudioMType.Get(), MF_MT_AUDIO_NUM_CHANNELS, 0UL);
         auto sampleRate = MFGetAttributeUINT32(srcEncAudioMType.Get(), MF_MT_AUDIO_SAMPLES_PER_SECOND, 0UL);
         auto bitsPerSample = MFGetAttributeUINT32(srcEncAudioMType.Get(), MF_MT_AUDIO_BITS_PER_SAMPLE, 16);
 
-        if (nChannels == 0 || sampleRate == 0)
+        if (numChannels == 0 || sampleRate == 0)
         {
             throw AppException<std::runtime_error>(
                 "Could not retrieve information to create uncompressed media type "
@@ -124,27 +120,36 @@ namespace application
         }
 
         // Calculate derived values:
-        auto blockAlign = nChannels * (bitsPerSample / 8);
+        auto blockAlign = numChannels * (bitsPerSample / 8);
         auto bytesPerSecond = blockAlign * sampleRate;
 
         // Create an empty media type:
         hr = MFCreateMediaType(uncompAudioMType.GetAddressOf());
         if (FAILED(hr))
-            WWAPI::RaiseHResultException(hr, "Failed to create uncompressed media type for source", "MFCreateMediaType");
+            WWAPI::RaiseHResultException(hr, "Failed to create media type", "MFCreateMediaType");
         
-        // Set attributes to make it PCM:
+        // Initialize attributes:
+
         if (FAILED(hr = uncompAudioMType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Audio)) ||
             FAILED(hr = uncompAudioMType->SetGUID(MF_MT_SUBTYPE, MFAudioFormat_PCM)) ||
             FAILED(hr = uncompAudioMType->SetUINT32(MF_MT_AUDIO_BITS_PER_SAMPLE, bitsPerSample)) ||
             FAILED(hr = uncompAudioMType->SetUINT32(MF_MT_AUDIO_SAMPLES_PER_SECOND, sampleRate)) ||
             FAILED(hr = uncompAudioMType->SetUINT32(MF_MT_AUDIO_AVG_BYTES_PER_SECOND, bytesPerSecond)) ||
             FAILED(hr = uncompAudioMType->SetUINT32(MF_MT_AUDIO_BLOCK_ALIGNMENT, blockAlign)) ||
-            FAILED(hr = uncompAudioMType->SetUINT32(MF_MT_AUDIO_NUM_CHANNELS, nChannels)) ||
+            FAILED(hr = uncompAudioMType->SetUINT32(MF_MT_AUDIO_NUM_CHANNELS, numChannels)) ||
             FAILED(hr = uncompAudioMType->SetUINT32(MF_MT_ALL_SAMPLES_INDEPENDENT, TRUE)))
         {
             WWAPI::RaiseHResultException(hr,
                 "Failed to set attribute in uncompressed audio media type",
-                "IMFMediaType::SetGUID / SetDouble / SetUINT32");
+                "IMFMediaType::SetUINT32 / SetGUID");
+        }
+
+        // If channel mask was present in original stream, set it for the decoded stream too:
+        if (channelMask != 0UL && FAILED(hr = uncompAudioMType->SetUINT32(MF_MT_AUDIO_CHANNEL_MASK, channelMask)))
+        {
+            WWAPI::RaiseHResultException(hr,
+                "Failed to set channel mask in uncompressed audio media type",
+                "IMFMediaType::SetUINT32");
         }
 
         return uncompAudioMType;
@@ -291,7 +296,7 @@ namespace application
         while (SUCCEEDED(hr = sourceReaderAltIntf->GetTransformForStream(idxStream,
                                                                          idxMFT,
                                                                          &transformCategory,
-                                                                         videoTransform.GetAddressOf())))
+                                                                         videoTransform.ReleaseAndGetAddressOf())))
         {
             std::cout << "MFT " << idxMFT << ": " << TranslateMFTCategory(transformCategory);
 
@@ -357,15 +362,15 @@ namespace application
                 "IMFSourceReader::CopyTo");
         }
 
-        ComPtr<IMFMediaType> srcEncodedMType;
+        ComPtr<IMFMediaType> originalMType;
         DWORD idxStream(mustReconfigAll ? 0UL : m_streamCount);
 
         // Iterate over streams:
-        while (SUCCEEDED(hr = m_mfSourceReader->GetNativeMediaType(idxStream, 0, srcEncodedMType.GetAddressOf())))
+        while (SUCCEEDED(hr = m_mfSourceReader->GetNativeMediaType(idxStream, 0, originalMType.ReleaseAndGetAddressOf())))
         {
             // Get major type of input:
             GUID majorType = { 0 };
-            hr = srcEncodedMType->GetMajorType(&majorType);
+            hr = originalMType->GetMajorType(&majorType);
             if (FAILED(hr))
             {
                 WWAPI::RaiseHResultException(hr,
@@ -376,14 +381,14 @@ namespace application
             // Video stream?
             if (majorType == MFMediaType_Video)
             {
-                auto uncompVideoMType = CreateUncompressedVideoMediaTypeFrom(srcEncodedMType);
+                auto uncompVideoMType = CreateUncompressedVideoMediaTypeFrom(originalMType);
 
                 // Set the source reader to use the new uncompressed video media type:
                 HRESULT hr = m_mfSourceReader->SetCurrentMediaType(idxStream, nullptr, uncompVideoMType.Get());
                 if (FAILED(hr))
                 {
                     WWAPI::RaiseHResultException(hr,
-                        "Failed to set output stream to uncompressed video type",
+                        "Failed to set decoded stream as uncompressed video type",
                         "IMFSourceReader::SetCurrentMediaType");
                 }
 
@@ -392,7 +397,7 @@ namespace application
             // Audio stream?
             else if (majorType == MFMediaType_Audio)
             {
-                auto uncompAudioMType = CreateUncompressedAudioMediaTypeFrom(srcEncodedMType);
+                auto uncompAudioMType = CreateUncompressedAudioMediaTypeFrom(originalMType);
 
                 // Set the source reader to use the new uncompressed audio media type, if not already uncompressed:
                 if (uncompAudioMType)
@@ -401,7 +406,7 @@ namespace application
                     if (FAILED(hr))
                     {
                         WWAPI::RaiseHResultException(hr,
-                            "Failed to set output stream to uncompressed audio type",
+                            "Failed to set decoded stream as uncompressed audio type",
                             "IMFSourceReader::SetCurrentMediaType");
                     }
                 }
@@ -487,43 +492,14 @@ namespace application
         throw AppException<std::runtime_error>(oss.str());
     }
 
-    // Helps creating a video media type based in a model and parameters
-    void CreateVideoMediaTypeFromModel(const ComPtr<IMFMediaType> &baseVideoMType,
-                                       double targeSizeFactor,
-                                       VideoProperties &props)
-    {
-        CALL_STACK_TRACE;
-
-        HRESULT hr;
-
-        if (FAILED(hr = baseVideoMType->GetUINT32(MF_MT_AVG_BITRATE, &props.videoAvgBitRate)) ||
-            FAILED(hr = baseVideoMType->GetUINT32(MF_MT_INTERLACE_MODE, &props.videoInterlaceMode)) ||
-            FAILED(hr = baseVideoMType->GetGUID(MF_MT_SUBTYPE, &props.videoFormat)) ||
-
-            FAILED(hr = MFGetAttributeSize(baseVideoMType.Get(),
-                                           MF_MT_FRAME_SIZE,
-                                           &props.videoWidth,
-                                           &props.videoHeigth)) ||
-
-            FAILED(hr = MFGetAttributeRatio(baseVideoMType.Get(),
-                                            MF_MT_FRAME_RATE,
-                                            reinterpret_cast<UINT32 *> (&props.videoFPS.Numerator),
-                                            reinterpret_cast<UINT32 *> (&props.videoFPS.Denominator))))
-        {
-            WWAPI::RaiseHResultException(hr,
-                "Failed to get an attribute of original video stream",
-                "IMFMediaType::GetUINT32 / GetGUID");
-        }
-    }
-
     /// <summary>
     /// Gets the media types output by streams of a given range.
     /// </summary>
     /// <param name="idxStream">Index of the first stream whose media type will be retrieved.</param>
-    /// <param name="mediaTypes">Will receive a dictionary of mediay types indexed by stream index.</param>
+    /// <param name="outMediaTypes">Will receive a dictionary of mediay types indexed by stream index.</param>
     /// <param name="duration">Will be set with the duration of the media file.</param>
     void MFSourceReader::GetOutputMediaTypesFrom(DWORD idxStream,
-                                                 std::map<DWORD, ComPtr<IMFMediaType>> &mediaTypes,
+                                                 std::map<DWORD, DecodedMediaType> &decodedMTypes,
                                                  std::chrono::microseconds &duration) const
     {
         CALL_STACK_TRACE;
@@ -546,11 +522,11 @@ namespace application
 
         duration = std::chrono::microseconds(durationIn100ns / 10);
 
-        std::map<DWORD, ComPtr<IMFMediaType>> outMTypesByIndex;
-        ComPtr<IMFMediaType> outputMType;
+        std::map<DWORD, DecodedMediaType> decMTypesByIndex;
+        ComPtr<IMFMediaType> decodedMType;
 
         // Iterate over streams:
-        while (SUCCEEDED(hr = m_mfSourceReader->GetCurrentMediaType(idxStream, outputMType.GetAddressOf())))
+        while (SUCCEEDED(hr = m_mfSourceReader->GetCurrentMediaType(idxStream, decodedMType.ReleaseAndGetAddressOf())))
         {
             BOOL selected;
             hr = m_mfSourceReader->GetStreamSelection(idxStream, &selected);
@@ -567,7 +543,43 @@ namespace application
                 continue;
             }
 
-            auto insertResult = outMTypesByIndex.emplace(idxStream++, outputMType);
+            DecodedMediaType decoded;
+            decoded.mediaType = decodedMType;
+
+            // Also get the media type in the original stream...
+            ComPtr<IMFMediaType> originalMType;
+            hr = m_mfSourceReader->GetNativeMediaType(idxStream, 0, originalMType.GetAddressOf());
+            if (FAILED(hr))
+            {
+                WWAPI::RaiseHResultException(hr,
+                    "Failed to get media type of original stream",
+                    "IMFSourceReader::GetNativeMediaType");
+            }
+
+            // and its major type...
+            GUID majorType = { 0 };
+            hr = originalMType->GetMajorType(&majorType);
+            if (FAILED(hr))
+            {
+                WWAPI::RaiseHResultException(hr,
+                    "Failed to get major media type of original stream",
+                    "IMFMediaType::GetMajorType");
+            }
+
+            // ... just to know its original bitrate
+            hr = originalMType->GetUINT32(
+                (majorType == MFMediaType_Video ? MF_MT_AVG_BITRATE : MF_MT_AUDIO_AVG_BYTES_PER_SECOND),
+                &decoded.originalEncodedDataRate
+            );
+
+            if (FAILED(hr))
+            {
+                WWAPI::RaiseHResultException(hr,
+                    "Failed to get data rate of original stream",
+                    "IMFMediaType::GetUINT32");
+            }
+
+            auto insertResult = decMTypesByIndex.emplace(idxStream++, decoded);
             _ASSERTE(insertResult.second); // succesfully inserted?
 
         }// while loop end
@@ -575,11 +587,11 @@ namespace application
         if (hr != MF_E_INVALIDSTREAMNUMBER)
         {
             WWAPI::RaiseHResultException(hr,
-                "Failed to get media type of source reader output stream",
-                "IMFSourceReader::GetNativeMediaType");
+                "Failed to get media type of decoded stream",
+                "IMFSourceReader::GetCurrentMediaType");
         }
 
-        mediaTypes.swap(outMTypesByIndex);
+        decodedMTypes.swap(decMTypesByIndex);
     }
 
     /// <summary>

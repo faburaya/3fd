@@ -26,24 +26,6 @@ namespace application
         ~MediaFoundationLib();
     };
 
-    /// <summary>
-    /// Holds the most important information about a video stream.
-    /// </summary>
-    struct VideoProperties
-    {
-        GUID videoFormat;
-        UINT32 videoAvgBitRate;
-        UINT32 videoInterlaceMode;
-        UINT32 videoWidth;
-        UINT32 videoHeigth;
-        MFRatio videoFPS;
-
-        std::chrono::microseconds GetVideoFrameDuration() const
-        {
-            return std::chrono::microseconds((long long)(videoFPS.Denominator * 1e6 / videoFPS.Numerator));
-        };
-    };
-
     const char *TranslateMFTCategory(const GUID &mftCategory);
 
     ComPtr<ID3D11Device> GetDeviceDirect3D(UINT idxVideoAdapter);
@@ -66,21 +48,29 @@ namespace application
         MFSourceReader(const string &url, const ComPtr<IMFDXGIDeviceManager> &mfDXGIDevMan);
 
         void GetOutputMediaTypesFrom(DWORD idxStream,
-                                     std::map<DWORD, ComPtr<IMFMediaType>> &mediaTypes,
+                                     std::map<DWORD, DecodedMediaType> &outMediaTypes,
                                      std::chrono::microseconds &duration) const;
 
         void ReadSampleAsync();
 
         enum ReadStateFlags
         {
-            EndOfStream        = MF_SOURCE_READERF_ENDOFSTREAM,
+            EndOfStream = MF_SOURCE_READERF_ENDOFSTREAM,
             NewStreamAvailable = MF_SOURCE_READERF_NEWSTREAM,
-            NativeTypeChanged  = MF_SOURCE_READERF_NATIVEMEDIATYPECHANGED,
-            GapFound           = MF_SOURCE_READERF_STREAMTICK
+            NativeTypeChanged = MF_SOURCE_READERF_NATIVEMEDIATYPECHANGED,
+            GapFound = MF_SOURCE_READERF_STREAMTICK
         };
 
         ComPtr<IMFSample> GetSample(DWORD &state);
     };
+
+    struct DecodedMediaType
+    {
+        UINT32 originalEncodedDataRate;
+        ComPtr<IMFMediaType> mediaType;
+    };
+
+    enum class Encoder { H264_AVC, H265_HEVC };
     
     /// <summary>
     /// Wraps Media Foundation Sink Writer object.
@@ -95,8 +85,10 @@ namespace application
     public:
 
         MFSinkWriter(const string &url,
-                     const std::map<DWORD, ComPtr<IMFMediaType>> &inMediaTypes,
-                     const ComPtr<IMFDXGIDeviceManager> &mfDXGIDevMan);
+                     const ComPtr<IMFDXGIDeviceManager> &mfDXGIDevMan,
+                     const std::map<DWORD, DecodedMediaType> &inMediaTypes,
+                     double targeSizeFactor,
+                     Encoder encoder);
 
         void WriteSample();
 
