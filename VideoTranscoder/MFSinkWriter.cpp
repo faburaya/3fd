@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <codecvt>
 #include <mfapi.h>
+#include <Mferror.h>
 #include <codecapi.h>
 
 namespace application
@@ -171,6 +172,140 @@ namespace application
         return outputAudioMType;
     }
 
+    // Prints information about sink writer selected MFT
+    static void PrintTransformInfo(const ComPtr<IMFSinkWriterEx> &sinkWriterAltIntf, DWORD idxStream)
+    {
+        CALL_STACK_TRACE;
+
+        std::cout << "\n=========== sink stream #" << idxStream << " ===========\n";
+
+        HRESULT hr;
+        GUID transformCategory;
+        ComPtr<IMFTransform> transform;
+        DWORD idxMFT(0UL);
+
+        // From the alternative interface, obtain the selected MFT for decoding:
+        while (SUCCEEDED(hr = sinkWriterAltIntf->GetTransformForStream(idxStream,
+                                                                       idxMFT,
+                                                                       &transformCategory,
+                                                                       transform.ReleaseAndGetAddressOf())))
+        {
+            std::cout << "MFT " << idxMFT << ": " << TranslateMFTCategory(transformCategory);
+
+            // Get video MFT attributes store:
+            ComPtr<IMFAttributes> mftAttrStore;
+            hr = transform->GetAttributes(mftAttrStore.GetAddressOf());
+
+            if (hr == E_NOTIMPL)
+            {
+                std::cout << std::endl;
+                ++idxMFT;
+                continue;
+            }
+            else if (FAILED(hr))
+            {
+                WWAPI::RaiseHResultException(hr,
+                    "Failed to get attributes of MFT selected by sink writer",
+                    "IMFTransform::GetAttributes");
+            }
+
+            // Will MFT use DXVA?
+            if (MFGetAttributeUINT32(mftAttrStore.Get(), MF_SA_D3D_AWARE, FALSE) == TRUE)
+                std::cout << ", supports DXVA";
+
+            PWSTR mftFriendlyName;
+            hr = MFGetAttributeString(mftAttrStore.Get(), MFT_FRIENDLY_NAME_Attribute, &mftFriendlyName);
+
+            // Is MFT hardware based?
+            if (SUCCEEDED(hr))
+            {
+                std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
+                std::cout << ", hardware based (" << transcoder.to_bytes(mftFriendlyName) << ')';
+                CoTaskMemFree(mftFriendlyName);
+            }
+
+            std::cout << std::endl;
+            ++idxMFT;
+        }
+
+        if (hr != MF_E_INVALIDINDEX)
+        {
+            WWAPI::RaiseHResultException(hr,
+                "Failed to get selected MFT for sink writer",
+                "IMFSinkWriterEx::GetTransformForStream");
+        }
+    }
+
+    /// <summary>
+    /// Adds a new (decoded) stream (input coming from source reader, found there)
+    /// to the sink writer, hence creating a new (encoded) output stream.
+    /// </summary>
+    /// <param name="sinkWriterAltIntf">An alternative interface to the sink writer,
+    /// capable of retrieving the selected media transform for each stream.</param>
+    /// <param name="idxDecStream">The index of the stream in source.</param>
+    /// <param name="decoded">Describes the decoded stream to add.</param>
+    /// <param name="targeSizeFactor">The target size of the video output, as a fraction of the originally encoded version.</param>
+    /// <param name="encoder">What encoder to use for video.</param>
+    void MFSinkWriter::AddStream(const ComPtr<IMFSinkWriterEx> &sinkWriterAltIntf,
+                                 DWORD idxDecStream,
+                                 const DecodedMediaType &decoded,
+                                 double targeSizeFactor,
+                                 Encoder encoder)
+    {
+        CALL_STACK_TRACE;
+
+        // Get the major type of the decoded input stream:
+        GUID majorType = { 0 };
+        HRESULT hr = decoded.mediaType->GetMajorType(&majorType);
+        if (FAILED(hr))
+        {
+            WWAPI::RaiseHResultException(hr,
+                "Failed to get major media type of decoded stream",
+                "IMFMediaType::GetMajorType");
+        }
+
+        ComPtr<IMFMediaType> outputMType;
+        MediaDataType mediaDataType;
+
+        if (majorType == MFMediaType_Video) // video? will encode
+        {
+            mediaDataType = Video;
+            outputMType = CreateOutVideoMediaType(decoded, targeSizeFactor, encoder);
+        }
+        else if (majorType == MFMediaType_Audio) // audio? will encode
+        {
+            mediaDataType = Audio;
+            outputMType = CreateOutAudioMediaType(decoded);
+        }
+        else // other? will copy
+            outputMType = decoded.mediaType;
+
+        // Add the output stream:
+        DWORD idxOutStream;
+        hr = m_mfSinkWriter->AddStream(outputMType.Get(), &idxOutStream);
+        if (FAILED(hr))
+        {
+            WWAPI::RaiseHResultException(hr,
+                "Failed to add output stream to media sink writer",
+                "IMFSinkWriter::AddStream");
+        }
+
+        // Set the decoded input too:
+        hr = m_mfSinkWriter->SetInputMediaType(idxOutStream, decoded.mediaType.Get(), nullptr);
+        if (FAILED(hr))
+        {
+            WWAPI::RaiseHResultException(hr,
+                "Failed to set decoded media type as sink writer input stream",
+                "IMFSinkWriter::SetInputMediaType");
+        }
+
+        PrintTransformInfo(sinkWriterAltIntf, idxOutStream);
+
+        /* The stream index in sink and source can be different, hence it must be
+        kept in a lookup table for fast conversion during encoding process */
+        m_streamInfoLookupTab[idxDecStream] = StreamInfo{ idxOutStream, mediaDataType };
+    }
+
     /// <summary>
     /// Initializes a new instance of the <see cref="MFSinkWriter"/> class.
     /// </summary>
@@ -218,6 +353,16 @@ namespace application
         // Prepare the lookup table for index conversion (source reader index -> sink writer index):
         m_streamInfoLookupTab.resize(decodedMTypes.rbegin()->first + 1);
         std::fill(m_streamInfoLookupTab.begin(), m_streamInfoLookupTab.end(), StreamInfo{});
+
+        // Get an alternative interface for sink writer:
+        ComPtr<IMFSinkWriterEx> sinkWriterAltIntf;
+        HRESULT hr = m_mfSinkWriter.CopyTo(IID_PPV_ARGS(sinkWriterAltIntf.GetAddressOf()));
+        if (FAILED(hr))
+        {
+            WWAPI::RaiseHResultException(hr,
+                "Failed to query sink writer for alternative interface",
+                "IMFSinkWriterEx::CopyTo");
+        }
         
         // Iterate over decoded input streams:
         for (auto &entry : decodedMTypes)
@@ -225,56 +370,12 @@ namespace application
             auto idxDecStream = entry.first;
             auto &decoded = entry.second;
 
-            // Get the major type of the decoded input stream:
-            GUID majorType = { 0 };
-            hr = decoded.mediaType->GetMajorType(&majorType);
-            if (FAILED(hr))
-            {
-                WWAPI::RaiseHResultException(hr,
-                    "Failed to get major media type of decoded stream",
-                    "IMFMediaType::GetMajorType");
-            }
-
-            ComPtr<IMFMediaType> outputMType;
-            MediaDataType mediaDataType;
-
-            if (majorType == MFMediaType_Video) // video? will encode
-            {
-                mediaDataType = Video;
-                outputMType = CreateOutVideoMediaType(decoded, targeSizeFactor, encoder);
-            }
-            else if (majorType == MFMediaType_Audio) // audio? will encode
-            {
-                mediaDataType = Audio;
-                outputMType = CreateOutAudioMediaType(decoded);
-            }
-            else // other? will copy
-                outputMType = decoded.mediaType;
-
-            // Add the output stream:
-            DWORD idxOutStream;
-            hr = m_mfSinkWriter->AddStream(outputMType.Get(), &idxOutStream);
-            if (FAILED(hr))
-            {
-                WWAPI::RaiseHResultException(hr,
-                    "Failed to add output stream to media sink writer",
-                    "IMFSinkWriter::AddStream");
-            }
-
-            // Set the decoded input too:
-            hr = m_mfSinkWriter->SetInputMediaType(idxOutStream, decoded.mediaType.Get(), nullptr);
-            if (FAILED(hr))
-            {
-                WWAPI::RaiseHResultException(hr,
-                    "Failed to set decoded media type as sink writer input stream",
-                    "IMFSinkWriter::SetInputMediaType");
-            }
-
-            /* The stream index in sink and source can be different, hence it must be
-               kept in a lookup table for fast conversion during encoding process */
-            m_streamInfoLookupTab[idxDecStream] = StreamInfo{ idxOutStream, mediaDataType };
-
-        }// for loop end
+            AddStream(sinkWriterAltIntf,
+                      idxDecStream,
+                      decoded,
+                      targeSizeFactor,
+                      encoder);
+        }
 
         if (m_streamInfoLookupTab.empty())
             return;
@@ -286,7 +387,7 @@ namespace application
         // Start async encoding (will await for samples)
         hr = m_mfSinkWriter->BeginWriting();
         if (FAILED(hr))
-            WWAPI::RaiseHResultException(hr, "Failed to start asynchronous encoding", "IMFSinkWriter::SetInputMediaType");
+            WWAPI::RaiseHResultException(hr, "Failed to start asynchronous encoding", "IMFSinkWriter::BeginWriting");
     }
     catch (IAppException &ex)
     {
@@ -299,6 +400,32 @@ namespace application
         std::ostringstream oss;
         oss << "Generic failure when creating sink writer: " << ex.what();
         throw AppException<std::runtime_error>(oss.str());
+    }
+
+    /// <summary>
+    /// Finalizes an instance of the <see cref="MFSinkWriter"/> class.
+    /// </summary>
+    MFSinkWriter::~MFSinkWriter()
+    {
+        CALL_STACK_TRACE;
+
+        HRESULT hr = m_mfSinkWriter->Finalize();
+        if (FAILED(hr))
+            Logger::Write(hr, "Failed to flush and finalize media sink", "IMFSinkWriter::Finalize", Logger::PRIO_CRITICAL);
+    }
+
+    /// <summary>
+    /// Adds new (decoded) streams (input coming from source reader, found there)
+    /// to the sink writer, hence creating new (encoded) output streams.
+    /// </summary>
+    /// <param name="decodedMTypes">A dictionary of (decoded input) media types indexed by stream index.</param>
+    /// <param name="targeSizeFactor">The target size of the video output, as a fraction of the originally encoded version.</param>
+    /// <param name="encoder">What encoder to use for video.</param>
+    void MFSinkWriter::AddNewStreams(const std::map<DWORD, DecodedMediaType> &decodedMTypes,
+                                     double targeSizeFactor,
+                                     Encoder encoder)
+    {
+        CALL_STACK_TRACE;
     }
 
     /// <summary>
@@ -315,14 +442,15 @@ namespace application
 
         // was in a gap until last call?
         if (lastGap > 0)
+        {
+            lastGap = -1; // means "out of gap"
             sample->SetUINT32(MFSampleExtension_Discontinuity, TRUE);
+        }
 
         // enqueue the sample for asynchronous encoding:
         HRESULT hr = m_mfSinkWriter->WriteSample(streamInfo.outIndex, sample.Get());
         if (FAILED(hr))
             WWAPI::RaiseHResultException(hr, "Failed to put sample in encoding queue", "IMFSinkWriter::WriteSample");
-
-        lastGap = -1; // means "out of gap"
     }
 
     /// <summary>
@@ -357,12 +485,12 @@ namespace application
 
             if (lastGap < 0 || timestamp - lastGap > 1e7 /* x 100 ns */)
             {
+                lastGap = timestamp; // remember last tick sent
+
                 hr = m_mfSinkWriter->SendStreamTick(streamInfo.outIndex, timestamp);
                 if (FAILED(hr))
                     WWAPI::RaiseHResultException(hr, "Failed to send audio stream tick to encoder", "IMFSinkWriter::SendStreamTick");
             }
-
-            lastGap = timestamp; // remember last gap instant
         }
         else
             _ASSERTE(false); // unexpected media data type

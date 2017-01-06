@@ -48,7 +48,7 @@ namespace application
         MFSourceReader(const string &url, const ComPtr<IMFDXGIDeviceManager> &mfDXGIDevMan);
 
         void GetOutputMediaTypesFrom(DWORD idxStream,
-                                     std::map<DWORD, DecodedMediaType> &outMediaTypes,
+                                     std::map<DWORD, DecodedMediaType> &decodedMTypes,
                                      std::chrono::microseconds &duration) const;
 
         void ReadSampleAsync();
@@ -92,23 +92,29 @@ namespace application
         std::vector<StreamInfo> m_streamInfoLookupTab;
         std::vector<LONGLONG> m_streamsGapsTracking;
 
+        void AddStream(const ComPtr<IMFSinkWriterEx> &sinkWriterAltIntf,
+                       DWORD idxDecStream,
+                       const DecodedMediaType &decoded,
+                       double targeSizeFactor,
+                       Encoder encoder);
+
     public:
 
         MFSinkWriter(const string &url,
                      const ComPtr<IMFDXGIDeviceManager> &mfDXGIDevMan,
-                     const std::map<DWORD, DecodedMediaType> &inMediaTypes,
+                     const std::map<DWORD, DecodedMediaType> &decodedMTypes,
                      double targeSizeFactor,
                      Encoder encoder);
 
-        void AddNewStreams(const std::map<DWORD, DecodedMediaType> &inMediaTypes,
+        ~MFSinkWriter();
+
+        void AddNewStreams(const std::map<DWORD, DecodedMediaType> &decodedMTypes,
                            double targeSizeFactor,
                            Encoder encoder);
 
         void EncodeSample(DWORD idxDecStream, const ComPtr<IMFSample> &sample);
 
         void PlaceGap(DWORD idxDecStream, LONGLONG timestamp);
-
-        void Finalize();
     };
 
 }// end of namespace application

@@ -155,6 +155,70 @@ namespace application
         return uncompAudioMType;
     }
 
+    // Prints information about source reader selected MFT
+    static void PrintTransformInfo(const ComPtr<IMFSourceReaderEx> &sourceReaderAltIntf, DWORD idxStream)
+    {
+        CALL_STACK_TRACE;
+
+        std::cout << "\n========== source stream #" << idxStream << " ==========\n";
+
+        HRESULT hr;
+        GUID transformCategory;
+        ComPtr<IMFTransform> transform;
+        DWORD idxMFT(0UL);
+
+        // From the alternative interface, obtain the selected MFT for decoding:
+        while (SUCCEEDED(hr = sourceReaderAltIntf->GetTransformForStream(idxStream,
+                                                                         idxMFT,
+                                                                         &transformCategory,
+                                                                         transform.ReleaseAndGetAddressOf())))
+        {
+            std::cout << "MFT " << idxMFT << ": " << TranslateMFTCategory(transformCategory);
+
+            // Get video MFT attributes store:
+            ComPtr<IMFAttributes> mftAttrStore;
+            hr = transform->GetAttributes(mftAttrStore.GetAddressOf());
+
+            if (hr == E_NOTIMPL)
+            {
+                std::cout << std::endl;
+                ++idxMFT;
+                continue;
+            }
+            else if (FAILED(hr))
+            {
+                WWAPI::RaiseHResultException(hr,
+                    "Failed to get attributes of MFT selected by source reader",
+                    "IMFTransform::GetAttributes");
+            }
+
+            // Will MFT use DXVA?
+            if (MFGetAttributeUINT32(mftAttrStore.Get(), MF_SA_D3D_AWARE, FALSE) == TRUE)
+                std::cout << ", supports DXVA";
+
+            PWSTR mftFriendlyName;
+            hr = MFGetAttributeString(mftAttrStore.Get(), MFT_FRIENDLY_NAME_Attribute, &mftFriendlyName);
+
+            // Is MFT hardware based?
+            if (SUCCEEDED(hr))
+            {
+                std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
+                std::cout << ", hardware based (" << transcoder.to_bytes(mftFriendlyName) << ')';
+                CoTaskMemFree(mftFriendlyName);
+            }
+
+            std::cout << std::endl;
+            ++idxMFT;
+        }
+
+        if (hr != MF_E_INVALIDINDEX)
+        {
+            WWAPI::RaiseHResultException(hr,
+                "Failed to get selected MFT for source reader",
+                "IMFSourceReaderEx::GetTransformForStream");
+        }
+    }
+
     ///////////////////////////////////////////
     // Source Reader Callback Implementation
     ///////////////////////////////////////////
@@ -280,69 +344,9 @@ namespace application
         }
     };
 
-    // Prints information about source reader selected MFT
-    static void PrintTransformInfo(const ComPtr<IMFSourceReaderEx> &sourceReaderAltIntf, DWORD idxStream)
-    {
-        CALL_STACK_TRACE;
-
-        std::cout << "\n========== source stream #" << idxStream << " ==========\n";
-
-        HRESULT hr;
-        GUID transformCategory;
-        ComPtr<IMFTransform> videoTransform;
-        DWORD idxMFT(0UL);
-
-        // From the alternative interface, obtain the selected MFT for decoding:
-        while (SUCCEEDED(hr = sourceReaderAltIntf->GetTransformForStream(idxStream,
-                                                                         idxMFT,
-                                                                         &transformCategory,
-                                                                         videoTransform.ReleaseAndGetAddressOf())))
-        {
-            std::cout << "MFT " << idxMFT << ": " << TranslateMFTCategory(transformCategory);
-
-            // Get video MFT attributes store:
-            ComPtr<IMFAttributes> mftAttrStore;
-            hr = videoTransform->GetAttributes(mftAttrStore.GetAddressOf());
-
-            if (hr == E_NOTIMPL)
-            {
-                std::cout << std::endl;
-                ++idxMFT;
-                continue;
-            }
-            else if (FAILED(hr))
-            {
-                WWAPI::RaiseHResultException(hr,
-                    "Failed to get attributes of MFT selected by source reader",
-                    "IMFTransform::GetAttributes");
-            }
-
-            // Will MFT use DXVA?
-            if (MFGetAttributeUINT32(mftAttrStore.Get(), MF_SA_D3D_AWARE, FALSE) == TRUE)
-                std::cout << ", supports DXVA";
-
-            PWSTR mftFriendlyName;
-            hr = MFGetAttributeString(mftAttrStore.Get(), MFT_FRIENDLY_NAME_Attribute, &mftFriendlyName);
-
-            // Is MFT hardware based?
-            if (SUCCEEDED(hr))
-            {
-                std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
-                std::cout << ", hardware based (" << transcoder.to_bytes(mftFriendlyName) << ')';
-                CoTaskMemFree(mftFriendlyName);
-            }
-
-            std::cout << std::endl;
-            ++idxMFT;
-        }
-
-        if (hr != MF_E_INVALIDINDEX)
-        {
-            WWAPI::RaiseHResultException(hr,
-                "Failed to get selected MFT for source reader",
-                "IMFSourceReaderEx::GetTransformForStream");
-        }
-    }
+    /////////////////////////////
+    // Class MFSourceReader
+    /////////////////////////////
 
     /// <summary>
     /// Configures the video and audio decoders upon initialization or change of input media type.
