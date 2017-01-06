@@ -483,10 +483,12 @@ namespace application
     }
     catch (IAppException &ex)
     {
+        CALL_STACK_TRACE;
         throw AppException<std::runtime_error>("Failed to create source reader", ex);
     }
     catch (std::exception &ex)
     {
+        CALL_STACK_TRACE;
         std::ostringstream oss;
         oss << "Generic failure when creating source reader: " << ex.what();
         throw AppException<std::runtime_error>(oss.str());
@@ -496,7 +498,7 @@ namespace application
     /// Gets the media types output by streams of a given range.
     /// </summary>
     /// <param name="idxStream">Index of the first stream whose media type will be retrieved.</param>
-    /// <param name="outMediaTypes">Will receive a dictionary of mediay types indexed by stream index.</param>
+    /// <param name="decodedMTypes">Will receive a dictionary of media types indexed by stream index.</param>
     /// <param name="duration">Will be set with the duration of the media file.</param>
     void MFSourceReader::GetOutputMediaTypesFrom(DWORD idxStream,
                                                  std::map<DWORD, DecodedMediaType> &decodedMTypes,

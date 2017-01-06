@@ -174,30 +174,31 @@ namespace application
     /// <summary>
     /// Initializes a new instance of the <see cref="MFSinkWriter"/> class.
     /// </summary>
-    /// <param name="url">The URL.</param>
-    /// <param name="mfDXGIDevMan">The mf dxgi dev man.</param>
-    /// <param name="decodedMTypes">The video props.</param>
-    /// <param name="videoFormat">The mf dxgi dev man.</param>
-    /// <param name="targeSizeFactor">The mf dxgi dev man.</param>
+    /// <param name="url">The URL of the media source.</param>
+    /// <param name="mfDXGIDevMan">Microsoft DXGI device manager reference.</param>
+    /// <param name="decodedMTypes">A dictionary of (decoded input) media types indexed by stream index.</param>
+    /// <param name="targeSizeFactor">The target size of the video output, as a fraction of the originally encoded version.</param>
+    /// <param name="encoder">What encoder to use for video.</param>
     MFSinkWriter::MFSinkWriter(const string &url,
                                const ComPtr<IMFDXGIDeviceManager> &mfDXGIDevMan,
                                const std::map<DWORD, DecodedMediaType> &decodedMTypes,
                                double targeSizeFactor,
                                Encoder encoder)
+    try
     {
         CALL_STACK_TRACE;
 
-        // Create attributes store, to set properties on the source reader:
-        ComPtr<IMFAttributes> sinkReadAttrStore;
-        HRESULT hr = MFCreateAttributes(sinkReadAttrStore.GetAddressOf(), 2);
+        // Create attributes store, to set properties on the sink writer:
+        ComPtr<IMFAttributes> sinkWriterAttrStore;
+        HRESULT hr = MFCreateAttributes(sinkWriterAttrStore.GetAddressOf(), 2);
         if (FAILED(hr))
             WWAPI::RaiseHResultException(hr, "Failed to create attributes store", "MFCreateAttributes");
 
         // enable DXVA encoding
-        sinkReadAttrStore->SetUnknown(MF_SINK_WRITER_D3D_MANAGER, mfDXGIDevMan.Get());
+        sinkWriterAttrStore->SetUnknown(MF_SINK_WRITER_D3D_MANAGER, mfDXGIDevMan.Get());
 
         // enable codec hardware acceleration
-        sinkReadAttrStore->SetUINT32(MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS, TRUE);
+        sinkWriterAttrStore->SetUINT32(MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS, TRUE);
 
         std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
         auto ucs2url = transcoder.from_bytes(url);
@@ -205,13 +206,166 @@ namespace application
         // Create sink writer:
         hr = MFCreateSinkWriterFromURL(ucs2url.c_str(),
                                        nullptr,
-                                       sinkReadAttrStore.Get(),
+                                       sinkWriterAttrStore.Get(),
                                        m_mfSinkWriter.GetAddressOf());
 
         if (FAILED(hr))
             WWAPI::RaiseHResultException(hr, "Failed to create sink writer", "MFCreateSinkWriterFromURL");
 
+        if (decodedMTypes.empty())
+            return;
 
+        // Prepare the lookup table for index conversion (source reader index -> sink writer index):
+        m_streamInfoLookupTab.resize(decodedMTypes.rbegin()->first + 1);
+        std::fill(m_streamInfoLookupTab.begin(), m_streamInfoLookupTab.end(), StreamInfo{});
+        
+        // Iterate over decoded input streams:
+        for (auto &entry : decodedMTypes)
+        {
+            auto idxDecStream = entry.first;
+            auto &decoded = entry.second;
+
+            // Get the major type of the decoded input stream:
+            GUID majorType = { 0 };
+            hr = decoded.mediaType->GetMajorType(&majorType);
+            if (FAILED(hr))
+            {
+                WWAPI::RaiseHResultException(hr,
+                    "Failed to get major media type of decoded stream",
+                    "IMFMediaType::GetMajorType");
+            }
+
+            ComPtr<IMFMediaType> outputMType;
+            MediaDataType mediaDataType;
+
+            if (majorType == MFMediaType_Video) // video? will encode
+            {
+                mediaDataType = Video;
+                outputMType = CreateOutVideoMediaType(decoded, targeSizeFactor, encoder);
+            }
+            else if (majorType == MFMediaType_Audio) // audio? will encode
+            {
+                mediaDataType = Audio;
+                outputMType = CreateOutAudioMediaType(decoded);
+            }
+            else // other? will copy
+                outputMType = decoded.mediaType;
+
+            // Add the output stream:
+            DWORD idxOutStream;
+            hr = m_mfSinkWriter->AddStream(outputMType.Get(), &idxOutStream);
+            if (FAILED(hr))
+            {
+                WWAPI::RaiseHResultException(hr,
+                    "Failed to add output stream to media sink writer",
+                    "IMFSinkWriter::AddStream");
+            }
+
+            // Set the decoded input too:
+            hr = m_mfSinkWriter->SetInputMediaType(idxOutStream, decoded.mediaType.Get(), nullptr);
+            if (FAILED(hr))
+            {
+                WWAPI::RaiseHResultException(hr,
+                    "Failed to set decoded media type as sink writer input stream",
+                    "IMFSinkWriter::SetInputMediaType");
+            }
+
+            /* The stream index in sink and source can be different, hence it must be
+               kept in a lookup table for fast conversion during encoding process */
+            m_streamInfoLookupTab[idxDecStream] = StreamInfo{ idxOutStream, mediaDataType };
+
+        }// for loop end
+
+        if (m_streamInfoLookupTab.empty())
+            return;
+
+         // Prepare store for tracking of gap occurences in streams:
+        m_streamsGapsTracking.resize(m_streamInfoLookupTab.size());
+        std::fill(m_streamsGapsTracking.begin(), m_streamsGapsTracking.end(), -1LL);
+
+        // Start async encoding (will await for samples)
+        hr = m_mfSinkWriter->BeginWriting();
+        if (FAILED(hr))
+            WWAPI::RaiseHResultException(hr, "Failed to start asynchronous encoding", "IMFSinkWriter::SetInputMediaType");
+    }
+    catch (IAppException &ex)
+    {
+        CALL_STACK_TRACE;
+        throw AppException<std::runtime_error>("Failed to create sink writer", ex);
+    }
+    catch (std::exception &ex)
+    {
+        CALL_STACK_TRACE;
+        std::ostringstream oss;
+        oss << "Generic failure when creating sink writer: " << ex.what();
+        throw AppException<std::runtime_error>(oss.str());
+    }
+
+    /// <summary>
+    /// Encodes a sample. (This is a blocking call.)
+    /// </summary>
+    /// <param name="idxDecStream">The index of the decoded stream where the sample came from.</param>
+    /// <param name="sample">The sample to encode.</param>
+    void MFSinkWriter::EncodeSample(DWORD idxDecStream, const ComPtr<IMFSample> &sample)
+    {
+        CALL_STACK_TRACE;
+
+        auto &streamInfo = m_streamInfoLookupTab[idxDecStream];
+        auto &lastGap = m_streamsGapsTracking[streamInfo.outIndex];
+
+        // was in a gap until last call?
+        if (lastGap > 0)
+            sample->SetUINT32(MFSampleExtension_Discontinuity, TRUE);
+
+        // enqueue the sample for asynchronous encoding:
+        HRESULT hr = m_mfSinkWriter->WriteSample(streamInfo.outIndex, sample.Get());
+        if (FAILED(hr))
+            WWAPI::RaiseHResultException(hr, "Failed to put sample in encoding queue", "IMFSinkWriter::WriteSample");
+
+        lastGap = -1; // means "out of gap"
+    }
+
+    /// <summary>
+    /// Places a gap in the given stream and timestamp.
+    /// </summary>
+    /// <param name="idxDecStream">The index of the decoded stream
+    /// (in source reader) where the gap was spotted.</param>
+    /// <param name="timestamp">The timestamp.</param>
+    void MFSinkWriter::PlaceGap(DWORD idxDecStream, LONGLONG timestamp)
+    {
+        CALL_STACK_TRACE;
+
+        auto &streamInfo = m_streamInfoLookupTab[idxDecStream];
+        HRESULT hr;
+        
+        /* "For video, call this method once for each missing frame.
+            For audio, call this method at least once per second during a gap in the audio."
+            https://msdn.microsoft.com/en-us/library/windows/desktop/dd374652.aspx */
+
+        
+        if (streamInfo.mediaDType == Video)
+        {
+            hr = m_mfSinkWriter->SendStreamTick(streamInfo.outIndex, timestamp);
+            if (FAILED(hr))
+                WWAPI::RaiseHResultException(hr, "Failed to send video stream tick to encoder", "IMFSinkWriter::SendStreamTick");
+
+            m_streamsGapsTracking[streamInfo.outIndex] = timestamp; // remember last gap instant
+        }
+        else if (streamInfo.mediaDType == Audio)
+        {
+            auto &lastGap = m_streamsGapsTracking[streamInfo.outIndex];
+
+            if (lastGap < 0 || timestamp - lastGap > 1e7 /* x 100 ns */)
+            {
+                hr = m_mfSinkWriter->SendStreamTick(streamInfo.outIndex, timestamp);
+                if (FAILED(hr))
+                    WWAPI::RaiseHResultException(hr, "Failed to send audio stream tick to encoder", "IMFSinkWriter::SendStreamTick");
+            }
+
+            lastGap = timestamp; // remember last gap instant
+        }
+        else
+            _ASSERTE(false); // unexpected media data type
     }
 
 }// end of namespace application

@@ -4,7 +4,7 @@
 #include "3FD\base.h"
 #include <string>
 #include <chrono>
-#include <map>
+#include <vector>
 #include <wrl.h>
 #include <d3d11.h>
 #include <mfreadwrite.h>
@@ -74,13 +74,23 @@ namespace application
     
     /// <summary>
     /// Wraps Media Foundation Sink Writer object.
+    /// THIS IS NOT A THREAD SAFE IMPLEMENTATION!
     /// </summary>
     class MFSinkWriter : notcopiable
     {
     private:
 
+        enum MediaDataType { Video, Audio };
+
+        struct StreamInfo
+        {
+            DWORD outIndex; // output stream index
+            MediaDataType mediaDType; // media data type
+        };
+
         ComPtr<IMFSinkWriter> m_mfSinkWriter;
-        std::map<DWORD, uint64_t> m_gapTrackByStreamIdx;
+        std::vector<StreamInfo> m_streamInfoLookupTab;
+        std::vector<LONGLONG> m_streamsGapsTracking;
 
     public:
 
@@ -90,9 +100,13 @@ namespace application
                      double targeSizeFactor,
                      Encoder encoder);
 
-        void WriteSample();
+        void AddNewStreams(const std::map<DWORD, DecodedMediaType> &inMediaTypes,
+                           double targeSizeFactor,
+                           Encoder encoder);
 
-        void SendStreamTick();
+        void EncodeSample(DWORD idxDecStream, const ComPtr<IMFSample> &sample);
+
+        void PlaceGap(DWORD idxDecStream, LONGLONG timestamp);
 
         void Finalize();
     };
