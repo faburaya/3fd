@@ -356,10 +356,9 @@ namespace core
 
     // Helps verify consistency of configuration for argument value(s)
     template <typename ValType>
-    static void VerifyArgTypedValConfig(
-        const CommandLineArguments::ArgDeclaration &argDecl,
-        const std::initializer_list<ValType> &argValCfg,
-        const char *stdExMsg)
+    static void VerifyArgTypedValConfig(const CommandLineArguments::ArgDeclaration &argDecl,
+                                        const std::initializer_list<ValType> &argValCfg,
+                                        const char *stdExMsg)
     {
         // Argument is switch-type option, but this function overload does not handle this case:
         if (argDecl.type == CommandLineArguments::ArgType::OptionSwitch)
@@ -633,7 +632,7 @@ namespace core
 
             if (argDeclExt.common.type == ArgType::ValuesList)
             {
-                delete static_cast<std::initializer_list<uint16_t> *> (argDeclExt.typedExtInfo);
+                delete static_cast<std::vector<uint16_t> *> (argDeclExt.typedExtInfo);
                 continue;
             }
             
@@ -642,15 +641,15 @@ namespace core
             case ArgValType::Integer:
             case ArgValType::RangeInteger:
             case ArgValType::EnumInteger:
-                delete static_cast<std::initializer_list<long long> *> (argDeclExt.typedExtInfo);
+                delete static_cast<std::vector<long long> *> (argDeclExt.typedExtInfo);
                 break;
             case ArgValType::Float:
             case ArgValType::RangeFloat:
-                delete static_cast<std::initializer_list<double> *> (argDeclExt.typedExtInfo);
+                delete static_cast<std::vector<double> *> (argDeclExt.typedExtInfo);
                 break;
             case ArgValType::String:
             case ArgValType::EnumString:
-                delete static_cast<std::initializer_list<const char *> *> (argDeclExt.typedExtInfo);
+                delete static_cast<std::vector<const char *> *> (argDeclExt.typedExtInfo);
                 break;
             default:
                 break;
@@ -663,7 +662,7 @@ namespace core
        without so many checks for null pointers and boundaries. */
     template <typename ValType>
     static void PrintArgValuesConfig(const CommandLineArguments::ArgDeclaration &argDecl,
-                                     const std::initializer_list<ValType> &argValCfg,
+                                     const std::vector<ValType> &argValCfg,
                                      std::ostringstream &oss,
                                      const char *stdExMsg)
     {
@@ -943,25 +942,25 @@ namespace core
                     // list of values?
                     if (argDecl.type == ArgType::ValuesList)
                     {
-                        auto &argValCfg = *static_cast<std::initializer_list<uint16_t> *> (entry.second.typedExtInfo);
+                        auto &argValCfg = *static_cast<std::vector<uint16_t> *> (entry.second.typedExtInfo);
                         PrintArgValuesConfig(argDecl, argValCfg, oss, stdExMsg);
                     }
                     // is value an integer?
                     else if ((static_cast<uint8_t> (argDecl.valueType) & static_cast<uint8_t> (ArgValType::Integer)) != 0)
                     {
-                        auto &argValCfg = *static_cast<std::initializer_list<long long> *> (entry.second.typedExtInfo);
+                        auto &argValCfg = *static_cast<std::vector<long long> *> (entry.second.typedExtInfo);
                         PrintArgValuesConfig(argDecl, argValCfg, oss, stdExMsg);
                     }
                     // is value a floating point?
                     else if ((static_cast<uint8_t> (argDecl.valueType) & static_cast<uint8_t> (ArgValType::Float)) != 0)
                     {
-                        auto &argValCfg = *static_cast<std::initializer_list<double> *> (entry.second.typedExtInfo);
+                        auto &argValCfg = *static_cast<std::vector<double> *> (entry.second.typedExtInfo);
                         PrintArgValuesConfig(argDecl, argValCfg, oss, stdExMsg);
                     }
                     // is value a string?
                     else if ((static_cast<uint8_t> (argDecl.valueType) & static_cast<uint8_t> (ArgValType::String)) != 0)
                     {
-                        auto &argValCfg = *static_cast<std::initializer_list<const char *> *> (entry.second.typedExtInfo);
+                        auto &argValCfg = *static_cast<std::vector<const char *> *> (entry.second.typedExtInfo);
                         PrintArgValuesConfig(argDecl, argValCfg, oss, stdExMsg);
                     }
                 }
@@ -1029,7 +1028,7 @@ namespace core
     // Helps validating whether an argument value belongs to its set of allowed value
     template <typename ValType>
     static bool ValidateEnumValue(const CommandLineArguments::ArgDeclaration &argDecl,
-                                  const std::initializer_list<ValType> &argValCfg,
+                                  const std::vector<ValType> &argValCfg,
                                   ValType value)
     {
         auto iter = std::find_if(
@@ -1058,7 +1057,7 @@ namespace core
     // Helps validating whether an argument value falls into the configured range
     template <typename ValType>
     static bool ValidateRangedValue(const CommandLineArguments::ArgDeclaration &argDecl,
-                                    const std::initializer_list<ValType> &argValCfg,
+                                    const std::vector<ValType> &argValCfg,
                                     ValType value)
     {
         auto iterMin = argValCfg.begin() + (argValCfg.size() - 2);
@@ -1109,7 +1108,7 @@ namespace core
                 /* if argument values is limited to enumerated values, there
                 must be a configuration to provide the set of allowed values */
                 _ASSERTE(argValCfg != nullptr);
-                auto &typedArgValCfg = *static_cast<std::initializer_list<const char *> *> (argValCfg);
+                auto &typedArgValCfg = *static_cast<std::vector<const char *> *> (argValCfg);
                 
                 if (ValidateEnumValue(argDecl, typedArgValCfg, matchVal.first) == STATUS_FAIL)
                     return STATUS_FAIL;
@@ -1127,7 +1126,7 @@ namespace core
                 /* if argument values is limited to enumerated values, there
                 must be a configuration to provide the set of allowed values */
                 _ASSERTE(argValCfg != nullptr);
-                auto &typedArgValCfg = *static_cast<std::initializer_list<long long> *> (argValCfg);
+                auto &typedArgValCfg = *static_cast<std::vector<long long> *> (argValCfg);
 
                 if (ValidateEnumValue(argDecl, typedArgValCfg, value) == STATUS_FAIL)
                     return STATUS_FAIL;
@@ -1145,7 +1144,7 @@ namespace core
                 /* if argument expects value limited to a range, there
                 must be a configuration to provide the range boundaries */
                 _ASSERTE(argValCfg != nullptr);
-                auto &typedArgValCfg = *static_cast<std::initializer_list<long long> *> (argValCfg);
+                auto &typedArgValCfg = *static_cast<std::vector<long long> *> (argValCfg);
                 
                 if (ValidateRangedValue(argDecl, typedArgValCfg, value) == STATUS_FAIL)
                     return STATUS_FAIL;
@@ -1163,7 +1162,7 @@ namespace core
                 /* if argument expects value limited to a range, there
                 must be a configuration to provide the range boundaries */
                 _ASSERTE(argValCfg != nullptr);
-                auto &typedArgValCfg = *static_cast<std::initializer_list<double> *> (argValCfg);
+                auto &typedArgValCfg = *static_cast<std::vector<double> *> (argValCfg);
 
                 if (ValidateRangedValue(argDecl, typedArgValCfg, value) == STATUS_FAIL)
                     return STATUS_FAIL;
@@ -1346,10 +1345,10 @@ namespace core
             if (m_expectedArgs.end() != valArgIter
                 && valArgIter->second.common.type == ArgType::ValuesList)
             {
-                auto &argValCfg = *static_cast<std::initializer_list<uint16_t> *> (valArgIter->second.typedExtInfo);
+                auto &argValCfg = *static_cast<std::vector<uint16_t> *> (valArgIter->second.typedExtInfo);
                 
-                auto minCount = *argValCfg.begin();
-                auto maxCount = *(argValCfg.begin() + 1);
+                auto minCount = argValCfg[0];
+                auto maxCount = argValCfg[1];
                 
                 // wrong number of items?
                 if (parsedValArgs.size() != 0
@@ -1452,10 +1451,10 @@ namespace core
         }
 
         isPresent = false;
-        auto argValCfg = static_cast<std::initializer_list<const char *> *> (extArgDecl.typedExtInfo);
+        auto argValCfg = static_cast<std::vector<const char *> *> (extArgDecl.typedExtInfo);
 
         if (argValCfg != nullptr)
-            return *(argValCfg->begin());
+            return argValCfg->at(0);
         
         return nullptr;
     }
@@ -1504,7 +1503,7 @@ namespace core
         }
 
         isPresent = false;
-        auto argValCfg = static_cast<std::initializer_list<long long> *> (extArgDecl.typedExtInfo);
+        auto argValCfg = static_cast<std::vector<long long> *> (extArgDecl.typedExtInfo);
 
         // configuration of values is provided
         if (argValCfg != nullptr
@@ -1514,7 +1513,7 @@ namespace core
                 || (static_cast<uint8_t> (extArgDecl.common.valueType) & static_cast<uint8_t> (argValIsRangedTypeFlag)) != 0
                     && argValCfg->size() > 2))
         {
-            return *(argValCfg->begin());
+            return argValCfg->at(0);
         }
         
         return 0;
@@ -1564,7 +1563,7 @@ namespace core
         }
 
         isPresent = false;
-        auto argValCfg = static_cast<std::initializer_list<double> *> (extArgDecl.typedExtInfo);
+        auto argValCfg = static_cast<std::vector<double> *> (extArgDecl.typedExtInfo);
 
         // configuration of values is provided
         if (argValCfg != nullptr
@@ -1574,7 +1573,7 @@ namespace core
                 || (static_cast<uint8_t> (extArgDecl.common.valueType) & static_cast<uint8_t> (argValIsRangedTypeFlag)) != 0
                     && argValCfg->size() > 2))
         {
-            return *(argValCfg->begin());
+            return argValCfg->at(0);
         }
         
         return 0.0;

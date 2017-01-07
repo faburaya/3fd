@@ -41,7 +41,7 @@ namespace application
         std::cout << "\rProgress: [";
 
         for (int idx = 0; idx < done; ++idx)
-            std::cout << '=';
+            std::cout << '#';
 
         int remaining = qtBarSteps - done;
         for (int idx = 0; idx < remaining; ++idx)
@@ -231,31 +231,48 @@ int main(int argc, const char *argv[])
         DWORD idxStream, state;
         auto sample = sourceReader.GetSample(idxStream, state);
 
-        // Loop for transcoding (decoded source reader output goes to sink writer input):
-        while ((state & static_cast<DWORD> (application::ReadStateFlags::EndOfStream)) == 0)
+        try
         {
-            sourceReader.ReadSampleAsync();
-
-            LONGLONG timestamp;
-            sample->GetSampleTime(&timestamp);
-            double progress = timestamp / (duration.count() * 10.0);
-            
-            application::PrintProgressBar(progress);
-
-            if ((state & static_cast<DWORD> (application::ReadStateFlags::GapFound)) != 0)
+            // Loop for transcoding (decoded source reader output goes to sink writer input):
+            while ((state & static_cast<DWORD> (application::ReadStateFlags::EndOfStream)) == 0)
             {
-                sinkWriter.PlaceGap(idxStream, timestamp);
+                sourceReader.ReadSampleAsync();
+
+                LONGLONG timestamp;
+                sample->GetSampleTime(&timestamp);
+                double progress = timestamp / (duration.count() * 10.0);
+
+                if ((state & static_cast<DWORD> (application::ReadStateFlags::GapFound)) != 0)
+                {
+                    sinkWriter.PlaceGap(idxStream, timestamp);
+                }
+                else if ((state & static_cast<DWORD> (application::ReadStateFlags::NewStreamAvailable)) != 0)
+                {
+                    auto prevLastIdxStream = srcReadDecStreams.rbegin()->first;
+                    sourceReader.GetOutputMediaTypesFrom(prevLastIdxStream + 1, srcReadDecStreams);
+                    sinkWriter.AddNewStreams(srcReadDecStreams, params.tgtSizeFactor, params.encoder);
+                }
+
+                sinkWriter.EncodeSample(idxStream, sample);
+
+                application::PrintProgressBar(progress);
+
+                sample = sourceReader.GetSample(idxStream, state);
             }
-            else if ((state & static_cast<DWORD> (application::ReadStateFlags::NewStreamAvailable)) != 0)
+        }
+        catch (HResultException &ex)
+        {
+            // In case of "GPU device removed" error, log some additional info:
+            if (ex.GetErrorCode() == DXGI_ERROR_DEVICE_REMOVED)
             {
-                auto prevLastIdxStream = srcReadDecStreams.rbegin()->first;
-                sourceReader.GetOutputMediaTypesFrom(prevLastIdxStream + 1, srcReadDecStreams);
-                sinkWriter.AddNewStreams(srcReadDecStreams, params.tgtSizeFactor, params.encoder);
+                std::ostringstream oss;
+                oss << "There a failure related to the GPU device: "
+                    << WWAPI::GetDetailsFromHResult(d3dDevice->GetDeviceRemovedReason());
+
+                Logger::Write(oss.str(), Logger::PRIO_FATAL);
             }
 
-            sinkWriter.EncodeSample(idxStream, sample);
-
-            sample = sourceReader.GetSample(idxStream, state);
+            throw;
         }
 
         now = system_clock::to_time_t(system_clock::now());
@@ -264,7 +281,7 @@ int main(int argc, const char *argv[])
     }
     catch (IAppException &ex)
     {
-        Logger::Write(ex, Logger::PRIO_CRITICAL);
+        Logger::Write(ex, Logger::PRIO_FATAL);
         return EXIT_FAILURE;
     }
 

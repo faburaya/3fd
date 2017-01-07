@@ -243,6 +243,27 @@ namespace _3fd
 			}
 		};
 
+#   ifdef _WIN32
+        /// <summary>
+        /// A specialization of runtime application exception that is handful when
+        /// dealing with Windows API errors, because it holds the HRESULT error code.
+        /// </summary>
+        /// <seealso cref="AppException{std::runtime_error}" />
+        class HResultException : public AppException<std::runtime_error>
+        {
+        private:
+
+            HRESULT m_hres;
+
+        public:
+
+            HResultException(HRESULT hr, string &&message)
+                : AppException(std::move(message)), m_hres(hr) {}
+
+            HRESULT GetErrorCode() { return m_hres; }
+        };
+#   endif
+
 	}// end namespace core
 }// end namespace _3fd
 

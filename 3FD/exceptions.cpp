@@ -86,7 +86,7 @@ namespace _3fd
                 << function << " returned: "
                 << transcoder.to_bytes(comErrObj.ErrorMessage());
 
-            throw AppException<std::runtime_error>(oss.str());
+            throw HResultException(errCode, oss.str());
         }
 
 #   ifdef _3FD_PLATFORM_WIN32API // only for classic desktop apps:

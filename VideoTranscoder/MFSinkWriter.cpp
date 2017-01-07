@@ -443,14 +443,14 @@ namespace application
         CALL_STACK_TRACE;
 
         auto &streamInfo = m_streamInfoLookupTab[idxDecStream];
-        auto &lastGap = m_streamsGapsTracking[streamInfo.outIndex];
+        /*auto &lastGap = m_streamsGapsTracking[streamInfo.outIndex];
 
         // was in a gap until last call?
         if (lastGap > 0)
         {
             lastGap = -1; // means "out of gap"
             sample->SetUINT32(MFSampleExtension_Discontinuity, TRUE);
-        }
+        }*/
 
         // enqueue the sample for asynchronous encoding:
         HRESULT hr = m_mfSinkWriter->WriteSample(streamInfo.outIndex, sample.Get());
@@ -480,7 +480,7 @@ namespace application
             if (FAILED(hr))
                 WWAPI::RaiseHResultException(hr, "Failed to send video stream tick to encoder", "IMFSinkWriter::SendStreamTick");
 
-            m_streamsGapsTracking[streamInfo.outIndex] = timestamp; // remember last gap instant
+            //m_streamsGapsTracking[streamInfo.outIndex] = timestamp; // remember last gap instant
         }
         else if (streamInfo.mediaDType == Audio)
         {

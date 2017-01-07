@@ -145,10 +145,11 @@ namespace core
                 // Finally insert declaration in main dictionary:
                 if (m_expectedArgs.find(argDecl.id) == m_expectedArgs.end())
                 {
-                    std::unique_ptr<std::initializer_list<ValType>> temp;
-                    temp.reset(new std::initializer_list<ValType>(std::move(argValCfg)));
+                    std::vector<ValType> values = argValCfg;
+                    std::unique_ptr<std::vector<ValType>> temp;
+                    temp.reset(new std::vector<ValType>(std::move(values)));
                     m_expectedArgs[argDecl.id] = ArgDeclExtended{ argDecl, temp.get() };
-                    temp.release();
+                    temp.release(); // release refence only when there is no risk of leak due to thrown exception
                 }
                 else
                 {// Collision of argument codes (ID's):
