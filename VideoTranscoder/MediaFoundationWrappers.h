@@ -5,6 +5,7 @@
 #include <string>
 #include <chrono>
 #include <vector>
+#include <map>
 #include <wrl.h>
 #include <d3d11.h>
 #include <mfreadwrite.h>
@@ -31,6 +32,27 @@ namespace application
     ComPtr<ID3D11Device> GetDeviceDirect3D(UINT idxVideoAdapter);
 
     /// <summary>
+    /// Packs the necessary stream metadata from source reader
+    /// that needs to be known for setup of the sink writer.
+    /// </summary>
+    struct DecodedMediaType
+    {
+        UINT32 originalEncodedDataRate;
+        ComPtr<IMFMediaType> mediaType;
+    };
+
+    /// <summary>
+    /// Enumerates the possible states of a stream being read, that would
+    /// require some action in the application loop for transcoding.
+    /// </summary>
+    enum class ReadStateFlags : DWORD
+    {
+        EndOfStream = MF_SOURCE_READERF_ENDOFSTREAM,
+        NewStreamAvailable = MF_SOURCE_READERF_NEWSTREAM,
+        GapFound = MF_SOURCE_READERF_STREAMTICK
+    };
+
+    /// <summary>
     /// Wraps Media Foundation Source Reader object.
     /// </summary>
     class MFSourceReader : notcopiable
@@ -47,27 +69,13 @@ namespace application
 
         MFSourceReader(const string &url, const ComPtr<IMFDXGIDeviceManager> &mfDXGIDevMan);
 
-        void GetOutputMediaTypesFrom(DWORD idxStream,
-                                     std::map<DWORD, DecodedMediaType> &decodedMTypes,
-                                     std::chrono::microseconds &duration) const;
+        std::chrono::microseconds GetDuration() const;
+
+        void GetOutputMediaTypesFrom(DWORD idxStream, std::map<DWORD, DecodedMediaType> &decodedMTypes) const;
 
         void ReadSampleAsync();
 
-        enum ReadStateFlags
-        {
-            EndOfStream = MF_SOURCE_READERF_ENDOFSTREAM,
-            NewStreamAvailable = MF_SOURCE_READERF_NEWSTREAM,
-            NativeTypeChanged = MF_SOURCE_READERF_NATIVEMEDIATYPECHANGED,
-            GapFound = MF_SOURCE_READERF_STREAMTICK
-        };
-
-        ComPtr<IMFSample> GetSample(DWORD &state);
-    };
-
-    struct DecodedMediaType
-    {
-        UINT32 originalEncodedDataRate;
-        ComPtr<IMFMediaType> mediaType;
+        ComPtr<IMFSample> GetSample(DWORD &idxStream, DWORD &state);
     };
 
     enum class Encoder { H264_AVC, H265_HEVC };
@@ -80,16 +88,27 @@ namespace application
     {
     private:
 
-        enum MediaDataType { Video, Audio };
+        ComPtr<IMFSinkWriter> m_mfSinkWriter;
+
+        enum MediaDataType : int16_t { Video, Audio };
 
         struct StreamInfo
         {
-            DWORD outIndex; // output stream index
+            uint16_t outIndex; // output stream index
             MediaDataType mediaDType; // media data type
         };
 
-        ComPtr<IMFSinkWriter> m_mfSinkWriter;
+        /// <summary>
+        /// A lookup table for fast conversion of index in source reader
+        /// to sink writer. In order to favor performance of contiguos
+        /// memory, there might be some unused positions.
+        /// </summary>
         std::vector<StreamInfo> m_streamInfoLookupTab;
+
+        /// <summary>
+        /// Tracks gap occurences, kept as their timestamps and accessed
+        /// in this array by their 0-based stream index.
+        /// </summary>
         std::vector<LONGLONG> m_streamsGapsTracking;
 
         void AddStream(const ComPtr<IMFSinkWriterEx> &sinkWriterAltIntf,

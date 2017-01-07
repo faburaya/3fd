@@ -19,6 +19,40 @@ namespace application
 {
     using namespace _3fd::core;
 
+    // Prints a pretty progress bar
+    void PrintProgressBar(double fraction)
+    {
+        _ASSERTE(fraction <= 1.0);
+
+        // Amount of symbols = inside the progress bar
+        const int qtBarSteps(50);
+
+        static int done;
+
+        // Only update the progress bar if there is a change:
+        int update = (int)(qtBarSteps * fraction);
+        if (update == done)
+            return;
+        else
+            done = update;
+
+        // Print the progress bar:
+
+        std::cout << "\rProgress: [";
+
+        for (int idx = 0; idx < done; ++idx)
+            std::cout << '=';
+
+        int remaining = qtBarSteps - done;
+        for (int idx = 0; idx < remaining; ++idx)
+            std::cout << ' ';
+
+        std::cout << "] " << (int)(100 * fraction) << " % done" << std::flush;
+
+        if (fraction == 1.0)
+            std::cout << std::endl;
+    }
+
     //////////////////////////////
     // Command line arguments
     //////////////////////////////
@@ -26,7 +60,7 @@ namespace application
     struct CmdLineParams
     {
         double tgtSizeFactor;
-        string encoder;
+        Encoder encoder;
         const char *inputFName;
         const char *outputFName;
     };
@@ -57,7 +91,7 @@ namespace application
             'e', "encoder",
             "What encoder to use, always with the highest profile made available "
             "by Microsoft Media Foundation, for better compression"
-        }, { "h264", "hevc", "vc1" });
+        }, { "h264", "hevc" });
 
         cmdLineArgs.AddExpectedArgument(CommandLineArguments::ArgDeclaration{
             ArgValTgtSizeFactor,
@@ -85,9 +119,16 @@ namespace application
         }
 
         bool isPresent;
-        params.encoder = cmdLineArgs.GetArgValueString(ArgValEncoder, isPresent);
-        std::cout << '\n' << std::setw(22) << "encoder = " << params.encoder
+        const char *encoderLabel = cmdLineArgs.GetArgValueString(ArgValEncoder, isPresent);
+        std::cout << '\n' << std::setw(22) << "encoder = " << encoderLabel
                   << (isPresent ? " " : " (default)");
+
+        if (strcmp(encoderLabel, "h264") == 0)
+            params.encoder = Encoder::H264_AVC;
+        else if (strcmp(encoderLabel, "hevc") == 0)
+            params.encoder = Encoder::H265_HEVC;
+        else
+            _ASSERTE(false);
 
         params.tgtSizeFactor = cmdLineArgs.GetArgValueFloat(ArgValTgtSizeFactor, isPresent);
         std::cout << '\n' << std::setw(22) << "target size factor = " << params.tgtSizeFactor
@@ -109,7 +150,7 @@ namespace application
 
         params.outputFName = filesNames[1];
         std::cout << '\n' << std::setw(22)
-                  << "input = " << params.outputFName << '\n' << std::endl;
+                  << "output = " << params.outputFName << '\n' << std::endl;
 
         return STATUS_OKAY;
     }
@@ -154,7 +195,72 @@ int main(int argc, const char *argv[])
         auto d3dDevice = application::GetDeviceDirect3D(0);
         mfDXGIDevMan->ResetDevice(d3dDevice.Get(), dxgiResetToken);
 
-        application::MFSourceReader sourceReader(params.outputFName, mfDXGIDevMan);
+        // Load media source and select decoders
+        application::MFSourceReader sourceReader(params.inputFName, mfDXGIDevMan);
+
+        // Start reading early to avoid waiting
+        sourceReader.ReadSampleAsync();
+
+        // Gather info about reader output decoded streams:
+        std::map<DWORD, application::DecodedMediaType> srcReadDecStreams;
+        sourceReader.GetOutputMediaTypesFrom(0UL, srcReadDecStreams);
+        
+        if (srcReadDecStreams.empty())
+        {
+            std::cout << "\nInput media file had not video or audio streams to decode!\n" << std::endl;
+            return EXIT_SUCCESS;
+        }
+
+        // Prepare media sink and select encoders
+        application::MFSinkWriter sinkWriter(params.outputFName,
+                                             mfDXGIDevMan,
+                                             srcReadDecStreams,
+                                             params.tgtSizeFactor,
+                                             params.encoder);
+
+        auto duration = sourceReader.GetDuration();
+        std::cout << "\nInput media file is " << duration_cast<seconds>(duration).count() << " seconds long\n";
+
+        std::array<char, 21> timestamp;
+        auto now = system_clock::to_time_t(system_clock::now());
+        strftime(timestamp.data(), timestamp.size(), "%Y-%b-%d %H:%M:%S", localtime(&now));
+        std::cout << "Transcoding starting at " << timestamp.data() << '\n' << std::endl;
+
+        application::PrintProgressBar(0.0);
+
+        DWORD idxStream, state;
+        auto sample = sourceReader.GetSample(idxStream, state);
+
+        // Loop for transcoding (decoded source reader output goes to sink writer input):
+        while ((state & static_cast<DWORD> (application::ReadStateFlags::EndOfStream)) == 0)
+        {
+            sourceReader.ReadSampleAsync();
+
+            LONGLONG timestamp;
+            sample->GetSampleTime(&timestamp);
+            double progress = timestamp / (duration.count() * 10.0);
+            
+            application::PrintProgressBar(progress);
+
+            if ((state & static_cast<DWORD> (application::ReadStateFlags::GapFound)) != 0)
+            {
+                sinkWriter.PlaceGap(idxStream, timestamp);
+            }
+            else if ((state & static_cast<DWORD> (application::ReadStateFlags::NewStreamAvailable)) != 0)
+            {
+                auto prevLastIdxStream = srcReadDecStreams.rbegin()->first;
+                sourceReader.GetOutputMediaTypesFrom(prevLastIdxStream + 1, srcReadDecStreams);
+                sinkWriter.AddNewStreams(srcReadDecStreams, params.tgtSizeFactor, params.encoder);
+            }
+
+            sinkWriter.EncodeSample(idxStream, sample);
+
+            sample = sourceReader.GetSample(idxStream, state);
+        }
+
+        now = system_clock::to_time_t(system_clock::now());
+        strftime(timestamp.data(), timestamp.size(), "%Y-%b-%d %H:%M:%S", localtime(&now));
+        std::cout << "\nTranscoding finished at " << timestamp.data() << '\n' << std::endl;
     }
     catch (IAppException &ex)
     {

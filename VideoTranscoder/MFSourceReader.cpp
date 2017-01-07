@@ -38,33 +38,23 @@ namespace application
                 "IMFMediaType::CopyAllItems");
         }
 
-        // Set uncompressed video format:
-
-        hr = uncompVideoMType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_YUY2);
-        if (FAILED(hr))
+        // ...but change some main attributes:
+        if (FAILED(hr = uncompVideoMType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_YUY2)) ||
+            FAILED(hr = uncompVideoMType->SetUINT32(MF_MT_ALL_SAMPLES_INDEPENDENT, TRUE)) ||
+            FAILED(hr = uncompVideoMType->SetUINT32(MF_MT_INTERLACE_MODE, MFVideoInterlace_Progressive)))
         {
             WWAPI::RaiseHResultException(hr,
-                "Failed to set video format YUY2 on uncompressed video media type",
-                "IMFMediaType::SetGUID");
-        }
-
-        hr = uncompVideoMType->SetUINT32(MF_MT_ALL_SAMPLES_INDEPENDENT, TRUE);
-        if (FAILED(hr))
-        {
-            WWAPI::RaiseHResultException(hr,
-                "Failed to set video media type as uncompressed",
-                "IMFMediaType::SetUINT32");
+                "Failed to set attribute on uncompressed video media type",
+                "IMFMediaType::SetUINT32 / SetGUID");
         }
 
         // Fix up PAR if not set on the original media type:
 
         MFRatio par = { 0 };
-        hr = MFGetAttributeRatio(
-            uncompVideoMType.Get(),
-            MF_MT_PIXEL_ASPECT_RATIO,
-            reinterpret_cast<UINT32 *> (&par.Numerator),
-            reinterpret_cast<UINT32 *> (&par.Denominator)
-        );
+        hr = MFGetAttributeRatio(uncompVideoMType.Get(),
+                                 MF_MT_PIXEL_ASPECT_RATIO,
+                                 reinterpret_cast<UINT32 *> (&par.Numerator),
+                                 reinterpret_cast<UINT32 *> (&par.Denominator));
 
         if (FAILED(hr))
         {
@@ -499,18 +489,12 @@ namespace application
     }
 
     /// <summary>
-    /// Gets the media types output by streams of a given range.
+    /// Gets the duration of the media file.
     /// </summary>
-    /// <param name="idxStream">Index of the first stream whose media type will be retrieved.</param>
-    /// <param name="decodedMTypes">Will receive a dictionary of media types indexed by stream index.</param>
-    /// <param name="duration">Will be set with the duration of the media file.</param>
-    void MFSourceReader::GetOutputMediaTypesFrom(DWORD idxStream,
-                                                 std::map<DWORD, DecodedMediaType> &decodedMTypes,
-                                                 std::chrono::microseconds &duration) const
+    /// <returns>The duration in microseconds.</returns>
+    std::chrono::microseconds MFSourceReader::GetDuration() const
     {
         CALL_STACK_TRACE;
-
-        // First get the duration of the media file:
 
         PROPVARIANT variant;
         HRESULT hr = m_mfSourceReader->GetPresentationAttribute(MF_SOURCE_READER_MEDIASOURCE, MF_PD_DURATION, &variant);
@@ -526,10 +510,21 @@ namespace application
         if (FAILED(hr))
             WWAPI::RaiseHResultException(hr, "Failed to cast value out of variant type", "PropVariantToUInt64");
 
-        duration = std::chrono::microseconds(durationIn100ns / 10);
+        return std::chrono::microseconds(durationIn100ns / 10);
+    }
+
+    /// <summary>
+    /// Gets the media types output by streams of a given range.
+    /// </summary>
+    /// <param name="idxStream">Index of the first stream whose media type will be retrieved.</param>
+    /// <param name="decodedMTypes">Will receive a dictionary of media types indexed by stream index.</param>
+    void MFSourceReader::GetOutputMediaTypesFrom(DWORD idxStream, std::map<DWORD, DecodedMediaType> &decodedMTypes) const
+    {
+        CALL_STACK_TRACE;
 
         std::map<DWORD, DecodedMediaType> decMTypesByIndex;
         ComPtr<IMFMediaType> decodedMType;
+        HRESULT hr;
 
         // Iterate over streams:
         while (SUCCEEDED(hr = m_mfSourceReader->GetCurrentMediaType(idxStream, decodedMType.ReleaseAndGetAddressOf())))
@@ -619,9 +614,10 @@ namespace application
     /// <summary>
     /// Gets the read sample, after an asynchronous call had been issued.
     /// </summary>
-    /// <param name="event">Receives what event might have come on the stream during the read operation.</param>
+    /// <param name="state">Receives what event might have come on the stream during
+    /// the read operation, which would require some action in the sink writer.</param>
     /// <returns>The read sample. May be null depending on the reported stream event.</returns>
-    ComPtr<IMFSample> MFSourceReader::GetSample(DWORD &state)
+    ComPtr<IMFSample> MFSourceReader::GetSample(DWORD &idxStream, DWORD &state)
     {
         CALL_STACK_TRACE;
 
@@ -631,8 +627,9 @@ namespace application
         if ((result->streamFlags & MF_SOURCE_READERF_ERROR) != 0)
             WWAPI::RaiseHResultException(result->hres, "Source reader failed to read sample", "IMFSourceReader::ReadSample");
 
+        idxStream = result->streamIndex;
         state = result->streamFlags;
-
+        
         // change of current media type is not expected
         _ASSERTE((result->streamFlags & MF_SOURCE_READERF_CURRENTMEDIATYPECHANGED) == 0);
 

@@ -303,7 +303,58 @@ namespace application
 
         /* The stream index in sink and source can be different, hence it must be
         kept in a lookup table for fast conversion during encoding process */
-        m_streamInfoLookupTab[idxDecStream] = StreamInfo{ idxOutStream, mediaDataType };
+        m_streamInfoLookupTab[idxDecStream] = StreamInfo{ static_cast<uint16_t> (idxOutStream), mediaDataType };
+    }
+
+    /// <summary>
+    /// Adds new (decoded) streams (input coming from source reader, found there)
+    /// to the sink writer, hence creating new (encoded) output streams.
+    /// </summary>
+    /// <param name="decodedMTypes">A dictionary of (decoded input) media types indexed by stream index.</param>
+    /// <param name="targeSizeFactor">The target size of the video output, as a fraction of the originally encoded version.</param>
+    /// <param name="encoder">What encoder to use for video.</param>
+    void MFSinkWriter::AddNewStreams(const std::map<DWORD, DecodedMediaType> &decodedMTypes,
+                                     double targeSizeFactor,
+                                     Encoder encoder)
+    {
+        CALL_STACK_TRACE;
+
+        // Prepare the lookup table for index conversion (source reader index -> sink writer index):
+        auto prevSize = m_streamInfoLookupTab.size();
+        _ASSERTE(!decodedMTypes.empty() && decodedMTypes.begin()->first >= prevSize);
+        m_streamInfoLookupTab.resize(decodedMTypes.rbegin()->first + 1);
+        std::fill(m_streamInfoLookupTab.begin() + prevSize, m_streamInfoLookupTab.end(), StreamInfo{});
+
+        // Get an alternative interface for sink writer:
+        ComPtr<IMFSinkWriterEx> sinkWriterAltIntf;
+        HRESULT hr = m_mfSinkWriter.CopyTo(IID_PPV_ARGS(sinkWriterAltIntf.GetAddressOf()));
+        if (FAILED(hr))
+        {
+            WWAPI::RaiseHResultException(hr,
+                "Failed to query sink writer for alternative interface",
+                "IMFSinkWriterEx::CopyTo");
+        }
+
+        // Iterate over decoded input streams:
+        for (auto &entry : decodedMTypes)
+        {
+            auto idxDecStream = entry.first;
+            auto &decoded = entry.second;
+
+            AddStream(sinkWriterAltIntf,
+                     idxDecStream,
+                     decoded,
+                     targeSizeFactor,
+                     encoder);
+        }
+
+        if (m_streamInfoLookupTab.empty())
+            return;
+
+        // Prepare store for tracking of gap occurences in streams:
+        prevSize = m_streamsGapsTracking.size();
+        m_streamsGapsTracking.resize(m_streamInfoLookupTab.back().outIndex + 1);
+        std::fill(m_streamsGapsTracking.begin() + prevSize, m_streamsGapsTracking.end(), -1LL);
     }
 
     /// <summary>
@@ -350,39 +401,7 @@ namespace application
         if (decodedMTypes.empty())
             return;
 
-        // Prepare the lookup table for index conversion (source reader index -> sink writer index):
-        m_streamInfoLookupTab.resize(decodedMTypes.rbegin()->first + 1);
-        std::fill(m_streamInfoLookupTab.begin(), m_streamInfoLookupTab.end(), StreamInfo{});
-
-        // Get an alternative interface for sink writer:
-        ComPtr<IMFSinkWriterEx> sinkWriterAltIntf;
-        HRESULT hr = m_mfSinkWriter.CopyTo(IID_PPV_ARGS(sinkWriterAltIntf.GetAddressOf()));
-        if (FAILED(hr))
-        {
-            WWAPI::RaiseHResultException(hr,
-                "Failed to query sink writer for alternative interface",
-                "IMFSinkWriterEx::CopyTo");
-        }
-        
-        // Iterate over decoded input streams:
-        for (auto &entry : decodedMTypes)
-        {
-            auto idxDecStream = entry.first;
-            auto &decoded = entry.second;
-
-            AddStream(sinkWriterAltIntf,
-                      idxDecStream,
-                      decoded,
-                      targeSizeFactor,
-                      encoder);
-        }
-
-        if (m_streamInfoLookupTab.empty())
-            return;
-
-         // Prepare store for tracking of gap occurences in streams:
-        m_streamsGapsTracking.resize(m_streamInfoLookupTab.size());
-        std::fill(m_streamsGapsTracking.begin(), m_streamsGapsTracking.end(), -1LL);
+        AddNewStreams(decodedMTypes, targeSizeFactor, encoder);
 
         // Start async encoding (will await for samples)
         hr = m_mfSinkWriter->BeginWriting();
@@ -412,20 +431,6 @@ namespace application
         HRESULT hr = m_mfSinkWriter->Finalize();
         if (FAILED(hr))
             Logger::Write(hr, "Failed to flush and finalize media sink", "IMFSinkWriter::Finalize", Logger::PRIO_CRITICAL);
-    }
-
-    /// <summary>
-    /// Adds new (decoded) streams (input coming from source reader, found there)
-    /// to the sink writer, hence creating new (encoded) output streams.
-    /// </summary>
-    /// <param name="decodedMTypes">A dictionary of (decoded input) media types indexed by stream index.</param>
-    /// <param name="targeSizeFactor">The target size of the video output, as a fraction of the originally encoded version.</param>
-    /// <param name="encoder">What encoder to use for video.</param>
-    void MFSinkWriter::AddNewStreams(const std::map<DWORD, DecodedMediaType> &decodedMTypes,
-                                     double targeSizeFactor,
-                                     Encoder encoder)
-    {
-        CALL_STACK_TRACE;
     }
 
     /// <summary>
@@ -464,16 +469,14 @@ namespace application
         CALL_STACK_TRACE;
 
         auto &streamInfo = m_streamInfoLookupTab[idxDecStream];
-        HRESULT hr;
         
         /* "For video, call this method once for each missing frame.
             For audio, call this method at least once per second during a gap in the audio."
             https://msdn.microsoft.com/en-us/library/windows/desktop/dd374652.aspx */
-
         
         if (streamInfo.mediaDType == Video)
         {
-            hr = m_mfSinkWriter->SendStreamTick(streamInfo.outIndex, timestamp);
+            HRESULT hr = m_mfSinkWriter->SendStreamTick(streamInfo.outIndex, timestamp);
             if (FAILED(hr))
                 WWAPI::RaiseHResultException(hr, "Failed to send video stream tick to encoder", "IMFSinkWriter::SendStreamTick");
 
@@ -487,7 +490,7 @@ namespace application
             {
                 lastGap = timestamp; // remember last tick sent
 
-                hr = m_mfSinkWriter->SendStreamTick(streamInfo.outIndex, timestamp);
+                HRESULT hr = m_mfSinkWriter->SendStreamTick(streamInfo.outIndex, timestamp);
                 if (FAILED(hr))
                     WWAPI::RaiseHResultException(hr, "Failed to send audio stream tick to encoder", "IMFSinkWriter::SendStreamTick");
             }
