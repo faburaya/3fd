@@ -39,7 +39,7 @@ namespace application
         }
 
         // ...but change some main attributes:
-        if (FAILED(hr = uncompVideoMType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_YUY2)) ||
+        if (FAILED(hr = uncompVideoMType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_NV12)) ||
             FAILED(hr = uncompVideoMType->SetUINT32(MF_MT_ALL_SAMPLES_INDEPENDENT, TRUE)) ||
             FAILED(hr = uncompVideoMType->SetUINT32(MF_MT_INTERLACE_MODE, MFVideoInterlace_Progressive)))
         {

@@ -20,17 +20,15 @@ namespace application
     using namespace _3fd::core;
 
     // Prints a pretty progress bar
-    void PrintProgressBar(double fraction)
+    void PrintProgressBar(double progress)
     {
-        _ASSERTE(fraction <= 1.0);
-
         // Amount of symbols = inside the progress bar
         const int qtBarSteps(50);
 
         static int done;
 
         // Only update the progress bar if there is a change:
-        int update = (int)(qtBarSteps * fraction);
+        int update = (int)(qtBarSteps * progress);
         if (update == done)
             return;
         else
@@ -47,10 +45,7 @@ namespace application
         for (int idx = 0; idx < remaining; ++idx)
             std::cout << ' ';
 
-        std::cout << "] " << (int)(100 * fraction) << " % done" << std::flush;
-
-        if (fraction == 1.0)
-            std::cout << std::endl;
+        std::cout << "] " << static_cast<int> (100 * progress) << " % done" << std::flush;
     }
 
     //////////////////////////////
@@ -228,19 +223,24 @@ int main(int argc, const char *argv[])
 
         application::PrintProgressBar(0.0);
 
-        DWORD idxStream, state;
-        auto sample = sourceReader.GetSample(idxStream, state);
-
         try
         {
+            DWORD state;
+
             // Loop for transcoding (decoded source reader output goes to sink writer input):
-            while ((state & static_cast<DWORD> (application::ReadStateFlags::EndOfStream)) == 0)
+            do
             {
+                DWORD idxStream;
+                auto sample = sourceReader.GetSample(idxStream, state);
                 sourceReader.ReadSampleAsync();
+
+                if (!sample)
+                    continue;
 
                 LONGLONG timestamp;
                 sample->GetSampleTime(&timestamp);
                 double progress = timestamp / (duration.count() * 10.0);
+                application::PrintProgressBar(progress);
 
                 if ((state & static_cast<DWORD> (application::ReadStateFlags::GapFound)) != 0)
                 {
@@ -254,11 +254,8 @@ int main(int argc, const char *argv[])
                 }
 
                 sinkWriter.EncodeSample(idxStream, sample);
-
-                application::PrintProgressBar(progress);
-
-                sample = sourceReader.GetSample(idxStream, state);
             }
+            while ((state & static_cast<DWORD> (application::ReadStateFlags::EndOfStream)) == 0);
         }
         catch (HResultException &ex)
         {
@@ -275,9 +272,11 @@ int main(int argc, const char *argv[])
             throw;
         }
 
+        application::PrintProgressBar(1.0);
+
         now = system_clock::to_time_t(system_clock::now());
         strftime(timestamp.data(), timestamp.size(), "%Y-%b-%d %H:%M:%S", localtime(&now));
-        std::cout << "\nTranscoding finished at " << timestamp.data() << '\n' << std::endl;
+        std::cout << "\n\nTranscoding finished at " << timestamp.data() << std::endl;
     }
     catch (IAppException &ex)
     {

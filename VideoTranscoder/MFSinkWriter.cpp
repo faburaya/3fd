@@ -7,9 +7,12 @@
 #include <iostream>
 #include <algorithm>
 #include <codecvt>
+
 #include <mfapi.h>
 #include <Mferror.h>
 #include <codecapi.h>
+#include <dshow.h>
+#include <atlcomcli.h>
 
 namespace application
 {
@@ -299,6 +302,25 @@ namespace application
                 "IMFSinkWriter::SetInputMediaType");
         }
 
+        // Fine configuration of H.264 encoder:
+        if (mediaDataType == Video && encoder == Encoder::H264_AVC)
+        {
+            ComPtr<ICodecAPI> codec;
+            m_mfSinkWriter->GetServiceForStream(idxOutStream, GUID_NULL, IID_PPV_ARGS(codec.GetAddressOf()));
+            if (FAILED(hr))
+            {
+                WWAPI::RaiseHResultException(hr,
+                    "Failed to get codec interface from sink writer object",
+                    "IMFSinkWriter::GetServiceForStream");
+            }
+
+            if (FAILED(hr = codec->SetValue(&CODECAPI_AVEncCommonQualityVsSpeed, &CComVariant((UINT32)67))) ||
+                FAILED(hr = codec->SetValue(&CODECAPI_AVEncAdaptiveMode, &CComVariant((ULONG)eAVEncAdaptiveMode_FrameRate))))
+            {
+                WWAPI::RaiseHResultException(hr, "Failed to set property for H.264 encoder", "ICodecAPI::SetValue");
+            }
+        }
+
         PrintTransformInfo(sinkWriterAltIntf, idxOutStream);
 
         /* The stream index in sink and source can be different, hence it must be
@@ -342,10 +364,10 @@ namespace application
             auto &decoded = entry.second;
 
             AddStream(sinkWriterAltIntf,
-                     idxDecStream,
-                     decoded,
-                     targeSizeFactor,
-                     encoder);
+                      idxDecStream,
+                      decoded,
+                      targeSizeFactor,
+                      encoder);
         }
 
         if (m_streamInfoLookupTab.empty())
