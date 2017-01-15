@@ -337,8 +337,8 @@ namespace _3fd
 					logEvent.details = std::move(details);
 #	endif
 #	ifdef ENABLE_3FD_CST
-				if (cst && CallStackTracer::GetInstance().IsReady())
-					logEvent.trace = CallStackTracer::GetInstance().GetStackReport();
+				if (cst && CallStackTracer::IsReady())
+					logEvent.trace = CallStackTracer::GetStackReport();
 #	endif
 				m_eventsQueue.Push(std::move(logEvent)); // enqueue the request to write this event to the log file
 			}

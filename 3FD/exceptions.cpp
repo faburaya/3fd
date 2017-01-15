@@ -3,7 +3,7 @@
 #include <codecvt>
 #include <sstream>
 
-#ifdef _WIN32
+#if defined _3FD_PLATFORM_WIN32API || defined _3FD_PLATFORM_WINRT_UWP
 #   include <comdef.h>
 #endif
 
@@ -57,6 +57,7 @@ namespace _3fd
 			return oss.str();
 		}
 
+#   if defined _3FD_PLATFORM_WIN32API || defined _3FD_PLATFORM_WINRT_UWP
         /// <summary>
         /// Get a description for an HRESULT code.
         /// </summary>
@@ -66,7 +67,12 @@ namespace _3fd
         {
             _ASSERTE(FAILED(errCode));
             std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
+
+#	    ifdef _3FD_PLATFORM_WINRT_UWP
+            _com_error comErrObj(errCode, nullptr);
+#       else
             _com_error comErrObj(errCode);
+#       endif
             return transcoder.to_bytes(comErrObj.ErrorMessage());
         }
 
@@ -80,7 +86,12 @@ namespace _3fd
         {
             _ASSERTE(FAILED(errCode));
             std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
+
+#	    ifdef _3FD_PLATFORM_WINRT_UWP
+            _com_error comErrObj(errCode, nullptr);
+#       else
             _com_error comErrObj(errCode);
+#       endif
             std::ostringstream oss;
             oss << message << " - API call "
                 << function << " returned: "
@@ -88,7 +99,7 @@ namespace _3fd
 
             throw HResultException(errCode, oss.str());
         }
-
+#   endif
 #   ifdef _3FD_PLATFORM_WIN32API // only for classic desktop apps:
         /// <summary>
         /// Generates an error message for a DWORD error code.

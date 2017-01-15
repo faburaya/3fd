@@ -33,6 +33,7 @@ include_directories(
 # Static library source files:
 add_library(3FD STATIC
     callstacktracer.cpp
+    cmdline.cpp
     configuration.cpp
     dependencies.cpp
     exceptions.cpp

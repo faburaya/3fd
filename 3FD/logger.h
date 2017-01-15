@@ -108,7 +108,8 @@ namespace core
 		// Private implementations:
 
 		void WriteImpl(IAppException &ex, Priority prio);
-#ifdef _WIN32
+
+#if defined _3FD_PLATFORM_WIN32API || defined _3FD_PLATFORM_WINRT_UWP
         void WriteImpl(HRESULT hr, const char *message, const char *function, Priority prio);
 #endif
 		void WriteImpl(string &&message, Priority prio, bool cst);
@@ -132,7 +133,8 @@ namespace core
 			if (singleton != nullptr)
 				singleton->WriteImpl(ex, prio);
 		}
-#ifdef _WIN32
+
+#if defined _3FD_PLATFORM_WIN32API || defined _3FD_PLATFORM_WINRT_UWP
         /// <summary>
         /// Writes an HRESULT error to the log output.
         /// </summary>

@@ -41,6 +41,10 @@
 #       define _3FD_ESENT_SUPPORT
 #   	define _3FD_OPENCL_SUPPORT
 #       define _3FD_CONSOLE_AVAILABLE
+#   elif defined WINAPI_FAMILY_SYSTEM
+#       define _3FD_PLATFORM_WINRT
+#       define _3FD_PLATFORM_WINRT_UWP
+#       define _3FD_ESENT_SUPPORT
 #   elif WINAPI_FAMILY == WINAPI_FAMILY_PC_APP // Windows Store Apps (& UWP) only:
 #       define _3FD_PLATFORM_WINRT
 #       define _3FD_PLATFORM_WINRT_PC

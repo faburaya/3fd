@@ -129,7 +129,7 @@ namespace integration_tests
             AcmeRpcClient client1(
                 ProtocolSequence::Local,
                 objectsUuidsImpl1[5],
-                "TARS"//"MyVirtualSpare.MyDomain.local"
+                "CASE"//"MyVirtualSpare.MyDomain.local"
             );
 
             EXPECT_EQ(696.0, client1.Operate(6.0, 116.0));
@@ -138,7 +138,7 @@ namespace integration_tests
             AcmeRpcClient client2(
                 ProtocolSequence::Local,
                 objectsUuidsImpl2[5],
-                "TARS"//"MyVirtualSpare.MyDomain.local"
+                "CASE"//"MyVirtualSpare.MyDomain.local"
             );
 
             EXPECT_EQ(696.0, client2.Operate(606.0, 90.0));
@@ -200,7 +200,7 @@ namespace integration_tests
             AcmeRpcClient client1(
                 GetParam().protocolSequence,
                 GetParam().objectUUID1,
-                "TARS", //"MyVirtualSpare.MyDomain.local",
+                "CASE", //"MyVirtualSpare.MyDomain.local",
                 GetParam().authenticationSecurity,
                 GetParam().authenticationLevel,
                 GetParam().impersonationLevel,
@@ -213,7 +213,7 @@ namespace integration_tests
             AcmeRpcClient client2(
                 GetParam().protocolSequence,
                 GetParam().objectUUID2,
-                "TARS", //"MyVirtualSpare.MyDomain.local",
+                "CASE", //"MyVirtualSpare.MyDomain.local",
                 GetParam().authenticationSecurity,
                 GetParam().authenticationLevel,
                 GetParam().impersonationLevel,
@@ -299,7 +299,7 @@ namespace integration_tests
 
             AcmeRpcClient client1(
                 GetParam().objectUUID1,
-                "TARS", //"MyVirtualSpare.MyDomain.local",
+                "CASE", //"MyVirtualSpare.MyDomain.local",
                 certInfo,
                 GetParam().authenticationLevel
             );
@@ -309,7 +309,7 @@ namespace integration_tests
 
             AcmeRpcClient client2(
                 GetParam().objectUUID2,
-                "TARS", //"MyVirtualSpare.MyDomain.local",
+                "CASE", //"MyVirtualSpare.MyDomain.local",
                 certInfo,
                 GetParam().authenticationLevel
             );

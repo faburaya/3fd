@@ -84,7 +84,7 @@ namespace _3fd
 
 			~Platform();
 
-			static void CreatePlatformInstances(cl_uint qtPlatforms, std::vector<Platform> &platforms);
+			static void CreatePlatformInstances(std::vector<Platform> &platforms);
  
 			void GetPlatformInfo(cl_platform_info paramCode, GenericParam &param) const;
  

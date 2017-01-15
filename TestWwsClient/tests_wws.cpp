@@ -1,4 +1,4 @@
-#include "stdafx.h"
+﻿#include "stdafx.h"
 #include "runtime.h"
 #include "web_wws_webserviceproxy.h"
 #include "calculator.wsdl.h"
@@ -30,7 +30,7 @@ namespace integration_tests
 
 		CalcSvcProxyUnsecure(const SvcProxyConfig &config) :
 			WebServiceProxy(
-				"http://TARS:81/calculator",
+				"http://CASE:81/calculator",
 				config,
 				&CreateWSProxy<WS_HTTP_BINDING_TEMPLATE, CalcBindingUnsecure_CreateServiceProxy>
 			)
@@ -265,7 +265,7 @@ namespace integration_tests
 		// Ctor for proxy without client certificate
 		CalcSvcProxySSL(const SvcProxyConfig &config) :
 			WebServiceProxy(
-				"https://TARS:8989/calculator",
+				"https://CASE:8989/calculator",
 				config,
 				&CreateWSProxy<WS_HTTP_SSL_BINDING_TEMPLATE, CalcBindingSSL_CreateServiceProxy>
 			)
@@ -274,7 +274,7 @@ namespace integration_tests
 		// Ctor for proxy using a client certificate
 		CalcSvcProxySSL(const SvcProxyConfig &config, const SvcProxyCertInfo &certInfo) :
 			WebServiceProxy(
-				"https://TARS:8989/calculator",
+				"https://CASE:8989/calculator",
 				config,
 				certInfo,
 				CalcBindingSSL_CreateServiceProxy
@@ -382,7 +382,7 @@ namespace integration_tests
 	};
 
 	// Thumbprint of client side certificate for transport security
-	const char *clientCertificateThumbprint = "b4ca5fb6227dca20cb6842bfb02e04a772dbbb12";
+	const char *clientCertificateThumbprint("e5c3ab3bb2a991a79381fece6638e861314706ec");
 
 	/// <summary>
 	/// Tests synchronous web service access
@@ -614,7 +614,7 @@ namespace integration_tests
         // Ctor for proxy using a client certificate
         CalcSvcProxyHeaderAuthSSL(const SvcProxyConfig &config, const SvcProxyCertInfo &certInfo) :
             WebServiceProxy(
-                "https://TARS:8888/calculator",
+                "https://CASE:8888/calculator",
                 config,
                 certInfo,
                 CalcBindingHeaderAuthSSL_CreateServiceProxy

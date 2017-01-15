@@ -41,10 +41,11 @@ namespace _3fd
 
 			static string GetHResultLabel(HRESULT errCode);
 
+#   if defined _3FD_PLATFORM_WIN32API || defined _3FD_PLATFORM_WINRT_UWP
             static string GetDetailsFromHResult(HRESULT errCode);
 
             static void RaiseHResultException(HRESULT errCode, const char *message, const char *function);
-
+#   endif
 #   ifdef _3FD_PLATFORM_WIN32API
             static void AppendDWordErrorMessage(
                 DWORD errCode,
@@ -243,7 +244,7 @@ namespace _3fd
 			}
 		};
 
-#   ifdef _WIN32
+#   if defined _3FD_PLATFORM_WIN32API || defined _3FD_PLATFORM_WINRT_UWP
         /// <summary>
         /// A specialization of runtime application exception that is handful when
         /// dealing with Windows API errors, because it holds the HRESULT error code.

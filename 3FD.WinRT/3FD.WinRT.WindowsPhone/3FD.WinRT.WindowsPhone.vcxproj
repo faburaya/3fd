@@ -70,21 +70,21 @@
     <GenerateManifest>false</GenerateManifest>
     <IntDir>$(Platform)\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\$(MSBuildProjectName)\</OutDir>
-    <IncludePath>$(BOOST_HOME);$(IncludePath)</IncludePath>
+    <IncludePath>$(BOOST_HOME)\include\boost-1_63;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <GenerateManifest>false</GenerateManifest>
     <IntDir>$(Platform)\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\$(MSBuildProjectName)\</OutDir>
-    <IncludePath>$(BOOST_HOME);$(IncludePath)</IncludePath>
+    <IncludePath>$(BOOST_HOME)\include\boost-1_63;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
     <GenerateManifest>false</GenerateManifest>
-    <IncludePath>$(BOOST_HOME);$(IncludePath)</IncludePath>
+    <IncludePath>$(BOOST_HOME)\include\boost-1_63;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
     <GenerateManifest>false</GenerateManifest>
-    <IncludePath>$(BOOST_HOME);$(IncludePath)</IncludePath>
+    <IncludePath>$(BOOST_HOME)\include\boost-1_63;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

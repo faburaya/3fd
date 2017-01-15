@@ -10,197 +10,197 @@
 
 namespace _3fd
 {
-	using std::string;
-	using std::wstring;
+using std::string;
+using std::wstring;
 
-	namespace sqlite
+namespace sqlite
+{
+	class PrepStatement; // forward class declaration
+
+	/// <summary>
+	/// Represents a SQLite "connection" to a database.
+	/// </summary>
+	class DatabaseConn : notcopiable
 	{
-		class PrepStatement; // forward class declaration
+	private:
+
+		sqlite3	*m_dbHandle;
 
 		/// <summary>
-		/// Represents a SQLite "connection" to a database.
+		/// Keeps in cache some prepared statements, just like stored procedures.
 		/// </summary>
-		class DatabaseConn : notcopiable
-		{
-		private:
+		std::map<int, PrepStatement> m_preparedStatements;
 
-			sqlite3	*m_dbHandle;
+	public:
 
-			/// <summary>
-			/// Keeps in cache some prepared statements, just like stored procedures.
-			/// </summary>
-			std::map<int, PrepStatement> m_preparedStatements;
+		DatabaseConn(const string &dbFilePath, bool fullMutex = true);
 
-		public:
+		DatabaseConn(DatabaseConn &&ob);
 
-			DatabaseConn(const string &dbFilePath, bool fullMutex = true);
+		~DatabaseConn();
 
-			DatabaseConn(DatabaseConn &&ob);
+		sqlite3 *GetHandle() const { return m_dbHandle; }
 
-			~DatabaseConn();
+		PrepStatement CreateStatement(const string &query);
 
-			sqlite3 *GetHandle() const { return m_dbHandle; }
-
-			PrepStatement CreateStatement(const string &query);
-
-			PrepStatement CreateStatement(const char *query);
+		PrepStatement CreateStatement(const char *query);
 		
-			PrepStatement &CachedStatement(int queryId, 
-										   const string &queryCode);
+		PrepStatement &CachedStatement(int queryId, 
+										const string &queryCode);
 
-			PrepStatement &CachedStatement(int queryId, 
-										   const char *queryCode = nullptr, 
-										   size_t qlen = 0);
-		};
+		PrepStatement &CachedStatement(int queryId, 
+										const char *queryCode = nullptr, 
+										size_t qlen = 0);
+	};
+
+	/// <summary>
+	/// Represents a SQLite prepared query.
+	/// </summary>
+	class PrepStatement : notcopiable
+	{
+	private:
+
+		sqlite3_stmt			*m_stmtHandle;
+		DatabaseConn			&m_database;
+		bool					m_stepping;
+
+		std::map<string, int>	m_columnIndexes;
+
+		void CtorImpl(const char *query, size_t length);
+
+	public:
+
+		PrepStatement(DatabaseConn &database, 
+						const string &query);
+
+		PrepStatement(DatabaseConn &database, 
+						const char *query, 
+						size_t qlen = 0);
+
+		PrepStatement(PrepStatement &&ob);
+
+		~PrepStatement();
+
+		sqlite3_stmt *GetHandle() const { return m_stmtHandle; }
+
+		string GetQuery() const;
+
+		void Bind(const string &paramName, int integer);
+
+		void Bind(const string &paramName, long long integer);
+
+		void Bind(const string &paramName, double real);
+
+		void Bind(const string &paramName, const string &text);
+
+		void Bind(const string &paramName, const wstring &text);
+
+		void Bind(const string &paramName, const void *blob, int nBytes);
+
+		void ClearBindings();
+
+		int Step(bool throwEx = true);
+
+		int TryStep(bool throwEx = true);
+
+		void Reset();
+
+		int GetColumnValueInteger(const string &columnName);
+
+		long long GetColumnValueInteger64(const string &columnName);
+
+		double GetColumnValueFloat64(const string &columnName);
+
+		string GetColumnValueText(const string &columnName);
+
+		wstring GetColumnValueText16(const string &columnName);
+
+		const void *GetColumnValueBlob(const string &columnName, int &nBytes);
+	};
+
+	class DbConnWrapper; // forward class declaration
+
+	/// <summary>
+	/// A pool of "connections" to SQLite databases.
+	/// </summary>
+	class DbConnPool
+	{
+	private:
 
 		/// <summary>
-		/// Represents a SQLite prepared query.
+		/// A lock free queue that holds the database connections.
 		/// </summary>
-		class PrepStatement : notcopiable
-		{
-		private:
+		boost::lockfree::queue<DatabaseConn *> m_availableConnections;
 
-			sqlite3_stmt			*m_stmtHandle;
-			DatabaseConn			&m_database;
-			bool					m_stepping;
+        std::atomic<uint32_t> m_numConns;
+		string m_dbFilePath;
 
-			std::map<string, int>	m_columnIndexes;
-
-			void CtorImpl(const char *query, size_t length);
-
-		public:
-
-			PrepStatement(DatabaseConn &database, 
-							const string &query);
-
-			PrepStatement(DatabaseConn &database, 
-							const char *query, 
-							size_t qlen = 0);
-
-			PrepStatement(PrepStatement &&ob);
-
-			~PrepStatement();
-
-			sqlite3_stmt *GetHandle() const { return m_stmtHandle; }
-
-			string GetQuery() const;
-
-			void Bind(const string &paramName, int integer);
-
-			void Bind(const string &paramName, long long integer);
-
-			void Bind(const string &paramName, double real);
-
-			void Bind(const string &paramName, const string &text);
-
-			void Bind(const string &paramName, const wstring &text);
-
-			void Bind(const string &paramName, const void *blob, int nBytes);
-
-			void ClearBindings();
-
-			int Step(bool throwEx = true);
-
-			int TryStep(bool throwEx = true);
-
-			void Reset();
-
-			int GetColumnValueInteger(const string &columnName);
-
-			long long GetColumnValueInteger64(const string &columnName);
-
-			double GetColumnValueFloat64(const string &columnName);
-
-			string GetColumnValueText(const string &columnName);
-
-			wstring GetColumnValueText16(const string &columnName);
-
-			const void *GetColumnValueBlob(const string &columnName, int &nBytes);
-		};
-
-		class DbConnWrapper; // forward class declaration
-
-		/// <summary>
-		/// A pool of "connections" to SQLite databases.
-		/// </summary>
-		class DbConnPool
-		{
-		private:
-
-			/// <summary>
-			/// A lock free queue that holds the database connections.
-			/// </summary>
-			boost::lockfree::queue<DatabaseConn *> m_availableConnections;
-
-            std::atomic<uint32_t> m_numConns;
-			string m_dbFilePath;
-
-		public:
+	public:
 		
-			DbConnPool(const string &dbFilePath);
+		DbConnPool(const string &dbFilePath);
 
-			~DbConnPool();
-
-			/// <summary>
-			/// Gets the total number of connections in the pool (which is not the number of available connections).
-			/// </summary>
-			unsigned int GetNumConnections() const { return m_numConns; }
-
-			DbConnWrapper AcquireSQLiteConn();
-
-			void ReleaseSQLiteConn(DatabaseConn *conn);
-
-			void CloseAll();
-		};
+		~DbConnPool();
 
 		/// <summary>
-		/// A wrapper that ensures a SQLite connection will be returned to its pool.
+		/// Gets the total number of connections in the pool (which is not the number of available connections).
 		/// </summary>
-		class DbConnWrapper : notcopiable
-		{
-		private:
+		unsigned int GetNumConnections() const { return m_numConns; }
 
-			DbConnPool &pool;
-			DatabaseConn *conn;
+		DbConnWrapper AcquireSQLiteConn();
 
-		public:
+		void ReleaseSQLiteConn(DatabaseConn *conn);
 
-			/// <summary>
-			/// Gets the database connection.
-			/// </summary>
-			/// <returns>A reference to a <see cref="DatabaseConn"/> object.</returns>
-			DatabaseConn &Get() { return *conn; }
+		void CloseAll();
+	};
 
-			DbConnWrapper(DbConnPool &p_pool, DatabaseConn *p_conn);
+	/// <summary>
+	/// A wrapper that ensures a SQLite connection will be returned to its pool.
+	/// </summary>
+	class DbConnWrapper : notcopiable
+	{
+	private:
 
-			DbConnWrapper(DbConnWrapper &&ob);
+		DbConnPool &pool;
+		DatabaseConn *conn;
 
-			~DbConnWrapper();
-		};
+	public:
 
 		/// <summary>
-		/// Helps to create and guarantees adequate finalization of 
-		/// a SQLite transaction while also lock the access to it.
+		/// Gets the database connection.
 		/// </summary>
-		class Transaction : notcopiable
-		{
-		private:
+		/// <returns>A reference to a <see cref="DatabaseConn"/> object.</returns>
+		DatabaseConn &Get() { return *conn; }
 
-			bool m_committed;
-			DbConnWrapper &m_conn;
+		DbConnWrapper(DbConnPool &p_pool, DatabaseConn *p_conn);
 
-			void Begin();
-			void RollBack();
+		DbConnWrapper(DbConnWrapper &&ob);
 
-		public:
+		~DbConnWrapper();
+	};
 
-			Transaction(DbConnWrapper &connWrapper);
-			~Transaction();
+	/// <summary>
+	/// Helps to create and guarantees adequate finalization of 
+	/// a SQLite transaction while also lock the access to it.
+	/// </summary>
+	class Transaction : notcopiable
+	{
+	private:
 
-			void Commit();
-		};
+		bool m_committed;
+		DbConnWrapper &m_conn;
 
-	}// end of namespace sqlite
+		void Begin();
+		void RollBack();
+
+	public:
+
+		Transaction(DbConnWrapper &connWrapper);
+		~Transaction();
+
+		void Commit();
+	};
+
+}// end of namespace sqlite
 }// end of namespace _3fd
 
 #endif // header guard

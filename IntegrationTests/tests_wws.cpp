@@ -138,8 +138,6 @@ namespace integration_tests
             if (!closeServiceRequestEvent->WaitFor(15000))
                 return false;
 
-            closeServiceRequestEvent->Reset();
-
             /* Wait a little for the client to close its proxy. Otherwise, tests
             have shown that the proxy will fail due to a connection "abnormally
             terminated". */

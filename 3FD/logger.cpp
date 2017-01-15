@@ -1,8 +1,9 @@
 #include "stdafx.h"
+#include "preprocessing.h"
 
 /* Need to place COM headers here, because some lines
    below POCO interferes undefining Windows macros */
-#ifdef _WIN32
+#if defined _3FD_PLATFORM_WIN32API || defined _3FD_PLATFORM_WINRT_UWP
 #   include <comdef.h>
 #endif
 
@@ -125,7 +126,7 @@ namespace core
 		WriteImpl(ex.ToString(), prio, false);
 	}
 
-#ifdef _WIN32
+#if defined _3FD_PLATFORM_WIN32API || defined _3FD_PLATFORM_WINRT_UWP
     /// <summary>
     /// Writes an HRESULT error to the log output.
     /// </summary>
@@ -137,7 +138,12 @@ namespace core
     {
         _ASSERTE(FAILED(hr));
         std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
+
+#	ifdef _3FD_PLATFORM_WINRT_UWP
+        _com_error comErrObj(hr, nullptr);
+#   else
         _com_error comErrObj(hr);
+#   endif
         std::ostringstream oss;
         oss << "API call " << function << " returned: " << transcoder.to_bytes(comErrObj.ErrorMessage());
         WriteImpl(std::move(message), oss.str(), prio, true);

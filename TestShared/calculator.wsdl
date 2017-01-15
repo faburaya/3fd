@@ -247,13 +247,13 @@
     <!-- The service endpoints: -->
     <wsdl:service name="CalculatorService">
         <wsdl:port name="CalculatorEndpointHeaderAuthSSL" binding="tns:CalcBindingHeaderAuthSSL">
-            <soap:address location="https://TARS:8888/calculator"/>
+            <soap:address location="https://CASE:8888/calculator"/>
         </wsdl:port>
         <wsdl:port name="CalculatorEndpointSSL" binding="tns:CalcBindingSSL">
-            <soap:address location="https://TARS:8989/calculator"/>
+            <soap:address location="https://CASE:8989/calculator"/>
         </wsdl:port>
         <wsdl:port name="CalculatorEndpointUnsecure" binding="tns:CalcBindingUnsecure">
-            <soap:address location="http://TARS:81/calculator"/>
+            <soap:address location="http://CASE:81/calculator"/>
         </wsdl:port>
     </wsdl:service>
 
