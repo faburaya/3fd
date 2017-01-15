@@ -407,9 +407,9 @@ namespace core
             // Default value does not fall into defined range:
             if (argValCfg.size() == 3)
             {
-                auto default = *(argValCfg.begin());
+                auto defValue = *(argValCfg.begin());
 
-                if (default < min || default > max)
+                if (defValue < min || defValue > max)
                 {
                     std::ostringstream oss;
                     oss << "Argument ID " << argDecl.id << ": default value does not fall into defined range";
@@ -1507,11 +1507,11 @@ namespace core
 
         // configuration of values is provided
         if (argValCfg != nullptr
-            // there is a default value because it is limited to enumeration
+            // there is a default value in configuration of allowed values
             && ((static_cast<uint8_t> (extArgDecl.common.valueType) & static_cast<uint8_t> (argValIsEnumTypeFlag)) != 0
                 // there is default value in configuration of range
-                || (static_cast<uint8_t> (extArgDecl.common.valueType) & static_cast<uint8_t> (argValIsRangedTypeFlag)) != 0
-                    && argValCfg->size() > 2))
+                || (static_cast<uint8_t> (extArgDecl.common.valueType) & static_cast<uint8_t> (argValIsRangedTypeFlag)) != 0)
+            && argValCfg->size() > 2)
         {
             return argValCfg->at(0);
         }
@@ -1567,11 +1567,11 @@ namespace core
 
         // configuration of values is provided
         if (argValCfg != nullptr
-            // there is a default value because it is limited to enumeration
+            // there is a default value in configuration of allowed values
             && ((static_cast<uint8_t> (extArgDecl.common.valueType) & static_cast<uint8_t> (argValIsEnumTypeFlag)) != 0
                 // there is default value in configuration of range
-                || (static_cast<uint8_t> (extArgDecl.common.valueType) & static_cast<uint8_t> (argValIsRangedTypeFlag)) != 0
-                    && argValCfg->size() > 2))
+                || (static_cast<uint8_t> (extArgDecl.common.valueType) & static_cast<uint8_t> (argValIsRangedTypeFlag)) != 0)
+            && argValCfg->size() > 2)
         {
             return argValCfg->at(0);
         }

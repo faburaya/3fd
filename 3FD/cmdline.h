@@ -3,7 +3,7 @@
 
 #include "exceptions.h"
 #include "callstacktracer.h"
-#include <boost\regex.hpp>
+#include <boost/regex.hpp>
 #include <cinttypes>
 #include <initializer_list>
 #include <stdexcept>
