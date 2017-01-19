@@ -203,6 +203,9 @@
     <ClInclude Include="cmdline.h">
       <Filter>Header Files\core</Filter>
     </ClInclude>
+    <ClInclude Include="broker.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="sqlite3.c">

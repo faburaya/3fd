@@ -1,6 +1,6 @@
 A framework to help C++ programmers to code faster more robust and stable code.
 
-The scope of this project is to provide a modern framework that simplifies common tasks like error handling and logging, ISAM/relational data access and storage, heterogeneous programming and memory management. It was carefully engineered to provide high performance, low memory footprint, verbosity in error report, a simple interface compliant to the new C++11 standard and portability to several platforms. There is a port for POSIX already available!
+The scope of this project is to provide a modern framework that simplifies common tasks like error handling and logging, ISAM/relational data access and storage, heterogeneous programming and memory management. It was carefully engineered to provide high performance, low memory footprint, verbosity in error report, a simple interface compliant to the new C++11 standard and portability to several platforms: POSIX, Windows Vista/7/8/8.1/Phone 8.1/10/10M.
 
 The provided features are:
 
@@ -14,6 +14,8 @@ The provided features are:
 
 + An OOP+RAII model for simplified heterogeneous programming that makes OpenCL v1.2 more practical and robust to employ
 
-+ A module for ISAM data access backed by Microsoft ESE, but wrapped with real OOP+RAII design, very straightforward and practical
++ A module for ISAM data access backed by Microsoft ESE, but wrapped with real OOP+RAII design, which allows a much easier way to define, search and intersect multiple indexes
 
-+ A module for SOAP web services containing helpers & wrappers around Microsoft WWS API, which enables quick development of native web services hosts and clients
++ A module for SOAP web services containing helpers & wrappers around Microsoft WWS API, which enables quick development of native web services hosts and clients, including support for SSL transport security
+
++ A module for RPC containing helpers & wrappers around the DCE based Microsoft RPC API, which enables quick development of RPC servers and clients, including support for SSL transport security, Windows authentication and Schannel
