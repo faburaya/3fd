@@ -4,6 +4,7 @@
 #include "base.h"
 #include <string>
 #include <cinttypes>
+#include <Poco/AutoPtr.h>
 #include <Poco/Data/Session.h>
 #include <Poco/Data/Statement.h>
 
@@ -49,8 +50,8 @@ namespace broker
     {
     private:
 
-        Poco::Data::Session m_dbSession;
-        Poco::Data::Statement m_readMsgStmt;
+        Poco::AutoPtr<Poco::Data::Session> m_dbSession;
+        Poco::AutoPtr<Poco::Data::Statement> m_readMsgStmt;
 
     public:
 
