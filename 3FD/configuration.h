@@ -82,6 +82,13 @@ namespace _3fd
 						bool useWindowsFileCache;
 					} isam;
 #endif
+
+#ifdef _3FD_POCO_SUPPORT
+                    struct
+                    {
+                        int maxMessageSizeBytes;
+                    } broker;
+#endif
 				} framework;
 
 				struct

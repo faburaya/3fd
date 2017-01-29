@@ -224,6 +224,7 @@ namespace _3fd
 #	ifdef _3FD_ESENT_SUPPORT
 				settings.framework.isam.useWindowsFileCache = config->getBool("framework.isam.useWindowsFileCache", true);
 #	endif
+                settings.framework.broker.maxMessageSizeBytes = config->getInt("framework.broker.maxMessageSizeBytes", 2048);
 			}
 			catch (std::system_error &ex)
 			{

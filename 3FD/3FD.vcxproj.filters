@@ -70,6 +70,12 @@
     <Filter Include="Header Files\RPC">
       <UniqueIdentifier>{e13956f3-68a6-4fc3-a593-3e87142105bc}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Broker">
+      <UniqueIdentifier>{3839e530-cc93-467f-bc4c-b0ec5bfb15b6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Broker">
+      <UniqueIdentifier>{1b38a052-23bc-4aea-af5f-aca8777729a1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt">
@@ -203,8 +209,11 @@
     <ClInclude Include="cmdline.h">
       <Filter>Header Files\core</Filter>
     </ClInclude>
+    <ClInclude Include="broker_impl.h">
+      <Filter>Header Files\Broker</Filter>
+    </ClInclude>
     <ClInclude Include="broker.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Broker</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -370,8 +379,14 @@
     <ClCompile Include="cmdline.cpp">
       <Filter>Source Files\core</Filter>
     </ClCompile>
-    <ClCompile Include="broker.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="broker_impl_reader.cpp">
+      <Filter>Source Files\Broker</Filter>
+    </ClCompile>
+    <ClCompile Include="broker_impl_writer.cpp">
+      <Filter>Source Files\Broker</Filter>
+    </ClCompile>
+    <ClCompile Include="broker_impl.cpp">
+      <Filter>Source Files\Broker</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -256,6 +256,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="broker.h" />
+    <ClInclude Include="broker_impl.h" />
     <ClInclude Include="cmdline.h" />
     <ClInclude Include="gc_arrayofedges.h" />
     <ClInclude Include="gc_vertexstore.h" />
@@ -299,7 +300,9 @@
     <ClInclude Include="web_wws_webserviceproxy.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="broker.cpp" />
+    <ClCompile Include="broker_impl.cpp" />
+    <ClCompile Include="broker_impl_reader.cpp" />
+    <ClCompile Include="broker_impl_writer.cpp" />
     <ClCompile Include="callstacktracer.cpp" />
     <ClCompile Include="cmdline.cpp" />
     <ClCompile Include="configuration.cpp" />

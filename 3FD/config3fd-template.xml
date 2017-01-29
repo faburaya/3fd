@@ -44,6 +44,9 @@
     <isam>
       <useWindowsFileCache>true</useWindowsFileCache>
     </isam>
+    <broker>
+      <maxMessageSizeBytes>2048</maxMessageSizeBytes>
+    </broker>
   </framework>
   <application>
     <!--HERE YOU CAN INSERT THE TAGS REGARDING THE SETTINGS FOR YOUR APPLICATION-->

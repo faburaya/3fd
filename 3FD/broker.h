@@ -46,7 +46,6 @@ namespace broker
     /// <summary>
     /// Controls retrieval of results from asynchronous read of queue.
     /// </summary>
-    /// <seealso cref="notcopiable" />
     class INTFOPT IAsyncRead
     {
     public:
@@ -94,7 +93,35 @@ namespace broker
 
         std::unique_ptr<IAsyncRead> ReadMessages(uint16_t msgCountStepLimit);
     };
-}
+
+    /// <summary>
+    /// Represents a queue in the broker, into which
+    /// a service can write messages to another.
+    /// </summary>
+    /// <seealso cref="notcopiable" />
+    class QueueWriter : notcopiable
+    {
+    private:
+
+        Poco::AutoPtr<Poco::Data::Session> m_dbSession;
+
+        uint8_t m_queueId;
+
+        void CreateTempTableForQueueInput();
+
+    public:
+
+        QueueWriter(Backend svcBrokerBackend,
+                    const string &connString,
+                    const string &fromServiceURL,
+                    const string &toServiceURL,
+                    const MessageTypeSpec &msgTypeSpec,
+                    uint8_t queueId);
+
+        std::future<void> WriteMessages(const std::vector<string> &messages);
+    };
+
+}// end of namespace broker
 }// end of namespace _3fd
 
 #endif // end of header guard

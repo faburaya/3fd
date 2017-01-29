@@ -1,7 +1,8 @@
 #include "stdafx.h"
-#include "broker.h"
+#include "broker_impl.h"
 #include "callstacktracer.h"
 #include "exceptions.h"
+#include "configuration.h"
 #include <sstream>
 
 namespace _3fd
@@ -9,25 +10,6 @@ namespace _3fd
 namespace broker
 {
     using std::string;
-
-    /// <summary>
-    /// Converts an enumerated type of message content validation to a label.
-    /// </summary>
-    /// <param name="msgContentValidation">What validation to use in message content.</param>
-    /// <returns>A label as expected by T-SQL.</returns>
-    static const char *ToString(MessageContentValidation msgContentValidation)
-    {
-        switch (msgContentValidation)
-        {
-        case MessageContentValidation::None:
-            return "NONE";
-        case MessageContentValidation::WellFormedXml:
-            return "WELL_FORMED_XML";
-        default:
-            _ASSERTE(false);
-            return "UNKNOWN";
-        }
-    }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="QueueReader"/> class.
@@ -54,17 +36,16 @@ namespace broker
 
         m_dbSession = new Session("ODBC", connString);
 
-        // Create message and content types, contract, queue and service:
-        *m_dbSession <<
-            "IF NOT EXISTS ( SELECT * FROM sys.service_queues WHERE name = N'Queue%d' ) "
-            "BEGIN "
-            "    CREATE MESSAGE TYPE [%s/RequestMessage] VALIDATION = %s;"
-            "    CREATE CONTRACT [%s/Contract] ([%s/RequestMessage] SENT BY INITIATOR);"
-            "    CREATE QUEUE Queue%d';"
-            "    CREATE SERVICE [%s] ON QUEUE Queue%d ([%s/Contract]);"
-            "    CREATE TYPE EncodedContent%d FROM VARCHAR(2048);"
-            "    CREATE TYPE EncodedMessages%d AS TABLE (Content EncodedContent%d);"
-            "END;"
+        // Create message types, contract, queue and service:
+        *m_dbSession << R"(
+            IF NOT EXISTS ( SELECT * FROM sys.service_queues WHERE name = N'Queue%d' )
+            BEGIN
+                CREATE MESSAGE TYPE [%s/Message] VALIDATION = %s;
+                CREATE CONTRACT [%s/Contract] ([%s/Message] SENT BY INITIATOR);
+                CREATE QUEUE Queue%d';
+                CREATE SERVICE [%s] ON QUEUE Queue%d ([%s/Contract]);
+            END;
+            )"
             , queueId
             , serviceURL, ToString(msgTypeSpec.contentValidation)
             , serviceURL, serviceURL
@@ -72,35 +53,51 @@ namespace broker
             , serviceURL, queueId, serviceURL
             , now;
 
+        // Create content data type:
+        *m_dbSession << R"(
+            IF NOT EXISTS (
+	            SELECT * FROM sys.systypes
+		            WHERE name = 'EncodedContent'
+            )
+            BEGIN
+	            CREATE TYPE EncodedContent FROM VARCHAR(%d);
+            END;
+            )"
+            , core::AppConfig::GetSettings().framework.broker.maxMessageSizeBytes
+            , now;
+
         // Create stored procedure for reading messages from queue:
         *m_dbSession << R"(
             IF OBJECT_ID('dbo.ReceiveMessagesInQueue%d', 'P') IS NOT NULL
 	            DROP PROCEDURE ReceiveMessagesInQueue%d;
+            )"
+            , queueId
+            , queueId
+            , now;
 
+        *m_dbSession << R"(
             CREATE PROCEDURE ReceiveMessagesInQueue%d
 	            @RecvTimeoutMilisecs INT
             AS
             BEGIN
-	            DECLARE @RecvMsgDlgHandle	UNIQUEIDENTIFIER;
-	            DECLARE @RecvMsgTypeName	SYSNAME;
-	            DECLARE @RecvMsgContent		EncodedContent%d;
+	            DECLARE @RecvMsgDlgHandle UNIQUEIDENTIFIER;
+	            DECLARE @RecvMsgTypeName  SYSNAME;
+	            DECLARE @RecvMsgContent   EncodedContent;
 
 	            WAITFOR(
 		            RECEIVE TOP(1)
 			            @RecvMsgDlgHandle = conversation_handle
 			            ,@RecvMsgTypeName = message_type_name
-			            ,@RecvMsgContent = message_body
+			            ,@RecvMsgContent  = message_body
 		            FROM Queue%d
 	            )
 	            ,TIMEOUT @RecvTimeoutMilisecs;
 
-	            DECLARE @RowsetOut TABLE (MsgEncodedContent EncodedContent%d);
-	            DECLARE @MsgTypeExpected VARCHAR(40);
-	            SET @MsgTypeExpected = '%s/RequestMessage';
+	            DECLARE @RowsetOut TABLE (MsgEncodedContent EncodedContent);
 
 	            WHILE @RecvMsgDlgHandle IS NOT NULL
 	            BEGIN
-		            IF @RecvMsgTypeName = @MsgTypeExpected
+		            IF @RecvMsgTypeName = '%s/Message'
 		            BEGIN
 			            INSERT INTO @RowsetOut VALUES (@RecvMsgContent);
 			            END CONVERSATION @RecvMsgDlgHandle;
@@ -111,28 +108,24 @@ namespace broker
 		            RECEIVE TOP(1)
 			            @RecvMsgDlgHandle = conversation_handle
 			            ,@RecvMsgTypeName = message_type_name
-			            ,@RecvMsgContent = message_body
+			            ,@RecvMsgContent  = message_body
 		            FROM Queue%d;
 	            END;
 
 	            SELECT MsgEncodedContent FROM @RowsetOut;
             END;
-        )"
-        , queueId
-        , queueId
-        , queueId
-        , queueId
-        , queueId
-        , queueId
-        , serviceURL
-        , queueId
-        , now;
+            )"
+            , queueId
+            , queueId
+            , serviceURL
+            , queueId
+            , now;
     }
     catch (Poco::Data::DataException &ex)
     {
         CALL_STACK_TRACE;
         std::ostringstream oss;
-        oss << "Failed to create broker reader queue. "
+        oss << "Failed to create broker queue reader. "
                "POCO C++ reported a data access error - " << ex.name() << ": " << ex.message();
 
         throw core::AppException<std::runtime_error>(oss.str());
@@ -141,7 +134,7 @@ namespace broker
     {
         CALL_STACK_TRACE;
         std::ostringstream oss;
-        oss << "Failed to create broker reader queue. "
+        oss << "Failed to create broker queue reader. "
                "POCO C++ reported a generic error - " << ex.name() << ": " << ex.message();
 
         throw core::AppException<std::runtime_error>(oss.str());
@@ -150,7 +143,7 @@ namespace broker
     {
         CALL_STACK_TRACE;
         std::ostringstream oss;
-        oss << "Generic failure prevented creation of broker reader queue: " << ex.what();
+        oss << "Generic failure prevented creation of broker queue reader: " << ex.what();
         throw core::AppException<std::runtime_error>(oss.str());
     }
 
@@ -184,6 +177,9 @@ namespace broker
 
             using namespace Poco::Data::Keywords;
 
+            if (!dbSession.isConnected())
+                dbSession.reconnect();
+
             m_stoProcExecStmt = new Poco::Data::Statement(
                 (dbSession << "EXEC ReceiveMessagesInQueue%d 250;"
                     , queueId
@@ -216,7 +212,7 @@ namespace broker
         {
             CALL_STACK_TRACE;
             std::ostringstream oss;
-            oss << "Generic failure prevented reading broker queue: " << ex.what();
+            oss << "Generic failure prevented reading from broker queue: " << ex.what();
             throw core::AppException<std::runtime_error>(oss.str());
         }
 
