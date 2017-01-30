@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "broker_impl.h"
+#include <Poco/Data/ODBC/Connector.h>
 
 namespace _3fd
 {
@@ -22,6 +23,14 @@ namespace broker
             _ASSERTE(false);
             return "UNKNOWN";
         }
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="OdbcClient"/> class.
+    /// </summary>
+    OdbcClient::OdbcClient()
+    {
+        Poco::Data::ODBC::Connector::registerConnector();
     }
 
 }// end of namespace broker

@@ -25,6 +25,7 @@ namespace broker
                              const MessageTypeSpec &msgTypeSpec,
                              uint8_t queueId)
     try :
+        m_dbSession("ODBC", connString),
         m_queueId(queueId)
     {
         CALL_STACK_TRACE;
@@ -34,27 +35,25 @@ namespace broker
         using namespace Poco::Data;
         using namespace Poco::Data::Keywords;
 
-        m_dbSession = new Session("ODBC", connString);
-
         // Create message types, contract, queue and service:
-        *m_dbSession << R"(
+        m_dbSession << R"(
             IF NOT EXISTS ( SELECT * FROM sys.service_queues WHERE name = N'Queue%d' )
             BEGIN
                 CREATE MESSAGE TYPE [%s/Message] VALIDATION = %s;
                 CREATE CONTRACT [%s/Contract] ([%s/Message] SENT BY INITIATOR);
-                CREATE QUEUE Queue%d';
+                CREATE QUEUE Queue%d;
                 CREATE SERVICE [%s] ON QUEUE Queue%d ([%s/Contract]);
             END;
             )"
-            , queueId
+            , (int)queueId
             , serviceURL, ToString(msgTypeSpec.contentValidation)
             , serviceURL, serviceURL
-            , queueId
-            , serviceURL, queueId, serviceURL
+            , (int)queueId
+            , serviceURL, (int)queueId, serviceURL
             , now;
 
         // Create content data type:
-        *m_dbSession << R"(
+        m_dbSession << R"(
             IF NOT EXISTS (
 	            SELECT * FROM sys.systypes
 		            WHERE name = 'EncodedContent'
@@ -67,15 +66,15 @@ namespace broker
             , now;
 
         // Create stored procedure for reading messages from queue:
-        *m_dbSession << R"(
+        m_dbSession << R"(
             IF OBJECT_ID('dbo.ReceiveMessagesInQueue%d', 'P') IS NOT NULL
 	            DROP PROCEDURE ReceiveMessagesInQueue%d;
             )"
-            , queueId
-            , queueId
+            , (int)queueId
+            , (int)queueId
             , now;
 
-        *m_dbSession << R"(
+        m_dbSession << R"(
             CREATE PROCEDURE ReceiveMessagesInQueue%d
 	            @RecvTimeoutMilisecs INT
             AS
@@ -115,10 +114,10 @@ namespace broker
 	            SELECT MsgEncodedContent FROM @RowsetOut;
             END;
             )"
-            , queueId
-            , queueId
+            , (int)queueId
+            , (int)queueId
             , serviceURL
-            , queueId
+            , (int)queueId
             , now;
     }
     catch (Poco::Data::DataException &ex)
@@ -155,8 +154,8 @@ namespace broker
     {
     private:
 
-        Poco::AutoPtr<Poco::Data::Statement> m_stoProcExecStmt;
-        Poco::AutoPtr<Poco::ActiveResult<size_t>> m_stoProcActRes;
+        std::unique_ptr<Poco::Data::Statement> m_stoProcExecStmt;
+        std::unique_ptr<Poco::ActiveResult<size_t>> m_stoProcActRes;
         std::vector<string> m_messages;
 
     public:
@@ -180,15 +179,18 @@ namespace broker
             if (!dbSession.isConnected())
                 dbSession.reconnect();
 
-            m_stoProcExecStmt = new Poco::Data::Statement(
+            m_stoProcExecStmt.reset(new Poco::Data::Statement(
                 (dbSession << "EXEC ReceiveMessagesInQueue%d 250;"
-                    , queueId
+                    , (int)queueId
                     , into(m_messages)
                     , limit(msgCountStepLimit))
-            );
+            ));
 
             m_messages.reserve(msgCountStepLimit);
-            m_stoProcActRes = new Poco::ActiveResult<size_t>(m_stoProcExecStmt->executeAsync());
+
+            m_stoProcActRes.reset(
+                new Poco::ActiveResult<size_t>(m_stoProcExecStmt->executeAsync())
+            );
         }
         catch (Poco::Data::DataException &ex)
         {
@@ -258,7 +260,9 @@ namespace broker
             
             try
             {
-                m_stoProcActRes = new Poco::ActiveResult<size_t>(m_stoProcExecStmt->executeAsync());
+                m_stoProcActRes.reset(
+                    new Poco::ActiveResult<size_t>(m_stoProcExecStmt->executeAsync())
+                );
             }
             catch (std::exception &ex)
             {
@@ -300,7 +304,7 @@ namespace broker
         try
         {
             return std::unique_ptr<IAsyncRead>(
-                new AsyncReadImpl(*m_dbSession, msgCountStepLimit, m_queueId)
+                new AsyncReadImpl(m_dbSession, msgCountStepLimit, m_queueId)
             );
         }
         catch (core::IAppException &)

@@ -6,8 +6,8 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <future>
 #include <cinttypes>
-#include <Poco/AutoPtr.h>
 #include <Poco/Data/Session.h>
 
 namespace _3fd
@@ -71,15 +71,26 @@ namespace broker
     };
 
     /// <summary>
+    /// Implementation needs this base class upon queue reader/writer
+    /// initialization before using POCO Data ODBC connector.
+    /// </summary>
+    class OdbcClient
+    {
+    public:
+
+        OdbcClient();
+    };
+
+    /// <summary>
     /// Represents a queue in the broker, from which
     /// a service can read its incoming messages.
     /// </summary>
     /// <seealso cref="notcopiable" />
-    class QueueReader : notcopiable
+    class QueueReader : notcopiable, OdbcClient
     {
     private:
 
-        Poco::AutoPtr<Poco::Data::Session> m_dbSession;
+        Poco::Data::Session m_dbSession;
         
         uint8_t m_queueId;
 
@@ -99,11 +110,11 @@ namespace broker
     /// a service can write messages to another.
     /// </summary>
     /// <seealso cref="notcopiable" />
-    class QueueWriter : notcopiable
+    class QueueWriter : notcopiable, OdbcClient
     {
     private:
 
-        Poco::AutoPtr<Poco::Data::Session> m_dbSession;
+        Poco::Data::Session m_dbSession;
 
         uint8_t m_queueId;
 

@@ -5,7 +5,6 @@
 #include "configuration.h"
 #include <sstream>
 #include <thread>
-#include <future>
 
 namespace _3fd
 {
@@ -29,6 +28,7 @@ namespace broker
                              const MessageTypeSpec &msgTypeSpec,
                              uint8_t queueId)
     try :
+        m_dbSession("ODBC", connString),
         m_queueId(queueId)
     {
         CALL_STACK_TRACE;
@@ -38,27 +38,25 @@ namespace broker
         using namespace Poco::Data;
         using namespace Poco::Data::Keywords;
 
-        m_dbSession = new Session("ODBC", connString);
-
         // Create message types, contract, queue and service:
-        *m_dbSession << R"(
+        m_dbSession << R"(
             IF NOT EXISTS ( SELECT * FROM sys.service_queues WHERE name = N'Queue%d' )
             BEGIN
                 CREATE MESSAGE TYPE [%s/Message] VALIDATION = %s;
                 CREATE CONTRACT [%s/Contract] ([%s/Message] SENT BY INITIATOR);
-                CREATE QUEUE Queue%d';
+                CREATE QUEUE Queue%d;
                 CREATE SERVICE [%s] ON QUEUE Queue%d ([%s/Contract]);
             END;
             )"
-            , queueId
+            , (int)queueId
             , toServiceURL, ToString(msgTypeSpec.contentValidation)
             , toServiceURL, toServiceURL
-            , queueId
-            , toServiceURL, queueId, toServiceURL
+            , (int)queueId
+            , toServiceURL, (int)queueId, toServiceURL
             , now;
 
         // Create content data type:
-        *m_dbSession << R"(
+        m_dbSession << R"(
             IF NOT EXISTS (
 	            SELECT * FROM sys.systypes
 		            WHERE name = 'EncodedContent'
@@ -73,15 +71,15 @@ namespace broker
         CreateTempTableForQueueInput();
 
         // Create stored procedure for reading messages from queue:
-        *m_dbSession << R"(
+        m_dbSession << R"(
             IF OBJECT_ID(N'dbo.SendMessagesToService%d', 'P') IS NOT NULL
                 DROP PROCEDURE SendMessagesToService%d;
             )"
-            , queueId
-            , queueId
+            , (int)queueId
+            , (int)queueId
             , now;
 
-        *m_dbSession << R"(
+        m_dbSession << R"(
             CREATE PROCEDURE SendMessagesToService%d AS
             BEGIN
 	            DECLARE @MsgContent EncodedContent;
@@ -116,8 +114,8 @@ namespace broker
                 DELETE FROM #Queue%dInput;
             END;
             )"
-            , queueId
-            , queueId
+            , (int)queueId
+            , (int)queueId
             , fromServiceURL
             , toServiceURL
             , toServiceURL
@@ -159,17 +157,17 @@ namespace broker
 
         using namespace Poco::Data::Keywords;
 
-        *m_dbSession << R"(
+        m_dbSession << R"(
             IF NOT EXISTS (
 	            SELECT * FROM tempdb.sys.objects
-		            WHERE name LIKE '#Queue%dInput%'
+		            WHERE name LIKE '#Queue%dInput%%'
             )
             BEGIN
                 CREATE TABLE #Queue%dInput (content VARCHAR(%d));
             END;
             )"
-            , m_queueId
-            , m_queueId
+            , (int)m_queueId
+            , (int)m_queueId
             , core::AppConfig::GetSettings().framework.broker.maxMessageSizeBytes
             , now;
     }
@@ -189,8 +187,8 @@ namespace broker
         {
             dbSession.begin();
 
-            dbSession << "INSERT INTO #Queue%dInput (Content) VALUES (?);", queueId, use(messages), now;
-            dbSession << "EXEC SendMessagesToService%d;", queueId, now;
+            dbSession << "INSERT INTO #Queue%dInput (Content) VALUES (?);", (int)queueId, useRef(messages), now;
+            dbSession << "EXEC SendMessagesToService%d;", (int)queueId, now;
 
             dbSession.commit();
         }
@@ -247,14 +245,19 @@ namespace broker
 
         try
         {
-            if (!m_dbSession->isConnected())
+            if (!m_dbSession.isConnected())
             {
-                m_dbSession->reconnect();
+                m_dbSession.reconnect();
                 CreateTempTableForQueueInput();
             }
-
+            
             std::promise<void> result;
-            auto workerThread = std::thread(&PutInQueueImpl, *m_dbSession, messages, m_queueId, result);
+            auto workerThread = std::thread(&PutInQueueImpl,
+                                            std::ref(m_dbSession),
+                                            std::ref(messages),
+                                            m_queueId,
+                                            std::ref(result));
+
             workerThread.detach();
             return result.get_future();
         }
