@@ -127,9 +127,9 @@ namespace broker
         CALL_STACK_TRACE;
         std::ostringstream oss;
         oss << "Failed to create broker queue writer. "
-               "POCO C++ reported a data access error - " << ex.name() << ": " << ex.message();
+               "POCO C++ reported a data access error: " << ex.name();
 
-        throw core::AppException<std::runtime_error>(oss.str());
+        throw core::AppException<std::runtime_error>(oss.str(), ex.message());
     }
     catch (Poco::Exception &ex)
     {
@@ -199,10 +199,10 @@ namespace broker
 
             std::ostringstream oss;
             oss << "Failed to write messages into broker queue. "
-                   "POCO C++ reported a data access error - " << ex.name() << ": " << ex.message();
+                   "POCO C++ reported a data access error: " << ex.name();
 
             result.set_exception(
-                std::make_exception_ptr(core::AppException<std::runtime_error>(oss.str()))
+                std::make_exception_ptr(core::AppException<std::runtime_error>(oss.str(), ex.message()))
             );
         }
         catch (Poco::Exception &ex)
@@ -269,9 +269,9 @@ namespace broker
         {
             std::ostringstream oss;
             oss << "Failed to write messages into broker queue. "
-                   "POCO C++ reported a data access error - " << ex.name() << ": " << ex.message();
+                   "POCO C++ reported a data access error: " << ex.name();
 
-            throw core::AppException<std::runtime_error>(oss.str());
+            throw core::AppException<std::runtime_error>(oss.str(), ex.message());
         }
         catch (Poco::Exception &ex)
         {
