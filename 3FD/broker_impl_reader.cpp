@@ -125,9 +125,9 @@ namespace broker
         CALL_STACK_TRACE;
         std::ostringstream oss;
         oss << "Failed to create broker queue reader. "
-               "POCO C++ reported a data access error - " << ex.name() << ": " << ex.message();
+               "POCO C++ reported a data access error: " << ex.name();
 
-        throw core::AppException<std::runtime_error>(oss.str());
+        throw core::AppException<std::runtime_error>(oss.str(), ex.message());
     }
     catch (Poco::Exception &ex)
     {
@@ -161,14 +161,16 @@ namespace broker
     public:
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="AsyncReadImpl"/> class.
+        /// Initializes a new instance of the <see cref="AsyncReadImpl" /> class.
         /// </summary>
         /// <param name="dbSession">The database session.</param>
-        /// <param name="msgCountStepLimit">How many messages are to be retrieved
-        /// at most at each asynchronous execution step.</param>
+        /// <param name="msgCountStepLimit">How many messages are to be
+        /// retrieved at most at each asynchronous execution step.</param>
+        /// <param name="msgRecvTimeout">The timeout (in ms) when the backend awaits for messages.</param>
         /// <param name="queueId">The queue identifier.</param>
         AsyncReadImpl(Poco::Data::Session &dbSession,
                       uint16_t msgCountStepLimit,
+                      uint16_t msgRecvTimeout,
                       uint8_t queueId)
         try
         {
@@ -180,8 +182,9 @@ namespace broker
                 dbSession.reconnect();
 
             m_stoProcExecStmt.reset(new Poco::Data::Statement(
-                (dbSession << "EXEC ReceiveMessagesInQueue%d 250;"
+                (dbSession << "EXEC ReceiveMessagesInQueue%d %d;"
                     , (int)queueId
+                    , (int)msgRecvTimeout
                     , into(m_messages)
                     , limit(msgCountStepLimit))
             ));
@@ -197,9 +200,9 @@ namespace broker
             CALL_STACK_TRACE;
             std::ostringstream oss;
             oss << "Failed to read messages from broker queue. "
-                   "POCO C++ reported a data access error - " << ex.name() << ": " << ex.message();
+                   "POCO C++ reported a data access error: " << ex.name();
 
-            throw core::AppException<std::runtime_error>(oss.str());
+            throw core::AppException<std::runtime_error>(oss.str(), ex.message());
         }
         catch (Poco::Exception &ex)
         {
@@ -221,31 +224,61 @@ namespace broker
         /// <summary>
         /// Evaluates whether the last asynchronous read step is finished.
         /// </summary>
-        /// <returns><c>true</c> when finished, otherwise, <c>false</c>.</returns>
+        /// <returns>
+        ///   <c>true</c> when finished, otherwise, <c>false</c>.
+        /// </returns>
         virtual bool IsFinished() override
-        {
-            return m_stoProcActRes->available();
-        }
-
-        /// <summary>
-        /// Waits for the last asynchronous read step to finish.
-        /// </summary>
-        virtual void Wait() override
         {
             CALL_STACK_TRACE;
 
             try
             {
-                m_stoProcActRes->wait(5000);
+                return m_stoProcActRes->available();
             }
             catch (Poco::Exception &ex)
             {
                 std::ostringstream oss;
-                oss << "Await for broker queue messages was aborted. "
+                oss << "Failed to evaluate status of broker queue read operation. "
                        "POCO C++ reported an error - " << ex.name() << ": " << ex.message();
 
                 throw core::AppException<std::runtime_error>(oss.str());
             }
+        }
+
+        /// <summary>
+        /// Waits for the last asynchronous read step to finish.
+        /// </summary>
+        /// <param name="timeout">The timeout in milliseconds.</param>
+        /// <returns>
+        ///   <c>true</c> if any message could be retrieved, otherwise, <c>false</c>.
+        /// </returns>
+        virtual bool TryWait(uint16_t timeout) override
+        {
+            CALL_STACK_TRACE;
+
+            bool wasSuccessful;
+
+            try
+            {
+                wasSuccessful = m_stoProcActRes->tryWait(timeout);
+            }
+            catch (Poco::Exception &ex)
+            {
+                std::ostringstream oss;
+                oss << "There was a failure when awaiting for the end of a read operation step in broker queue. "
+                       "POCO C++ reported an error - " << ex.name() << ": " << ex.message();
+
+                throw core::AppException<std::runtime_error>(oss.str());
+            }
+
+            if (wasSuccessful && m_stoProcActRes->failed())
+            {
+                std::ostringstream oss;
+                oss << "Failed to read broker queue: " << m_stoProcActRes->error();
+                throw core::AppException<std::runtime_error>(oss.str());
+            }
+
+            return wasSuccessful;
         }
 
         /// <summary>
@@ -255,14 +288,32 @@ namespace broker
         {
             CALL_STACK_TRACE;
 
-            Wait();
             m_messages.clear();
-            
+
             try
             {
+                if (!m_stoProcActRes->available())
+                {
+                    throw core::AppException<std::logic_error>(
+                        "Could not step into execution because the last asynchronous operation is pending!"
+                    );
+                }
+
                 m_stoProcActRes.reset(
                     new Poco::ActiveResult<size_t>(m_stoProcExecStmt->executeAsync())
                 );
+            }
+            catch (core::IAppException &)
+            {
+                throw; // just forward exceptions raised for errors known to have been already handled
+            }
+            catch (Poco::Exception &ex)
+            {
+                std::ostringstream oss;
+                oss << "Failed to step into execution of broker queue read. "
+                       "POCO C++ reported an error - " << ex.name() << ": " << ex.message();
+
+                throw core::AppException<std::runtime_error>(oss.str());
             }
             catch (std::exception &ex)
             {
@@ -273,14 +324,31 @@ namespace broker
         }
 
         /// <summary>
-        /// Gets the result from the last asynchronous step execution.
+        /// Gets the count of retrieved messages in the last step execution.
         /// </summary>
-        /// <returns>A vector of read messages.</returns>
-        virtual std::vector<string> GetStepResult() override
+        /// <param name="timeout">The timeout in milliseconds.</param>
+        /// <returns>How many messages were read from the queue.</returns>
+        virtual uint32_t GetStepMessageCount(uint16_t timeout) override
         {
             CALL_STACK_TRACE;
 
-            Wait();
+            if (TryWait(timeout))
+                return static_cast<uint32_t> (m_stoProcActRes->data());
+
+            return 0;
+        }
+
+        /// <summary>
+        /// Gets the result from the last asynchronous step execution.
+        /// </summary>
+        /// <param name="timeout">The timeout in milliseconds.</param>
+        /// <returns>A vector of read messages.</returns>
+        virtual std::vector<string> GetStepResult(uint16_t timeout) override
+        {
+            CALL_STACK_TRACE;
+
+            if (!TryWait(timeout))
+                return std::vector<string>();
 
             std::vector<string> result;
 
@@ -296,15 +364,16 @@ namespace broker
     /// </summary>
     /// <param name="msgCountStepLimit">How many messages are to be retrieved
     /// at most at each asynchronous execution step.</param>
+    /// <param name="msgRecvTimeout">The timeout (in ms) when the backend awaits for messages.</param>
     /// <return>An object to control the result of the asynchronous operation.</return>
-    std::unique_ptr<IAsyncRead> QueueReader::ReadMessages(uint16_t msgCountStepLimit)
+    std::unique_ptr<IAsyncRead> QueueReader::ReadMessages(uint16_t msgCountStepLimit, uint16_t msgRecvTimeout)
     {
         CALL_STACK_TRACE;
 
         try
         {
             return std::unique_ptr<IAsyncRead>(
-                new AsyncReadImpl(m_dbSession, msgCountStepLimit, m_queueId)
+                new AsyncReadImpl(m_dbSession, msgCountStepLimit, msgRecvTimeout, m_queueId)
             );
         }
         catch (core::IAppException &)

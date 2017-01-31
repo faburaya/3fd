@@ -53,21 +53,38 @@ namespace broker
         /// <summary>
         /// Evaluates whether the last asynchronous read step is finished.
         /// </summary>
-        /// <returns><c>true</c> when finished, otherwise, <c>false</c>.</returns>
+        /// <returns>
+        ///   <c>true</c> when finished, otherwise, <c>false</c>.
+        /// </returns>
         virtual bool IsFinished() = 0;
 
         /// <summary>
         /// Waits for the last asynchronous read step to finish.
         /// </summary>
-        virtual void Wait() = 0;
+        /// <param name="timeout">The timeout in milliseconds.</param>
+        /// <returns>
+        ///   <c>true</c> if any message could be retrieved, otherwise, <c>false</c>.
+        /// </returns>
+        virtual bool TryWait(uint16_t timeout) = 0;
 
+        /// <summary>
+        /// Start the asynchronous execution of the next step.
+        /// </summary>
         virtual void Step() = 0;
+
+        /// <summary>
+        /// Gets the count of retrieved messages in the last step execution.
+        /// </summary>
+        /// <param name="timeout">The timeout in milliseconds.</param>
+        /// <returns>How many messages were read from the queue.</returns>
+        virtual uint32_t GetStepMessageCount(uint16_t timeout) = 0;
 
         /// <summary>
         /// Gets the result from the last asynchronous step execution.
         /// </summary>
+        /// <param name="timeout">The timeout in milliseconds.</param>
         /// <returns>A vector of read messages.</returns>
-        virtual std::vector<string> GetStepResult() = 0;
+        virtual std::vector<string> GetStepResult(uint16_t timeout) = 0;
     };
 
     /// <summary>
@@ -102,7 +119,7 @@ namespace broker
                     const MessageTypeSpec &msgTypeSpec,
                     uint8_t queueId);
 
-        std::unique_ptr<IAsyncRead> ReadMessages(uint16_t msgCountStepLimit);
+        std::unique_ptr<IAsyncRead> ReadMessages(uint16_t msgCountStepLimit, uint16_t msgRecvTimeout);
     };
 
     /// <summary>
