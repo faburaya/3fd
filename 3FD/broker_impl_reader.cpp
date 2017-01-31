@@ -3,6 +3,7 @@
 #include "callstacktracer.h"
 #include "exceptions.h"
 #include "configuration.h"
+#include "logger.h"
 #include <sstream>
 
 namespace _3fd
@@ -119,6 +120,13 @@ namespace broker
             , serviceURL
             , (int)queueId
             , now;
+
+        std::ostringstream oss;
+        oss << "Initialized successfully the reader for broker queue " << queueId
+            << " at '" << serviceURL << "' backed by "
+            << ToString(svcBrokerBackend) << " via ODBC";
+
+        core::Logger::Write(oss.str(), core::Logger::PRIO_INFORMATION);
     }
     catch (Poco::Data::DataException &ex)
     {

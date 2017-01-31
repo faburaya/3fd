@@ -7,6 +7,23 @@ namespace _3fd
 namespace broker
 {
     /// <summary>
+    /// Converts an enumerated option of backend to a label.
+    /// </summary>
+    /// <param name="backend">The backend option.</param>
+    /// <returns>A label for the backend.</returns>
+    const char *ToString(Backend backend)
+    {
+        switch (backend)
+        {
+        case Backend::MsSqlServer:
+            return "Microsoft SQL Server";
+        default:
+            _ASSERTE(false);
+            return "UNKNOWN";
+        }
+    }
+
+    /// <summary>
     /// Converts an enumerated type of message content validation to a label.
     /// </summary>
     /// <param name="msgContentValidation">What validation to use in message content.</param>

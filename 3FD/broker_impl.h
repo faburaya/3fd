@@ -7,6 +7,8 @@ namespace _3fd
 {
 namespace broker
 {
+    const char *ToString(Backend backend);
+
     const char *ToString(MessageContentValidation msgContentValidation);
 
 }// end of namespace broker
