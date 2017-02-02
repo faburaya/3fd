@@ -42,7 +42,7 @@ namespace broker
             BEGIN
                 CREATE MESSAGE TYPE [%s/Message] VALIDATION = %s;
                 CREATE CONTRACT [%s/Contract] ([%s/Message] SENT BY INITIATOR);
-                CREATE QUEUE Queue%d;
+                CREATE QUEUE Queue%d WITH RETENTION = ON;
                 CREATE SERVICE [%s] ON QUEUE Queue%d ([%s/Contract]);
             END;
             )"
@@ -77,43 +77,53 @@ namespace broker
 
         m_dbSession << R"(
             CREATE PROCEDURE ReceiveMessagesInQueue%d
-	            @RecvTimeoutMilisecs INT
+	             @RecvTimeoutMilisecs INT
             AS
-            BEGIN
-	            DECLARE @RecvMsgDlgHandle UNIQUEIDENTIFIER;
-	            DECLARE @RecvMsgTypeName  SYSNAME;
-	            DECLARE @RecvMsgContent   EncodedContent;
+            BEGIN TRY
+                BEGIN TRANSACTION;
 
-	            WAITFOR(
-		            RECEIVE TOP(1)
-			            @RecvMsgDlgHandle = conversation_handle
-			            ,@RecvMsgTypeName = message_type_name
-			            ,@RecvMsgContent  = message_body
-		            FROM Queue%d
-	            )
-	            ,TIMEOUT @RecvTimeoutMilisecs;
+                    SET NOCOUNT ON;
 
-	            DECLARE @RowsetOut TABLE (MsgEncodedContent EncodedContent);
+	                DECLARE @RecvMsgDlgHandle UNIQUEIDENTIFIER;
+	                DECLARE @RecvMsgTypeName  SYSNAME;
+	                DECLARE @RecvMsgContent   EncodedContent;
 
-	            WHILE @RecvMsgDlgHandle IS NOT NULL
-	            BEGIN
-		            IF @RecvMsgTypeName = '%s/Message'
-		            BEGIN
+	                WAITFOR(
+		                RECEIVE TOP(1) @RecvMsgDlgHandle = conversation_handle
+			                          ,@RecvMsgTypeName = message_type_name
+			                          ,@RecvMsgContent  = message_body
+		                    FROM Queue%d
+	                )
+	                ,TIMEOUT @RecvTimeoutMilisecs;
+
+	                DECLARE @RowsetOut TABLE (MsgEncodedContent EncodedContent);
+
+	                WHILE @RecvMsgDlgHandle IS NOT NULL
+	                BEGIN
+		                IF @RecvMsgTypeName <> '%s/Message'
+		                    THROW 50000, 'Message received in service broker queue had unexpected type', 1;
+
 			            INSERT INTO @RowsetOut VALUES (@RecvMsgContent);
 			            END CONVERSATION @RecvMsgDlgHandle;
-		            END;
 
-		            SET @RecvMsgDlgHandle = NULL;
+		                SET @RecvMsgDlgHandle = NULL;
 
-		            RECEIVE TOP(1)
-			            @RecvMsgDlgHandle = conversation_handle
-			            ,@RecvMsgTypeName = message_type_name
-			            ,@RecvMsgContent  = message_body
-		            FROM Queue%d;
-	            END;
+		                RECEIVE TOP(1) @RecvMsgDlgHandle = conversation_handle
+			                          ,@RecvMsgTypeName = message_type_name
+			                          ,@RecvMsgContent  = message_body
+		                    FROM Queue%d;
+	                END;
 
-	            SELECT MsgEncodedContent FROM @RowsetOut;
-            END;
+	                SELECT MsgEncodedContent FROM @RowsetOut;
+
+                COMMIT TRANSACTION;
+            END TRY
+            BEGIN CATCH
+
+                ROLLBACK TRANSACTION;
+                THROW;
+
+            END CATCH;
             )"
             , (int)queueId
             , (int)queueId
@@ -264,11 +274,11 @@ namespace broker
         {
             CALL_STACK_TRACE;
 
-            bool wasSuccessful;
+            bool isAwaitEndOkay;
 
             try
             {
-                wasSuccessful = m_stoProcActRes->tryWait(timeout);
+                isAwaitEndOkay = m_stoProcActRes->tryWait(timeout);
             }
             catch (Poco::Exception &ex)
             {
@@ -279,14 +289,14 @@ namespace broker
                 throw core::AppException<std::runtime_error>(oss.str());
             }
 
-            if (wasSuccessful && m_stoProcActRes->failed())
+            if (isAwaitEndOkay && m_stoProcActRes->failed())
             {
                 std::ostringstream oss;
                 oss << "Failed to read broker queue: " << m_stoProcActRes->error();
                 throw core::AppException<std::runtime_error>(oss.str());
             }
 
-            return wasSuccessful;
+            return isAwaitEndOkay;
         }
 
         /// <summary>
@@ -296,8 +306,6 @@ namespace broker
         {
             CALL_STACK_TRACE;
 
-            m_messages.clear();
-
             try
             {
                 if (!m_stoProcActRes->available())
@@ -306,6 +314,8 @@ namespace broker
                         "Could not step into execution because the last asynchronous operation is pending!"
                     );
                 }
+
+                m_messages.clear();
 
                 m_stoProcActRes.reset(
                     new Poco::ActiveResult<size_t>(m_stoProcExecStmt->executeAsync())

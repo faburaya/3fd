@@ -45,7 +45,7 @@ namespace broker
             BEGIN
                 CREATE MESSAGE TYPE [%s/Message] VALIDATION = %s;
                 CREATE CONTRACT [%s/Contract] ([%s/Message] SENT BY INITIATOR);
-                CREATE QUEUE Queue%d;
+                CREATE QUEUE Queue%d WITH RETENTION = ON;
                 CREATE SERVICE [%s] ON QUEUE Queue%d ([%s/Contract]);
             END;
             )"
@@ -81,39 +81,51 @@ namespace broker
             , now;
 
         m_dbSession << R"(
-            CREATE PROCEDURE SendMessagesToService%d AS
-            BEGIN
-	            DECLARE @MsgContent EncodedContent;
+            CREATE PROCEDURE SendMessagesToService%d
+                @Error VARCHAR NULL OUTPUT
+            AS
+            BEGIN TRY
+                BEGIN TRANSACTION;
 
-	            DECLARE MsgCursor CURSOR FOR
-	            (
-		            SELECT * FROM #Queue%dInput
-	            );
-	            OPEN MsgCursor;
-	            FETCH NEXT FROM MsgCursor INTO @MsgContent;
+	                DECLARE @MsgContent EncodedContent;
+
+	                DECLARE MsgCursor CURSOR FOR
+	                (
+		                SELECT * FROM #Queue%dInput
+	                );
+	                OPEN MsgCursor;
+	                FETCH NEXT FROM MsgCursor INTO @MsgContent;
 	
-	            DECLARE @InitDlgHandle UNIQUEIDENTIFIER;
+	                DECLARE @InitDlgHandle UNIQUEIDENTIFIER;
 
-	            WHILE @@FETCH_STATUS = 0
-	            BEGIN
-		            BEGIN DIALOG @InitDlgHandle
-			            FROM SERVICE [%s]
-			            TO SERVICE '%s'
-			            ON CONTRACT [%s/Contract]
-			            WITH ENCRYPTION = OFF;
+	                WHILE @@FETCH_STATUS = 0
+	                BEGIN
+		                BEGIN DIALOG @InitDlgHandle
+			                FROM SERVICE [%s]
+			                TO SERVICE '%s'
+			                ON CONTRACT [%s/Contract]
+			                WITH ENCRYPTION = OFF;
 
-		            SEND ON CONVERSATION @InitDlgHandle
-			            MESSAGE TYPE [%s/Message]
-			            (@MsgContent);
+		                SEND ON CONVERSATION @InitDlgHandle
+			                MESSAGE TYPE [%s/Message]
+			                (@MsgContent);
 
-		            FETCH NEXT FROM MsgCursor INTO @MsgContent;
-	            END;
+		                FETCH NEXT FROM MsgCursor INTO @MsgContent;
+	                END;
 
-	            CLOSE MsgCursor;
-	            DEALLOCATE MsgCursor;
+	                CLOSE MsgCursor;
+	                DEALLOCATE MsgCursor;
 
-                DELETE FROM #Queue%dInput;
-            END;
+                    DELETE FROM #Queue%dInput;
+
+                COMMIT TRANSACTION;
+            END TRY
+            BEGIN CATCH
+
+                ROLLBACK TRANSACTION;
+                THROW;
+
+            END CATCH;
             )"
             , (int)queueId
             , (int)queueId
