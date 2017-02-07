@@ -249,7 +249,7 @@ namespace broker
         /// <returns>
         ///   <c>true</c> when finished, otherwise, <c>false</c>.
         /// </returns>
-        virtual bool IsFinished() override
+        virtual bool IsFinished() const override
         {
             CALL_STACK_TRACE;
 

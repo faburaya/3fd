@@ -129,7 +129,7 @@ namespace integration_tests
                 1
             );
 
-            writeOp.wait(); // wait for write op to finish...
+            writeOp->Rethrow(); // wait for write op to finish...
 
             // Then read the messages back:
             const uint16_t msgCountStepLimit(256);

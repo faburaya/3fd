@@ -5,7 +5,7 @@
 #include "configuration.h"
 #include "logger.h"
 #include <sstream>
-#include <thread>
+#include <future>
 
 namespace _3fd
 {
@@ -193,14 +193,130 @@ namespace broker
             , now;
     }
 
+    /// <summary>
+    /// Helps synchronizing with an asynchronous write to a broker queue.
+    /// </summary>
+    /// <seealso cref="notcopiable" />
+    class AsyncWriteImpl : public IAsyncWrite, public std::promise<void>, notcopiable
+    {
+    private:
+
+        std::unique_ptr<std::future<void>> m_future;
+
+    public:
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AsyncWriteImpl" /> class.
+        /// </summary>
+        AsyncWriteImpl()
+        try :
+            std::promise<void>()
+        {
+            m_future.reset(
+                new std::future<void>(this->get_future())
+            );
+        }
+        catch (std::future_error &ex)
+        {
+            CALL_STACK_TRACE;
+            std::ostringstream oss;
+            oss << "System error when instantiating helper for synchronization of write operation "
+                   " in broker queue: " << core::StdLibExt::GetDetailsFromFutureError(ex);
+
+            throw core::AppException<std::runtime_error>(oss.str());
+        }
+        catch (std::system_error &ex)
+        {
+            CALL_STACK_TRACE;
+            std::ostringstream oss;
+            oss << "System error when instantiating helper for synchronization of write operation "
+                   " in broker queue: " << core::StdLibExt::GetDetailsFromSystemError(ex);
+
+            throw core::AppException<std::runtime_error>(oss.str());
+        }
+        catch (std::exception &ex)
+        {
+            CALL_STACK_TRACE;
+            std::ostringstream oss;
+            oss << "Generic failure prevented instantiation of helper for synchronization "
+                   " of write operation in broker queue: " << ex.what();
+
+            throw core::AppException<std::runtime_error>(oss.str());
+        }
+
+        /// <summary>
+        /// Finalizes an instance of the <see cref="AsyncWriteImpl"/> class.
+        /// </summary>
+        virtual ~AsyncWriteImpl() {}
+
+        /// <summary>
+        /// Evaluates whether the last asynchronous write operation is finished.
+        /// </summary>
+        /// <returns>
+        ///   <c>true</c> when finished, otherwise, <c>false</c>.
+        /// </returns>
+        virtual bool IsFinished() const override
+        {
+            return m_future->wait_for(std::chrono::seconds(0)) == std::future_status::ready;
+        }
+
+        /// <summary>
+        /// Waits for the last asynchronous write operation to finish.
+        /// </summary>
+        /// <param name="timeout">The timeout in milliseconds.</param>
+        /// <returns>
+        ///   <c>true</c> if the operation is finished, otherwise, <c>false</c>.
+        /// </returns>
+        virtual bool TryWait(uint16_t timeout) override
+        {
+            return m_future->wait_for(
+                std::chrono::milliseconds(timeout)
+            ) == std::future_status::ready;
+        }
+
+        /// <summary>
+        /// Rethrows any eventual exception captured in the worker thread.
+        /// </summary>
+        virtual void Rethrow() override
+        {
+            CALL_STACK_TRACE;
+
+            try
+            {
+                m_future->get();
+            }
+            catch (Poco::Data::DataException &ex)
+            {
+                std::ostringstream oss;
+                oss << "Failed to write messages into broker queue. "
+                       "POCO C++ reported a data access error: " << ex.name();
+
+                throw core::AppException<std::runtime_error>(oss.str(), ex.message());
+            }
+            catch (Poco::Exception &ex)
+            {
+                std::ostringstream oss;
+                oss << "Failed to write messages into broker queue. "
+                       "POCO C++ reported a generic error - " << ex.name() << ": " << ex.message();
+
+                throw core::AppException<std::runtime_error>(oss.str());
+            }
+            catch (std::exception &ex)
+            {
+                std::ostringstream oss;
+                oss << "Generic failure prevented writing into broker queue: " << ex.what();
+                throw core::AppException<std::runtime_error>(oss.str());
+            }
+        }
+
+    };// end of AsyncWriteImpl class
+
     // Synchronously put the messages into the broker queue
     static void PutInQueueImpl(Poco::Data::Session &dbSession,
                                const std::vector<string> &messages,
                                uint8_t queueId,
                                std::promise<void> &result)
     {
-        CALL_STACK_TRACE;
-
         using namespace Poco::Data;
         using namespace Poco::Data::Keywords;
 
@@ -213,43 +329,13 @@ namespace broker
 
             dbSession.commit();
         }
-        catch (DataException &ex)
+        catch (...)
         {
             if (dbSession.isConnected() && dbSession.isTransaction())
                 dbSession.rollback();
 
-            std::ostringstream oss;
-            oss << "Failed to write messages into broker queue. "
-                   "POCO C++ reported a data access error: " << ex.name();
-
-            result.set_exception(
-                std::make_exception_ptr(core::AppException<std::runtime_error>(oss.str(), ex.message()))
-            );
-        }
-        catch (Poco::Exception &ex)
-        {
-            if (dbSession.isConnected() && dbSession.isTransaction())
-                dbSession.rollback();
-
-            std::ostringstream oss;
-            oss << "Failed to write messages into broker queue. "
-                   "POCO C++ reported a generic error - " << ex.name() << ": " << ex.message();
-
-            result.set_exception(
-                std::make_exception_ptr(core::AppException<std::runtime_error>(oss.str()))
-            );
-        }
-        catch (std::exception &ex)
-        {
-            if (dbSession.isConnected() && dbSession.isTransaction())
-                dbSession.rollback();
-
-            std::ostringstream oss;
-            oss << "Generic failure prevented writing into broker queue: " << ex.what();
-
-            result.set_exception(
-                std::make_exception_ptr(core::AppException<std::runtime_error>(oss.str()))
-            );
+            // transport exception to main thread via promise
+            result.set_exception(std::current_exception());
         }
 
         result.set_value();
@@ -259,28 +345,33 @@ namespace broker
     /// Asychonously writes the messages into the queue.
     /// </summary>
     /// <param name="messages">The messages to write.</param>
-    /// <returns>An object that represents the asynchronous operation.</returns>
-    std::future<void> QueueWriter::WriteMessages(const std::vector<string> &messages)
+    /// <return>An object to help synchronizing with the asynchronous operation.</return>
+    std::unique_ptr<IAsyncWrite> QueueWriter::WriteMessages(const std::vector<string> &messages)
     {
         CALL_STACK_TRACE;
 
         try
         {
+            if (m_workerThread && m_workerThread->joinable())
+                m_workerThread->join();
+
             if (!m_dbSession.isConnected())
             {
                 m_dbSession.reconnect();
                 CreateTempTableForQueueInput();
             }
             
-            std::promise<void> result;
-            auto workerThread = std::thread(&PutInQueueImpl,
-                                            std::ref(m_dbSession),
-                                            std::ref(messages),
-                                            m_queueId,
-                                            std::ref(result));
+            std::unique_ptr<IAsyncWrite> result(new AsyncWriteImpl());
+            
+            m_workerThread.reset(
+                new std::thread(&PutInQueueImpl,
+                                std::ref(m_dbSession),
+                                std::ref(messages),
+                                m_queueId,
+                                std::ref(static_cast<AsyncWriteImpl &> (*result)))
+            );
 
-            workerThread.detach();
-            return result.get_future();
+            return std::move(result);
         }
         catch (core::IAppException &)
         {
@@ -323,6 +414,28 @@ namespace broker
             std::ostringstream oss;
             oss << "Generic failure prevented writing into broker queue: " << ex.what();
             throw core::AppException<std::runtime_error>(oss.str());
+        }
+    }
+
+    /// <summary>
+    /// Finalizes an instance of the <see cref="QueueWriter"/> class.
+    /// </summary>
+    QueueWriter::~QueueWriter()
+    {
+        CALL_STACK_TRACE;
+
+        try
+        {
+            if (m_workerThread && m_workerThread->joinable())
+                m_workerThread->join();
+        }
+        catch (std::system_error &ex)
+        {
+            std::ostringstream oss;
+            oss << "System error when awaiting for worker thread of broker queue writer"
+                << core::StdLibExt::GetDetailsFromSystemError(ex);
+
+            core::Logger::Write(oss.str(), core::Logger::PRIO_CRITICAL);
         }
     }
 

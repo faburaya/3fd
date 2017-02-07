@@ -3,11 +3,11 @@
 
 #include "base.h"
 #include "preprocessing.h"
+#include <cinttypes>
 #include <string>
 #include <vector>
 #include <memory>
-#include <future>
-#include <cinttypes>
+#include <thread>
 #include <Poco/Data/Session.h>
 
 namespace _3fd
@@ -58,7 +58,7 @@ namespace broker
         /// <returns>
         ///   <c>true</c> when finished, otherwise, <c>false</c>.
         /// </returns>
-        virtual bool IsFinished() = 0;
+        virtual bool IsFinished() const = 0;
 
         /// <summary>
         /// Waits for the last asynchronous read step to finish.
@@ -125,6 +125,38 @@ namespace broker
     };
 
     /// <summary>
+    /// Helps synchronizing with an asynchronous write to a broker queue.
+    /// </summary>
+    class INTFOPT IAsyncWrite
+    {
+    public:
+
+        virtual ~IAsyncWrite() {}
+
+        /// <summary>
+        /// Evaluates whether the last asynchronous write operation is finished.
+        /// </summary>
+        /// <returns>
+        ///   <c>true</c> when finished, otherwise, <c>false</c>.
+        /// </returns>
+        virtual bool IsFinished() const = 0;
+
+        /// <summary>
+        /// Waits for the last asynchronous write operation to finish.
+        /// </summary>
+        /// <param name="timeout">The timeout in milliseconds.</param>
+        /// <returns>
+        ///   <c>true</c> if the operation is finished, otherwise, <c>false</c>.
+        /// </returns>
+        virtual bool TryWait(uint16_t timeout) = 0;
+
+        /// <summary>
+        /// Rethrows any eventual exception captured in the worker thread.
+        /// </summary>
+        virtual void Rethrow() = 0;
+    };
+
+    /// <summary>
     /// Represents a queue in the broker, into which
     /// a service can write messages to another.
     /// </summary>
@@ -137,6 +169,8 @@ namespace broker
 
         uint8_t m_queueId;
 
+        std::unique_ptr<std::thread> m_workerThread;
+
         void CreateTempTableForQueueInput();
 
     public:
@@ -148,7 +182,9 @@ namespace broker
                     const MessageTypeSpec &msgTypeSpec,
                     uint8_t queueId);
 
-        std::future<void> WriteMessages(const std::vector<string> &messages);
+        ~QueueWriter();
+
+        std::unique_ptr<IAsyncWrite> WriteMessages(const std::vector<string> &messages);
     };
 
 }// end of namespace broker
