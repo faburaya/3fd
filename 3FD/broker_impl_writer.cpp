@@ -133,10 +133,11 @@ namespace broker
             , toServiceURL
             , toServiceURL
             , toServiceURL
+            , (int)queueId
             , now;
 
         std::ostringstream oss;
-        oss << "Initialized successfully the writer for broker queue " << queueId
+        oss << "Initialized successfully the writer for broker queue " << (int)queueId
             << " at '" << toServiceURL << "' backed by "
             << ToString(svcBrokerBackend) << " via ODBC";
 

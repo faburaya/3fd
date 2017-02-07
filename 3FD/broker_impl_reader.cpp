@@ -132,7 +132,7 @@ namespace broker
             , now;
 
         std::ostringstream oss;
-        oss << "Initialized successfully the reader for broker queue " << queueId
+        oss << "Initialized successfully the reader for broker queue " << (int)queueId
             << " at '" << serviceURL << "' backed by "
             << ToString(svcBrokerBackend) << " via ODBC";
 
@@ -199,16 +199,15 @@ namespace broker
             if (!dbSession.isConnected())
                 dbSession.reconnect();
 
+            char queryStrBuf[64];
+            sprintf(queryStrBuf, "EXEC ReceiveMessagesInQueue%d %d;", (int)queueId, (int)msgRecvTimeout);
+
             m_stoProcExecStmt.reset(new Poco::Data::Statement(
-                (dbSession << "EXEC ReceiveMessagesInQueue%d %d;"
-                    , (int)queueId
-                    , (int)msgRecvTimeout
-                    , into(m_messages)
-                    , limit(msgCountStepLimit))
+                (dbSession << queryStrBuf, into(m_messages), limit(msgCountStepLimit))
             ));
 
             m_messages.reserve(msgCountStepLimit);
-
+            
             m_stoProcActRes.reset(
                 new Poco::ActiveResult<size_t>(m_stoProcExecStmt->executeAsync())
             );
@@ -238,6 +237,11 @@ namespace broker
             oss << "Generic failure prevented reading from broker queue: " << ex.what();
             throw core::AppException<std::runtime_error>(oss.str());
         }
+
+        /// <summary>
+        /// Finalizes an instance of the <see cref="AsyncReadImpl"/> class.
+        /// </summary>
+        virtual AsyncReadImpl::~AsyncReadImpl() {}
 
         /// <summary>
         /// Evaluates whether the last asynchronous read step is finished.
@@ -381,7 +385,7 @@ namespace broker
     /// Asynchronously reads the messages from the queue into a vector.
     /// </summary>
     /// <param name="msgCountStepLimit">How many messages are to be retrieved
-    /// at most at each asynchronous execution step.</param>
+    /// at most for each asynchronous execution step.</param>
     /// <param name="msgRecvTimeout">The timeout (in ms) when the backend awaits for messages.</param>
     /// <return>An object to control the result of the asynchronous operation.</return>
     std::unique_ptr<IAsyncRead> QueueReader::ReadMessages(uint16_t msgCountStepLimit, uint16_t msgRecvTimeout)

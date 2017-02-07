@@ -50,6 +50,8 @@ namespace broker
     {
     public:
 
+        virtual ~IAsyncRead() {}
+
         /// <summary>
         /// Evaluates whether the last asynchronous read step is finished.
         /// </summary>
