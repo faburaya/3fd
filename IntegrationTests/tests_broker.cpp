@@ -164,7 +164,7 @@ namespace integration_tests
 
             ASSERT_EQ(insertedMessages.size(), selectedMessages.size());
 
-            EXPECT_TRUE(std::equal(selectedMessages.begin(), insertedMessages.begin(), insertedMessages.end()));
+            EXPECT_TRUE(std::equal(insertedMessages.begin(), insertedMessages.end(), selectedMessages.begin()));
         }
         catch (...)
         {

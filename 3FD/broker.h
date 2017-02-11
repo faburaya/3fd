@@ -171,8 +171,6 @@ namespace broker
 
         std::unique_ptr<std::thread> m_workerThread;
 
-        void CreateTempTableForQueueInput();
-
     public:
 
         QueueWriter(Backend svcBrokerBackend,

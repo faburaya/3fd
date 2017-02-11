@@ -2,7 +2,6 @@
 #include "broker_impl.h"
 #include "callstacktracer.h"
 #include "exceptions.h"
-#include "configuration.h"
 #include "logger.h"
 #include <sstream>
 
@@ -36,14 +35,14 @@ namespace broker
         using namespace Poco::Data;
         using namespace Poco::Data::Keywords;
 
-        // Create message types, contract, queue and service:
+        // Create message type, contract, queue and service:
         m_dbSession << R"(
-            IF NOT EXISTS ( SELECT * FROM sys.service_queues WHERE name = N'Queue%d' )
+            IF NOT EXISTS ( SELECT * FROM sys.service_queues WHERE name = N'_3fdImpl_Queue%d' )
             BEGIN
                 CREATE MESSAGE TYPE [%s/Message] VALIDATION = %s;
                 CREATE CONTRACT [%s/Contract] ([%s/Message] SENT BY INITIATOR);
-                CREATE QUEUE Queue%d WITH RETENTION = ON;
-                CREATE SERVICE [%s] ON QUEUE Queue%d ([%s/Contract]);
+                CREATE QUEUE _3fdImpl_Queue%d WITH RETENTION = ON;
+                CREATE SERVICE [%s] ON QUEUE _3fdImpl_Queue%d ([%s/Contract]);
             END;
             )"
             , (int)queueId
@@ -53,68 +52,98 @@ namespace broker
             , serviceURL, (int)queueId, serviceURL
             , now;
 
-        // Create content data type:
+        // Create message content data type:
         m_dbSession << R"(
             IF NOT EXISTS (
 	            SELECT * FROM sys.systypes
-		            WHERE name = 'EncodedContent'
+		            WHERE name = '_3fdImpl_Queue%dMsgContent'
             )
             BEGIN
-	            CREATE TYPE EncodedContent FROM VARCHAR(%d);
+	            CREATE TYPE _3fdImpl_Queue%dMsgContent FROM VARCHAR(%u);
             END;
             )"
-            , core::AppConfig::GetSettings().framework.broker.maxMessageSizeBytes
+            , (int)queueId
+            , (int)queueId
+            , msgTypeSpec.nBytes
             , now;
 
         // Create stored procedure for reading messages from queue:
         m_dbSession << R"(
-            IF OBJECT_ID('dbo.ReceiveMessagesInQueue%d', 'P') IS NOT NULL
-	            DROP PROCEDURE ReceiveMessagesInQueue%d;
+            IF OBJECT_ID('dbo._3fdImpl_ReceiveMessagesInSvcQueue%d', 'P') IS NOT NULL
+	            DROP PROCEDURE _3fdImpl_ReceiveMessagesInSvcQueue%d;
             )"
             , (int)queueId
             , (int)queueId
             , now;
 
         m_dbSession << R"(
-            CREATE PROCEDURE ReceiveMessagesInQueue%d
-	             @RecvTimeoutMilisecs INT
+            CREATE PROCEDURE _3fdImpl_ReceiveMessagesInSvcQueue%d
+	             @recvTimeoutMilisecs INT
             AS
             BEGIN TRY
                 BEGIN TRANSACTION;
 
                     SET NOCOUNT ON;
 
-	                DECLARE @RecvMsgDlgHandle UNIQUEIDENTIFIER;
-	                DECLARE @RecvMsgTypeName  SYSNAME;
-	                DECLARE @RecvMsgContent   EncodedContent;
+                    DECLARE @ReceivedMessages TABLE (
+                        queuing_order        BIGINT
+                        ,conversation_handle UNIQUEIDENTIFIER
+                        ,message_type_name   SYSNAME
+                        ,message_body        _3fdImpl_Queue%dMsgContent
+                    );
 
 	                WAITFOR(
-		                RECEIVE TOP(1) @RecvMsgDlgHandle = conversation_handle
-			                          ,@RecvMsgTypeName = message_type_name
-			                          ,@RecvMsgContent  = message_body
-		                    FROM Queue%d
+		                RECEIVE queuing_order
+                                ,conversation_handle
+			                    ,message_type_name
+			                    ,message_body
+		                    FROM _3fdImpl_Queue%d
+                            INTO @ReceivedMessages
 	                )
-	                ,TIMEOUT @RecvTimeoutMilisecs;
+	                ,TIMEOUT @recvTimeoutMilisecs;
 
-	                DECLARE @RowsetOut TABLE (MsgEncodedContent EncodedContent);
+                    DECLARE @RowsetOut     TABLE (content _3fdImpl_Queue%dMsgContent);
+                    DECLARE @dialogHandle  UNIQUEIDENTIFIER;
+	                DECLARE @msgTypeName   SYSNAME;
+	                DECLARE @msgContent    _3fdImpl_Queue%dMsgContent;
 
-	                WHILE @RecvMsgDlgHandle IS NOT NULL
-	                BEGIN
-		                IF @RecvMsgTypeName <> '%s/Message'
-		                    THROW 50000, 'Message received in service broker queue had unexpected type', 1;
+                    DECLARE cursorMsg
+                        CURSOR FORWARD_ONLY READ_ONLY
+                        FOR SELECT conversation_handle
+                                   ,message_type_name
+                                   ,message_body
+                            FROM @ReceivedMessages
+                            ORDER BY queuing_order;
 
-			            INSERT INTO @RowsetOut VALUES (@RecvMsgContent);
-			            END CONVERSATION @RecvMsgDlgHandle;
+                    OPEN cursorMsg;
+                    FETCH NEXT FROM cursorMsg INTO @dialogHandle, @msgTypeName, @msgContent;
 
-		                SET @RecvMsgDlgHandle = NULL;
+                    IF @dialogHandle IS NOT NULL
+                    BEGIN
+                        END CONVERSATION @dialogHandle;
 
-		                RECEIVE TOP(1) @RecvMsgDlgHandle = conversation_handle
-			                          ,@RecvMsgTypeName = message_type_name
-			                          ,@RecvMsgContent  = message_body
-		                    FROM Queue%d;
-	                END;
+	                    WHILE @@FETCH_STATUS = 0
+	                    BEGIN
+                            IF @msgTypeName = '%s/Message'
+		                    BEGIN
+                                INSERT INTO @RowsetOut
+				                    VALUES (@msgContent);
+                            END;
 
-	                SELECT MsgEncodedContent FROM @RowsetOut;
+                            ELSE IF @msgTypeName = 'http://schemas.microsoft.com/SQL/ServiceBroker/Error'
+		                        THROW 50001, 'There was an error during conversation with service', 1;
+
+                            ELSE IF @msgTypeName <> 'http://schemas.microsoft.com/SQL/ServiceBroker/EndDialog'
+		                        THROW 50000, 'Message received in service broker queue had unexpected type', 1;
+
+                            FETCH NEXT FROM cursorMsg INTO @dialogHandle, @msgTypeName, @msgContent;
+	                    END;
+                    END;
+
+                    CLOSE cursorMsg;
+                    DEALLOCATE cursorMsg;
+
+	                SELECT content FROM @RowsetOut;
 
                 COMMIT TRANSACTION;
             END TRY
@@ -127,8 +156,10 @@ namespace broker
             )"
             , (int)queueId
             , (int)queueId
-            , serviceURL
             , (int)queueId
+            , (int)queueId
+            , (int)queueId
+            , serviceURL
             , now;
 
         std::ostringstream oss;
@@ -200,7 +231,7 @@ namespace broker
                 dbSession.reconnect();
 
             char queryStrBuf[64];
-            sprintf(queryStrBuf, "EXEC ReceiveMessagesInQueue%d %d;", (int)queueId, (int)msgRecvTimeout);
+            sprintf(queryStrBuf, "EXEC _3fdImpl_ReceiveMessagesInSvcQueue%d %d;", (int)queueId, (int)msgRecvTimeout);
 
             m_stoProcExecStmt.reset(new Poco::Data::Statement(
                 (dbSession << queryStrBuf, into(m_messages), limit(msgCountStepLimit))

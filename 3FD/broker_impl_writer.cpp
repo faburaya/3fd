@@ -2,7 +2,6 @@
 #include "broker_impl.h"
 #include "callstacktracer.h"
 #include "exceptions.h"
-#include "configuration.h"
 #include "logger.h"
 #include <sstream>
 #include <future>
@@ -39,14 +38,14 @@ namespace broker
         using namespace Poco::Data;
         using namespace Poco::Data::Keywords;
 
-        // Create message types, contract, queue and service:
+        // Create message type, contract, queue and service:
         m_dbSession << R"(
-            IF NOT EXISTS ( SELECT * FROM sys.service_queues WHERE name = N'Queue%d' )
+            IF NOT EXISTS ( SELECT * FROM sys.service_queues WHERE name = N'_3fdImpl_Queue%d' )
             BEGIN
                 CREATE MESSAGE TYPE [%s/Message] VALIDATION = %s;
                 CREATE CONTRACT [%s/Contract] ([%s/Message] SENT BY INITIATOR);
-                CREATE QUEUE Queue%d WITH RETENTION = ON;
-                CREATE SERVICE [%s] ON QUEUE Queue%d ([%s/Contract]);
+                CREATE QUEUE _3fdImpl_Queue%d WITH RETENTION = ON;
+                CREATE SERVICE [%s] ON QUEUE _3fdImpl_Queue%d ([%s/Contract]);
             END;
             )"
             , (int)queueId
@@ -56,67 +55,80 @@ namespace broker
             , toServiceURL, (int)queueId, toServiceURL
             , now;
 
-        // Create content data type:
+        // Create message content data type:
         m_dbSession << R"(
             IF NOT EXISTS (
 	            SELECT * FROM sys.systypes
-		            WHERE name = 'EncodedContent'
+		            WHERE name = '_3fdImpl_Queue%dMsgContent'
             )
             BEGIN
-	            CREATE TYPE EncodedContent FROM VARCHAR(%d);
+	            CREATE TYPE _3fdImpl_Queue%dMsgContent FROM VARCHAR(%u);
             END;
             )"
-            , core::AppConfig::GetSettings().framework.broker.maxMessageSizeBytes
+            , (int)queueId
+            , (int)queueId
+            , msgTypeSpec.nBytes
             , now;
 
-        CreateTempTableForQueueInput();
+        m_dbSession << R"(
+            IF NOT EXISTS (
+	            SELECT * FROM sys.tables
+		            WHERE name = '_3fdImpl_StageInputForQueue%d'
+            )
+            BEGIN
+                CREATE TABLE _3fdImpl_StageInputForQueue%d (content _3fdImpl_Queue%dMsgContent);
+            END;
+            )"
+            , (int)queueId
+            , (int)queueId
+            , (int)queueId
+            , now;
 
         // Create stored procedure for reading messages from queue:
         m_dbSession << R"(
-            IF OBJECT_ID(N'dbo.SendMessagesToService%d', 'P') IS NOT NULL
-                DROP PROCEDURE SendMessagesToService%d;
+            IF OBJECT_ID(N'dbo._3fdImpl_SendMessagesToSvcQueue%d', 'P') IS NOT NULL
+                DROP PROCEDURE _3fdImpl_SendMessagesToSvcQueue%d;
             )"
             , (int)queueId
             , (int)queueId
             , now;
 
         m_dbSession << R"(
-            CREATE PROCEDURE SendMessagesToService%d
-                @Error VARCHAR NULL OUTPUT
-            AS
+            CREATE PROCEDURE _3fdImpl_SendMessagesToSvcQueue%d AS
             BEGIN TRY
                 BEGIN TRANSACTION;
 
-	                DECLARE @MsgContent EncodedContent;
+                    SET NOCOUNT ON;
 
-	                DECLARE MsgCursor CURSOR FOR
-	                (
-		                SELECT * FROM #Queue%dInput
+                    DECLARE @dialogHandle UNIQUEIDENTIFIER;
+
+                    BEGIN DIALOG @dialogHandle
+			            FROM SERVICE [%s]
+			            TO SERVICE '%s'
+			            ON CONTRACT [%s/Contract]
+			            WITH ENCRYPTION = OFF;
+
+	                DECLARE @msgContent _3fdImpl_Queue%dMsgContent;
+
+	                DECLARE cursorMsg CURSOR FOR (
+		                SELECT * FROM _3fdImpl_StageInputForQueue%d
 	                );
-	                OPEN MsgCursor;
-	                FETCH NEXT FROM MsgCursor INTO @MsgContent;
-	
-	                DECLARE @InitDlgHandle UNIQUEIDENTIFIER;
+
+	                OPEN cursorMsg;
+	                FETCH NEXT FROM cursorMsg INTO @msgContent;
 
 	                WHILE @@FETCH_STATUS = 0
 	                BEGIN
-		                BEGIN DIALOG @InitDlgHandle
-			                FROM SERVICE [%s]
-			                TO SERVICE '%s'
-			                ON CONTRACT [%s/Contract]
-			                WITH ENCRYPTION = OFF;
-
-		                SEND ON CONVERSATION @InitDlgHandle
+		                SEND ON CONVERSATION @dialogHandle
 			                MESSAGE TYPE [%s/Message]
-			                (@MsgContent);
+			                (@msgContent);
 
-		                FETCH NEXT FROM MsgCursor INTO @MsgContent;
+		                FETCH NEXT FROM cursorMsg INTO @msgContent;
 	                END;
 
-	                CLOSE MsgCursor;
-	                DEALLOCATE MsgCursor;
-
-                    DELETE FROM #Queue%dInput;
+	                CLOSE cursorMsg;
+	                DEALLOCATE cursorMsg;
+                    DELETE FROM _3fdImpl_StageInputForQueue%d;
 
                 COMMIT TRANSACTION;
             END TRY
@@ -128,13 +140,16 @@ namespace broker
             END CATCH;
             )"
             , (int)queueId
-            , (int)queueId
             , fromServiceURL
             , toServiceURL
             , toServiceURL
+            , (int)queueId
+            , (int)queueId
             , toServiceURL
             , (int)queueId
             , now;
+
+        m_dbSession.setFeature("autoCommit", false);
 
         std::ostringstream oss;
         oss << "Initialized successfully the writer for broker queue " << (int)queueId
@@ -167,30 +182,6 @@ namespace broker
         std::ostringstream oss;
         oss << "Generic failure prevented creation of broker queue writer: " << ex.what();
         throw core::AppException<std::runtime_error>(oss.str());
-    }
-
-    /// <summary>
-    /// Creates a temporary table for queue input.
-    /// </summary>
-    void QueueWriter::CreateTempTableForQueueInput()
-    {
-        CALL_STACK_TRACE;
-
-        using namespace Poco::Data::Keywords;
-
-        m_dbSession << R"(
-            IF NOT EXISTS (
-	            SELECT * FROM tempdb.sys.objects
-		            WHERE name LIKE '#Queue%dInput%%'
-            )
-            BEGIN
-                CREATE TABLE #Queue%dInput (content VARCHAR(%d));
-            END;
-            )"
-            , (int)m_queueId
-            , (int)m_queueId
-            , core::AppConfig::GetSettings().framework.broker.maxMessageSizeBytes
-            , now;
     }
 
     /// <summary>
@@ -322,12 +313,18 @@ namespace broker
 
         try
         {
+            if (!dbSession.isConnected())
+                dbSession.reconnect();
+
             dbSession.begin();
 
-            dbSession << "INSERT INTO #Queue%dInput (Content) VALUES (?);", (int)queueId, useRef(messages), now;
-            dbSession << "EXEC SendMessagesToService%d;", (int)queueId, now;
+            dbSession << "INSERT INTO _3fdImpl_StageInputForQueue%d (content) VALUES (?);", (int)queueId, useRef(messages), now;
 
             dbSession.commit();
+
+            dbSession << "EXEC _3fdImpl_SendMessagesToSvcQueue%d;", (int)queueId, now;
+
+            result.set_value();
         }
         catch (...)
         {
@@ -337,8 +334,6 @@ namespace broker
             // transport exception to main thread via promise
             result.set_exception(std::current_exception());
         }
-
-        result.set_value();
     }
 
     /// <summary>
@@ -355,12 +350,6 @@ namespace broker
             if (m_workerThread && m_workerThread->joinable())
                 m_workerThread->join();
 
-            if (!m_dbSession.isConnected())
-            {
-                m_dbSession.reconnect();
-                CreateTempTableForQueueInput();
-            }
-            
             std::unique_ptr<IAsyncWrite> result(new AsyncWriteImpl());
             
             m_workerThread.reset(
