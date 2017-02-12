@@ -17,19 +17,15 @@ namespace broker
     /// </summary>
     /// <param name="svcBrokerBackend">The broker backend to use.</param>
     /// <param name="connString">The backend connection string.</param>
-    /// <param name="fromServiceURL">The URL of the service that writes the messages.</param>
-    /// <param name="toServiceURL">The URL of the service that reads the messages.</param>
+    /// <param name="serviceURL">The URL of the service that reads the messages.</param>
     /// <param name="msgTypeSpec">The specification for the message type.</param>
-    /// <param name="queueId">The queue number identifier.</param>
     QueueWriter::QueueWriter(Backend svcBrokerBackend,
                              const string &connString,
-                             const string &fromServiceURL,
-                             const string &toServiceURL,
-                             const MessageTypeSpec &msgTypeSpec,
-                             uint8_t queueId)
+                             const string &serviceURL,
+                             const MessageTypeSpec &msgTypeSpec)
     try :
         m_dbSession("ODBC", connString),
-        m_queueId(queueId)
+        m_serviceURL(serviceURL)
     {
         CALL_STACK_TRACE;
 
@@ -40,61 +36,74 @@ namespace broker
 
         // Create message type, contract, queue and service:
         m_dbSession << R"(
-            IF NOT EXISTS ( SELECT * FROM sys.service_queues WHERE name = N'_3fdImpl_Queue%d' )
+            IF NOT EXISTS ( SELECT * FROM sys.service_queues WHERE name = N'%s/v1_0_0/Queue' )
             BEGIN
-                CREATE MESSAGE TYPE [%s/Message] VALIDATION = %s;
-                CREATE CONTRACT [%s/Contract] ([%s/Message] SENT BY INITIATOR);
-                CREATE QUEUE _3fdImpl_Queue%d WITH RETENTION = ON;
-                CREATE SERVICE [%s] ON QUEUE _3fdImpl_Queue%d ([%s/Contract]);
+                CREATE MESSAGE TYPE [%s/v1_0_0/Message] VALIDATION = %s;
+                CREATE CONTRACT [%s/v1_0_0/Contract] ([%s/v1_0_0/Message] SENT BY INITIATOR);
+                CREATE QUEUE [%s/v1_0_0/Queue] WITH RETENTION = ON;
+                CREATE SERVICE [%s/v1_0_0] ON QUEUE [%s/v1_0_0/Queue] ([%s/v1_0_0/Contract]);
+                CREATE QUEUE [%s/v1_0_0/ResponseQueue] WITH RETENTION = ON;
+                CREATE SERVICE [%s/v1_0_0/Sender] ON QUEUE [%s/v1_0_0/ResponseQueue];
+            END;
+
+            IF NOT EXISTS ( SELECT * FROM sys.service_queues WHERE name = N'%s/v1_0_0/ResponseQueue' )
+            BEGIN
+                CREATE QUEUE [%s/v1_0_0/ResponseQueue] WITH RETENTION = ON;
+                CREATE SERVICE [%s/v1_0_0/Sender] ON QUEUE [%s/v1_0_0/ResponseQueue];
             END;
             )"
-            , (int)queueId
-            , toServiceURL, ToString(msgTypeSpec.contentValidation)
-            , toServiceURL, toServiceURL
-            , (int)queueId
-            , toServiceURL, (int)queueId, toServiceURL
+            , serviceURL
+            , serviceURL, ToString(msgTypeSpec.contentValidation)
+            , serviceURL, serviceURL
+            , serviceURL
+            , serviceURL, serviceURL, serviceURL
+
+            // CREATE ResponseQueue:
+            , serviceURL
+            , serviceURL
+            , serviceURL, serviceURL
             , now;
 
         // Create message content data type:
         m_dbSession << R"(
             IF NOT EXISTS (
 	            SELECT * FROM sys.systypes
-		            WHERE name = '_3fdImpl_Queue%dMsgContent'
+		            WHERE name = N'%s/v1_0_0/Message/ContentType'
             )
             BEGIN
-	            CREATE TYPE _3fdImpl_Queue%dMsgContent FROM VARCHAR(%u);
+	            CREATE TYPE [%s/v1_0_0/Message/ContentType] FROM VARCHAR(%u);
             END;
             )"
-            , (int)queueId
-            , (int)queueId
-            , msgTypeSpec.nBytes
+            , serviceURL
+            , serviceURL, msgTypeSpec.nBytes
             , now;
 
+        // Create input stage table:
         m_dbSession << R"(
             IF NOT EXISTS (
 	            SELECT * FROM sys.tables
-		            WHERE name = '_3fdImpl_StageInputForQueue%d'
+		            WHERE name = N'%s/v1_0_0/InputStageTable'
             )
             BEGIN
-                CREATE TABLE _3fdImpl_StageInputForQueue%d (content _3fdImpl_Queue%dMsgContent);
+                CREATE TABLE [%s/v1_0_0/InputStageTable] (content [%s/v1_0_0/Message/ContentType]);
             END;
             )"
-            , (int)queueId
-            , (int)queueId
-            , (int)queueId
+            , serviceURL
+            , serviceURL, serviceURL
             , now;
 
-        // Create stored procedure for reading messages from queue:
+        // Create stored procedure to send messages to queue:
+
         m_dbSession << R"(
-            IF OBJECT_ID(N'dbo._3fdImpl_SendMessagesToSvcQueue%d', 'P') IS NOT NULL
-                DROP PROCEDURE _3fdImpl_SendMessagesToSvcQueue%d;
+            IF OBJECT_ID(N'dbo.%s/v1_0_0/SendMessagesProc', N'P') IS NOT NULL
+                DROP PROCEDURE [%s/v1_0_0/SendMessagesProc];
             )"
-            , (int)queueId
-            , (int)queueId
+            , serviceURL
+            , serviceURL
             , now;
 
         m_dbSession << R"(
-            CREATE PROCEDURE _3fdImpl_SendMessagesToSvcQueue%d AS
+            CREATE PROCEDURE [%s/v1_0_0/SendMessagesProc] AS
             BEGIN TRY
                 BEGIN TRANSACTION;
 
@@ -103,32 +112,31 @@ namespace broker
                     DECLARE @dialogHandle UNIQUEIDENTIFIER;
 
                     BEGIN DIALOG @dialogHandle
-			            FROM SERVICE [%s]
-			            TO SERVICE '%s'
-			            ON CONTRACT [%s/Contract]
-			            WITH ENCRYPTION = OFF;
+                        FROM SERVICE [%s/v1_0_0/Sender]
+                        TO SERVICE '%s/v1_0_0'
+                        ON CONTRACT [%s/v1_0_0/Contract]
+                        WITH ENCRYPTION = OFF;
 
-	                DECLARE @msgContent _3fdImpl_Queue%dMsgContent;
+                    DECLARE @msgContent [%s/v1_0_0/Message/ContentType];
 
-	                DECLARE cursorMsg CURSOR FOR (
-		                SELECT * FROM _3fdImpl_StageInputForQueue%d
-	                );
+                    DECLARE cursorMsg CURSOR FOR (
+	                    SELECT * FROM [%s/v1_0_0/InputStageTable]
+                    );
 
-	                OPEN cursorMsg;
-	                FETCH NEXT FROM cursorMsg INTO @msgContent;
+                    OPEN cursorMsg;
+                    FETCH NEXT FROM cursorMsg INTO @msgContent;
 
-	                WHILE @@FETCH_STATUS = 0
-	                BEGIN
-		                SEND ON CONVERSATION @dialogHandle
-			                MESSAGE TYPE [%s/Message]
-			                (@msgContent);
+                    WHILE @@FETCH_STATUS = 0
+                    BEGIN
+	                    SEND ON CONVERSATION @dialogHandle
+		                    MESSAGE TYPE [%s/v1_0_0/Message] (@msgContent);
 
-		                FETCH NEXT FROM cursorMsg INTO @msgContent;
-	                END;
+	                    FETCH NEXT FROM cursorMsg INTO @msgContent;
+                    END;
 
-	                CLOSE cursorMsg;
-	                DEALLOCATE cursorMsg;
-                    DELETE FROM _3fdImpl_StageInputForQueue%d;
+                    CLOSE cursorMsg;
+                    DEALLOCATE cursorMsg;
+                    DELETE FROM [%s/v1_0_0/InputStageTable];
 
                 COMMIT TRANSACTION;
             END TRY
@@ -139,22 +147,97 @@ namespace broker
 
             END CATCH;
             )"
-            , (int)queueId
-            , fromServiceURL
-            , toServiceURL
-            , toServiceURL
-            , (int)queueId
-            , (int)queueId
-            , toServiceURL
-            , (int)queueId
+            , serviceURL
+            , serviceURL
+            , serviceURL
+            , serviceURL
+            , serviceURL
+            , serviceURL
+            , serviceURL
+            , serviceURL
             , now;
 
-        m_dbSession.setFeature("autoCommit", false);
+        // Create stored procedure to finish conversations in the initiator endpoint:
+
+        m_dbSession << R"(
+            IF OBJECT_ID(N'dbo.%s/v1_0_0/FinishDialogsOnEndptInitProc', N'P') IS NOT NULL
+	            DROP PROCEDURE [%s/v1_0_0/FinishDialogsOnEndptInitProc];
+            )"
+            , serviceURL
+            , serviceURL
+            , now;
+
+        m_dbSession << R"(
+            CREATE PROCEDURE [%s/v1_0_0/FinishDialogsOnEndptInitProc] AS
+            BEGIN TRY
+                BEGIN TRANSACTION;
+
+                    SET NOCOUNT ON;
+
+                    DECLARE @ReceivedMessages TABLE (
+                        conversation_handle  UNIQUEIDENTIFIER
+                        ,message_type_name   SYSNAME
+                    );
+
+	                RECEIVE conversation_handle
+                            ,message_type_name
+		                FROM [%s/v1_0_0/ResponseQueue]
+                        INTO @ReceivedMessages;
+        
+                    DECLARE @dialogHandle  UNIQUEIDENTIFIER;
+	                DECLARE @msgTypeName   SYSNAME;
+        
+                    DECLARE cursorMsg
+                        CURSOR FORWARD_ONLY READ_ONLY FOR
+                            SELECT conversation_handle
+                                   ,message_type_name
+                                FROM @ReceivedMessages;
+
+                    OPEN cursorMsg;
+                    FETCH NEXT FROM cursorMsg INTO @dialogHandle, @msgTypeName;
+
+	                WHILE @@FETCH_STATUS = 0
+	                BEGIN
+                        IF @msgTypeName = 'http://schemas.microsoft.com/SQL/ServiceBroker/EndDialog'
+                            END CONVERSATION @dialogHandle;
+
+		                FETCH NEXT FROM cursorMsg INTO @dialogHandle, @msgTypeName;
+	                END;
+
+                    CLOSE cursorMsg;
+                    DEALLOCATE cursorMsg;
+
+                COMMIT TRANSACTION;
+            END TRY
+            BEGIN CATCH
+
+                ROLLBACK TRANSACTION;
+                THROW;
+
+            END CATCH;
+            )"
+            , serviceURL
+            , serviceURL
+            , now;
+
+        m_dbSession << R"(
+            ALTER QUEUE [%s/v1_0_0/ResponseQueue]
+                WITH ACTIVATION (
+                    STATUS = ON,
+                    MAX_QUEUE_READERS = 1,
+                    PROCEDURE_NAME = [%s/v1_0_0/FinishDialogsOnEndptInitProc],
+                    EXECUTE AS OWNER
+                );
+            )"
+            , serviceURL
+            , serviceURL
+            , now;
+
+        //m_dbSession.setFeature("autoCommit", false);
 
         std::ostringstream oss;
-        oss << "Initialized successfully the writer for broker queue " << (int)queueId
-            << " at '" << toServiceURL << "' backed by "
-            << ToString(svcBrokerBackend) << " via ODBC";
+        oss << "Initialized successfully the writer for broker queue '" << serviceURL
+            << "/v1_0_0/Queue' backed by " << ToString(svcBrokerBackend) << " via ODBC";
 
         core::Logger::Write(oss.str(), core::Logger::PRIO_INFORMATION);
     }
@@ -305,7 +388,7 @@ namespace broker
     // Synchronously put the messages into the broker queue
     static void PutInQueueImpl(Poco::Data::Session &dbSession,
                                const std::vector<string> &messages,
-                               uint8_t queueId,
+                               const string &serviceURL,
                                std::promise<void> &result)
     {
         using namespace Poco::Data;
@@ -316,13 +399,13 @@ namespace broker
             if (!dbSession.isConnected())
                 dbSession.reconnect();
 
-            dbSession.begin();
+            //dbSession.begin();
 
-            dbSession << "INSERT INTO _3fdImpl_StageInputForQueue%d (content) VALUES (?);", (int)queueId, useRef(messages), now;
+            dbSession << "INSERT INTO [%s/v1_0_0/InputStageTable] (content) VALUES (?);", serviceURL, useRef(messages), now;
 
-            dbSession.commit();
+            //dbSession.commit();
 
-            dbSession << "EXEC _3fdImpl_SendMessagesToSvcQueue%d;", (int)queueId, now;
+            dbSession << "EXEC [%s/v1_0_0/SendMessagesProc];", serviceURL, now;
 
             result.set_value();
         }
@@ -356,7 +439,7 @@ namespace broker
                 new std::thread(&PutInQueueImpl,
                                 std::ref(m_dbSession),
                                 std::ref(messages),
-                                m_queueId,
+                                m_serviceURL,
                                 std::ref(static_cast<AsyncWriteImpl &> (*result)))
             );
 

@@ -111,15 +111,14 @@ namespace broker
 
         Poco::Data::Session m_dbSession;
         
-        uint8_t m_queueId;
+        string m_serviceURL;
 
     public:
 
         QueueReader(Backend svcBrokerBackend,
                     const string &connString,
                     const string &serviceURL,
-                    const MessageTypeSpec &msgTypeSpec,
-                    uint8_t queueId);
+                    const MessageTypeSpec &msgTypeSpec);
 
         std::unique_ptr<IAsyncRead> ReadMessages(uint16_t msgCountStepLimit, uint16_t msgRecvTimeout);
     };
@@ -167,7 +166,7 @@ namespace broker
 
         Poco::Data::Session m_dbSession;
 
-        uint8_t m_queueId;
+        string m_serviceURL;
 
         std::unique_ptr<std::thread> m_workerThread;
 
@@ -175,10 +174,8 @@ namespace broker
 
         QueueWriter(Backend svcBrokerBackend,
                     const string &connString,
-                    const string &fromServiceURL,
-                    const string &toServiceURL,
-                    const MessageTypeSpec &msgTypeSpec,
-                    uint8_t queueId);
+                    const string &serviceURL,
+                    const MessageTypeSpec &msgTypeSpec);
 
         ~QueueWriter();
 

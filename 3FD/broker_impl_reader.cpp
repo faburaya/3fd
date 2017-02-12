@@ -18,15 +18,13 @@ namespace broker
     /// <param name="connString">The backend connection string.</param>
     /// <param name="serviceURL">The service URL.</param>
     /// <param name="msgTypeSpec">The specification for the message type.</param>
-    /// <param name="queueId">The queue number identifier.</param>
     QueueReader::QueueReader(Backend svcBrokerBackend,
                              const string &connString,
                              const string &serviceURL,
-                             const MessageTypeSpec &msgTypeSpec,
-                             uint8_t queueId)
+                             const MessageTypeSpec &msgTypeSpec)
     try :
         m_dbSession("ODBC", connString),
-        m_queueId(queueId)
+        m_serviceURL(serviceURL)
     {
         CALL_STACK_TRACE;
 
@@ -37,47 +35,47 @@ namespace broker
 
         // Create message type, contract, queue and service:
         m_dbSession << R"(
-            IF NOT EXISTS ( SELECT * FROM sys.service_queues WHERE name = N'_3fdImpl_Queue%d' )
+            IF NOT EXISTS ( SELECT * FROM sys.service_queues WHERE name = N'%s/v1_0_0/Queue' )
             BEGIN
-                CREATE MESSAGE TYPE [%s/Message] VALIDATION = %s;
-                CREATE CONTRACT [%s/Contract] ([%s/Message] SENT BY INITIATOR);
-                CREATE QUEUE _3fdImpl_Queue%d WITH RETENTION = ON;
-                CREATE SERVICE [%s] ON QUEUE _3fdImpl_Queue%d ([%s/Contract]);
+                CREATE MESSAGE TYPE [%s/v1_0_0/Message] VALIDATION = %s;
+                CREATE CONTRACT [%s/v1_0_0/Contract] ([%s/v1_0_0/Message] SENT BY INITIATOR);
+                CREATE QUEUE [%s/v1_0_0/Queue] WITH RETENTION = ON;
+                CREATE SERVICE [%s/v1_0_0] ON QUEUE [%s/v1_0_0/Queue] ([%s/v1_0_0/Contract]);
             END;
             )"
-            , (int)queueId
+            , serviceURL
             , serviceURL, ToString(msgTypeSpec.contentValidation)
             , serviceURL, serviceURL
-            , (int)queueId
-            , serviceURL, (int)queueId, serviceURL
+            , serviceURL
+            , serviceURL, serviceURL, serviceURL
             , now;
 
         // Create message content data type:
         m_dbSession << R"(
             IF NOT EXISTS (
 	            SELECT * FROM sys.systypes
-		            WHERE name = '_3fdImpl_Queue%dMsgContent'
+		            WHERE name = N'%s/v1_0_0/Message/ContentType'
             )
             BEGIN
-	            CREATE TYPE _3fdImpl_Queue%dMsgContent FROM VARCHAR(%u);
+	            CREATE TYPE [%s/v1_0_0/Message/ContentType] FROM VARCHAR(%u);
             END;
             )"
-            , (int)queueId
-            , (int)queueId
-            , msgTypeSpec.nBytes
+            , serviceURL
+            , serviceURL, msgTypeSpec.nBytes
             , now;
 
-        // Create stored procedure for reading messages from queue:
+        // Create stored procedure to read messages from queue:
+
         m_dbSession << R"(
-            IF OBJECT_ID('dbo._3fdImpl_ReceiveMessagesInSvcQueue%d', 'P') IS NOT NULL
-	            DROP PROCEDURE _3fdImpl_ReceiveMessagesInSvcQueue%d;
+            IF OBJECT_ID(N'dbo.%s/v1_0_0/ReadMessagesProc', N'P') IS NOT NULL
+	            DROP PROCEDURE [%s/v1_0_0/ReadMessagesProc];
             )"
-            , (int)queueId
-            , (int)queueId
+            , serviceURL
+            , serviceURL
             , now;
 
         m_dbSession << R"(
-            CREATE PROCEDURE _3fdImpl_ReceiveMessagesInSvcQueue%d
+            CREATE PROCEDURE [%s/v1_0_0/ReadMessagesProc]
 	             @recvTimeoutMilisecs INT
             AS
             BEGIN TRY
@@ -89,7 +87,7 @@ namespace broker
                         queuing_order        BIGINT
                         ,conversation_handle UNIQUEIDENTIFIER
                         ,message_type_name   SYSNAME
-                        ,message_body        _3fdImpl_Queue%dMsgContent
+                        ,message_body        [%s/v1_0_0/Message/ContentType]
                     );
 
 	                WAITFOR(
@@ -97,15 +95,16 @@ namespace broker
                                 ,conversation_handle
 			                    ,message_type_name
 			                    ,message_body
-		                    FROM _3fdImpl_Queue%d
+		                    FROM [%s/v1_0_0/Queue]
                             INTO @ReceivedMessages
 	                )
 	                ,TIMEOUT @recvTimeoutMilisecs;
 
-                    DECLARE @RowsetOut     TABLE (content _3fdImpl_Queue%dMsgContent);
-                    DECLARE @dialogHandle  UNIQUEIDENTIFIER;
-	                DECLARE @msgTypeName   SYSNAME;
-	                DECLARE @msgContent    _3fdImpl_Queue%dMsgContent;
+                    DECLARE @RowsetOut        TABLE (content [%s/v1_0_0/Message/ContentType]);
+                    DECLARE @prevDialogHandle UNIQUEIDENTIFIER;
+                    DECLARE @dialogHandle     UNIQUEIDENTIFIER;
+	                DECLARE @msgTypeName      SYSNAME;
+	                DECLARE @msgContent       [%s/v1_0_0/Message/ContentType];
 
                     DECLARE cursorMsg
                         CURSOR FORWARD_ONLY READ_ONLY
@@ -118,27 +117,23 @@ namespace broker
                     OPEN cursorMsg;
                     FETCH NEXT FROM cursorMsg INTO @dialogHandle, @msgTypeName, @msgContent;
 
-                    IF @dialogHandle IS NOT NULL
-                    BEGIN
-                        END CONVERSATION @dialogHandle;
+	                WHILE @@FETCH_STATUS = 0
+	                BEGIN
+                        IF @prevDialogHandle <> @dialogHandle AND @dialogHandle IS NOT NULL
+                            END CONVERSATION @dialogHandle;
 
-	                    WHILE @@FETCH_STATUS = 0
-	                    BEGIN
-                            IF @msgTypeName = '%s/Message'
-		                    BEGIN
-                                INSERT INTO @RowsetOut
-				                    VALUES (@msgContent);
-                            END;
+                        IF @msgTypeName = '%s/v1_0_0/Message'
+		                    INSERT INTO @RowsetOut VALUES (@msgContent);
 
-                            ELSE IF @msgTypeName = 'http://schemas.microsoft.com/SQL/ServiceBroker/Error'
-		                        THROW 50001, 'There was an error during conversation with service', 1;
+                        ELSE IF @msgTypeName = 'http://schemas.microsoft.com/SQL/ServiceBroker/Error'
+		                    THROW 50001, 'There was an error during conversation with service', 1;
 
-                            ELSE IF @msgTypeName <> 'http://schemas.microsoft.com/SQL/ServiceBroker/EndDialog'
-		                        THROW 50000, 'Message received in service broker queue had unexpected type', 1;
+                        ELSE IF @msgTypeName <> 'http://schemas.microsoft.com/SQL/ServiceBroker/EndDialog'
+		                    THROW 50000, 'Message received in service broker queue had unexpected type', 1;
 
-                            FETCH NEXT FROM cursorMsg INTO @dialogHandle, @msgTypeName, @msgContent;
-	                    END;
-                    END;
+                        SET @prevDialogHandle = @dialogHandle;
+                        FETCH NEXT FROM cursorMsg INTO @dialogHandle, @msgTypeName, @msgContent;
+	                END;
 
                     CLOSE cursorMsg;
                     DEALLOCATE cursorMsg;
@@ -154,18 +149,17 @@ namespace broker
 
             END CATCH;
             )"
-            , (int)queueId
-            , (int)queueId
-            , (int)queueId
-            , (int)queueId
-            , (int)queueId
+            , serviceURL
+            , serviceURL
+            , serviceURL
+            , serviceURL
+            , serviceURL
             , serviceURL
             , now;
 
         std::ostringstream oss;
-        oss << "Initialized successfully the reader for broker queue " << (int)queueId
-            << " at '" << serviceURL << "' backed by "
-            << ToString(svcBrokerBackend) << " via ODBC";
+        oss << "Initialized successfully the reader for broker queue '" << serviceURL
+            << "/v1_0_0/Queue' backed by " << ToString(svcBrokerBackend) << " via ODBC";
 
         core::Logger::Write(oss.str(), core::Logger::PRIO_INFORMATION);
     }
@@ -216,11 +210,11 @@ namespace broker
         /// <param name="msgCountStepLimit">How many messages are to be
         /// retrieved at most at each asynchronous execution step.</param>
         /// <param name="msgRecvTimeout">The timeout (in ms) when the backend awaits for messages.</param>
-        /// <param name="queueId">The queue identifier.</param>
+        /// <param name="serviceURL">The service URL.</param>
         AsyncReadImpl(Poco::Data::Session &dbSession,
                       uint16_t msgCountStepLimit,
                       uint16_t msgRecvTimeout,
-                      uint8_t queueId)
+                      const string &serviceURL)
         try
         {
             CALL_STACK_TRACE;
@@ -230,8 +224,8 @@ namespace broker
             if (!dbSession.isConnected())
                 dbSession.reconnect();
 
-            char queryStrBuf[64];
-            sprintf(queryStrBuf, "EXEC _3fdImpl_ReceiveMessagesInSvcQueue%d %d;", (int)queueId, (int)msgRecvTimeout);
+            char queryStrBuf[128];
+            sprintf(queryStrBuf, "EXEC [%s/v1_0_0/ReadMessagesProc] %d;", serviceURL.c_str(), (int)msgRecvTimeout);
 
             m_stoProcExecStmt.reset(new Poco::Data::Statement(
                 (dbSession << queryStrBuf, into(m_messages), limit(msgCountStepLimit))
@@ -426,7 +420,7 @@ namespace broker
         try
         {
             return std::unique_ptr<IAsyncRead>(
-                new AsyncReadImpl(m_dbSession, msgCountStepLimit, msgRecvTimeout, m_queueId)
+                new AsyncReadImpl(m_dbSession, msgCountStepLimit, msgRecvTimeout, m_serviceURL)
             );
         }
         catch (core::IAppException &)

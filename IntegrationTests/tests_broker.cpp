@@ -26,9 +26,8 @@ namespace integration_tests
             QueueReader queueReader(
                 Backend::MsSqlServer,
                 "Driver={SQL Server Native Client 11.0};Server=(localdb)\\MSSQLLocalDB;Database=SvcBrokerTest;Trusted_Connection=yes;",
-                "//SvcBrokerTests/IntegrationTestService0",
-                MessageTypeSpec { 128UL, MessageContentValidation::None },
-                0
+                "//SvcBrokerTest/IntegrationTestService",
+                MessageTypeSpec { 128UL, MessageContentValidation::None }
             );
 
             // Read the empty queue
@@ -71,10 +70,8 @@ namespace integration_tests
             QueueWriter queueWriter(
                 Backend::MsSqlServer,
                 "Driver={SQL Server Native Client 11.0};Server=(localdb)\\MSSQLLocalDB;Database=SvcBrokerTest;Trusted_Connection=yes;",
-                "//SvcBrokerTests/IntegrationTestService1",
-                "//SvcBrokerTests/IntegrationTestService0",
-                MessageTypeSpec{ 128UL, MessageContentValidation::None },
-                0
+                "//SvcBrokerTest/IntegrationTestService",
+                MessageTypeSpec{ 128UL, MessageContentValidation::None }
             );
         }
         catch (...)
@@ -101,10 +98,8 @@ namespace integration_tests
             QueueWriter queueWriter(
                 Backend::MsSqlServer,
                 "Driver={SQL Server Native Client 11.0};Server=(localdb)\\MSSQLLocalDB;Database=SvcBrokerTest;Trusted_Connection=yes;",
-                "//SvcBrokerTests/IntegrationTestService0",
-                "//SvcBrokerTests/IntegrationTestService1",
-                MessageTypeSpec{ 128UL, MessageContentValidation::None },
-                1
+                "//SvcBrokerTest/IntegrationTestService",
+                MessageTypeSpec{ 128UL, MessageContentValidation::None }
             );
 
             // Generate messages to write into the queue:
@@ -124,9 +119,8 @@ namespace integration_tests
             QueueReader queueReader(
                 Backend::MsSqlServer,
                 "Driver={SQL Server Native Client 11.0};Server=(localdb)\\MSSQLLocalDB;Database=SvcBrokerTest;Trusted_Connection=yes;",
-                "//SvcBrokerTests/IntegrationTestService1",
-                MessageTypeSpec{ 128UL, MessageContentValidation::None },
-                1
+                "//SvcBrokerTest/IntegrationTestService",
+                MessageTypeSpec{ 128UL, MessageContentValidation::None }
             );
 
             writeOp->Rethrow(); // wait for write op to finish...
