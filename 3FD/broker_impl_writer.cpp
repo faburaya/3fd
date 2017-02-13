@@ -18,7 +18,10 @@ namespace broker
     /// <param name="svcBrokerBackend">The broker backend to use.</param>
     /// <param name="connString">The backend connection string.</param>
     /// <param name="serviceURL">The URL of the service that reads the messages.</param>
-    /// <param name="msgTypeSpec">The specification for the message type.</param>
+    /// <param name="msgTypeSpec">The specification for creation of message type.
+    /// Such type is createad in the backend at the first time a reader or writer
+    /// for this queue is instantiated. Subsequent instantiations will not effectively
+    /// alter the message type by simply using different values in this parameter.</param>
     QueueWriter::QueueWriter(Backend svcBrokerBackend,
                              const string &connString,
                              const string &serviceURL,
@@ -34,16 +37,14 @@ namespace broker
         using namespace Poco::Data;
         using namespace Poco::Data::Keywords;
 
-        // Create message type, contract, queue and service:
+        // Create message type, contract, queue, service, message content data type and input stage table:
         m_dbSession << R"(
             IF NOT EXISTS ( SELECT * FROM sys.service_queues WHERE name = N'%s/v1_0_0/Queue' )
             BEGIN
                 CREATE MESSAGE TYPE [%s/v1_0_0/Message] VALIDATION = %s;
                 CREATE CONTRACT [%s/v1_0_0/Contract] ([%s/v1_0_0/Message] SENT BY INITIATOR);
-                CREATE QUEUE [%s/v1_0_0/Queue] WITH RETENTION = ON;
+                CREATE QUEUE [%s/v1_0_0/Queue] WITH RETENTION = ON, POISON_MESSAGE_HANDLING (STATUS = OFF);
                 CREATE SERVICE [%s/v1_0_0] ON QUEUE [%s/v1_0_0/Queue] ([%s/v1_0_0/Contract]);
-                CREATE QUEUE [%s/v1_0_0/ResponseQueue] WITH RETENTION = ON;
-                CREATE SERVICE [%s/v1_0_0/Sender] ON QUEUE [%s/v1_0_0/ResponseQueue];
             END;
 
             IF NOT EXISTS ( SELECT * FROM sys.service_queues WHERE name = N'%s/v1_0_0/ResponseQueue' )
@@ -51,21 +52,7 @@ namespace broker
                 CREATE QUEUE [%s/v1_0_0/ResponseQueue] WITH RETENTION = ON;
                 CREATE SERVICE [%s/v1_0_0/Sender] ON QUEUE [%s/v1_0_0/ResponseQueue];
             END;
-            )"
-            , serviceURL
-            , serviceURL, ToString(msgTypeSpec.contentValidation)
-            , serviceURL, serviceURL
-            , serviceURL
-            , serviceURL, serviceURL, serviceURL
 
-            // CREATE ResponseQueue:
-            , serviceURL
-            , serviceURL
-            , serviceURL, serviceURL
-            , now;
-
-        // Create message content data type:
-        m_dbSession << R"(
             IF NOT EXISTS (
 	            SELECT * FROM sys.systypes
 		            WHERE name = N'%s/v1_0_0/Message/ContentType'
@@ -73,13 +60,7 @@ namespace broker
             BEGIN
 	            CREATE TYPE [%s/v1_0_0/Message/ContentType] FROM VARCHAR(%u);
             END;
-            )"
-            , serviceURL
-            , serviceURL, msgTypeSpec.nBytes
-            , now;
 
-        // Create input stage table:
-        m_dbSession << R"(
             IF NOT EXISTS (
 	            SELECT * FROM sys.tables
 		            WHERE name = N'%s/v1_0_0/InputStageTable'
@@ -87,21 +68,42 @@ namespace broker
             BEGIN
                 CREATE TABLE [%s/v1_0_0/InputStageTable] (content [%s/v1_0_0/Message/ContentType]);
             END;
-            )"
-            , serviceURL
-            , serviceURL, serviceURL
-            , now;
 
-        // Create stored procedure to send messages to queue:
-
-        m_dbSession << R"(
             IF OBJECT_ID(N'dbo.%s/v1_0_0/SendMessagesProc', N'P') IS NOT NULL
                 DROP PROCEDURE [%s/v1_0_0/SendMessagesProc];
+
+            IF OBJECT_ID(N'dbo.%s/v1_0_0/FinishDialogsOnEndptInitProc', N'P') IS NOT NULL
+	            DROP PROCEDURE [%s/v1_0_0/FinishDialogsOnEndptInitProc];
             )"
+            , serviceURL
+            , serviceURL, ToString(msgTypeSpec.contentValidation)
+            , serviceURL, serviceURL
+            , serviceURL
+            , serviceURL, serviceURL, serviceURL
+
+            // CREATE QUEUE ResponseQueue
+            , serviceURL
+            , serviceURL
+            , serviceURL, serviceURL
+
+            // CREATE TYPE Message/ContentType
+            , serviceURL
+            , serviceURL, msgTypeSpec.nBytes
+
+            // CREATE TABLE InputStageTable
+            , serviceURL
+            , serviceURL, serviceURL
+
+            // DROP PROCEDURE SendMessagesProc
+            , serviceURL
+            , serviceURL
+
+            // DROP PROCEDURE FinishDialogsOnEndptInitProc
             , serviceURL
             , serviceURL
             , now;
 
+        // Create stored procedure to send messages to service queue:
         m_dbSession << R"(
             CREATE PROCEDURE [%s/v1_0_0/SendMessagesProc] AS
             BEGIN TRY
@@ -158,15 +160,6 @@ namespace broker
             , now;
 
         // Create stored procedure to finish conversations in the initiator endpoint:
-
-        m_dbSession << R"(
-            IF OBJECT_ID(N'dbo.%s/v1_0_0/FinishDialogsOnEndptInitProc', N'P') IS NOT NULL
-	            DROP PROCEDURE [%s/v1_0_0/FinishDialogsOnEndptInitProc];
-            )"
-            , serviceURL
-            , serviceURL
-            , now;
-
         m_dbSession << R"(
             CREATE PROCEDURE [%s/v1_0_0/FinishDialogsOnEndptInitProc] AS
             BEGIN TRY
@@ -215,12 +208,7 @@ namespace broker
                 THROW;
 
             END CATCH;
-            )"
-            , serviceURL
-            , serviceURL
-            , now;
 
-        m_dbSession << R"(
             ALTER QUEUE [%s/v1_0_0/ResponseQueue]
                 WITH ACTIVATION (
                     STATUS = ON,
@@ -231,9 +219,13 @@ namespace broker
             )"
             , serviceURL
             , serviceURL
+
+            // ALTER QUEUE ResponseQueue
+            , serviceURL
+            , serviceURL
             , now;
 
-        //m_dbSession.setFeature("autoCommit", false);
+        m_dbSession.setFeature("autoCommit", false);
 
         std::ostringstream oss;
         oss << "Initialized successfully the writer for broker queue '" << serviceURL
@@ -399,13 +391,13 @@ namespace broker
             if (!dbSession.isConnected())
                 dbSession.reconnect();
 
-            //dbSession.begin();
+            dbSession.begin();
 
             dbSession << "INSERT INTO [%s/v1_0_0/InputStageTable] (content) VALUES (?);", serviceURL, useRef(messages), now;
 
-            //dbSession.commit();
-
             dbSession << "EXEC [%s/v1_0_0/SendMessagesProc];", serviceURL, now;
+
+            dbSession.commit();
 
             result.set_value();
         }

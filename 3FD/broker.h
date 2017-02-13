@@ -78,14 +78,18 @@ namespace broker
         /// Gets the count of retrieved messages in the last step execution.
         /// </summary>
         /// <param name="timeout">The timeout in milliseconds.</param>
-        /// <returns>How many messages were read from the queue.</returns>
+        /// <returns>How many messages were read from the queue after
+        /// waiting for completion of asynchronous read operation.
+        /// Subsequent calls or calls that time out will return zero.</returns>
         virtual uint32_t GetStepMessageCount(uint16_t timeout) = 0;
 
         /// <summary>
         /// Gets the result from the last asynchronous step execution.
         /// </summary>
         /// <param name="timeout">The timeout in milliseconds.</param>
-        /// <returns>A vector of read messages.</returns>
+        /// <returns>A vector of read messages after waiting for completion
+        /// of asynchronous read operation. Subsequent calls or calls that
+        /// time out will return an empty vector.</returns>
         virtual std::vector<string> GetStepResult(uint16_t timeout) = 0;
     };
 

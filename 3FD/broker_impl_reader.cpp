@@ -17,7 +17,10 @@ namespace broker
     /// <param name="svcBrokerBackend">The broker backend to use.</param>
     /// <param name="connString">The backend connection string.</param>
     /// <param name="serviceURL">The service URL.</param>
-    /// <param name="msgTypeSpec">The specification for the message type.</param>
+    /// <param name="msgTypeSpec">The specification for creation of message type.
+    /// Such type is createad in the backend at the first time a reader or writer
+    /// for this queue is instantiated. Subsequent instantiations will not effectively
+    /// alter the message type by simply using different values in this parameter.</param>
     QueueReader::QueueReader(Backend svcBrokerBackend,
                              const string &connString,
                              const string &serviceURL,
@@ -33,25 +36,16 @@ namespace broker
         using namespace Poco::Data;
         using namespace Poco::Data::Keywords;
 
-        // Create message type, contract, queue and service:
+        // Create message type, contract, queue, service and message content data type:
         m_dbSession << R"(
             IF NOT EXISTS ( SELECT * FROM sys.service_queues WHERE name = N'%s/v1_0_0/Queue' )
             BEGIN
                 CREATE MESSAGE TYPE [%s/v1_0_0/Message] VALIDATION = %s;
                 CREATE CONTRACT [%s/v1_0_0/Contract] ([%s/v1_0_0/Message] SENT BY INITIATOR);
-                CREATE QUEUE [%s/v1_0_0/Queue] WITH RETENTION = ON;
+                CREATE QUEUE [%s/v1_0_0/Queue] WITH RETENTION = ON, POISON_MESSAGE_HANDLING (STATUS = OFF);
                 CREATE SERVICE [%s/v1_0_0] ON QUEUE [%s/v1_0_0/Queue] ([%s/v1_0_0/Contract]);
             END;
-            )"
-            , serviceURL
-            , serviceURL, ToString(msgTypeSpec.contentValidation)
-            , serviceURL, serviceURL
-            , serviceURL
-            , serviceURL, serviceURL, serviceURL
-            , now;
 
-        // Create message content data type:
-        m_dbSession << R"(
             IF NOT EXISTS (
 	            SELECT * FROM sys.systypes
 		            WHERE name = N'%s/v1_0_0/Message/ContentType'
@@ -59,21 +53,26 @@ namespace broker
             BEGIN
 	            CREATE TYPE [%s/v1_0_0/Message/ContentType] FROM VARCHAR(%u);
             END;
-            )"
-            , serviceURL
-            , serviceURL, msgTypeSpec.nBytes
-            , now;
 
-        // Create stored procedure to read messages from queue:
-
-        m_dbSession << R"(
             IF OBJECT_ID(N'dbo.%s/v1_0_0/ReadMessagesProc', N'P') IS NOT NULL
 	            DROP PROCEDURE [%s/v1_0_0/ReadMessagesProc];
             )"
             , serviceURL
+            , serviceURL, ToString(msgTypeSpec.contentValidation)
+            , serviceURL, serviceURL
+            , serviceURL
+            , serviceURL, serviceURL, serviceURL
+
+            // CREATE TYPE
+            , serviceURL
+            , serviceURL, msgTypeSpec.nBytes
+            
+            // DROP ReadMessagesProc
+            , serviceURL
             , serviceURL
             , now;
 
+        // Create stored procedure to read messages from queue:
         m_dbSession << R"(
             CREATE PROCEDURE [%s/v1_0_0/ReadMessagesProc]
 	             @recvTimeoutMilisecs INT
@@ -200,6 +199,7 @@ namespace broker
         std::unique_ptr<Poco::Data::Statement> m_stoProcExecStmt;
         std::unique_ptr<Poco::ActiveResult<size_t>> m_stoProcActRes;
         std::vector<string> m_messages;
+        uint32_t m_accumRowCount;
 
     public:
 
@@ -215,7 +215,8 @@ namespace broker
                       uint16_t msgCountStepLimit,
                       uint16_t msgRecvTimeout,
                       const string &serviceURL)
-        try
+        try :
+            m_accumRowCount(0)
         {
             CALL_STACK_TRACE;
 
@@ -232,10 +233,6 @@ namespace broker
             ));
 
             m_messages.reserve(msgCountStepLimit);
-            
-            m_stoProcActRes.reset(
-                new Poco::ActiveResult<size_t>(m_stoProcExecStmt->executeAsync())
-            );
         }
         catch (Poco::Data::DataException &ex)
         {
@@ -280,6 +277,7 @@ namespace broker
 
             try
             {
+                _ASSERTE(m_stoProcActRes); // cannot evaluate completion of task before starting it by stepping into execution
                 return m_stoProcActRes->available();
             }
             catch (Poco::Exception &ex)
@@ -307,6 +305,7 @@ namespace broker
 
             try
             {
+                _ASSERTE(m_stoProcActRes); // cannot evaluate completion of task before starting it by stepping into execution
                 isAwaitEndOkay = m_stoProcActRes->tryWait(timeout);
             }
             catch (Poco::Exception &ex)
@@ -337,14 +336,15 @@ namespace broker
 
             try
             {
-                if (!m_stoProcActRes->available())
+                if (m_stoProcActRes)
                 {
-                    throw core::AppException<std::logic_error>(
-                        "Could not step into execution because the last asynchronous operation is pending!"
-                    );
-                }
+                    if (!m_stoProcActRes->available())
+                        throw core::AppException<std::logic_error>("Could not step into "
+                            "execution because the last asynchronous operation is pending!");
 
-                m_messages.clear();
+                    m_messages.clear();
+                    m_accumRowCount = m_stoProcActRes->data();
+                }
 
                 m_stoProcActRes.reset(
                     new Poco::ActiveResult<size_t>(m_stoProcExecStmt->executeAsync())
@@ -374,13 +374,17 @@ namespace broker
         /// Gets the count of retrieved messages in the last step execution.
         /// </summary>
         /// <param name="timeout">The timeout in milliseconds.</param>
-        /// <returns>How many messages were read from the queue.</returns>
+        /// <returns>How many messages were read from the queue after
+        /// waiting for completion of asynchronous read operation.
+        /// Subsequent calls or calls that time out will return zero.</returns>
         virtual uint32_t GetStepMessageCount(uint16_t timeout) override
         {
             CALL_STACK_TRACE;
 
+            _ASSERTE(m_stoProcActRes); // cannot evaluate completion of task before starting it by stepping into execution
+
             if (TryWait(timeout))
-                return static_cast<uint32_t> (m_stoProcActRes->data());
+                return static_cast<uint32_t> (m_stoProcActRes->data()) - m_accumRowCount;
 
             return 0;
         }
@@ -389,18 +393,33 @@ namespace broker
         /// Gets the result from the last asynchronous step execution.
         /// </summary>
         /// <param name="timeout">The timeout in milliseconds.</param>
-        /// <returns>A vector of read messages.</returns>
+        /// <returns>A vector of read messages after waiting for completion
+        /// of asynchronous read operation. Subsequent calls or calls that
+        /// time out will return an empty vector.</returns>
         virtual std::vector<string> GetStepResult(uint16_t timeout) override
         {
             CALL_STACK_TRACE;
+
+            _ASSERTE(m_stoProcActRes); // cannot evaluate completion of task before starting it by stepping into execution
 
             if (!TryWait(timeout))
                 return std::vector<string>();
 
             std::vector<string> result;
 
-            if (m_stoProcActRes->data() > 0)
+            if (m_stoProcActRes->data() != m_accumRowCount)
+            {
+                m_accumRowCount = m_stoProcActRes->data();
+
+                auto msgVecSize = m_messages.size();
+                auto msgVecCap = m_messages.capacity();
+
                 m_messages.swap(result);
+
+                // Last step retrieved a full rowset?
+                if (msgVecCap == msgVecSize)
+                    m_messages.reserve(msgVecCap);
+            }
 
             return std::move(result);
         }

@@ -12,7 +12,7 @@ namespace integration_tests
     /// <summary>
     /// Tests the setup of a reader for the broker queue.
     /// </summary>
-    TEST(Framework_Broker_TestCase, QueueReaderSetup_Test)
+    TEST(Framework_Broker_BasicTestCase, QueueReaderSetup_Test)
     {
         // Ensures proper initialization/finalization of the framework
         _3fd::core::FrameworkInstance _framework;
@@ -31,7 +31,8 @@ namespace integration_tests
             );
 
             // Read the empty queue
-            auto readOp = queueReader.ReadMessages(256, 0);
+            auto readOp = queueReader.ReadMessages(512, 0);
+            readOp->Step();
 
             uint16_t elapsedTime(0);
             uint16_t waitInterval(50);
@@ -56,7 +57,7 @@ namespace integration_tests
     /// <summary>
     /// Tests the setup of a writer for the broker queue.
     /// </summary>
-    TEST(Framework_Broker_TestCase, QueueWriterSetup_Test)
+    TEST(Framework_Broker_BasicTestCase, QueueWriterSetup_Test)
     {
         // Ensures proper initialization/finalization of the framework
         _3fd::core::FrameworkInstance _framework;
@@ -80,10 +81,12 @@ namespace integration_tests
         }
     }
 
+    class Framework_Broker_PerformanceTestCase : public ::testing::TestWithParam<size_t> { };
+
     /// <summary>
     /// Tests writing into and reading from broker queue.
     /// </summary>
-    TEST(Framework_Broker_TestCase, QueueReadWriteInProc_Test)
+    TEST_P(Framework_Broker_PerformanceTestCase, QueueReadWriteInProc_Test)
     {
         // Ensures proper initialization/finalization of the framework
         _3fd::core::FrameworkInstance _framework;
@@ -94,6 +97,16 @@ namespace integration_tests
         {
             using namespace _3fd::broker;
 
+            // Generate messages to write into the queue:
+            std::ostringstream oss;
+            std::vector<string> insertedMessages;
+            for (int idx = 0; idx < GetParam(); ++idx)
+            {
+                oss << "foobar" << idx;
+                insertedMessages.push_back(oss.str());
+                oss.str("");
+            }
+
             // Setup the writer:
             QueueWriter queueWriter(
                 Backend::MsSqlServer,
@@ -101,16 +114,6 @@ namespace integration_tests
                 "//SvcBrokerTest/IntegrationTestService",
                 MessageTypeSpec{ 128UL, MessageContentValidation::None }
             );
-
-            // Generate messages to write into the queue:
-            std::vector<string> insertedMessages;
-            std::ostringstream oss;
-            for (int idx = 0; idx < 100; ++idx)
-            {
-                oss << "foobar" << idx;
-                insertedMessages.push_back(oss.str());
-                oss.str("");
-            }
 
             // Write asynchronously
             auto writeOp = queueWriter.WriteMessages(insertedMessages);
@@ -126,18 +129,18 @@ namespace integration_tests
             writeOp->Rethrow(); // wait for write op to finish...
 
             // Then read the messages back:
-            const uint16_t msgCountStepLimit(256);
-            auto readOp = queueReader.ReadMessages(msgCountStepLimit, 0);
-
             std::vector<string> selectedMessages;
             uint32_t msgCount;
             uint16_t waitInterval(50);
+            const uint16_t msgCountStepLimit(512);
+            auto readOp = queueReader.ReadMessages(msgCountStepLimit, 0);
 
             do
             {
-                uint16_t elapsedTime(0);
+                readOp->Step();
 
                 // Await for end of step:
+                uint16_t elapsedTime(0);
                 while (!readOp->TryWait(waitInterval))
                 {
                     elapsedTime += waitInterval;
@@ -165,6 +168,10 @@ namespace integration_tests
             HandleException();
         }
     }
+
+    INSTANTIATE_TEST_CASE_P(QueueReadWriteInProc_Test,
+        Framework_Broker_PerformanceTestCase,
+        ::testing::Values(256, 512, 1024, 2048));
 
 }// end of namespace integration_tests
 }// end of namespace _3fd
