@@ -43,13 +43,13 @@ namespace broker
             BEGIN
                 CREATE MESSAGE TYPE [%s/v1_0_0/Message] VALIDATION = %s;
                 CREATE CONTRACT [%s/v1_0_0/Contract] ([%s/v1_0_0/Message] SENT BY INITIATOR);
-                CREATE QUEUE [%s/v1_0_0/Queue] WITH RETENTION = ON, POISON_MESSAGE_HANDLING (STATUS = OFF);
+                CREATE QUEUE [%s/v1_0_0/Queue] WITH POISON_MESSAGE_HANDLING (STATUS = OFF);
                 CREATE SERVICE [%s/v1_0_0] ON QUEUE [%s/v1_0_0/Queue] ([%s/v1_0_0/Contract]);
             END;
 
             IF NOT EXISTS ( SELECT * FROM sys.service_queues WHERE name = N'%s/v1_0_0/ResponseQueue' )
             BEGIN
-                CREATE QUEUE [%s/v1_0_0/ResponseQueue] WITH RETENTION = ON;
+                CREATE QUEUE [%s/v1_0_0/ResponseQueue];
                 CREATE SERVICE [%s/v1_0_0/Sender] ON QUEUE [%s/v1_0_0/ResponseQueue];
             END;
 

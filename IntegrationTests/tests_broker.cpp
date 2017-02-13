@@ -129,10 +129,13 @@ namespace integration_tests
             writeOp->Rethrow(); // wait for write op to finish...
 
             // Then read the messages back:
+            
             std::vector<string> selectedMessages;
+
             uint32_t msgCount;
-            uint16_t waitInterval(50);
+            const uint16_t waitInterval(50);
             const uint16_t msgCountStepLimit(512);
+
             auto readOp = queueReader.ReadMessages(msgCountStepLimit, 0);
 
             do

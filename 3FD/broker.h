@@ -105,8 +105,8 @@ namespace broker
     };
 
     /// <summary>
-    /// Represents a queue in the broker, from which
-    /// a service can read its incoming messages.
+    /// Represents a queue in the broker, from which a service can read
+    /// its incoming messages. This implementation is NOT THREAD SAFE!
     /// </summary>
     /// <seealso cref="notcopiable" />
     class QueueReader : notcopiable, OdbcClient
@@ -129,6 +129,7 @@ namespace broker
 
     /// <summary>
     /// Helps synchronizing with an asynchronous write to a broker queue.
+    /// The underlying implementation is NOT THREAD SAFE!
     /// </summary>
     class INTFOPT IAsyncWrite
     {

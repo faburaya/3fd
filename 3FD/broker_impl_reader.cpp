@@ -42,7 +42,7 @@ namespace broker
             BEGIN
                 CREATE MESSAGE TYPE [%s/v1_0_0/Message] VALIDATION = %s;
                 CREATE CONTRACT [%s/v1_0_0/Contract] ([%s/v1_0_0/Message] SENT BY INITIATOR);
-                CREATE QUEUE [%s/v1_0_0/Queue] WITH RETENTION = ON, POISON_MESSAGE_HANDLING (STATUS = OFF);
+                CREATE QUEUE [%s/v1_0_0/Queue] WITH POISON_MESSAGE_HANDLING (STATUS = OFF);
                 CREATE SERVICE [%s/v1_0_0] ON QUEUE [%s/v1_0_0/Queue] ([%s/v1_0_0/Contract]);
             END;
 
@@ -74,9 +74,10 @@ namespace broker
 
         // Create stored procedure to read messages from queue:
         m_dbSession << R"(
-            CREATE PROCEDURE [%s/v1_0_0/ReadMessagesProc]
-	             @recvTimeoutMilisecs INT
-            AS
+            CREATE PROCEDURE [%s/v1_0_0/ReadMessagesProc] (
+                @recvMsgCountLimit INT
+	            ,@recvTimeoutMilisecs INT
+            ) AS
             BEGIN TRY
                 BEGIN TRANSACTION;
 
@@ -90,16 +91,17 @@ namespace broker
                     );
 
 	                WAITFOR(
-		                RECEIVE queuing_order
-                                ,conversation_handle
-			                    ,message_type_name
-			                    ,message_body
+		                RECEIVE TOP (@recvMsgCountLimit)
+                            queuing_order
+                            ,conversation_handle
+			                ,message_type_name
+			                ,message_body
 		                    FROM [%s/v1_0_0/Queue]
                             INTO @ReceivedMessages
 	                )
 	                ,TIMEOUT @recvTimeoutMilisecs;
-
-                    DECLARE @RowsetOut        TABLE (content [%s/v1_0_0/Message/ContentType]);
+        
+	                DECLARE @RowsetOut        TABLE (content [%s/v1_0_0/Message/ContentType]);
                     DECLARE @prevDialogHandle UNIQUEIDENTIFIER;
                     DECLARE @dialogHandle     UNIQUEIDENTIFIER;
 	                DECLARE @msgTypeName      SYSNAME;
@@ -115,11 +117,11 @@ namespace broker
 
                     OPEN cursorMsg;
                     FETCH NEXT FROM cursorMsg INTO @dialogHandle, @msgTypeName, @msgContent;
-
+	    
 	                WHILE @@FETCH_STATUS = 0
 	                BEGIN
-                        IF @prevDialogHandle <> @dialogHandle AND @dialogHandle IS NOT NULL
-                            END CONVERSATION @dialogHandle;
+                        IF @dialogHandle <> @prevDialogHandle AND @prevDialogHandle IS NOT NULL
+                            END CONVERSATION @prevDialogHandle;
 
                         IF @msgTypeName = '%s/v1_0_0/Message'
 		                    INSERT INTO @RowsetOut VALUES (@msgContent);
@@ -129,14 +131,25 @@ namespace broker
 
                         ELSE IF @msgTypeName <> 'http://schemas.microsoft.com/SQL/ServiceBroker/EndDialog'
 		                    THROW 50000, 'Message received in service broker queue had unexpected type', 1;
-
+            
                         SET @prevDialogHandle = @dialogHandle;
-                        FETCH NEXT FROM cursorMsg INTO @dialogHandle, @msgTypeName, @msgContent;
+		                FETCH NEXT FROM cursorMsg INTO @dialogHandle, @msgTypeName, @msgContent;
 	                END;
 
                     CLOSE cursorMsg;
                     DEALLOCATE cursorMsg;
 
+                    SAVE TRANSACTION doneReceiving;
+
+		            RECEIVE TOP (1)
+                        @dialogHandle = conversation_handle
+		                FROM [%s/v1_0_0/Queue];
+
+                    ROLLBACK TRANSACTION doneReceiving;
+
+                    IF @dialogHandle <> @prevDialogHandle AND @prevDialogHandle IS NOT NULL
+                        END CONVERSATION @prevDialogHandle;
+            
 	                SELECT content FROM @RowsetOut;
 
                 COMMIT TRANSACTION;
@@ -148,6 +161,7 @@ namespace broker
 
             END CATCH;
             )"
+            , serviceURL
             , serviceURL
             , serviceURL
             , serviceURL
@@ -190,6 +204,7 @@ namespace broker
 
     /// <summary>
     /// Controls retrieval of results from asynchronous read of queue.
+    /// This implementation is NOT THREAD SAFE!
     /// </summary>
     /// <seealso cref="notcopiable" />
     class AsyncReadImpl : public IAsyncRead, notcopiable
@@ -199,7 +214,6 @@ namespace broker
         std::unique_ptr<Poco::Data::Statement> m_stoProcExecStmt;
         std::unique_ptr<Poco::ActiveResult<size_t>> m_stoProcActRes;
         std::vector<string> m_messages;
-        uint32_t m_accumRowCount;
 
     public:
 
@@ -215,8 +229,7 @@ namespace broker
                       uint16_t msgCountStepLimit,
                       uint16_t msgRecvTimeout,
                       const string &serviceURL)
-        try :
-            m_accumRowCount(0)
+        try
         {
             CALL_STACK_TRACE;
 
@@ -225,12 +238,16 @@ namespace broker
             if (!dbSession.isConnected())
                 dbSession.reconnect();
 
-            char queryStrBuf[128];
-            sprintf(queryStrBuf, "EXEC [%s/v1_0_0/ReadMessagesProc] %d;", serviceURL.c_str(), (int)msgRecvTimeout);
+            m_stoProcExecStmt.reset(new Poco::Data::Statement(dbSession));
 
-            m_stoProcExecStmt.reset(new Poco::Data::Statement(
-                (dbSession << queryStrBuf, into(m_messages), limit(msgCountStepLimit))
-            ));
+            char queryStrBuf[128];
+            sprintf(queryStrBuf,
+                    "EXEC [%s/v1_0_0/ReadMessagesProc] %d, %d;",
+                    serviceURL.c_str(),
+                    (int)msgCountStepLimit,
+                    (int)msgRecvTimeout);
+            
+            *m_stoProcExecStmt << queryStrBuf, into(m_messages);
 
             m_messages.reserve(msgCountStepLimit);
         }
@@ -343,7 +360,6 @@ namespace broker
                             "execution because the last asynchronous operation is pending!");
 
                     m_messages.clear();
-                    m_accumRowCount = m_stoProcActRes->data();
                 }
 
                 m_stoProcActRes.reset(
@@ -384,7 +400,7 @@ namespace broker
             _ASSERTE(m_stoProcActRes); // cannot evaluate completion of task before starting it by stepping into execution
 
             if (TryWait(timeout))
-                return static_cast<uint32_t> (m_stoProcActRes->data()) - m_accumRowCount;
+                return m_stoProcExecStmt->subTotalRowCount();
 
             return 0;
         }
@@ -407,10 +423,8 @@ namespace broker
 
             std::vector<string> result;
 
-            if (m_stoProcActRes->data() != m_accumRowCount)
+            if (!m_messages.empty())
             {
-                m_accumRowCount = m_stoProcActRes->data();
-
                 auto msgVecSize = m_messages.size();
                 auto msgVecCap = m_messages.capacity();
 
