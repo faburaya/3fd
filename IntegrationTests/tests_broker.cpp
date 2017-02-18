@@ -102,7 +102,7 @@ namespace integration_tests
             std::vector<string> insertedMessages;
             for (int idx = 0; idx < GetParam(); ++idx)
             {
-                oss << "foobar" << idx;
+                oss << "foobar" << std::setw(4) << idx;
                 insertedMessages.push_back(oss.str());
                 oss.str("");
             }
@@ -163,6 +163,8 @@ namespace integration_tests
             } while (msgCount == msgCountStepLimit);
 
             ASSERT_EQ(insertedMessages.size(), selectedMessages.size());
+
+            std::sort(selectedMessages.begin(), selectedMessages.end());
 
             EXPECT_TRUE(std::equal(insertedMessages.begin(), insertedMessages.end(), selectedMessages.begin()));
         }

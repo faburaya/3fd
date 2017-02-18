@@ -87,9 +87,10 @@ namespace broker
         /// Gets the result from the last asynchronous step execution.
         /// </summary>
         /// <param name="timeout">The timeout in milliseconds.</param>
-        /// <returns>A vector of read messages after waiting for completion
-        /// of asynchronous read operation. Subsequent calls or calls that
-        /// time out will return an empty vector.</returns>
+        /// <returns>A vector of read messages after waiting for completion of
+        /// asynchronous read operation. Subsequent calls or calls that time out
+        /// will return an empty vector. The retrieved messages are not guaranteed
+        /// to appear in the same order they had when inserted.</returns>
         virtual std::vector<string> GetStepResult(uint16_t timeout) = 0;
     };
 

@@ -38,24 +38,21 @@ namespace broker
 
         // Create message type, contract, queue, service and message content data type:
         m_dbSession << R"(
-            IF NOT EXISTS ( SELECT * FROM sys.service_queues WHERE name = N'%s/v1_0_0/Queue' )
-            BEGIN
-                CREATE MESSAGE TYPE [%s/v1_0_0/Message] VALIDATION = %s;
-                CREATE CONTRACT [%s/v1_0_0/Contract] ([%s/v1_0_0/Message] SENT BY INITIATOR);
-                CREATE QUEUE [%s/v1_0_0/Queue] WITH POISON_MESSAGE_HANDLING (STATUS = OFF);
-                CREATE SERVICE [%s/v1_0_0] ON QUEUE [%s/v1_0_0/Queue] ([%s/v1_0_0/Contract]);
-            END;
+            if not exists ( select * from sys.service_queues where name = N'%s/v1_0_0/Queue' )
+            begin
+                create message type [%s/v1_0_0/Message] validation = %s;
+                create contract [%s/v1_0_0/Contract] ([%s/v1_0_0/Message] sent by initiator);
+                create queue [%s/v1_0_0/Queue] with poison_message_handling (status = off);
+                create service [%s/v1_0_0] on queue [%s/v1_0_0/Queue] ([%s/v1_0_0/Contract]);
+            end;
 
-            IF NOT EXISTS (
-	            SELECT * FROM sys.systypes
-		            WHERE name = N'%s/v1_0_0/Message/ContentType'
+            if not exists (
+	            select * from sys.systypes
+		            where name = N'%s/v1_0_0/Message/ContentType'
             )
-            BEGIN
-	            CREATE TYPE [%s/v1_0_0/Message/ContentType] FROM VARCHAR(%u);
-            END;
-
-            IF OBJECT_ID(N'dbo.%s/v1_0_0/ReadMessagesProc', N'P') IS NOT NULL
-	            DROP PROCEDURE [%s/v1_0_0/ReadMessagesProc];
+            begin
+	            create type [%s/v1_0_0/Message/ContentType] from varchar(%u);
+            end;
             )"
             , serviceURL
             , serviceURL, ToString(msgTypeSpec.contentValidation)
@@ -63,112 +60,121 @@ namespace broker
             , serviceURL
             , serviceURL, serviceURL, serviceURL
 
-            // CREATE TYPE
+            // create type
             , serviceURL
             , serviceURL, msgTypeSpec.nBytes
-            
-            // DROP ReadMessagesProc
-            , serviceURL
-            , serviceURL
             , now;
 
         // Create stored procedure to read messages from queue:
-        m_dbSession << R"(
-            CREATE PROCEDURE [%s/v1_0_0/ReadMessagesProc] (
-                @recvMsgCountLimit INT
-	            ,@recvTimeoutMilisecs INT
-            ) AS
-            BEGIN TRY
-                BEGIN TRANSACTION;
 
-                    SET NOCOUNT ON;
-
-                    DECLARE @ReceivedMessages TABLE (
-                        queuing_order        BIGINT
-                        ,conversation_handle UNIQUEIDENTIFIER
-                        ,message_type_name   SYSNAME
-                        ,message_body        [%s/v1_0_0/Message/ContentType]
-                    );
-
-	                WAITFOR(
-		                RECEIVE TOP (@recvMsgCountLimit)
-                            queuing_order
-                            ,conversation_handle
-			                ,message_type_name
-			                ,message_body
-		                    FROM [%s/v1_0_0/Queue]
-                            INTO @ReceivedMessages
-	                )
-	                ,TIMEOUT @recvTimeoutMilisecs;
-        
-	                DECLARE @RowsetOut        TABLE (content [%s/v1_0_0/Message/ContentType]);
-                    DECLARE @prevDialogHandle UNIQUEIDENTIFIER;
-                    DECLARE @dialogHandle     UNIQUEIDENTIFIER;
-	                DECLARE @msgTypeName      SYSNAME;
-	                DECLARE @msgContent       [%s/v1_0_0/Message/ContentType];
-
-                    DECLARE cursorMsg
-                        CURSOR FORWARD_ONLY READ_ONLY
-                        FOR SELECT conversation_handle
-                                   ,message_type_name
-                                   ,message_body
-                            FROM @ReceivedMessages
-                            ORDER BY queuing_order;
-
-                    OPEN cursorMsg;
-                    FETCH NEXT FROM cursorMsg INTO @dialogHandle, @msgTypeName, @msgContent;
-	    
-	                WHILE @@FETCH_STATUS = 0
-	                BEGIN
-                        IF @dialogHandle <> @prevDialogHandle AND @prevDialogHandle IS NOT NULL
-                            END CONVERSATION @prevDialogHandle;
-
-                        IF @msgTypeName = '%s/v1_0_0/Message'
-		                    INSERT INTO @RowsetOut VALUES (@msgContent);
-
-                        ELSE IF @msgTypeName = 'http://schemas.microsoft.com/SQL/ServiceBroker/Error'
-		                    THROW 50001, 'There was an error during conversation with service', 1;
-
-                        ELSE IF @msgTypeName <> 'http://schemas.microsoft.com/SQL/ServiceBroker/EndDialog'
-		                    THROW 50000, 'Message received in service broker queue had unexpected type', 1;
-            
-                        SET @prevDialogHandle = @dialogHandle;
-		                FETCH NEXT FROM cursorMsg INTO @dialogHandle, @msgTypeName, @msgContent;
-	                END;
-
-                    CLOSE cursorMsg;
-                    DEALLOCATE cursorMsg;
-
-                    SAVE TRANSACTION doneReceiving;
-
-		            RECEIVE TOP (1)
-                        @dialogHandle = conversation_handle
-		                FROM [%s/v1_0_0/Queue];
-
-                    ROLLBACK TRANSACTION doneReceiving;
-
-                    IF @dialogHandle <> @prevDialogHandle AND @prevDialogHandle IS NOT NULL
-                        END CONVERSATION @prevDialogHandle;
-            
-	                SELECT content FROM @RowsetOut;
-
-                COMMIT TRANSACTION;
-            END TRY
-            BEGIN CATCH
-
-                ROLLBACK TRANSACTION;
-                THROW;
-
-            END CATCH;
-            )"
+        Poco::Nullable<int> stoProcObjId;
+        m_dbSession <<
+            "select object_id(N'dbo.%s/v1_0_0/ReadMessagesProc', N'P');"
             , serviceURL
-            , serviceURL
-            , serviceURL
-            , serviceURL
-            , serviceURL
-            , serviceURL
-            , serviceURL
+            , into(stoProcObjId)
             , now;
+
+        if (stoProcObjId.isNull())
+        {
+            m_dbSession << R"(
+                create procedure [%s/v1_0_0/ReadMessagesProc] (
+                    @recvMsgCountLimit int
+	                ,@recvTimeoutMilisecs int
+                ) as
+                begin try
+                    begin transaction;
+
+                        set nocount on;
+
+                        declare @ReceivedMessages table (
+                            queuing_order        bigint
+                            ,conversation_handle uniqueidentifier
+                            ,message_type_name   sysname
+                            ,message_body        [%s/v1_0_0/Message/ContentType]
+                        );
+
+	                    waitfor(
+		                    receive top (@recvMsgCountLimit)
+                                    queuing_order
+                                    ,conversation_handle
+			                        ,message_type_name
+			                        ,message_body
+		                        from [%s/v1_0_0/Queue]
+                                into @ReceivedMessages
+	                    )
+	                    ,timeout @recvTimeoutMilisecs;
+        
+	                    declare @RowsetOut        table (content [%s/v1_0_0/Message/ContentType]);
+                        declare @prevDialogHandle uniqueidentifier;
+                        declare @dialogHandle     uniqueidentifier;
+	                    declare @msgTypeName      sysname;
+	                    declare @msgContent       [%s/v1_0_0/Message/ContentType];
+
+                        declare cursorMsg
+                            cursor forward_only read_only
+                            for select conversation_handle
+                                       ,message_type_name
+                                       ,message_body
+                                from @ReceivedMessages
+                                order by queuing_order;
+
+                        open cursorMsg;
+                        fetch next from cursorMsg into @dialogHandle, @msgTypeName, @msgContent;
+	    
+	                    while @@fetch_status = 0
+	                    begin
+                            if @dialogHandle <> @prevDialogHandle and @prevDialogHandle is not null
+                                end conversation @prevDialogHandle;
+
+                            if @msgTypeName = '%s/v1_0_0/Message'
+		                        insert into @RowsetOut values (@msgContent);
+
+                            else if @msgTypeName = 'http://schemas.microsoft.com/SQL/ServiceBroker/Error'
+		                        throw 50001, 'There was an error during conversation with service', 1;
+
+                            else if @msgTypeName <> 'http://schemas.microsoft.com/SQL/ServiceBroker/EndDialog'
+		                        throw 50000, 'Message received in service broker queue had unexpected type', 1;
+            
+                            set @prevDialogHandle = @dialogHandle;
+		                    fetch next from cursorMsg into @dialogHandle, @msgTypeName, @msgContent;
+	                    end;
+
+                        close cursorMsg;
+                        deallocate cursorMsg;
+
+                        save transaction doneReceiving;
+
+                        set @dialogHandle = newid();
+
+		                receive top (1)
+                            @dialogHandle = conversation_handle
+		                    from [%s/v1_0_0/Queue];
+
+                        rollback transaction doneReceiving;
+
+                        if @dialogHandle <> @prevDialogHandle and @prevDialogHandle is not null
+                            end conversation @prevDialogHandle;
+            
+	                    select content from @RowsetOut;
+
+                    commit transaction;
+                end try
+                begin catch
+
+                    rollback transaction;
+                    throw;
+
+                end catch;
+                )"
+                , serviceURL
+                , serviceURL
+                , serviceURL
+                , serviceURL
+                , serviceURL
+                , serviceURL
+                , serviceURL
+                , now;
+        }
 
         std::ostringstream oss;
         oss << "Initialized successfully the reader for broker queue '" << serviceURL
@@ -242,7 +248,7 @@ namespace broker
 
             char queryStrBuf[128];
             sprintf(queryStrBuf,
-                    "EXEC [%s/v1_0_0/ReadMessagesProc] %d, %d;",
+                    "exec [%s/v1_0_0/ReadMessagesProc] %d, %d;",
                     serviceURL.c_str(),
                     (int)msgCountStepLimit,
                     (int)msgRecvTimeout);
@@ -409,9 +415,10 @@ namespace broker
         /// Gets the result from the last asynchronous step execution.
         /// </summary>
         /// <param name="timeout">The timeout in milliseconds.</param>
-        /// <returns>A vector of read messages after waiting for completion
-        /// of asynchronous read operation. Subsequent calls or calls that
-        /// time out will return an empty vector.</returns>
+        /// <returns>A vector of read messages after waiting for completion of
+        /// asynchronous read operation. Subsequent calls or calls that time out
+        /// will return an empty vector. The retrieved messages are not guaranteed
+        /// to appear in the same order they had when inserted.</returns>
         virtual std::vector<string> GetStepResult(uint16_t timeout) override
         {
             CALL_STACK_TRACE;

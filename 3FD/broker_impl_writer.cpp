@@ -39,41 +39,35 @@ namespace broker
 
         // Create message type, contract, queue, service, message content data type and input stage table:
         m_dbSession << R"(
-            IF NOT EXISTS ( SELECT * FROM sys.service_queues WHERE name = N'%s/v1_0_0/Queue' )
-            BEGIN
-                CREATE MESSAGE TYPE [%s/v1_0_0/Message] VALIDATION = %s;
-                CREATE CONTRACT [%s/v1_0_0/Contract] ([%s/v1_0_0/Message] SENT BY INITIATOR);
-                CREATE QUEUE [%s/v1_0_0/Queue] WITH POISON_MESSAGE_HANDLING (STATUS = OFF);
-                CREATE SERVICE [%s/v1_0_0] ON QUEUE [%s/v1_0_0/Queue] ([%s/v1_0_0/Contract]);
-            END;
+            if not exists ( select * from sys.service_queues where name = N'%s/v1_0_0/Queue' )
+            begin
+                create message type [%s/v1_0_0/Message] validation = %s;
+                create contract [%s/v1_0_0/Contract] ([%s/v1_0_0/Message] sent by initiator);
+                create queue [%s/v1_0_0/Queue] with poison_message_handling (status = off);
+                create service [%s/v1_0_0] on queue [%s/v1_0_0/Queue] ([%s/v1_0_0/Contract]);
+            end;
 
-            IF NOT EXISTS ( SELECT * FROM sys.service_queues WHERE name = N'%s/v1_0_0/ResponseQueue' )
-            BEGIN
-                CREATE QUEUE [%s/v1_0_0/ResponseQueue];
-                CREATE SERVICE [%s/v1_0_0/Sender] ON QUEUE [%s/v1_0_0/ResponseQueue];
-            END;
+            if not exists ( select * from sys.service_queues where name = N'%s/v1_0_0/ResponseQueue' )
+            begin
+                create queue [%s/v1_0_0/ResponseQueue];
+                create service [%s/v1_0_0/Sender] on queue [%s/v1_0_0/ResponseQueue];
+            end;
 
-            IF NOT EXISTS (
-	            SELECT * FROM sys.systypes
-		            WHERE name = N'%s/v1_0_0/Message/ContentType'
+            if not exists (
+	            select * from sys.systypes
+		            where name = N'%s/v1_0_0/Message/ContentType'
             )
-            BEGIN
-	            CREATE TYPE [%s/v1_0_0/Message/ContentType] FROM VARCHAR(%u);
-            END;
+            begin
+	            create type [%s/v1_0_0/Message/ContentType] from varchar(%u);
+            end;
 
-            IF NOT EXISTS (
-	            SELECT * FROM sys.tables
-		            WHERE name = N'%s/v1_0_0/InputStageTable'
+            if not exists (
+	            select * from sys.tables
+		            where name = N'%s/v1_0_0/InputStageTable'
             )
-            BEGIN
-                CREATE TABLE [%s/v1_0_0/InputStageTable] (content [%s/v1_0_0/Message/ContentType]);
-            END;
-
-            IF OBJECT_ID(N'dbo.%s/v1_0_0/SendMessagesProc', N'P') IS NOT NULL
-                DROP PROCEDURE [%s/v1_0_0/SendMessagesProc];
-
-            IF OBJECT_ID(N'dbo.%s/v1_0_0/FinishDialogsOnEndptInitProc', N'P') IS NOT NULL
-	            DROP PROCEDURE [%s/v1_0_0/FinishDialogsOnEndptInitProc];
+            begin
+                create table [%s/v1_0_0/InputStageTable] (content [%s/v1_0_0/Message/ContentType]);
+            end;
             )"
             , serviceURL
             , serviceURL, ToString(msgTypeSpec.contentValidation)
@@ -81,149 +75,162 @@ namespace broker
             , serviceURL
             , serviceURL, serviceURL, serviceURL
 
-            // CREATE QUEUE ResponseQueue
+            // create queue ResponseQueue
             , serviceURL
             , serviceURL
             , serviceURL, serviceURL
 
-            // CREATE TYPE Message/ContentType
+            // create type Message/ContentType
             , serviceURL
             , serviceURL, msgTypeSpec.nBytes
 
-            // CREATE TABLE InputStageTable
+            // create table InputStageTable
             , serviceURL
             , serviceURL, serviceURL
-
-            // DROP PROCEDURE SendMessagesProc
-            , serviceURL
-            , serviceURL
-
-            // DROP PROCEDURE FinishDialogsOnEndptInitProc
-            , serviceURL
-            , serviceURL
             , now;
 
         // Create stored procedure to send messages to service queue:
-        m_dbSession << R"(
-            CREATE PROCEDURE [%s/v1_0_0/SendMessagesProc] AS
-            BEGIN TRY
-                BEGIN TRANSACTION;
 
-                    SET NOCOUNT ON;
-
-                    DECLARE @dialogHandle UNIQUEIDENTIFIER;
-
-                    BEGIN DIALOG @dialogHandle
-                        FROM SERVICE [%s/v1_0_0/Sender]
-                        TO SERVICE '%s/v1_0_0'
-                        ON CONTRACT [%s/v1_0_0/Contract]
-                        WITH ENCRYPTION = OFF;
-
-                    DECLARE @msgContent [%s/v1_0_0/Message/ContentType];
-
-                    DECLARE cursorMsg CURSOR FOR (
-	                    SELECT * FROM [%s/v1_0_0/InputStageTable]
-                    );
-
-                    OPEN cursorMsg;
-                    FETCH NEXT FROM cursorMsg INTO @msgContent;
-
-                    WHILE @@FETCH_STATUS = 0
-                    BEGIN
-	                    SEND ON CONVERSATION @dialogHandle
-		                    MESSAGE TYPE [%s/v1_0_0/Message] (@msgContent);
-
-	                    FETCH NEXT FROM cursorMsg INTO @msgContent;
-                    END;
-
-                    CLOSE cursorMsg;
-                    DEALLOCATE cursorMsg;
-                    DELETE FROM [%s/v1_0_0/InputStageTable];
-
-                COMMIT TRANSACTION;
-            END TRY
-            BEGIN CATCH
-
-                ROLLBACK TRANSACTION;
-                THROW;
-
-            END CATCH;
-            )"
+        Poco::Nullable<int> stoProcObjId;
+        m_dbSession <<
+            "select object_id(N'dbo.%s/v1_0_0/SendMessagesProc', N'P');"
             , serviceURL
-            , serviceURL
-            , serviceURL
-            , serviceURL
-            , serviceURL
-            , serviceURL
-            , serviceURL
-            , serviceURL
+            , into(stoProcObjId)
             , now;
+
+        if (stoProcObjId.isNull())
+        {
+            m_dbSession << R"(
+                create procedure [%s/v1_0_0/SendMessagesProc] as
+                begin try
+                    begin transaction;
+
+                        set nocount on;
+
+                        declare @dialogHandle uniqueidentifier;
+
+                        begin dialog @dialogHandle
+                            from service [%s/v1_0_0/Sender]
+                            to service '%s/v1_0_0'
+                            on contract [%s/v1_0_0/Contract]
+                            with encryption = off;
+
+                        declare @msgContent [%s/v1_0_0/Message/ContentType];
+
+                        declare cursorMsg cursor for (
+	                        select * from [%s/v1_0_0/InputStageTable]
+                        );
+
+                        open cursorMsg;
+                        fetch next from cursorMsg into @msgContent;
+
+                        while @@fetch_status = 0
+                        begin
+	                        send on conversation @dialogHandle
+		                        message type [%s/v1_0_0/Message] (@msgContent);
+
+	                        fetch next from cursorMsg into @msgContent;
+                        end;
+
+                        close cursorMsg;
+                        deallocate cursorMsg;
+                        delete from [%s/v1_0_0/InputStageTable];
+
+                    commit transaction;
+                end try
+                begin catch
+
+                    rollback transaction;
+                    throw;
+
+                end catch;
+                )"
+                , serviceURL
+                , serviceURL
+                , serviceURL
+                , serviceURL
+                , serviceURL
+                , serviceURL
+                , serviceURL
+                , serviceURL
+                , now;
+        }
 
         // Create stored procedure to finish conversations in the initiator endpoint:
-        m_dbSession << R"(
-            CREATE PROCEDURE [%s/v1_0_0/FinishDialogsOnEndptInitProc] AS
-            BEGIN TRY
-                BEGIN TRANSACTION;
 
-                    SET NOCOUNT ON;
-
-                    DECLARE @ReceivedMessages TABLE (
-                        conversation_handle  UNIQUEIDENTIFIER
-                        ,message_type_name   SYSNAME
-                    );
-
-	                RECEIVE conversation_handle
-                            ,message_type_name
-		                FROM [%s/v1_0_0/ResponseQueue]
-                        INTO @ReceivedMessages;
-        
-                    DECLARE @dialogHandle  UNIQUEIDENTIFIER;
-	                DECLARE @msgTypeName   SYSNAME;
-        
-                    DECLARE cursorMsg
-                        CURSOR FORWARD_ONLY READ_ONLY FOR
-                            SELECT conversation_handle
-                                   ,message_type_name
-                                FROM @ReceivedMessages;
-
-                    OPEN cursorMsg;
-                    FETCH NEXT FROM cursorMsg INTO @dialogHandle, @msgTypeName;
-
-	                WHILE @@FETCH_STATUS = 0
-	                BEGIN
-                        IF @msgTypeName = 'http://schemas.microsoft.com/SQL/ServiceBroker/EndDialog'
-                            END CONVERSATION @dialogHandle;
-
-		                FETCH NEXT FROM cursorMsg INTO @dialogHandle, @msgTypeName;
-	                END;
-
-                    CLOSE cursorMsg;
-                    DEALLOCATE cursorMsg;
-
-                COMMIT TRANSACTION;
-            END TRY
-            BEGIN CATCH
-
-                ROLLBACK TRANSACTION;
-                THROW;
-
-            END CATCH;
-
-            ALTER QUEUE [%s/v1_0_0/ResponseQueue]
-                WITH ACTIVATION (
-                    STATUS = ON,
-                    MAX_QUEUE_READERS = 1,
-                    PROCEDURE_NAME = [%s/v1_0_0/FinishDialogsOnEndptInitProc],
-                    EXECUTE AS OWNER
-                );
-            )"
+        m_dbSession <<
+            "select object_id(N'dbo.%s/v1_0_0/FinishDialogsOnEndptInitProc', N'P');"
             , serviceURL
-            , serviceURL
-
-            // ALTER QUEUE ResponseQueue
-            , serviceURL
-            , serviceURL
+            , into(stoProcObjId)
             , now;
+
+        if (stoProcObjId.isNull())
+        {
+            m_dbSession << R"(
+                create procedure [%s/v1_0_0/FinishDialogsOnEndptInitProc] as
+                begin try
+                    begin transaction;
+
+                        set nocount on;
+
+                        declare @ReceivedMessages table (
+                            conversation_handle  uniqueidentifier
+                            ,message_type_name   sysname
+                        );
+
+	                    receive conversation_handle
+                                ,message_type_name
+		                    from [%s/v1_0_0/ResponseQueue]
+                            into @ReceivedMessages;
+        
+                        declare @dialogHandle  uniqueidentifier;
+	                    declare @msgTypeName   sysname;
+        
+                        declare cursorMsg
+                            cursor forward_only read_only for
+                                select conversation_handle
+                                       ,message_type_name
+                                    from @ReceivedMessages;
+
+                        open cursorMsg;
+                        fetch next from cursorMsg into @dialogHandle, @msgTypeName;
+
+	                    while @@fetch_status = 0
+	                    begin
+                            if @msgTypeName = 'http://schemas.microsoft.com/SQL/ServiceBroker/EndDialog'
+                                end conversation @dialogHandle;
+
+		                    fetch next from cursorMsg into @dialogHandle, @msgTypeName;
+	                    end;
+
+                        close cursorMsg;
+                        deallocate cursorMsg;
+
+                    commit transaction;
+                end try
+                begin catch
+
+                    rollback transaction;
+                    throw;
+
+                end catch;
+
+                alter queue [%s/v1_0_0/ResponseQueue]
+                    with activation (
+                        status = on,
+                        max_queue_readers = 1,
+                        procedure_name = [%s/v1_0_0/FinishDialogsOnEndptInitProc],
+                        execute as owner
+                    );
+                )"
+                , serviceURL
+                , serviceURL
+
+                // ALTER QUEUE ResponseQueue
+                , serviceURL
+                , serviceURL
+                , now;
+        }
 
         m_dbSession.setFeature("autoCommit", false);
 
@@ -393,9 +400,9 @@ namespace broker
 
             dbSession.begin();
 
-            dbSession << "INSERT INTO [%s/v1_0_0/InputStageTable] (content) VALUES (?);", serviceURL, useRef(messages), now;
+            dbSession << "insert into [%s/v1_0_0/InputStageTable] (content) values (?);", serviceURL, useRef(messages), now;
 
-            dbSession << "EXEC [%s/v1_0_0/SendMessagesProc];", serviceURL, now;
+            dbSession << "exec [%s/v1_0_0/SendMessagesProc];", serviceURL, now;
 
             dbSession.commit();
 
