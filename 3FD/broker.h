@@ -92,6 +92,28 @@ namespace broker
         /// will return an empty vector. The retrieved messages are not guaranteed
         /// to appear in the same order they had when inserted.</returns>
         virtual std::vector<string> GetStepResult(uint16_t timeout) = 0;
+        
+        /// <summary>
+        /// Rolls back the changes accumulated in the current transaction.
+        /// The messages extracted in all steps from the broker queue are
+        /// put back in place.
+        /// </summary>
+        /// <param name="timeout">The timeout in milliseconds.</param>
+        /// <returns>
+        ///   <c>true</c> if current transaction was successfully rolled back, otherwise, <c>false</c>.
+        /// </returns>
+        virtual bool Rollback(uint16_t timeout) = 0;
+        
+        /// <summary>
+        /// Commits in persistent storage all the changes accumulated in the
+        /// current transaction. The messages extracted in all steps so far
+        /// from the broker queue are permanently removed.
+        /// </summary>
+        /// <param name="timeout">The timeout in milliseconds.</param>
+        /// <returns>
+        ///   <c>true</c> if current transaction was successfully committed, otherwise, <c>false</c>.
+        /// </returns>
+        virtual bool Commit(uint16_t timeout) = 0;
     };
 
     /// <summary>
@@ -159,6 +181,27 @@ namespace broker
         /// Rethrows any eventual exception captured in the worker thread.
         /// </summary>
         virtual void Rethrow() = 0;
+
+        /// <summary>
+        /// Rolls back the changes accumulated in the current transaction,
+        /// erasing all messages written into the broker queue by the call
+        /// that originated this object and began such transaction.
+        /// </summary>
+        /// <param name="timeout">The timeout in milliseconds.</param>
+        /// <returns>
+        ///   <c>true</c> if current transaction was successfully rolled back, otherwise, <c>false</c>.
+        /// </returns>
+        virtual bool Rollback(uint16_t timeout) = 0;
+
+        /// <summary>
+        /// Commits in persistent storage all the changes accumulated in the current
+        /// transaction, which began in the call that originated this object.
+        /// </summary>
+        /// <param name="timeout">The timeout in milliseconds.</param>
+        /// <returns>
+        ///   <c>true</c> if current transaction was successfully committed, otherwise, <c>false</c>.
+        /// </returns>
+        virtual bool Commit(uint16_t timeout) = 0;
     };
 
     /// <summary>

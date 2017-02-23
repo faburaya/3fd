@@ -17,3 +17,5 @@ The provided features are:
 + A module for ISAM data access backed by Microsoft ESE, but wrapped with real OOP+RAII design, very straightforward and practical
 
 + A module for SOAP web services containing helpers & wrappers around Microsoft WWS API, which enables quick development of native web services hosts and clients
+
++ A module with queue reader & writer for service broker of Microsoft SQL Server, that greatly simplifies its deployment and use

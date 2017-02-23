@@ -176,6 +176,8 @@ namespace broker
                 , now;
         }
 
+        m_dbSession.setFeature("autoCommit", false);
+
         std::ostringstream oss;
         oss << "Initialized successfully the reader for broker queue '" << serviceURL
             << "/v1_0_0/Queue' backed by " << ToString(svcBrokerBackend) << " via ODBC";
@@ -217,6 +219,7 @@ namespace broker
     {
     private:
 
+        Poco::Data::Session &m_dbSession;
         std::unique_ptr<Poco::Data::Statement> m_stoProcExecStmt;
         std::unique_ptr<Poco::ActiveResult<size_t>> m_stoProcActRes;
         std::vector<string> m_messages;
@@ -235,7 +238,8 @@ namespace broker
                       uint16_t msgCountStepLimit,
                       uint16_t msgRecvTimeout,
                       const string &serviceURL)
-        try
+        try :
+            m_dbSession(dbSession)
         {
             CALL_STACK_TRACE;
 
@@ -254,6 +258,8 @@ namespace broker
                     (int)msgRecvTimeout);
             
             *m_stoProcExecStmt << queryStrBuf, into(m_messages);
+
+            dbSession.begin();
 
             m_messages.reserve(msgCountStepLimit);
         }
@@ -286,7 +292,43 @@ namespace broker
         /// <summary>
         /// Finalizes an instance of the <see cref="AsyncReadImpl"/> class.
         /// </summary>
-        virtual AsyncReadImpl::~AsyncReadImpl() {}
+        virtual AsyncReadImpl::~AsyncReadImpl()
+        {
+            CALL_STACK_TRACE;
+
+            try
+            {
+                if (m_stoProcActRes && !TryWait(5000))
+                {
+                    core::Logger::Write("Await for end of asynchronous read from broker queue has timed "
+                                        "out (5 secs) before releasing resources of running statement",
+                                        core::Logger::PRIO_CRITICAL, true);
+                }
+
+                if (m_dbSession.isTransaction())
+                    m_dbSession.rollback();
+            }
+            catch (core::IAppException &ex)
+            {
+                core::Logger::Write(ex, core::Logger::PRIO_CRITICAL);
+            }
+            catch (Poco::Data::DataException &ex)
+            {
+                std::ostringstream oss;
+                oss << "Failed to end transaction reading messages from broker queue. "
+                       "POCO C++ reported a data access error: " << ex.name();
+
+                core::Logger::Write(oss.str(), ex.message(), core::Logger::PRIO_CRITICAL, true);
+            }
+            catch (Poco::Exception &ex)
+            {
+                std::ostringstream oss;
+                oss << "Failed to end transaction reading messages from broker queue. "
+                       "POCO C++ reported a generic error - " << ex.name() << ": " << ex.message();
+
+                core::Logger::Write(oss.str(), core::Logger::PRIO_CRITICAL, true);
+            }
+        }
 
         /// <summary>
         /// Evaluates whether the last asynchronous read step is finished.
@@ -443,6 +485,80 @@ namespace broker
             }
 
             return std::move(result);
+        }
+
+        /// <summary>
+        /// Rolls back the changes accumulated in the current transaction.
+        /// The messages extracted in all steps from the broker queue are
+        /// put back in place.
+        /// </summary>
+        /// <returns>
+        ///   <c>true</c> if current transaction was successfully rolled back, otherwise, <c>false</c>.
+        /// </returns>
+        virtual bool Rollback(uint16_t timeout) override
+        {
+            CALL_STACK_TRACE;
+
+            try
+            {
+                _ASSERTE(m_dbSession.isTransaction()); // must be in a transaction
+
+                if (TryWait(timeout))
+                    m_dbSession.rollback();
+            }
+            catch (Poco::Data::DataException &ex)
+            {
+                std::ostringstream oss;
+                oss << "Failed to rollback transaction reading messages from broker queue. "
+                       "POCO C++ reported a data access error: " << ex.name();
+
+                throw core::AppException<std::runtime_error>(oss.str(), ex.message());
+            }
+            catch (Poco::Exception &ex)
+            {
+                std::ostringstream oss;
+                oss << "Failed to rollback transaction reading messages from broker queue. "
+                       "POCO C++ reported a generic error - " << ex.name() << ": " << ex.message();
+
+                throw core::AppException<std::runtime_error>(oss.str());
+            }
+        }
+
+        /// <summary>
+        /// Commits in persistent storage all the changes accumulated in the
+        /// current transaction. The messages extracted in all steps so far
+        /// from the broker queue are permanently removed.
+        /// </summary>
+        /// <returns>
+        ///   <c>true</c> if current transaction was successfully committed, otherwise, <c>false</c>.
+        /// </returns>
+        virtual bool Commit(uint16_t timeout) override
+        {
+            CALL_STACK_TRACE;
+
+            try
+            {
+                _ASSERTE(m_dbSession.isTransaction()); // must be in a transaction
+
+                if (TryWait(timeout))
+                    m_dbSession.commit();
+            }
+            catch (Poco::Data::DataException &ex)
+            {
+                std::ostringstream oss;
+                oss << "Failed to commit transaction reading messages from broker queue. "
+                       "POCO C++ reported a data access error: " << ex.name();
+
+                throw core::AppException<std::runtime_error>(oss.str(), ex.message());
+            }
+            catch (Poco::Exception &ex)
+            {
+                std::ostringstream oss;
+                oss << "Failed to commit transaction reading messages from broker queue. "
+                       "POCO C++ reported a generic error - " << ex.name() << ": " << ex.message();
+
+                throw core::AppException<std::runtime_error>(oss.str());
+            }
         }
     };
 
