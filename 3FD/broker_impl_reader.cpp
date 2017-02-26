@@ -336,7 +336,7 @@ namespace broker
         /// <returns>
         ///   <c>true</c> when finished, otherwise, <c>false</c>.
         /// </returns>
-        virtual bool IsFinished() const override
+        virtual bool HasJoined() const override
         {
             CALL_STACK_TRACE;
 
@@ -503,8 +503,11 @@ namespace broker
             {
                 _ASSERTE(m_dbSession.isTransaction()); // must be in a transaction
 
-                if (TryWait(timeout))
-                    m_dbSession.rollback();
+                if (!TryWait(timeout))
+                    return false;
+
+                m_dbSession.rollback();
+                return true;
             }
             catch (Poco::Data::DataException &ex)
             {
@@ -540,8 +543,11 @@ namespace broker
             {
                 _ASSERTE(m_dbSession.isTransaction()); // must be in a transaction
 
-                if (TryWait(timeout))
-                    m_dbSession.commit();
+                if (!TryWait(timeout))
+                    return false;
+
+                m_dbSession.commit();
+                return true;
             }
             catch (Poco::Data::DataException &ex)
             {

@@ -274,6 +274,7 @@ namespace broker
     {
     private:
 
+        Poco::Data::Session &m_dbSession;
         std::unique_ptr<std::future<void>> m_future;
 
     public:
@@ -281,9 +282,11 @@ namespace broker
         /// <summary>
         /// Initializes a new instance of the <see cref="AsyncWriteImpl" /> class.
         /// </summary>
-        AsyncWriteImpl()
+        /// <param name="dbSession">The database session.</param>
+        AsyncWriteImpl(Poco::Data::Session &dbSession)
         try :
-            std::promise<void>()
+            std::promise<void>(),
+            m_dbSession(dbSession)
         {
             m_future.reset(
                 new std::future<void>(this->get_future())
@@ -320,7 +323,43 @@ namespace broker
         /// <summary>
         /// Finalizes an instance of the <see cref="AsyncWriteImpl"/> class.
         /// </summary>
-        virtual ~AsyncWriteImpl() {}
+        virtual ~AsyncWriteImpl()
+        {
+            CALL_STACK_TRACE;
+
+            try
+            {
+                if (m_future->valid() && !TryWait(5000))
+                {
+                    core::Logger::Write("Await for end of asynchronous write into broker queue has timed "
+                                        "out (5 secs) before releasing resources of running statement",
+                                        core::Logger::PRIO_CRITICAL, true);
+                }
+
+                if (m_dbSession.isTransaction())
+                    m_dbSession.rollback();
+            }
+            catch (core::IAppException &ex)
+            {
+                core::Logger::Write(ex, core::Logger::PRIO_CRITICAL);
+            }
+            catch (Poco::Data::DataException &ex)
+            {
+                std::ostringstream oss;
+                oss << "Failed to end transaction writing messages into broker queue. "
+                       "POCO C++ reported a data access error: " << ex.name();
+
+                core::Logger::Write(oss.str(), ex.message(), core::Logger::PRIO_CRITICAL, true);
+            }
+            catch (Poco::Exception &ex)
+            {
+                std::ostringstream oss;
+                oss << "Failed to end transaction writing messages into broker queue. "
+                       "POCO C++ reported a generic error - " << ex.name() << ": " << ex.message();
+
+                core::Logger::Write(oss.str(), core::Logger::PRIO_CRITICAL, true);
+            }
+        }
 
         /// <summary>
         /// Evaluates whether the last asynchronous write operation is finished.
@@ -382,6 +421,87 @@ namespace broker
             }
         }
 
+        /// <summary>
+        /// Rolls back the changes accumulated in the current transaction,
+        /// erasing all messages written into the broker queue by the call
+        /// that originated this object and began such transaction.
+        /// </summary>
+        /// <param name="timeout">The timeout in milliseconds.</param>
+        /// <returns>
+        ///   <c>true</c> if current transaction was successfully rolled back, otherwise, <c>false</c>.
+        /// </returns>
+        virtual bool Rollback(uint16_t timeout) override
+        {
+            CALL_STACK_TRACE;
+
+            try
+            {
+                _ASSERTE(m_dbSession.isTransaction()); // must be in a transaction
+
+                if (m_future->valid() && !TryWait(timeout))
+                    return false;
+
+                m_dbSession.rollback();
+                return true;
+            }
+            catch (Poco::Data::DataException &ex)
+            {
+                std::ostringstream oss;
+                oss << "Failed to rollback transaction writing messages into broker queue. "
+                       "POCO C++ reported a data access error: " << ex.name();
+
+                throw core::AppException<std::runtime_error>(oss.str(), ex.message());
+            }
+            catch (Poco::Exception &ex)
+            {
+                std::ostringstream oss;
+                oss << "Failed to rollback transaction writing messages into broker queue. "
+                       "POCO C++ reported a generic error - " << ex.name() << ": " << ex.message();
+
+                throw core::AppException<std::runtime_error>(oss.str());
+            }
+        }
+
+        /// <summary>
+        /// Commits in persistent storage all the changes accumulated in the current
+        /// transaction, which began in the call that originated this object.
+        /// </summary>
+        /// <param name="timeout">The timeout in milliseconds.</param>
+        /// <returns>
+        ///   <c>true</c> if current transaction was successfully committed, otherwise, <c>false</c>.
+        /// </returns>
+        virtual bool Commit(uint16_t timeout) override
+        {
+            CALL_STACK_TRACE;
+
+            try
+            {
+                _ASSERTE(m_dbSession.isTransaction()); // must be in a transaction
+
+                if (m_future->valid() && !TryWait(timeout))
+                    return false;
+
+                m_dbSession.commit();
+                return true;
+            }
+            catch (Poco::Data::DataException &ex)
+            {
+                std::ostringstream oss;
+                oss << "Failed to commit transaction writing messages into broker queue. "
+                       "POCO C++ reported a data access error: " << ex.name();
+
+                throw core::AppException<std::runtime_error>(oss.str(), ex.message());
+            }
+            catch (Poco::Exception &ex)
+            {
+                std::ostringstream oss;
+                oss << "Failed to commit transaction writing messages into broker queue. "
+                       "POCO C++ reported a generic error - " << ex.name() << ": " << ex.message();
+
+                throw core::AppException<std::runtime_error>(oss.str());
+            }
+        }
+
     };// end of AsyncWriteImpl class
 
     // Synchronously put the messages into the broker queue
@@ -403,8 +523,6 @@ namespace broker
             dbSession << "insert into [%s/v1_0_0/InputStageTable] (content) values (?);", serviceURL, useRef(messages), now;
 
             dbSession << "exec [%s/v1_0_0/SendMessagesProc];", serviceURL, now;
-
-            dbSession.commit();
 
             result.set_value();
         }
@@ -432,7 +550,7 @@ namespace broker
             if (m_workerThread && m_workerThread->joinable())
                 m_workerThread->join();
 
-            std::unique_ptr<IAsyncWrite> result(new AsyncWriteImpl());
+            std::unique_ptr<IAsyncWrite> result(new AsyncWriteImpl(m_dbSession));
             
             m_workerThread.reset(
                 new std::thread(&PutInQueueImpl,

@@ -58,7 +58,7 @@ namespace broker
         /// <returns>
         ///   <c>true</c> when finished, otherwise, <c>false</c>.
         /// </returns>
-        virtual bool IsFinished() const = 0;
+        virtual bool HasJoined() const = 0;
 
         /// <summary>
         /// Waits for the last asynchronous read step to finish.
