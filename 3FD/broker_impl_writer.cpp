@@ -329,7 +329,7 @@ namespace broker
 
             try
             {
-                if (m_future->valid() && !TryWait(5000))
+                if (!TryWait(5000))
                 {
                     core::Logger::Write("Await for end of asynchronous write into broker queue has timed "
                                         "out (5 secs) before releasing resources of running statement",
@@ -369,7 +369,8 @@ namespace broker
         /// </returns>
         virtual bool IsFinished() const override
         {
-            return m_future->wait_for(std::chrono::seconds(0)) == std::future_status::ready;
+            return !m_future->valid() ||
+                m_future->wait_for(std::chrono::seconds(0)) == std::future_status::ready;
         }
 
         /// <summary>
@@ -381,9 +382,8 @@ namespace broker
         /// </returns>
         virtual bool TryWait(uint16_t timeout) override
         {
-            return m_future->wait_for(
-                std::chrono::milliseconds(timeout)
-            ) == std::future_status::ready;
+            return !m_future->valid() ||
+                m_future->wait_for(std::chrono::milliseconds(timeout)) == std::future_status::ready;
         }
 
         /// <summary>
@@ -438,7 +438,7 @@ namespace broker
             {
                 _ASSERTE(m_dbSession.isTransaction()); // must be in a transaction
 
-                if (m_future->valid() && !TryWait(timeout))
+                if (!TryWait(timeout))
                     return false;
 
                 m_dbSession.rollback();
@@ -478,7 +478,7 @@ namespace broker
             {
                 _ASSERTE(m_dbSession.isTransaction()); // must be in a transaction
 
-                if (m_future->valid() && !TryWait(timeout))
+                if (!TryWait(timeout))
                     return false;
 
                 m_dbSession.commit();
