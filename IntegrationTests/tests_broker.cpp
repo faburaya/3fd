@@ -8,6 +8,11 @@ namespace _3fd
 namespace integration_tests
 {
     void HandleException();
+
+    /* Tests for the broker module using Microsoft SQL Server can be served by a LocalDB instance,
+       however, the database must have service broker enabled. In the root of the repository it is
+       found 'CreateMsSqlSvcBrokerDatabase.sql', which can be run to create a database that will
+       work with these integration tests. */
     
     /// <summary>
     /// Tests the setup of a reader for the broker queue.
