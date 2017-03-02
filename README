@@ -18,4 +18,4 @@ The provided features are:
 
 + A module for SOAP web services containing helpers & wrappers around Microsoft WWS API, which enables quick development of native web services hosts and clients, including support for SSL transport security
 
-+ A module for RPC containing helpers & wrappers around the DCE based Microsoft RPC API, which enables quick development of RPC servers and clients, including support for SSL transport security, Windows authentication and Schannel
++ A module with queue reader & writer for service broker of Microsoft SQL Server, that greatly simplifies its deployment and use

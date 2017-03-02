@@ -180,10 +180,10 @@ namespace integration_tests
         static uint32_t GetEstimateCycleTime()
         {
             /* In practice, measured time must be linearly
-            augmented for adjustment (using field data), because
-            apparently the server takes much longer to be available
-            than what the measures point out. It happens a little
-            after WebServiceHost::Open returns... */
+               augmented for adjustment (using field data), because
+               apparently the server takes much longer to be available
+               than what the measures point out. It happens a little
+               after WebServiceHost::Open returns... */
             return static_cast<uint32_t> (maxTimeSpanForSvcCycle.count() + 50);
         }
 
