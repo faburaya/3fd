@@ -32,6 +32,9 @@ include_directories(
 
 # Static library source files:
 add_library(3FD STATIC
+    broker_impl.cpp
+    broker_impl_reader.cpp
+    broker_impl_writer.cpp
     callstacktracer.cpp
     cmdline.cpp
     configuration.cpp

@@ -58,6 +58,8 @@ add_library(boost_thread STATIC IMPORTED)
 add_library(PocoUtil STATIC IMPORTED)
 add_library(PocoXML STATIC IMPORTED)
 add_library(PocoFoundation STATIC IMPORTED)
+add_library(PocoData STATIC IMPORTED)
+add_library(PocoDataODBC STATIC IMPORTED)
 
 # Where the lib binaries are:
 string(TOLOWER ${CMAKE_BUILD_TYPE} buildType)
@@ -70,6 +72,8 @@ if(buildType STREQUAL release)
     set_target_properties(PocoUtil PROPERTIES IMPORTED_LOCATION "${POCO_ROOT}/lib/libPocoUtil.a")
     set_target_properties(PocoXML PROPERTIES IMPORTED_LOCATION "${POCO_ROOT}/lib/libPocoXML.a")
     set_target_properties(PocoFoundation PROPERTIES IMPORTED_LOCATION "${POCO_ROOT}/lib/libPocoFoundation.a")
+    set_target_properties(PocoData PROPERTIES IMPORTED_LOCATION "${POCO_ROOT}/lib/libPocoData.a")
+    set_target_properties(PocoDataODBC PROPERTIES IMPORTED_LOCATION "${POCO_ROOT}/lib/libPocoDataODBC.a")
 elseif(buildType STREQUAL debug)
     set_target_properties(3FD PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_BINARY_DIR}/../3FD/lib3FDd.a")
     set_target_properties(gtest PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_BINARY_DIR}/../gtest/libgtestd.a")
@@ -78,6 +82,8 @@ elseif(buildType STREQUAL debug)
     set_target_properties(PocoUtil PROPERTIES IMPORTED_LOCATION "${POCO_ROOT}/lib/libPocoUtild.a")
     set_target_properties(PocoXML PROPERTIES IMPORTED_LOCATION "${POCO_ROOT}/lib/libPocoXMLd.a")
     set_target_properties(PocoFoundation PROPERTIES IMPORTED_LOCATION "${POCO_ROOT}/lib/libPocoFoundationd.a")
+    set_target_properties(PocoData PROPERTIES IMPORTED_LOCATION "${POCO_ROOT}/lib/libPocoDatad.a")
+    set_target_properties(PocoDataODBC PROPERTIES IMPORTED_LOCATION "${POCO_ROOT}/lib/libPocoDataODBCd.a")
 endif()
 
 # Associate the dependencies with the corresponding projects:
@@ -98,6 +104,7 @@ add_executable(IntegrationTests
     tests_gc.cpp
     tests_opencl.cpp
     tests_sqlite.cpp
+    tests_broker.cpp
     IntegrationTests.3fd.config
 )
 
@@ -106,6 +113,6 @@ target_link_libraries(IntegrationTests
     3FD
     pthread dl
     boost_system boost_thread
-    PocoUtil PocoXML PocoFoundation
+    PocoUtil PocoXML PocoFoundation PocoData PocoDataODBC
 )
 
