@@ -69,21 +69,21 @@ if(buildType STREQUAL release)
     set_target_properties(gtest PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_BINARY_DIR}/../gtest/libgtest.a")
     set_target_properties(boost_system PROPERTIES IMPORTED_LOCATION "${BOOST_HOME}/lib/libboost_system-mt.a")
     set_target_properties(boost_thread PROPERTIES IMPORTED_LOCATION "${BOOST_HOME}/lib/libboost_thread-mt.a")
+    set_target_properties(PocoDataODBC PROPERTIES IMPORTED_LOCATION "${POCO_ROOT}/lib/libPocoDataODBC.a")
+    set_target_properties(PocoData PROPERTIES IMPORTED_LOCATION "${POCO_ROOT}/lib/libPocoData.a")
     set_target_properties(PocoUtil PROPERTIES IMPORTED_LOCATION "${POCO_ROOT}/lib/libPocoUtil.a")
     set_target_properties(PocoXML PROPERTIES IMPORTED_LOCATION "${POCO_ROOT}/lib/libPocoXML.a")
     set_target_properties(PocoFoundation PROPERTIES IMPORTED_LOCATION "${POCO_ROOT}/lib/libPocoFoundation.a")
-    set_target_properties(PocoData PROPERTIES IMPORTED_LOCATION "${POCO_ROOT}/lib/libPocoData.a")
-    set_target_properties(PocoDataODBC PROPERTIES IMPORTED_LOCATION "${POCO_ROOT}/lib/libPocoDataODBC.a")
 elseif(buildType STREQUAL debug)
     set_target_properties(3FD PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_BINARY_DIR}/../3FD/lib3FDd.a")
     set_target_properties(gtest PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_BINARY_DIR}/../gtest/libgtestd.a")
     set_target_properties(boost_system PROPERTIES IMPORTED_LOCATION "${BOOST_HOME}/lib/libboost_system-mt-d.a")
     set_target_properties(boost_thread PROPERTIES IMPORTED_LOCATION "${BOOST_HOME}/lib/libboost_thread-mt-d.a")
+    set_target_properties(PocoDataODBC PROPERTIES IMPORTED_LOCATION "${POCO_ROOT}/lib/libPocoDataODBCd.a")
+    set_target_properties(PocoData PROPERTIES IMPORTED_LOCATION "${POCO_ROOT}/lib/libPocoDatad.a")
     set_target_properties(PocoUtil PROPERTIES IMPORTED_LOCATION "${POCO_ROOT}/lib/libPocoUtild.a")
     set_target_properties(PocoXML PROPERTIES IMPORTED_LOCATION "${POCO_ROOT}/lib/libPocoXMLd.a")
     set_target_properties(PocoFoundation PROPERTIES IMPORTED_LOCATION "${POCO_ROOT}/lib/libPocoFoundationd.a")
-    set_target_properties(PocoData PROPERTIES IMPORTED_LOCATION "${POCO_ROOT}/lib/libPocoDatad.a")
-    set_target_properties(PocoDataODBC PROPERTIES IMPORTED_LOCATION "${POCO_ROOT}/lib/libPocoDataODBCd.a")
 endif()
 
 # Associate the dependencies with the corresponding projects:
@@ -100,11 +100,11 @@ add_custom_command(
 # Executable source files:
 add_executable(IntegrationTests
     IntegrationTests.cpp
+    tests_broker.cpp
     tests_core.cpp
     tests_gc.cpp
     tests_opencl.cpp
     tests_sqlite.cpp
-    tests_broker.cpp
     IntegrationTests.3fd.config
 )
 
