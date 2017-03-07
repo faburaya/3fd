@@ -292,7 +292,7 @@ namespace broker
         /// <summary>
         /// Finalizes an instance of the <see cref="AsyncReadImpl"/> class.
         /// </summary>
-        virtual AsyncReadImpl::~AsyncReadImpl()
+        virtual ~AsyncReadImpl()
         {
             CALL_STACK_TRACE;
 

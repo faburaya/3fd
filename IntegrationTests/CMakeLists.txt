@@ -55,11 +55,11 @@ add_library(3FD STATIC IMPORTED)
 add_library(gtest STATIC IMPORTED)
 add_library(boost_system STATIC IMPORTED)
 add_library(boost_thread STATIC IMPORTED)
+add_library(PocoDataODBC STATIC IMPORTED)
+add_library(PocoData STATIC IMPORTED)
 add_library(PocoUtil STATIC IMPORTED)
 add_library(PocoXML STATIC IMPORTED)
 add_library(PocoFoundation STATIC IMPORTED)
-add_library(PocoData STATIC IMPORTED)
-add_library(PocoDataODBC STATIC IMPORTED)
 
 # Where the lib binaries are:
 string(TOLOWER ${CMAKE_BUILD_TYPE} buildType)
@@ -111,8 +111,8 @@ add_executable(IntegrationTests
 target_link_libraries(IntegrationTests 
     gtest
     3FD
-    pthread dl
+    odbc pthread dl
     boost_system boost_thread
-    PocoUtil PocoXML PocoFoundation PocoData PocoDataODBC
+    PocoDataODBC PocoData PocoUtil PocoXML PocoFoundation
 )
 
