@@ -26,25 +26,10 @@ namespace isam
 	{
 		CALL_STACK_TRACE;
 
-		unsigned long flags;
+		auto rcode = JetPrepareUpdate(m_pimplTableCursor.GetSessionHandle(),
+                                      m_pimplTableCursor.GetCursorHandle(),
+                                      static_cast<unsigned long> (mode));
 
-		switch (mode)
-		{
-		case TableWriter::Mode::InsertNew:
-			flags = JET_prepInsert;
-			break;
-		case TableWriter::Mode::InsertCopy:
-			flags = JET_prepInsertCopy;
-			break;
-		case TableWriter::Mode::PrimaryKeyChange:
-			flags = JET_prepInsertCopyDeleteOriginal;
-			break;
-		case TableWriter::Mode::Replace:
-			flags = JET_prepReplace;
-			break;
-		}
-
-		auto rcode = JetPrepareUpdate(m_pimplTableCursor.GetSessionHandle(), m_pimplTableCursor.GetCursorHandle(), flags);
 		ErrorHelper::HandleError(NULL, m_pimplTableCursor.GetSessionHandle(), rcode, "Failed to prepare row update in ISAM database table");
 	}
 

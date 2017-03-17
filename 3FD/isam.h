@@ -123,17 +123,7 @@ namespace isam
 								 N * sizeof(ValType), 
 								 DataType::Blob);
 	}
-		
-	/// <summary>
-	/// Enumerates the code page supported by a text column.
-	/// </summary>
-	enum class CodePage : unsigned long { English = 1252, Unicode = 1200 };
 
-	/// <summary>
-	/// Enumerates the ordering options.
-	/// </summary>
-	enum class Order { Ascending, Descending };
-		
 	class InstanceImpl;
 	class SessionImpl;
 	class DatabaseImpl;
@@ -442,7 +432,13 @@ namespace isam
 		/// <summary>
 		/// Enumerates the types of updates.
 		/// </summary>
-		enum class Mode { InsertNew, InsertCopy, PrimaryKeyChange, Replace };
+		enum class Mode : unsigned long
+        {
+            InsertNew = JET_prepInsert,
+            InsertCopy = JET_prepInsertCopy,
+            PrimaryKeyChange = JET_prepInsertCopyDeleteOriginal,
+            Replace = JET_prepReplace
+        };
 			
 		/// <summary>
 		/// Initializes a new instance of the <see cref="TableWriter"/> class.
@@ -745,6 +741,23 @@ namespace isam
 		void DeleteCurrentRecord();
 	};
 
+    /// <summary>
+    /// Enumerates the code page supported by a text column.
+    /// </summary>
+    enum class CodePage : unsigned long { English = 1252, Unicode = 1200 };
+
+    /// <summary>
+    /// Enumerates the ordering options.
+    /// </summary>
+    enum class Order { Ascending, Descending };
+
+    extern const uint8_t NotNull,
+                         MultiValue,
+                         AutoIncrement,
+                         Sparse,
+                         Primary, Clustered, // synonyms
+                         Unique;
+
 	/// <summary>
 	/// An interface to the table schema in the ISAM database.
 	/// Attention should be paid that the resources through this interface ARE NOT THREAD SAFE.
@@ -771,9 +784,7 @@ namespace isam
 
 			ColumnDefinition(const string &p_name, 
 							 DataType p_dataType, 
-							 bool p_notNull, 
-							 bool p_multiValued = false, 
-							 bool p_sparse = false);
+							 uint8_t colValFlags = 0);
 		};
 
 		/// <summary>
@@ -793,8 +804,7 @@ namespace isam
 
 			IndexDefinition(const string &p_name, 
 							const std::vector<std::pair<string, Order>> &p_keys, 
-							bool p_primary = false, 
-							bool p_unique = true);
+							uint8_t colIdxFlags = 0);
 		};
 
 	public:

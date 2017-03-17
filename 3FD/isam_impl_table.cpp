@@ -63,23 +63,21 @@ namespace isam
 	/// <param name="p_name">Name of the column.</param>
 	/// <param name="p_dataType">Type of data.</param>
 	/// <param name="p_codePage">The code page if a text column.</param>
-	/// <param name="p_notNull">Whether can be null.</param>
-	/// <param name="p_multiValued">Whether is multi-valued.</param>
-	/// <param name="p_autoIncrement">Whether must automatically filled by increment.</param>
-	/// <param name="p_sparse">Whether is sparse.</param>
+	/// <param name="colValFlags">Whether can be null/auto incr/multi val/sparse.</param>
 	Table::ColumnDefinition::ColumnDefinition(const string &p_name, 
                                               DataType p_dataType, 
-                                              bool p_notNull, 
-                                              bool p_multiValued, 
-                                              bool p_sparse)
+                                              uint8_t colValFlags)
 	try : 
-		dataType(p_dataType), 
-		notNull(p_notNull), 
-		multiValued(p_multiValued), 
-		sparse(p_sparse), 
-		autoIncrement(false), 
+		dataType(p_dataType),
+		notNull(colValFlags & NotNull != 0),
+		multiValued(colValFlags & MultiValue != 0),
+        autoIncrement(colValFlags & AutoIncrement != 0),
+		sparse(colValFlags & Sparse != 0),
 		codePage(CodePage::English) 
 	{
+        // any inappropriate flag set?
+        _ASSERTE(~(NotNull | MultiValue | AutoIncrement | Sparse) & colValFlags == 0);
+
 		std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
 		name = transcoder.from_bytes(p_name);
 		default.dataType = p_dataType;
@@ -97,16 +95,17 @@ namespace isam
 	/// </summary>
 	/// <param name="name">The index name.</param>
 	/// <param name="keys">The name of the columns along with the order to sort them.</param>
-	/// <param name="primary">Whether a primary index.</param>
-	/// <param name="unique">Whether the column value must be unique.</param>
+	/// <param name="colIdxFlags">Whether secondary(= non clustered) / unique.</param>
 	Table::IndexDefinition::IndexDefinition(const string &p_name, 
 											const std::vector<std::pair<string, Order>> &p_keys, 
-											bool p_primary, 
-											bool p_unique)
+                                            uint8_t colIdxFlags)
 	try : 
-		primary(p_primary), 
-		unique(p_unique) 
+		primary(colIdxFlags & Clustered != 0),
+		unique(colIdxFlags & Unique != 0) 
 	{
+        // any inappropriate flag set?
+        _ASSERTE(~(Clustered | Unique) & colIdxFlags == 0);
+
 		std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
 		name = transcoder.from_bytes(p_name);
 

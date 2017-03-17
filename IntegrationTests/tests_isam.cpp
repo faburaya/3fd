@@ -471,24 +471,23 @@ namespace integration_tests
 				// Define the table columns:
 				std::vector<ITable::ColumnDefinition> columns;
 				columns.reserve(11);
-				columns.emplace_back("id", DataType::UInt16, true); // not null
-				columns.emplace_back("name", DataType::Text, true); // not null
-				columns.emplace_back("price", DataType::Float32, true); // not null
-				columns.emplace_back("barcode", DataType::GUID, true); // not null
-				columns.emplace_back("fragile", DataType::Boolean, true); // not null
-				columns.emplace_back("providers", DataType::Text, false, true); // nullable, multi-value
-				columns.emplace_back("expiration", DataType::DateTime, false, false, true); // nullable, single value, sparse
-				columns.emplace_back("deliveries", DataType::DateTime, false, true, true); // nullable, multi-value, sparse
+				columns.emplace_back("id", DataType::UInt16, NotNull);
+				columns.emplace_back("name", DataType::Text, NotNull);
+				columns.emplace_back("price", DataType::Float32, NotNull);
+				columns.emplace_back("barcode", DataType::GUID, NotNull);
+				columns.emplace_back("fragile", DataType::Boolean, NotNull);
+				columns.emplace_back("providers", DataType::Text, MultiValue); // nullable
+				columns.emplace_back("expiration", DataType::DateTime, Sparse); // nullable
+                columns.emplace_back("deliveries", DataType::DateTime, MultiValue | Sparse); // nullable
 
 				uint32_t defAmount = 0;
-				columns.emplace_back("amount", DataType::UInt32, true); // not null
+				columns.emplace_back("amount", DataType::UInt32, NotNull);
 				columns.back().default = AsInputParam(defAmount); // default value for amount
 
-				columns.emplace_back("description", DataType::LargeText, true); // not null
-				columns.back().codePage = CodePage::Unicode; // code page is 'english' otherwise specified
+				columns.emplace_back("description", DataType::LargeText, NotNull);
+				columns.back().codePage = CodePage::Unicode; // code page is 'english' unless specified
 
-				columns.emplace_back("sequence", DataType::Int32, true); // not null
-				columns.back().autoIncrement = true;
+				columns.emplace_back("sequence", DataType::Int32, NotNull | AutoIncrement);
 
 				// Define the indexes:
 
@@ -507,9 +506,9 @@ namespace integration_tests
 
 				std::vector<ITable::IndexDefinition> indexes;
 				indexes.reserve(3);
-				indexes.emplace_back("idx-barcode", barCodeIdxKeys, true); // primary, hence unique
-				indexes.emplace_back("idx-name", nameIdxKeys, false, false); // secondary, not unique
-				indexes.emplace_back("idx-id", idIdxKeys, false, true); // secondary, unique
+				indexes.emplace_back("idx-barcode", barCodeIdxKeys, Primary); // primary, hence unique
+				indexes.emplace_back("idx-name", nameIdxKeys); // secondary, not unique
+				indexes.emplace_back("idx-id", idIdxKeys, Unique); // secondary, unique
 
 				// Create the table:
 				auto table = conn.CreateTable("products", false, columns, indexes);
@@ -1148,7 +1147,7 @@ namespace integration_tests
 			table->RenameColumn("sequence", "sequenceid");
 
 			// Create a new column for special handling:
-			table->AddColumn(ITable::ColumnDefinition("sphandling", DataType::Text, false, true)); // nullable, multi-value
+			table->AddColumn(ITable::ColumnDefinition("sphandling", DataType::Text, MultiValue)); // nullable
 			table->MapInt2ColName(ColSpHandling, "sphandling");
 
 			// Remove index for product name:
@@ -1158,7 +1157,7 @@ namespace integration_tests
 			std::vector<std::pair<string, Order>> idxKeyCols;
 			idxKeyCols.emplace_back("providers", Order::Ascending);
 			std::vector<ITable::IndexDefinition> idxDefs;
-			idxDefs.emplace_back("providersidx", idxKeyCols, false, false);
+			idxDefs.emplace_back("providersidx", idxKeyCols);
 			table->CreateIndexes(idxDefs);
 
 			/* Map numeric codes for the indexes names. The framework uses this 
@@ -1366,16 +1365,16 @@ namespace integration_tests
 				// Define the table for historic data:
 				std::vector<ITable::ColumnDefinition> columns;
 				columns.reserve(3);
-				columns.emplace_back("timestamp", DataType::DateTime, true); // not null
-				columns.emplace_back("value", DataType::Float64, true); // not null
-				columns.emplace_back("status", DataType::UByte, true); // not null
+				columns.emplace_back("timestamp", DataType::DateTime, NotNull);
+				columns.emplace_back("value", DataType::Float64, NotNull);
+				columns.emplace_back("status", DataType::UByte, NotNull);
 				columns.back().default = AsInputParam((uint8_t)0); // default value for status
 
 				// Define the timestamp-index:
 				std::vector<ITable::IndexDefinition> indexes;
 				std::vector<std::pair<string, Order>> timestampIdxKeys;
 				timestampIdxKeys.emplace_back("timestamp", Order::Ascending);
-				indexes.emplace_back("timestamp", timestampIdxKeys, true); // primary, hence unique
+				indexes.emplace_back("timestamp", timestampIdxKeys, Primary); // primary, hence unique
 
 				// Create the table with its columns and index:
 				auto table = conn.CreateTable("history", false, columns, indexes);

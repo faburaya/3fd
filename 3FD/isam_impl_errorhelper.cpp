@@ -21,11 +21,10 @@ namespace isam
 	/// <param name="errorCode">The error code.</param>
 	/// <param name="what">The main part of the error message.
 	/// The details will be retrieved from the ISAM engine implementation using the error code.</param>
-	void ErrorHelper::HandleError(
-		JET_INSTANCE jetInstance,
-		JET_SESID jetSession,
-		JET_ERR errorCode,
-		const char *what)
+	void ErrorHelper::HandleError(JET_INSTANCE jetInstance,
+                                  JET_SESID jetSession,
+                                  JET_ERR errorCode,
+                                  const char *what)
 	{
 		if (errorCode == JET_errSuccess)
 			return;
@@ -53,11 +52,10 @@ namespace isam
 	/// <param name="errorCode">The error code.</param>
 	/// <param name="what">A functor which wich generates the main part of the error message.
 	/// The details will be retrieved from the ISAM engine implementation using the error code.</param>
-	void ErrorHelper::HandleError(
-		JET_INSTANCE jetInstance,
-		JET_SESID jetSession,
-		JET_ERR errorCode,
-		const std::function<string(void)> &what)
+	void ErrorHelper::HandleError(JET_INSTANCE jetInstance,
+                                  JET_SESID jetSession,
+                                  JET_ERR errorCode,
+                                  const std::function<string(void)> &what)
 	{
 		if (errorCode == JET_errSuccess)
 			return;
@@ -85,12 +83,11 @@ namespace isam
 	/// <param name="what">The main part of the error message.
 	/// The details will be retrieved from the ISAM engine implementation using the error code.</param>
 	/// <param name="prio">The priority of the error. (optional, in case the error must be logged)</param>
-	void ErrorHelper::LogError(
-		JET_INSTANCE jetInstance,
-		JET_SESID jetSession,
-		JET_ERR errorCode,
-		const char *what,
-		core::Logger::Priority prio)
+	void ErrorHelper::LogError(JET_INSTANCE jetInstance,
+                               JET_SESID jetSession,
+                               JET_ERR errorCode,
+                               const char *what,
+                               core::Logger::Priority prio)
 	{
 		if (errorCode == JET_errSuccess)
 			return;
@@ -108,10 +105,10 @@ namespace isam
 	/// The details will be retrieved from the ISAM engine implementation using the error code.</param>
 	/// <param name="prio">The priority of the error. (optional, in case the error must be logged)</param>
 	void ErrorHelper::LogError(JET_INSTANCE jetInstance,
-		JET_SESID jetSession,
-		JET_ERR errorCode,
-		const std::function<string(void)> &what,
-		core::Logger::Priority prio)
+                               JET_SESID jetSession,
+                               JET_ERR errorCode,
+                               const std::function<string(void)> &what,
+                               core::Logger::Priority prio)
 	{
 		if (errorCode == JET_errSuccess)
 			return;
@@ -130,10 +127,10 @@ namespace isam
 	/// The details will be retrieved from the ISAM engine implementation using the error code.</param>
 	/// <returns>An application exception describing the error.</returns>
 	core::AppException<std::exception> ErrorHelper::MakeException(
-		JET_INSTANCE jetInstance,
-		JET_SESID jetSession,
-		JET_ERR errorCode,
-		const char *what)
+        JET_INSTANCE jetInstance,
+        JET_SESID jetSession,
+        JET_ERR errorCode,
+        const char *what)
 	{
 		return MakeException(jetInstance, jetSession, errorCode, [what]() { return what; });
 	}
@@ -149,10 +146,10 @@ namespace isam
 	/// The details will be retrieved from the ISAM engine implementation using the error code.</param>
 	/// <returns>An application exception describing the error.</returns>
 	core::AppException<std::exception> ErrorHelper::MakeException(
-		JET_INSTANCE jetInstance,
-		JET_SESID jetSession,
-		JET_ERR errorCode,
-		const std::function<string(void)> &what)
+        JET_INSTANCE jetInstance,
+        JET_SESID jetSession,
+        JET_ERR errorCode,
+        const std::function<string(void)> &what)
 	{
 		_ASSERTE(errorCode != JET_errSuccess); // This function must only be called when it is known an error took place
 

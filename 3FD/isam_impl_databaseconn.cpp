@@ -44,9 +44,9 @@ namespace isam
 	/// <returns>A <see cref="ITable" /> interface for the newly created table.</returns>
 	std::shared_ptr<ITable> 
 	DatabaseConn::CreateTable(const string &name, bool isTemplate, 
-								const std::vector<Table::ColumnDefinition> &columns, 
-								const std::vector<Table::IndexDefinition> &indexes, 
-								bool sparse, unsigned long reservedPages)
+                              const std::vector<Table::ColumnDefinition> &columns, 
+                              const std::vector<Table::IndexDefinition> &indexes, 
+                              bool sparse, unsigned long reservedPages)
 	{
 		return std::shared_ptr<ITable>(
 			m_pimplDatabase->CreateTable(name, isTemplate, columns, indexes, sparse, reservedPages)
@@ -63,7 +63,7 @@ namespace isam
 	/// <returns>A newly created <see cref="Table" /> object for the newly created table.</returns>
 	std::shared_ptr<ITable> 
 	DatabaseConn::CreateTable(const string &name, const string &templateName, 
-								bool sparse, unsigned long reservedPages)
+                              bool sparse, unsigned long reservedPages)
 	{
 		return std::shared_ptr<ITable>(
 			m_pimplDatabase->CreateTable(name, templateName, sparse, reservedPages)
