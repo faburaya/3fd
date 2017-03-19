@@ -69,7 +69,7 @@ namespace broker
 
         Poco::Nullable<int> stoProcObjId;
         m_dbSession <<
-            "select object_id(N'dbo.%s/v1_0_0/ReadMessagesProc', N'P');"
+            "select object_id(N'%s/v1_0_0/ReadMessagesProc', N'P');"
             , serviceURL
             , into(stoProcObjId)
             , now;

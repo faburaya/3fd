@@ -93,7 +93,7 @@ namespace broker
 
         Poco::Nullable<int> stoProcObjId;
         m_dbSession <<
-            "select object_id(N'dbo.%s/v1_0_0/SendMessagesProc', N'P');"
+            "select object_id(N'%s/v1_0_0/SendMessagesProc', N'P');"
             , serviceURL
             , into(stoProcObjId)
             , now;
@@ -159,7 +159,7 @@ namespace broker
         // Create stored procedure to finish conversations in the initiator endpoint:
 
         m_dbSession <<
-            "select object_id(N'dbo.%s/v1_0_0/FinishDialogsOnEndptInitProc', N'P');"
+            "select object_id(N'%s/v1_0_0/FinishDialogsOnEndptInitProc', N'P');"
             , serviceURL
             , into(stoProcObjId)
             , now;
