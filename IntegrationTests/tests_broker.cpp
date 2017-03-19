@@ -13,6 +13,12 @@ namespace integration_tests
        however, the database must have service broker enabled. In the root of the repository it is
        found 'CreateMsSqlSvcBrokerDatabase.sql', which can be run to create a database that will
        work with these integration tests. */
+
+#ifdef _WIN32
+    const char *msSqlDbConnString("Driver={SQL Server Native Client 11.0};Server=(localdb)\\MSSQLLocalDB;Database=SvcBrokerTest;Trusted_Connection=yes;");
+#else
+    const char *msSqlDbConnString("Driver={SQL Server Native Client 11.0};Server=CASE\\SQLEXPRESS;Database=SvcBrokerTest;Uid=tester;Pwd=tester;");
+#endif
     
     /// <summary>
     /// Tests the setup of a reader for the broker queue.
@@ -30,7 +36,7 @@ namespace integration_tests
 
             QueueReader queueReader(
                 Backend::MsSqlServer,
-                "Driver={SQL Server Native Client 11.0};Server=(localdb)\\MSSQLLocalDB;Database=SvcBrokerTest;Trusted_Connection=yes;",
+                msSqlDbConnString,
                 "//SvcBrokerTest/IntegrationTestService",
                 MessageTypeSpec { 128UL, MessageContentValidation::None }
             );
@@ -77,7 +83,7 @@ namespace integration_tests
 
             QueueWriter queueWriter(
                 Backend::MsSqlServer,
-                "Driver={SQL Server Native Client 11.0};Server=(localdb)\\MSSQLLocalDB;Database=SvcBrokerTest;Trusted_Connection=yes;",
+                msSqlDbConnString,
                 "//SvcBrokerTest/IntegrationTestService",
                 MessageTypeSpec{ 128UL, MessageContentValidation::None }
             );
@@ -118,7 +124,7 @@ namespace integration_tests
             // Setup the writer:
             QueueWriter queueWriter(
                 Backend::MsSqlServer,
-                "Driver={SQL Server Native Client 11.0};Server=(localdb)\\MSSQLLocalDB;Database=SvcBrokerTest;Trusted_Connection=yes;",
+                msSqlDbConnString,
                 "//SvcBrokerTest/IntegrationTestService",
                 MessageTypeSpec{ 128UL, MessageContentValidation::None }
             );
@@ -129,7 +135,7 @@ namespace integration_tests
             // Setup the reader:
             QueueReader queueReader(
                 Backend::MsSqlServer,
-                "Driver={SQL Server Native Client 11.0};Server=(localdb)\\MSSQLLocalDB;Database=SvcBrokerTest;Trusted_Connection=yes;",
+                msSqlDbConnString,
                 "//SvcBrokerTest/IntegrationTestService",
                 MessageTypeSpec{ 128UL, MessageContentValidation::None }
             );
@@ -280,7 +286,7 @@ namespace integration_tests
             // Setup the writer:
             QueueWriter queueWriter(
                 Backend::MsSqlServer,
-                "Driver={SQL Server Native Client 11.0};Server=(localdb)\\MSSQLLocalDB;Database=SvcBrokerTest;Trusted_Connection=yes;",
+                msSqlDbConnString,
                 "//SvcBrokerTest/IntegrationTestService",
                 MessageTypeSpec{ 128UL, MessageContentValidation::None }
             );
@@ -291,7 +297,7 @@ namespace integration_tests
             // Setup the reader:
             QueueReader queueReader(
                 Backend::MsSqlServer,
-                "Driver={SQL Server Native Client 11.0};Server=(localdb)\\MSSQLLocalDB;Database=SvcBrokerTest;Trusted_Connection=yes;",
+                msSqlDbConnString,
                 "//SvcBrokerTest/IntegrationTestService",
                 MessageTypeSpec{ 128UL, MessageContentValidation::None }
             );
