@@ -69,14 +69,14 @@ namespace isam
                                               uint8_t colValFlags)
 	try : 
 		dataType(p_dataType),
-		notNull(colValFlags & NotNull != 0),
-		multiValued(colValFlags & MultiValue != 0),
-        autoIncrement(colValFlags & AutoIncrement != 0),
-		sparse(colValFlags & Sparse != 0),
+		notNull((colValFlags & NotNull) != 0),
+		multiValued((colValFlags & MultiValue) != 0),
+        autoIncrement((colValFlags & AutoIncrement) != 0),
+		sparse((colValFlags & Sparse) != 0),
 		codePage(CodePage::English) 
 	{
         // any inappropriate flag set?
-        _ASSERTE(~(NotNull | MultiValue | AutoIncrement | Sparse) & colValFlags == 0);
+        _ASSERTE(((~(NotNull | MultiValue | AutoIncrement | Sparse)) & colValFlags) == 0);
 
 		std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
 		name = transcoder.from_bytes(p_name);
@@ -100,11 +100,11 @@ namespace isam
 											const std::vector<std::pair<string, Order>> &p_keys, 
                                             uint8_t colIdxFlags)
 	try : 
-		primary(colIdxFlags & Clustered != 0),
-		unique(colIdxFlags & Unique != 0) 
+		primary((colIdxFlags & Clustered) != 0),
+		unique((colIdxFlags & Unique) != 0)
 	{
         // any inappropriate flag set?
-        _ASSERTE(~(Clustered | Unique) & colIdxFlags == 0);
+        _ASSERTE(((~(Clustered | Unique)) & colIdxFlags) == 0);
 
 		std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
 		name = transcoder.from_bytes(p_name);
