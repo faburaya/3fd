@@ -250,14 +250,11 @@ namespace broker
 
             m_stoProcExecStmt.reset(new Poco::Data::Statement(dbSession));
 
-            char queryStrBuf[128];
-            sprintf(queryStrBuf,
-                    "exec [%s/v1_0_0/ReadMessagesProc] %d, %d;",
-                    serviceURL.c_str(),
-                    (int)msgCountStepLimit,
-                    (int)msgRecvTimeout);
+            std::ostringstream oss;
+            oss << "exec [" << serviceURL << "/v1_0_0/ReadMessagesProc] "
+                << msgCountStepLimit << ", " << msgRecvTimeout << ";";
             
-            *m_stoProcExecStmt << queryStrBuf, into(m_messages);
+            *m_stoProcExecStmt << oss.str(), into(m_messages);
 
             dbSession.begin();
 
