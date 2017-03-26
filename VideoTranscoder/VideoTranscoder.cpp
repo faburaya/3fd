@@ -202,7 +202,7 @@ int main(int argc, const char *argv[])
         
         if (srcReadDecStreams.empty())
         {
-            std::cout << "\nInput media file had not video or audio streams to decode!\n" << std::endl;
+            std::cout << "\nInput media file had no video or audio streams to decode!\n" << std::endl;
             return EXIT_SUCCESS;
         }
 

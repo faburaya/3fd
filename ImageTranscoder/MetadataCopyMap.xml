@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Configures how application handles metadata -->
+<metadata xmlns="http://3fd.codeplex.com/MetadataCopyMap.xsd"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://3fd.codeplex.com/MetadataCopyMap.xsd MetadataCopyMap.xsd">
+    
+    <!-- Tells the application how the GUID's used by WIC API relate to the format names used in this XML -->
+    <formats>
+        <container>
+            <entry guid="163bcc30e2e94f0b961da3e9fdb788a3" name="tiff"/>
+            <!-- this entry is to make JPEG XR metadata be handled like TIFF -->
+            <entry guid="57a37caa367a4540916bf183c5093a4b" name="tiff"/>
+            <entry guid="19e4a5aa56624fc5a0c01758028e1057" name="jpeg"/>
+        </container>
+        <metadata>
+            <entry guid="537396C62D8A4BB69BF82F0A8E2A3ADF" name="IFD"/>
+            <entry guid="BB5ACC38F2164CECA6C55F6E739763A9" name="XMP"/>
+            <entry guid="1C3C4F9DB84A467D949336CFBD59EA57" name="EXIF"/>
+            <entry guid="4FAB0914E1294087A1D1BC812D45A7B5" name="IPTC"/>
+        </metadata>
+    </formats>
+
+    <!-- How to copy metadata in several cases of one container type to another -->
+    <map>
+        <case srcFormat="tiff" destFormat="jpeg">
+            <entry metaFormat="IFD"  fromPath="/ifd/*"                   toPath="/app1/ifd/*"                copyAllItems="false"/>
+            <entry metaFormat="IFD"  fromPath="/ifd/thumb/*"             toPath="/app1/thumb/*"              copyAllItems="true"/>
+            <entry metaFormat="XMP"  fromPath="/ifd/xmp/*"               toPath="/xmp/*"                     copyAllItems="false"/>
+            <entry metaFormat="EXIF" fromPath="/ifd/exif/*"              toPath="/app1/ifd/exif/*"           copyAllItems="false"/>
+            <entry metaFormat="IPTC" fromPath="/ifd/irb/8bimiptc/iptc/*" toPath="/app13/irb/8bimiptc/iptc/*" copyAllItems="true"/>
+        </case>
+        <case srcFormat="jpeg" destFormat="tiff">
+            <entry metaFormat="IFD"  fromPath="/app1/ifd/*"                toPath="/ifd/*"                   copyAllItems="false"/>
+            <entry metaFormat="IFD"  fromPath="/app1/*"                    toPath="/ifd/*"                   copyAllItems="false"/>
+            <entry metaFormat="IFD"  fromPath="/app1/thumb/*"              toPath="/ifd/thumb/*"             copyAllItems="true"/>
+            <entry metaFormat="XMP"  fromPath="/xmp/*"                     toPath="/ifd/xmp/*"               copyAllItems="false"/>
+            <entry metaFormat="EXIF" fromPath="/app1/ifd/exif/*"           toPath="/ifd/exif/*"              copyAllItems="false"/>
+            <entry metaFormat="IPTC" fromPath="/app13/irb/8bimiptc/iptc/*" toPath="/ifd/irb/8bimiptc/iptc/*" copyAllItems="true"/>
+        </case>
+    </map>
+
+    <!-- The most common metadata items that are common to some container formats -->
+    <items>
+        <entry id="256"   metaFormat="IFD"  rational="false" name="ImageWidth"/>
+        <entry id="257"   metaFormat="IFD"  rational="false" name="ImageLength"/>
+        <entry id="258"   metaFormat="IFD"  rational="false" name="BitsPerSample"/>
+        <entry id="259"   metaFormat="IFD"  rational="false" name="Compression"/>
+        <entry id="262"   metaFormat="IFD"  rational="false" name="PhotometricInterpretation"/>
+        <entry id="274"   metaFormat="IFD"  rational="false" name="Orientation"/>
+        <entry id="277"   metaFormat="IFD"  rational="false" name="SamplesPerPixel"/>
+        <entry id="284"   metaFormat="IFD"  rational="false" name="PlanarConfiguration"/>
+        <entry id="530"   metaFormat="IFD"  rational="false" name="YCbCrSubSampling"/>
+        <entry id="531"   metaFormat="IFD"  rational="false" name="YCbCrPositioning"/>
+        <entry id="282"   metaFormat="IFD"  rational="false" name="XResolution"/>
+        <entry id="283"   metaFormat="IFD"  rational="false" name="YResolution"/>
+        <entry id="296"   metaFormat="IFD"  rational="false" name="ResolutionUnit"/>
+        <entry id="306"   metaFormat="IFD"  rational="false" name="DateTime"/>
+        <entry id="270"   metaFormat="IFD"  rational="false" name="ImageDescription"/>
+        <entry id="271"   metaFormat="IFD"  rational="false" name="Make"/>
+        <entry id="272"   metaFormat="IFD"  rational="false" name="Model"/>
+        <entry id="305"   metaFormat="IFD"  rational="false" name="Software"/>
+        <entry id="315"   metaFormat="IFD"  rational="false" name="Artist"/>
+        <entry id="33432" metaFormat="IFD"  rational="false" name="Copyright"/>
+        <entry id="338"   metaFormat="IFD"  rational="false" name="ExtraSamples"/>
+        <entry id="254"   metaFormat="IFD"  rational="false" name="NewSubfileType"/>
+        <entry id="278"   metaFormat="IFD"  rational="false" name="RowsPerStrip"/>
+        <entry id="279"   metaFormat="IFD"  rational="false" name="StripByteCounts"/>
+        <entry id="273"   metaFormat="IFD"  rational="false" name="StripOffsets"/>
+        <entry id="36864" metaFormat="EXIF" rational="false" name="ExifVersion"/>
+        <entry id="40960" metaFormat="EXIF" rational="false" name="FlashpixVersion"/>
+        <entry id="40961" metaFormat="EXIF" rational="false" name="ColorSpace"/>
+        <entry id="40962" metaFormat="EXIF" rational="false" name="PixelXDimension"/>
+        <entry id="40963" metaFormat="EXIF" rational="false" name="PixelYDimension"/>
+        <entry id="37500" metaFormat="EXIF" rational="false" name="MakerNote"/>
+        <entry id="37510" metaFormat="EXIF" rational="false" name="UserComment"/>
+        <entry id="36867" metaFormat="EXIF" rational="false" name="DateTimeOriginal"/>
+        <entry id="36868" metaFormat="EXIF" rational="false" name="DateTimeDigitized"/>
+        <entry id="42016" metaFormat="EXIF" rational="false" name="ImageUniqueID"/>
+        <entry id="42032" metaFormat="EXIF" rational="false" name="CameraOwnerName"/>
+        <entry id="42033" metaFormat="EXIF" rational="false" name="BodySerialNumber"/>
+        <entry id="42034" metaFormat="EXIF" rational="true"  name="LensSpecification"/>
+        <entry id="42035" metaFormat="EXIF" rational="false" name="LensMake"/>
+        <entry id="42036" metaFormat="EXIF" rational="false" name="LensModel"/>
+        <entry id="42037" metaFormat="EXIF" rational="false" name="LensSerialNumber"/>
+        <entry id="33434" metaFormat="EXIF" rational="true"  name="ExposureTime"/>
+        <entry id="33437" metaFormat="EXIF" rational="true"  name="FNumber"/>
+        <entry id="34850" metaFormat="EXIF" rational="false" name="ExposureProgram"/>
+        <entry id="34852" metaFormat="EXIF" rational="false" name="SpectralSensitivity"/>
+        <entry id="34855" metaFormat="EXIF" rational="false" name="PhotographicSensitivity"/>
+        <entry id="34856" metaFormat="EXIF" rational="false" name="OECF"/>
+        <entry id="34864" metaFormat="EXIF" rational="false" name="SensitivityType"/>
+        <entry id="34865" metaFormat="EXIF" rational="false" name="StandardOutputSensitivity"/>
+        <entry id="34866" metaFormat="EXIF" rational="false" name="RecommendedExposureIndex"/>
+        <entry id="34867" metaFormat="EXIF" rational="false" name="ISOSpeed"/>
+        <entry id="34868" metaFormat="EXIF" rational="false" name="ISOSpeedLatitudeyyy"/>
+        <entry id="34869" metaFormat="EXIF" rational="false" name="ISOSpeedLatitudezzz"/>
+        <entry id="37377" metaFormat="EXIF" rational="true"  name="ShutterSpeedValue"/>
+        <entry id="37378" metaFormat="EXIF" rational="true"  name="ApertureValue"/>
+        <entry id="37379" metaFormat="EXIF" rational="true"  name="BrightnessValue"/>
+        <entry id="37380" metaFormat="EXIF" rational="true"  name="ExposureBiasValue"/>
+        <entry id="37381" metaFormat="EXIF" rational="true"  name="MaxApertureValue"/>
+        <entry id="37382" metaFormat="EXIF" rational="true"  name="SubjectDistance"/>
+        <entry id="37383" metaFormat="EXIF" rational="false" name="MeteringMode"/>
+        <entry id="37384" metaFormat="EXIF" rational="false" name="LightSource"/>
+        <entry id="37385" metaFormat="EXIF" rational="false" name="Flash"/>
+        <entry id="37386" metaFormat="EXIF" rational="true"  name="FocalLength"/>
+        <entry id="37396" metaFormat="EXIF" rational="false" name="SubjectArea"/>
+        <entry id="41483" metaFormat="EXIF" rational="true"  name="FlashEnergy"/>
+        <entry id="41484" metaFormat="EXIF" rational="false" name="SpatialFrequencyResponse"/>
+        <entry id="41486" metaFormat="EXIF" rational="true"  name="FocalPlaneXResolution"/>
+        <entry id="41487" metaFormat="EXIF" rational="true"  name="FocalPlaneYResolution"/>
+        <entry id="41488" metaFormat="EXIF" rational="false" name="FocalPlaneResolutionUnit"/>
+        <entry id="41492" metaFormat="EXIF" rational="false" name="SubjectLocation"/>
+        <entry id="41493" metaFormat="EXIF" rational="true"  name="ExposureIndex"/>
+        <entry id="41495" metaFormat="EXIF" rational="false" name="SensingMethod"/>
+        <entry id="41728" metaFormat="EXIF" rational="false" name="FileSource"/>
+        <entry id="41729" metaFormat="EXIF" rational="false" name="SceneType"/>
+        <entry id="41730" metaFormat="EXIF" rational="false" name="CFAPattern"/>
+        <entry id="41985" metaFormat="EXIF" rational="false" name="CustomRendered"/>
+        <entry id="41986" metaFormat="EXIF" rational="false" name="ExposureMode"/>
+        <entry id="41987" metaFormat="EXIF" rational="false" name="WhiteBalance"/>
+        <entry id="41988" metaFormat="EXIF" rational="true"  name="DigitalZoomRatio"/>
+        <entry id="41989" metaFormat="EXIF" rational="false" name="FocalLengthIn35mmFilm"/>
+        <entry id="41990" metaFormat="EXIF" rational="false" name="SceneCaptureType"/>
+        <entry id="41991" metaFormat="EXIF" rational="true"  name="GainControl"/>
+        <entry id="41992" metaFormat="EXIF" rational="false" name="Contrast"/>
+        <entry id="41993" metaFormat="EXIF" rational="false" name="Saturation"/>
+        <entry id="41994" metaFormat="EXIF" rational="false" name="Sharpness"/>
+        <entry id="41995" metaFormat="EXIF" rational="false" name="DeviceSettingDescription"/>
+        <entry id="41996" metaFormat="EXIF" rational="false" name="SubjectDistanceRange"/>
+        <entry id="0"     metaFormat="EXIF" rational="false" name="GPSVersionID"/>
+        <entry id="1"     metaFormat="EXIF" rational="false" name="GPSLatitudeRef"/>
+        <entry id="2"     metaFormat="EXIF" rational="true"  name="GPSLatitude"/>
+        <entry id="3"     metaFormat="EXIF" rational="false" name="GPSLongitudeRef"/>
+        <entry id="4"     metaFormat="EXIF" rational="true"  name="GPSLongitude"/>
+        <entry id="5"     metaFormat="EXIF" rational="false" name="GPSAltitudeRef"/>
+        <entry id="6"     metaFormat="EXIF" rational="true"  name="GPSAltitude"/>
+        <entry id="7"     metaFormat="EXIF" rational="true"  name="GPSTimeStamp"/>
+        <entry id="8"     metaFormat="EXIF" rational="false" name="GPSSatellites"/>
+        <entry id="9"     metaFormat="EXIF" rational="false" name="GPSStatus"/>
+        <entry id="10"    metaFormat="EXIF" rational="false" name="GPSMeasureMode"/>
+        <entry id="11"    metaFormat="EXIF" rational="true"  name="GPSDOP"/>
+        <entry id="12"    metaFormat="EXIF" rational="false" name="GPSSpeedRef"/>
+        <entry id="13"    metaFormat="EXIF" rational="true"  name="GPSSpeed"/>
+        <entry id="14"    metaFormat="EXIF" rational="false" name="GPSTrackRef"/>
+        <entry id="15"    metaFormat="EXIF" rational="true"  name="GPSTrack"/>
+    </items>
+</metadata>

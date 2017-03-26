@@ -1,0 +1,139 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xs:schema id="MetadataCopyMap"
+    targetNamespace="http://3fd.codeplex.com/MetadataCopyMap.xsd"
+    elementFormDefault="qualified"
+    xmlns="http://3fd.codeplex.com/MetadataCopyMap.xsd"
+    xmlns:mstns="http://3fd.codeplex.com/MetadataCopyMap.xsd"
+    xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+    <xs:complexType name="listOfFormats">
+        <xs:sequence>
+            <xs:element name="entry" minOccurs="1" maxOccurs="unbounded">
+                <xs:complexType>
+                    <xs:attribute name="guid" use="required">
+                        <xs:simpleType>
+                            <xs:restriction base="xs:hexBinary">
+                                <xs:length value="16"/>
+                            </xs:restriction>
+                        </xs:simpleType>
+                    </xs:attribute>
+                    <xs:attribute name="name" use="required">
+                        <xs:simpleType>
+                            <xs:restriction base="xs:token">
+                                <xs:minLength value="1"/>
+                                <xs:maxLength value="8"/>
+                            </xs:restriction>
+                        </xs:simpleType>
+                    </xs:attribute>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="listOfMapCases">
+        <xs:sequence>
+            <xs:element name="case" minOccurs="1" maxOccurs="unbounded">
+                <xs:complexType mixed="true">
+                    <xs:sequence>
+                        <xs:element name="entry" minOccurs="1" maxOccurs="unbounded">
+                            <xs:complexType>
+                                <xs:attribute name="metaFormat" use="required">
+                                    <xs:simpleType>
+                                        <xs:restriction base="xs:token">
+                                            <xs:minLength value="1"/>
+                                            <xs:maxLength value="8"/>
+                                        </xs:restriction>
+                                    </xs:simpleType>
+                                </xs:attribute>
+                                <xs:attribute name="fromPath" use="required">
+                                    <xs:simpleType>
+                                        <xs:restriction base="xs:token">
+                                            <xs:minLength value="1"/>
+                                            <xs:maxLength value="32"/>
+                                        </xs:restriction>
+                                    </xs:simpleType>
+                                </xs:attribute>
+                                <xs:attribute name="toPath" use="required">
+                                    <xs:simpleType>
+                                        <xs:restriction base="xs:token">
+                                            <xs:minLength value="1"/>
+                                            <xs:maxLength value="32"/>
+                                        </xs:restriction>
+                                    </xs:simpleType>
+                                </xs:attribute>
+                                <xs:attribute name="copyAllItems" type="xs:boolean" use="required"/>
+                            </xs:complexType>
+                        </xs:element>
+                    </xs:sequence>
+                    <xs:attribute name="srcFormat" use="required">
+                        <xs:simpleType>
+                            <xs:restriction base="xs:string">
+                                <xs:minLength value="1"/>
+                                <xs:maxLength value="8"/>
+                            </xs:restriction>
+                        </xs:simpleType>
+                    </xs:attribute>
+                    <xs:attribute name="destFormat" use="required">
+                        <xs:simpleType>
+                            <xs:restriction base="xs:string">
+                                <xs:minLength value="1"/>
+                                <xs:maxLength value="8"/>
+                            </xs:restriction>
+                        </xs:simpleType>
+                    </xs:attribute>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="listOfItems">
+        <xs:sequence>
+            <xs:element name="entry" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                    <xs:attribute name="id" use="required">
+                        <xs:simpleType>
+                            <xs:restriction base="xs:nonNegativeInteger">
+                                <xs:maxExclusive value="65536"/>
+                            </xs:restriction>
+                        </xs:simpleType>
+                    </xs:attribute>
+                    <xs:attribute name="metaFormat" use="required">
+                        <xs:simpleType>
+                            <xs:restriction base="xs:token">
+                                <xs:minLength value="1"/>
+                                <xs:maxLength value="8"/>
+                            </xs:restriction>
+                        </xs:simpleType>
+                    </xs:attribute>
+                    <xs:attribute name="name" use="required">
+                        <xs:simpleType>
+                            <xs:restriction base="xs:token">
+                                <xs:minLength value="1"/>
+                                <xs:maxLength value="32"/>
+                            </xs:restriction>
+                        </xs:simpleType>
+                    </xs:attribute>
+                    <xs:attribute name="rational" type="xs:boolean" use="required"/>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    
+    <xs:element name="metadata">
+        <xs:complexType>
+            <xs:all>
+                <xs:element name="formats" minOccurs="1" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:all>
+                            <xs:element name="container" type="listOfFormats" minOccurs="1" maxOccurs="1"/>
+                            <xs:element name="metadata"  type="listOfFormats" minOccurs="1" maxOccurs="1"/>
+                        </xs:all>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="map" type="listOfMapCases" minOccurs="1" maxOccurs="1"/>
+                <xs:element name="items" type="listOfItems" minOccurs="1" maxOccurs="1"/>
+            </xs:all>
+        </xs:complexType>
+    </xs:element>
+
+</xs:schema>
