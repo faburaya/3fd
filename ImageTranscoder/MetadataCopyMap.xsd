@@ -12,8 +12,8 @@
                 <xs:complexType>
                     <xs:attribute name="guid" use="required">
                         <xs:simpleType>
-                            <xs:restriction base="xs:hexBinary">
-                                <xs:length value="16"/>
+                            <xs:restriction base="xs:token">
+                                <xs:pattern value="\{[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\}"/>
                             </xs:restriction>
                         </xs:simpleType>
                     </xs:attribute>
@@ -32,7 +32,7 @@
 
     <xs:complexType name="listOfMapCases">
         <xs:sequence>
-            <xs:element name="case" minOccurs="1" maxOccurs="unbounded">
+            <xs:element name="case" minOccurs="0" maxOccurs="unbounded">
                 <xs:complexType mixed="true">
                     <xs:sequence>
                         <xs:element name="entry" minOccurs="1" maxOccurs="unbounded">
@@ -50,6 +50,7 @@
                                         <xs:restriction base="xs:token">
                                             <xs:minLength value="1"/>
                                             <xs:maxLength value="32"/>
+                                            <xs:pattern value="/([0-9a-zA-Z]+/)*"/>
                                         </xs:restriction>
                                     </xs:simpleType>
                                 </xs:attribute>
@@ -58,6 +59,7 @@
                                         <xs:restriction base="xs:token">
                                             <xs:minLength value="1"/>
                                             <xs:maxLength value="32"/>
+                                            <xs:pattern value="/([0-9a-zA-Z]+/)*"/>
                                         </xs:restriction>
                                     </xs:simpleType>
                                 </xs:attribute>
@@ -67,7 +69,7 @@
                     </xs:sequence>
                     <xs:attribute name="srcFormat" use="required">
                         <xs:simpleType>
-                            <xs:restriction base="xs:string">
+                            <xs:restriction base="xs:token">
                                 <xs:minLength value="1"/>
                                 <xs:maxLength value="8"/>
                             </xs:restriction>
@@ -75,7 +77,7 @@
                     </xs:attribute>
                     <xs:attribute name="destFormat" use="required">
                         <xs:simpleType>
-                            <xs:restriction base="xs:string">
+                            <xs:restriction base="xs:token">
                                 <xs:minLength value="1"/>
                                 <xs:maxLength value="8"/>
                             </xs:restriction>

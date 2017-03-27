@@ -7,35 +7,65 @@
     <!-- Tells the application how the GUID's used by WIC API relate to the format names used in this XML -->
     <formats>
         <container>
-            <entry guid="163bcc30e2e94f0b961da3e9fdb788a3" name="tiff"/>
-            <!-- this entry is to make JPEG XR metadata be handled like TIFF -->
-            <entry guid="57a37caa367a4540916bf183c5093a4b" name="tiff"/>
-            <entry guid="19e4a5aa56624fc5a0c01758028e1057" name="jpeg"/>
+            <entry guid="{163bcc30-e2e9-4f0b-961d-a3e9fdb788a3}" name="tiff"/>
+            <entry guid="{57a37caa-367a-4540-916b-f183c5093a4b}" name="jpegxr"/>
+            <entry guid="{19e4a5aa-5662-4fc5-a0c0-1758028e1057}" name="jpeg"/>
         </container>
         <metadata>
-            <entry guid="537396C62D8A4BB69BF82F0A8E2A3ADF" name="IFD"/>
-            <entry guid="BB5ACC38F2164CECA6C55F6E739763A9" name="XMP"/>
-            <entry guid="1C3C4F9DB84A467D949336CFBD59EA57" name="EXIF"/>
-            <entry guid="4FAB0914E1294087A1D1BC812D45A7B5" name="IPTC"/>
+            <entry guid="{537396C6-2D8A-4BB6-9BF8-2F0A8E2A3ADF}" name="IFD"/>
+            <entry guid="{BB5ACC38-F216-4CEC-A6C5-5F6E739763A9}" name="XMP"/>
+            <entry guid="{1C3C4F9D-B84A-467D-9493-36CFBD59EA57}" name="EXIF"/>
+            <entry guid="{4FAB0914-E129-4087-A1D1-BC812D45A7B5}" name="IPTC"/>
         </metadata>
     </formats>
 
-    <!-- How to copy metadata in several cases of one container type to another -->
+    <!-- How to copy metadata in several cases of one container type to another.
+         The application will only be able to copy metadata from cases listed below,
+         or when container format for both source and destination are the same. -->
     <map>
         <case srcFormat="tiff" destFormat="jpeg">
-            <entry metaFormat="IFD"  fromPath="/ifd/*"                   toPath="/app1/ifd/*"                copyAllItems="false"/>
-            <entry metaFormat="IFD"  fromPath="/ifd/thumb/*"             toPath="/app1/thumb/*"              copyAllItems="true"/>
-            <entry metaFormat="XMP"  fromPath="/ifd/xmp/*"               toPath="/xmp/*"                     copyAllItems="false"/>
-            <entry metaFormat="EXIF" fromPath="/ifd/exif/*"              toPath="/app1/ifd/exif/*"           copyAllItems="false"/>
-            <entry metaFormat="IPTC" fromPath="/ifd/irb/8bimiptc/iptc/*" toPath="/app13/irb/8bimiptc/iptc/*" copyAllItems="true"/>
+            <entry metaFormat="IFD"  fromPath="/ifd/"                   toPath="/app1/ifd/"                copyAllItems="false"/>
+            <entry metaFormat="IFD"  fromPath="/ifd/thumb/"             toPath="/app1/thumb/"              copyAllItems="true"/>
+            <entry metaFormat="XMP"  fromPath="/ifd/xmp/"               toPath="/xmp/"                     copyAllItems="false"/>
+            <entry metaFormat="EXIF" fromPath="/ifd/exif/"              toPath="/app1/ifd/exif/"           copyAllItems="false"/>
+            <entry metaFormat="IPTC" fromPath="/ifd/irb/8bimiptc/iptc/" toPath="/app13/irb/8bimiptc/iptc/" copyAllItems="true"/>
         </case>
         <case srcFormat="jpeg" destFormat="tiff">
-            <entry metaFormat="IFD"  fromPath="/app1/ifd/*"                toPath="/ifd/*"                   copyAllItems="false"/>
-            <entry metaFormat="IFD"  fromPath="/app1/*"                    toPath="/ifd/*"                   copyAllItems="false"/>
-            <entry metaFormat="IFD"  fromPath="/app1/thumb/*"              toPath="/ifd/thumb/*"             copyAllItems="true"/>
-            <entry metaFormat="XMP"  fromPath="/xmp/*"                     toPath="/ifd/xmp/*"               copyAllItems="false"/>
-            <entry metaFormat="EXIF" fromPath="/app1/ifd/exif/*"           toPath="/ifd/exif/*"              copyAllItems="false"/>
-            <entry metaFormat="IPTC" fromPath="/app13/irb/8bimiptc/iptc/*" toPath="/ifd/irb/8bimiptc/iptc/*" copyAllItems="true"/>
+            <entry metaFormat="IFD"  fromPath="/app1/ifd/"                toPath="/ifd/"                   copyAllItems="false"/>
+            <entry metaFormat="IFD"  fromPath="/app1/"                    toPath="/ifd/"                   copyAllItems="false"/>
+            <entry metaFormat="IFD"  fromPath="/app1/thumb/"              toPath="/ifd/thumb/"             copyAllItems="true"/>
+            <entry metaFormat="XMP"  fromPath="/xmp/"                     toPath="/ifd/xmp/"               copyAllItems="false"/>
+            <entry metaFormat="EXIF" fromPath="/app1/ifd/exif/"           toPath="/ifd/exif/"              copyAllItems="false"/>
+            <entry metaFormat="IPTC" fromPath="/app13/irb/8bimiptc/iptc/" toPath="/ifd/irb/8bimiptc/iptc/" copyAllItems="true"/>
+        </case>
+        <case srcFormat="jpegxr" destFormat="jpeg">
+            <entry metaFormat="IFD"  fromPath="/ifd/"                   toPath="/app1/ifd/"                copyAllItems="false"/>
+            <entry metaFormat="IFD"  fromPath="/ifd/thumb/"             toPath="/app1/thumb/"              copyAllItems="true"/>
+            <entry metaFormat="XMP"  fromPath="/ifd/xmp/"               toPath="/xmp/"                     copyAllItems="false"/>
+            <entry metaFormat="EXIF" fromPath="/ifd/exif/"              toPath="/app1/ifd/exif/"           copyAllItems="false"/>
+            <entry metaFormat="IPTC" fromPath="/ifd/irb/8bimiptc/iptc/" toPath="/app13/irb/8bimiptc/iptc/" copyAllItems="true"/>
+        </case>
+        <case srcFormat="jpeg" destFormat="jpegxr">
+            <entry metaFormat="IFD"  fromPath="/app1/ifd/"                toPath="/ifd/"                   copyAllItems="false"/>
+            <entry metaFormat="IFD"  fromPath="/app1/"                    toPath="/ifd/"                   copyAllItems="false"/>
+            <entry metaFormat="IFD"  fromPath="/app1/thumb/"              toPath="/ifd/thumb/"             copyAllItems="true"/>
+            <entry metaFormat="XMP"  fromPath="/xmp/"                     toPath="/ifd/xmp/"               copyAllItems="false"/>
+            <entry metaFormat="EXIF" fromPath="/app1/ifd/exif/"           toPath="/ifd/exif/"              copyAllItems="false"/>
+            <entry metaFormat="IPTC" fromPath="/app13/irb/8bimiptc/iptc/" toPath="/ifd/irb/8bimiptc/iptc/" copyAllItems="true"/>
+        </case>
+        <case srcFormat="tiff" destFormat="jpegxr">
+            <entry metaFormat="IFD"  fromPath="/ifd/"                   toPath="/ifd/"                   copyAllItems="false"/>
+            <entry metaFormat="IFD"  fromPath="/ifd/thumb/"             toPath="/ifd/thumb/"             copyAllItems="true"/>
+            <entry metaFormat="XMP"  fromPath="/ifd/xmp/"               toPath="/ifd/xmp/"               copyAllItems="false"/>
+            <entry metaFormat="EXIF" fromPath="/ifd/exif/"              toPath="/ifd/exif/"              copyAllItems="false"/>
+            <entry metaFormat="IPTC" fromPath="/ifd/irb/8bimiptc/iptc/" toPath="/ifd/irb/8bimiptc/iptc/" copyAllItems="true"/>
+        </case>
+        <case srcFormat="jpegxr" destFormat="tiff">
+            <entry metaFormat="IFD"  fromPath="/ifd/"                   toPath="/ifd/"                   copyAllItems="false"/>
+            <entry metaFormat="IFD"  fromPath="/ifd/thumb/"             toPath="/ifd/thumb/"             copyAllItems="true"/>
+            <entry metaFormat="XMP"  fromPath="/ifd/xmp/"               toPath="/ifd/xmp/"               copyAllItems="false"/>
+            <entry metaFormat="EXIF" fromPath="/ifd/exif/"              toPath="/ifd/exif/"              copyAllItems="false"/>
+            <entry metaFormat="IPTC" fromPath="/ifd/irb/8bimiptc/iptc/" toPath="/ifd/irb/8bimiptc/iptc/" copyAllItems="true"/>
         </case>
     </map>
 
