@@ -63,7 +63,7 @@
                                         </xs:restriction>
                                     </xs:simpleType>
                                 </xs:attribute>
-                                <xs:attribute name="copyAllItems" type="xs:boolean" use="required"/>
+                                <xs:attribute name="onlyCommon" type="xs:boolean" use="required"/>
                             </xs:complexType>
                         </xs:element>
                     </xs:sequence>
