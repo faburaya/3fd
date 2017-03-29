@@ -215,6 +215,9 @@
     <ClInclude Include="broker.h">
       <Filter>Header Files\Broker</Filter>
     </ClInclude>
+    <ClInclude Include="utils_algorithms.h">
+      <Filter>Header Files\utilities</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="sqlite3.c">

@@ -291,6 +291,7 @@
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="utils.h" />
+    <ClInclude Include="utils_algorithms.h" />
     <ClInclude Include="utils_lockfreequeue.h" />
     <ClInclude Include="web_wws_impl_host.h" />
     <ClInclude Include="web_wws_impl_proxy.h" />
