@@ -2,6 +2,7 @@
 #include "MetadataCopier.h"
 #include "3FD\callstacktracer.h"
 #include "3FD\exceptions.h"
+#include "3FD\utils_algorithms.h"
 #include <MsXml6.h>
 #include <map>
 #include <set>
@@ -9,6 +10,7 @@
 #include <sstream>
 #include <codecvt>
 #include <algorithm>
+#include <cassert>
 
 /* XML parsing validates the content against the referenced schema (XSD), thus the calls for
    browsing the DOM are not supposed to fail. Their results are only checked because failures
@@ -28,7 +30,7 @@ namespace application
     /// Extracts the BSTR from a COM wrapped VARIANT, bypassing its deallocation.
     /// </summary>
     /// <param name="wrappedVar">The wrapped VARIANT.</param>
-    /// <returns>The extracted BSTR;</returns>
+    /// <returns>The extracted BSTR</returns>
     static BSTR ExtractBstrFrom(CComVariant &wrappedVar)
     {
         _ASSERTE(wrappedVar.vt == VT_BSTR);

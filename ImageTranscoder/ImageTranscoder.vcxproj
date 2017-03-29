@@ -46,12 +46,12 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(BOOST_HOME)\include\boost-1_63;$(POCO_ROOT)\Foundation\include;$(POCO_ROOT)\XML\include;$(POCO_ROOT)\Util\include;C:\Program Files (x86)\Visual Leak Detector\include;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <IncludePath>$(BOOST_HOME)\include\boost-1_63;$(POCO_ROOT)\Foundation\include;$(POCO_ROOT)\XML\include;$(POCO_ROOT)\Util\include;C:\Program Files (x86)\Visual Leak Detector\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(BOOST_HOME)\lib\x64;$(POCO_ROOT)\lib64;C:\Program Files (x86)\Visual Leak Detector\lib\Win64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(BOOST_HOME)\include\boost-1_63;$(POCO_ROOT)\Foundation\include;$(POCO_ROOT)\XML\include;$(POCO_ROOT)\Util\include;C:\Program Files (x86)\Visual Leak Detector\include;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <IncludePath>$(BOOST_HOME)\include\boost-1_63;$(POCO_ROOT)\Foundation\include;$(POCO_ROOT)\XML\include;$(POCO_ROOT)\Util\include;C:\Program Files (x86)\Visual Leak Detector\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(BOOST_HOME)\lib\x64;$(POCO_ROOT)\lib64;C:\Program Files (x86)\Visual Leak Detector\lib\Win64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
