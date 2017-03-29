@@ -20,6 +20,109 @@ namespace application
 {
     using namespace _3fd::core;
 
+    //////////////////
+    // Algorithms
+    //////////////////
+
+    template <typename ObjectType> auto &GetKeyOutOf(ObjectType &&ob) { return ob.key; }
+
+    template <typename ObjectType> const auto &GetKeyOutOf(const ObjectType &ob) { return ob.key; }
+
+    /// <summary>
+    /// Binary search in sub-range of vector containing map cases entries.
+    /// </summary>
+    /// <param name="searchKey">The key to search for.</param>
+    /// <param name="begin">An iterator to the first position of the sub-range.
+    /// In the end, this parameter keeps the beginning of the last sub-range this
+    /// iterative algorithm has delved into.</param>
+    /// <param name="begin">An iterator to one past the last position of the sub-range.
+    /// In the end, this parameter keeps the end of the last sub-range this
+    /// iterative algorithm has delved into.</param>
+    /// <returns>An iterator to the found entry. Naturally, it cannot refer to
+    /// the same position in the parameter 'end', unless there was no match.</returns>
+    template <typename KeyType, typename IterType>
+    IterType BinarySearch(KeyType searchKey,
+                          IterType &begin,
+                          IterType &end)
+    {
+        auto endOfRange = end;
+
+        while (begin != end)
+        {
+            auto middle = begin + std::distance(begin, end) / 2;
+
+            if (GetKeyOutOf(*middle) < searchKey)
+                begin = middle + 1;
+            else if (GetKeyOutOf(*middle) > searchKey)
+                end = middle;
+            else
+                return middle;
+        }
+
+        return endOfRange;
+    }
+
+    /// <summary>
+    /// Gets the sub range of entries that match the given key (using binary search).
+    /// </summary>
+    /// <param name="searchKey">The key to search.</param>
+    /// <param name="subRangeBegin">An iterator to the first position of
+    /// the range to search, and receives the same for the found sub-range.</param>
+    /// <param name="subRangeEnd">An iterator to one past the last position of
+    /// the range to search, and receives the same for the found sub-range.</param>
+    /// <returns>When a sub-range has been found, <c>true</c>, otherwise, <c>false</c>.</returns>
+    template <typename KeyType, typename IterType>
+    bool BinSearchSubRange(KeyType searchKey,
+                           IterType &subRangeBegin,
+                           IterType &subRangeEnd)
+    {
+        struct {
+            IterType begin;
+            IterType end;
+        } firstMatchRightPart;
+
+        auto endOfRange = subRangeEnd;
+        auto end = subRangeEnd;
+        auto begin = subRangeBegin;
+        auto match = BinarySearch(searchKey, begin, end);
+
+        // match? this is the first, so keep the partition at the right:
+        if (match != end)
+        {
+            firstMatchRightPart.begin = match; // match inclusive
+            firstMatchRightPart.end = end;
+        }
+        else
+        {
+            subRangeBegin = subRangeEnd = endOfRange;
+            return false; // no match found!
+        }
+
+        do
+        {
+            subRangeBegin = end = match; // last match is the smallest entry found!
+            match = BinarySearch(searchKey, begin, end); // continue to search in the left partition
+        } while (match != end);
+
+        /* Now go back to the partition at the right of the first
+           match, and start looking for the end of the range: */
+
+        match = firstMatchRightPart.begin;
+        end = firstMatchRightPart.end;
+
+        do
+        {
+            subRangeEnd = begin = match + 1; // last match is the greatest entry found!
+            match = BinarySearch(searchKey, begin, end); // continue to search in the right partition
+        } while (match != end);
+
+        return true;
+    }
+
+    //////////////////
+    // Utilities
+    //////////////////
+
     /// <summary>
     /// Extracts the BSTR from a COM wrapped VARIANT, bypassing its deallocation.
     /// </summary>
@@ -168,39 +271,6 @@ namespace application
     typedef std::vector<MapCaseEntry> VecOfCaseEntries;
 
     /// <summary>
-    /// Binary search in sub-range of vector containing map cases entries.
-    /// </summary>
-    /// <param name="searchKey">The key to search for.</param>
-    /// <param name="begin">An iterator to the first position of the sub-range.
-    /// In the end, this parameter keeps the beginning of the last sub-range this
-    /// iterative algorithm has delved into.</param>
-    /// <param name="begin">An iterator to one past the last position of the sub-range.
-    /// In the end, this parameter keeps the end of the last sub-range this
-    /// iterative algorithm has delved into.</param>
-    /// <returns>An iterator to the found entry. Naturally, it cannot refer to
-    /// the same position in the parameter 'end', unless there was no match.</returns>
-    VecOfCaseEntries::const_iterator BinarySearch(uint64_t searchKey,
-                                                  VecOfCaseEntries::const_iterator &begin,
-                                                  VecOfCaseEntries::const_iterator &end)
-    {
-        auto endOfRange = end;
-
-        while (begin != end)
-        {
-            auto middle = begin + std::distance(begin, end) / 2;
-
-            if (middle->key < searchKey)
-                begin = middle + 1;
-            else if (middle->key > searchKey)
-                end = middle;
-            else
-                return middle;
-        }
-
-        return endOfRange;
-    }
-
-    /// <summary>
     /// Holds the metadata map cases loaded from configuration file.
     /// </summary>
     class MetadataMapCases
@@ -289,6 +359,7 @@ namespace application
                         CComPtr<IXMLDOMNode> metaFormatAttrNode;
                         CHECK(attributes->getNamedItem(attrNameMetaFormat, &metaFormatAttrNode));
                         CHECK(metaFormatAttrNode->get_nodeValue(&metaFormatNameAsVar));
+                        _ASSERTE(metaFormatNameAsVar.vt == VT_BOOL);
                         newEntry.metaFmtNameHash = HashName(metaFormatNameAsVar.bstrVal);
 
                         // does the format have a GUID?
@@ -362,7 +433,11 @@ namespace application
         /// </summary>
         ~MetadataMapCases()
         {
-
+            for (auto &entry : m_mapCasesEntries)
+            {
+                SysFreeString(entry.fromPath);
+                SysFreeString(entry.toPath);
+            }
         }
 
         /// <summary>
@@ -376,51 +451,199 @@ namespace application
                          VecOfCaseEntries::const_iterator &subRangeBegin,
                          VecOfCaseEntries::const_iterator &subRangeEnd) const
         {
-            struct {
-                VecOfCaseEntries::const_iterator begin;
-                VecOfCaseEntries::const_iterator end;
-            } firstMatchRightPart;
-
-            auto begin = m_mapCasesEntries.begin();
-            auto end = m_mapCasesEntries.end();
-            auto match = BinarySearch(searchKey, begin, end);
-
-            // match? this is the first, so keep the partition at the right:
-            if (match != end)
-            {
-                firstMatchRightPart.begin = match; // match inclusive
-                firstMatchRightPart.end = end;
-            }
-            else
-            {
-                subRangeBegin = subRangeEnd = m_mapCasesEntries.end();
-                return false; // no match found!
-            }
-
-            do
-            {
-                subRangeBegin = end = match; // last match is the smallest entry found!
-                match = BinarySearch(searchKey, begin, end); // continue to search in the left partition
-            }
-            while (match != end);
-
-            /* Now go back to the partition at the right of the first
-               match, and start looking for the end of the range: */
-
-            match = firstMatchRightPart.begin;
-            end = firstMatchRightPart.end;
-
-            do
-            {
-                subRangeEnd = begin = match + 1; // last match is the greatest entry found!
-                match = BinarySearch(searchKey, begin, end); // continue to search in the right partition
-            }
-            while (match != end);
-
-            return true;
+            return BinSearchSubRange(searchKey, subRangeBegin, subRangeEnd);
         }
 
     };// end of MetadataMapCases class
+
+
+    ////////////////////////////
+    // MetadataItems Class
+    ////////////////////////////
+
+    /// <summary>
+    /// Represents an entry in the list of metadata items.
+    /// </summary>
+    struct ItemEntry
+    {
+        uint32_t metaFmtNameHash;
+        uint16_t id;
+        bool rational;
+        BSTR name;
+    };
+
+    typedef std::vector<ItemEntry> VecOfItems;
+
+    template <> auto &GetKeyOutOf<ItemEntry>(ItemEntry &&ob) { return ob.id; }
+
+    template <> const auto &GetKeyOutOf<ItemEntry>(const ItemEntry &ob) { return ob.id; }
+
+    /// <summary>
+    /// Holds the metadata items loaded from configuration file.
+    /// </summary>
+    class MetadataItems
+    {
+    private:
+
+        VecOfItems m_items;
+
+    public:
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MetadataItems" /> class.
+        /// </summary>
+        /// <param name="dom">The DOM parsed from the XML configuration file.</param>
+        /// <param name="itemsXPath">The XPath to the items.</param>
+        /// <param name="metadataFormatByName">A dictionary of metadata formats ordered by the hash of their names.</param>
+        MetadataItems(IXMLDOMDocument2 *dom,
+                      BSTR itemsXPath,
+                      const Hash2HashMap &metadataFormatByName)
+        {
+            CALL_STACK_TRACE;
+
+            try
+            {
+                HRESULT hr;
+                std::set<decltype(ItemEntry::id)> uniqueKeys;
+
+                const CComBSTR attrNameId(L"id"),
+                               attrNameMetaFormat(L"metaFormat"),
+                               attrNameRational(L"rational"),
+                               attrNameName(L"name");
+
+                CComPtr<IXMLDOMNodeList> listOfNodes;
+                CHECK(dom->selectNodes(itemsXPath, &listOfNodes));
+
+                long nodesCount;
+                CHECK(listOfNodes->get_length(&nodesCount));
+
+                std::vector<ItemEntry> items;
+                items.reserve(nodesCount);
+
+                // Iterate over list of items:
+
+                for (long idxCase = 0; idxCase < nodesCount; ++idxCase)
+                {
+                    items.emplace_back();
+                    auto &newEntry = items.back();
+
+                    CComPtr<IXMLDOMNode> elemNode;
+                    CHECK(listOfNodes->get_item(idxCase, &elemNode));
+
+                    CComPtr<IXMLDOMNamedNodeMap> attributes;
+                    CHECK(elemNode->get_attributes(&attributes));
+
+                    // get item ID:
+
+                    CComVariant idAsVar;
+                    CComPtr<IXMLDOMNode> idAttrNode;
+                    CHECK(attributes->getNamedItem(attrNameId, &idAttrNode));
+                    CHECK(idAttrNode->get_nodeValue(&idAsVar));
+                    _ASSERTE(idAsVar.vt == VT_UINT);
+                    newEntry.id = static_cast<unsigned short> (idAsVar.uintVal);
+
+                    // is the item ID unique?
+                    if (!uniqueKeys.insert(newEntry.id).second)
+                    {
+                        std::wstring_convert<std::codecvt_utf8<wchar_t>> strConv;
+                        std::wostringstream woss;
+                        CComBSTR xmlSource;
+                        elemNode->get_xml(&xmlSource);
+                        woss << L"Configuration file cannot have duplicated metadata items! Ocurred in:\r\n" << xmlSource;
+                        throw AppException<std::runtime_error>(strConv.to_bytes(woss.str()));
+                    }
+
+                    // get metadata format:
+
+                    CComVariant metaFormatNameAsVar;
+                    CComPtr<IXMLDOMNode> metaFormatAttrNode;
+                    CHECK(attributes->getNamedItem(attrNameMetaFormat, &metaFormatAttrNode));
+                    CHECK(metaFormatAttrNode->get_nodeValue(&metaFormatNameAsVar));
+                    _ASSERTE(metaFormatNameAsVar.vt == VT_BOOL);
+                    newEntry.metaFmtNameHash = HashName(metaFormatNameAsVar.bstrVal);
+
+                    // does the format have a GUID?
+                    if (metadataFormatByName.find(newEntry.metaFmtNameHash) == metadataFormatByName.end())
+                    {
+                        CComBSTR xmlSource;
+                        elemNode->get_xml(&xmlSource);
+
+                        std::wostringstream woss;
+                        woss << L"Invalid setting in configuration file! Microsoft WIC GUID was not defined for metadata format "
+                             << metaFormatNameAsVar.bstrVal << L". Ocurred in:\r\n" << xmlSource;
+
+                        std::wstring_convert<std::codecvt_utf8<wchar_t>> strConv;
+                        throw AppException<std::runtime_error>(strConv.to_bytes(woss.str()));
+                    }
+
+                    // does the item have a rational value?
+
+                    CComVariant rationalAsVar;
+                    CComPtr<IXMLDOMNode> rationalAttrNode;
+                    CHECK(attributes->getNamedItem(attrNameRational, &rationalAttrNode));
+                    CHECK(rationalAttrNode->get_nodeValue(&rationalAsVar));
+                    _ASSERTE(rationalAsVar.vt == VT_BOOL);
+                    newEntry.rational = (rationalAsVar.boolVal == VARIANT_TRUE);
+
+                    // get item name:
+
+                    CComVariant nameAsVar;
+                    CComPtr<IXMLDOMNode> nameAttrNode;
+                    CHECK(attributes->getNamedItem(attrNameName, &nameAttrNode));
+                    CHECK(nameAttrNode->get_nodeValue(&nameAsVar));
+                    newEntry.name = ExtractBstrFrom(nameAsVar);
+
+                }// end of loop
+
+                 // sort the entries by metadata format:
+                std::sort(items.begin(), items.end(),
+                    [](const ItemEntry &left, const ItemEntry &right) { return left.metaFmtNameHash < right.metaFmtNameHash; }
+                );
+
+                m_items.swap(items);
+            }
+            catch (IAppException &)
+            {
+                throw; // just forward exceptions for errors known to have been already handled
+            }
+            catch (CAtlException &ex)
+            {
+                WWAPI::RaiseHResultException(ex, "Failed to read metadata items from configuration", "COM ATL");
+            }
+            catch (std::exception &ex)
+            {
+                std::ostringstream oss;
+                oss << "Generic failure when reading metadata items from configuration: " << ex.what();
+                throw AppException<std::runtime_error>(oss.str());
+            }
+        }
+
+        /// <summary>
+        /// Finalizes an instance of the <see cref="MetadataItems"/> class.
+        /// </summary>
+        ~MetadataItems()
+        {
+            for (auto &entry : m_items)
+            {
+                SysFreeString(entry.name);
+            }
+        }
+
+        /// <summary>
+        /// Gets the sub range of entries for a given metadata format.
+        /// </summary>
+        /// <param name="searchKey">The search key, which is the hashed name of the metadata format.</param>
+        /// <param name="subRangeBegin">An iterator to the first position of the sub-range.</param>
+        /// <param name="subRangeEnd">An iterator to one past the last position of the sub-range.</param>
+        /// <returns>When a sub-range has been found, <c>true</c>, otherwise, <c>false</c>.</returns>
+        bool GetSubRange(uint32_t searchKey,
+                         VecOfItems::const_iterator &subRangeBegin,
+                         VecOfItems::const_iterator &subRangeEnd) const
+        {
+            return BinSearchSubRange(searchKey, subRangeBegin, subRangeEnd);
+        }
+
+    };// end of MetadataItems class
 
 
     ////////////////////////////
@@ -579,9 +802,18 @@ namespace application
             Hash2HashMap metadataFormatByName, metadataFormatByGuid;
             ReadFormats(dom, CComBSTR(L"//metadata/formats/metadata/*"), metadataFormatByGuid, metadataFormatByName);
 
-            m_mapCases.reset(new MetadataMapCases(dom, CComBSTR(L"//metadata/map/*"), containerFormatByName));
+            m_mapCases.reset(
+                new MetadataMapCases(dom,
+                                     CComBSTR(L"//metadata/map/*"),
+                                     containerFormatByName,
+                                     metadataFormatByName)
+            );
 
-            // TO DO
+            m_items.reset(
+                new MetadataItems(dom,
+                                  CComBSTR(L"//metadata/items/*"),
+                                  metadataFormatByName)
+            );
         }
         catch (IAppException &)
         {

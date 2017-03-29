@@ -12,6 +12,7 @@ namespace application
     using std::string;
 
     class MetadataMapCases;
+    class MetadataItems;
 
     /// <summary>
     /// Handles how to copy metadata from one image file to another.
@@ -21,12 +22,11 @@ namespace application
     private:
 
         std::unique_ptr<MetadataMapCases> m_mapCases;
+        std::unique_ptr<MetadataItems> m_items;
 
     public:
 
         MetadataCopier(const string &cfgFilePath);
-
-        ~MetadataCopier();
     };
 
 }// end of namespace application
