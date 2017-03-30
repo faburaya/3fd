@@ -8,7 +8,7 @@
 #	include <iostream>
 #endif
 
-namespace application
+namespace _3fd
 {
 namespace unit_tests
 {

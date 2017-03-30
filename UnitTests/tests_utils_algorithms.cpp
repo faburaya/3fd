@@ -3,6 +3,7 @@
 #include "utils_algorithms.h"
 
 #include <ctime>
+#include <cmath>
 #include <cstdlib>
 #include <vector>
 #include <algorithm>
@@ -15,6 +16,8 @@ namespace unit_tests
     {
         int key;
         int val;
+
+        uint64_t GetKey() { return key; }
     };
 
     /// <summary>
@@ -22,7 +25,7 @@ namespace unit_tests
     /// </summary>
     TEST(Framework_Utils_TestCase, BinarySearch_Test)
     {
-        const uint32_t numEntries(1UL << 8);
+        const uint32_t numEntries(1UL << 10);
 
         std::vector<Object> list;
         list.reserve(numEntries);
@@ -34,9 +37,9 @@ namespace unit_tests
         srand(time(nullptr));
 
         // Search it a few times (match):
-        for (int idx = 0; idx < 4; ++idx)
+        for (int idx = 0; idx < 10; ++idx)
         {
-            int key = rand() % numEntries;
+            int key = abs(rand()) % numEntries;
 
             auto iter = utils::BinarySearch(key, list.begin(), list.end());
 
@@ -45,9 +48,9 @@ namespace unit_tests
         }
 
         // Search it a few times (NO match):
-        for (int idx = 0; idx < 4; ++idx)
+        for (int idx = 0; idx < 10; ++idx)
         {
-            int key = (rand() % 69) + numEntries;
+            int key = (abs(rand()) % 69) + numEntries;
 
             auto iter = utils::BinarySearch(key, list.begin(), list.end());
 
@@ -67,27 +70,28 @@ namespace unit_tests
 
         // Fill the vector:
 
-        int repetitions(0);
-        while (list.size() < numEntries)
+        int val(0);
+        do
         {
-            ++repetitions;
+            ++val;
 
-            for (int idx = 0; idx < repetitions; ++idx)
-                list.push_back(Object{ idx, idx });
-        }
-        
+            for (int idx = 0; idx < val && list.size() < numEntries; ++idx)
+                list.push_back(Object{ val, val });
+
+        } while (list.size() < numEntries);
+
         srand(time(nullptr));
 
         // Search it a few times (match):
         for (int idx = 0; idx < 4; ++idx)
         {
-            int key = rand() % (list.back().key + 1);
+            int key = abs(rand()) % (list.back().key + 1);
 
             auto subRangeBegin = list.begin();
             auto subRangeEnd = list.end();
 
             EXPECT_TRUE(utils::BinSearchSubRange(key, subRangeBegin, subRangeEnd));
-            EXPECT_NE(subRangeEnd, subRangeEnd);
+            EXPECT_NE(subRangeBegin, subRangeEnd);
 
             std::for_each(subRangeBegin, subRangeEnd, [key](const Object &obj)
             {
@@ -98,13 +102,13 @@ namespace unit_tests
         // Search it a few times (NO match):
         for (int idx = 0; idx < 4; ++idx)
         {
-            int key = (rand() % 69) + numEntries;
+            int key = (abs(rand()) % 69) + numEntries;
 
             auto subRangeBegin = list.begin();
             auto subRangeEnd = list.end();
 
             EXPECT_FALSE(utils::BinSearchSubRange(key, subRangeBegin, subRangeEnd));
-            EXPECT_EQ(subRangeEnd, subRangeEnd);
+            EXPECT_EQ(subRangeBegin, subRangeEnd);
         }
 	}
 

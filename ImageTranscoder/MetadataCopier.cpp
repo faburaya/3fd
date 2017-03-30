@@ -20,6 +20,7 @@
 
 namespace application
 {
+    using namespace _3fd;
     using namespace _3fd::core;
 
     //////////////////
@@ -30,7 +31,7 @@ namespace application
     /// Extracts the BSTR from a COM wrapped VARIANT, bypassing its deallocation.
     /// </summary>
     /// <param name="wrappedVar">The wrapped VARIANT.</param>
-    /// <returns>The extracted BSTR</returns>
+    /// <returns>The extracted BSTR.</returns>
     static BSTR ExtractBstrFrom(CComVariant &wrappedVar)
     {
         _ASSERTE(wrappedVar.vt == VT_BSTR);
@@ -169,6 +170,8 @@ namespace application
         BSTR toPath;
         uint32_t metaFmtNameHash;
         bool onlyCommon;
+
+        uint64_t GetKey() const { return key;  }
     };
 
     typedef std::vector<MapCaseEntry> VecOfCaseEntries;
@@ -354,7 +357,7 @@ namespace application
                          VecOfCaseEntries::const_iterator &subRangeBegin,
                          VecOfCaseEntries::const_iterator &subRangeEnd) const
         {
-            return BinSearchSubRange(searchKey, subRangeBegin, subRangeEnd);
+            return utils::BinSearchSubRange(searchKey, subRangeBegin, subRangeEnd);
         }
 
     };// end of MetadataMapCases class
@@ -373,13 +376,11 @@ namespace application
         uint16_t id;
         bool rational;
         BSTR name;
+
+        uint32_t GetKey() const { return metaFmtNameHash;  }
     };
 
     typedef std::vector<ItemEntry> VecOfItems;
-
-    template <> auto &GetKeyOutOf<ItemEntry>(ItemEntry &&ob) { return ob.id; }
-
-    template <> const auto &GetKeyOutOf<ItemEntry>(const ItemEntry &ob) { return ob.id; }
 
     /// <summary>
     /// Holds the metadata items loaded from configuration file.
@@ -543,7 +544,7 @@ namespace application
                          VecOfItems::const_iterator &subRangeBegin,
                          VecOfItems::const_iterator &subRangeEnd) const
         {
-            return BinSearchSubRange(searchKey, subRangeBegin, subRangeEnd);
+            return utils::BinSearchSubRange(searchKey, subRangeBegin, subRangeEnd);
         }
 
     };// end of MetadataItems class

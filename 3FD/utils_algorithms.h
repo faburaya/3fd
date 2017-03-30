@@ -2,15 +2,12 @@
 #define UTILS_ALGORITHMS_H
 
 #include <iterator>
+#include <functional>
 
 namespace _3fd
 {
 namespace utils
 {
-    template <typename ObjectType> auto &GetKeyOutOf(ObjectType &&ob) { return ob.key; }
-
-    template <typename ObjectType> const auto &GetKeyOutOf(const ObjectType &ob) { return ob.key; }
-
     /// <summary>
     /// Binary search in sub-range of vector containing map cases entries.
     /// </summary>
@@ -28,22 +25,44 @@ namespace utils
                           IterType &begin,
                           IterType &end)
     {
+        std::less<KeyType> lessThan;
+
         auto endOfRange = end;
+        auto length = std::distance(begin, end);
+
+        if (length > 32)
+        {
+            while (begin != end)
+            {
+                auto middle = begin + std::distance(begin, end) / 2;
+                
+                if (lessThan(middle->GetKey(), searchKey))
+                    begin = middle + 1;
+                else if (lessThan(searchKey, middle->GetKey()))
+                    end = middle;
+                else
+                    return middle;
+            }
+
+            return begin = end = endOfRange;
+        }
+
+        // Linear search when container is small:
 
         while (begin != end)
         {
-            auto middle = begin + std::distance(begin, end) / 2;
-
-            if (GetKeyOutOf(*middle) < searchKey)
-                begin = middle + 1;
-            else if (GetKeyOutOf(*middle) > searchKey)
-                end = middle;
+            if (lessThan(begin->GetKey(), searchKey))
+                ++begin;
             else
-                return middle;
+                break;
         }
 
-        return endOfRange;
+        if (!lessThan(searchKey, begin->GetKey()))
+            return begin;
+        else
+            return begin = end = endOfRange;
     }
+
 
     /// <summary>
     /// Gets the sub range of entries that match the given key (using binary search).
