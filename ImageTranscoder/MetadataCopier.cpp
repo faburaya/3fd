@@ -7,6 +7,7 @@
 #include <map>
 #include <set>
 #include <array>
+#include <memory>
 #include <sstream>
 #include <codecvt>
 #include <algorithm>
@@ -23,6 +24,8 @@ namespace application
     using namespace _3fd;
     using namespace _3fd::core;
 
+    using namespace Microsoft::WRL;
+
     //////////////////
     // Utilities
     //////////////////
@@ -32,13 +35,81 @@ namespace application
     /// </summary>
     /// <param name="wrappedVar">The wrapped VARIANT.</param>
     /// <returns>The extracted BSTR.</returns>
-    static BSTR ExtractBstrFrom(CComVariant &wrappedVar)
+    static BSTR ExtractBstrFrom(_variant_t &wrappedVar)
     {
         _ASSERTE(wrappedVar.vt == VT_BSTR);
         VARIANT rawVar;
-        VariantInit(&rawVar);
-        wrappedVar.Detach(&rawVar);
+        rawVar = wrappedVar.Detach();
         return rawVar.bstrVal;
+    }
+
+    /// <summary>
+    /// Gets the value reference from a VARIANT.
+    /// </summary>
+    /// <param name="variant">The variant object.</param>
+    /// <returns>A reference to the value held by the VARIANT.</returns>
+    template <typename ValType>
+    ValType GetValueFrom(_variant_t &variant)
+    {
+        static_cast(false);
+        return variant;
+    }
+
+    template <> bool GetValueFrom<bool>(_variant_t &variant) { _ASSERTE(variant.vt == VT_BOOL);  return (variant.boolVal == VARIANT_TRUE); }
+    template <> BSTR GetValueFrom<BSTR>(_variant_t &variant) { _ASSERTE(variant.vt == VT_BSTR);  return ExtractBstrFrom(variant); }
+    template <> uint16_t GetValueFrom<uint16_t>(_variant_t &variant) { _ASSERTE(variant.vt == VT_UI2);  return variant.uiVal; }
+    template <> uint32_t GetValueFrom<uint32_t>(_variant_t &variant) { _ASSERTE(variant.vt == VT_UI4);  return variant.uintVal; }
+    template <> int16_t GetValueFrom<int16_t>(_variant_t &variant) { _ASSERTE(variant.vt == VT_I2);  return variant.iVal; }
+    template <> int32_t GetValueFrom<int32_t>(_variant_t &variant) { _ASSERTE(variant.vt == VT_I4);  return variant.intVal; }
+
+    /// <summary>
+    /// Gets the XML attribute value.
+    /// </summary>
+    /// <param name="attributes">The attributes.</param>
+    /// <param name="attrName">Name of the attribute.</param>
+    /// <param name="typeConv">The type conversion to perform.</param>
+    /// <param name="value">A reference to the variable to receive the value.</param>
+    template <typename ValType>
+    void GetAttributeValue(IXMLDOMNamedNodeMap *attributes,
+                           BSTR attrName,
+                           VARTYPE typeConv,
+                           ValType &value)
+    {
+        CALL_STACK_TRACE;
+
+        HRESULT hr;
+        _variant_t variant, variantConv;
+        ComPtr<IXMLDOMNode> attrNode;
+        CHECK(attributes->getNamedItem(attrName, attrNode.GetAddressOf()));
+        CHECK(attrNode->get_nodeValue(variant.GetAddress()));
+        
+        _ASSERTE(variant.vt == VT_BSTR);
+        if (typeConv != VT_BSTR)
+        {
+            CHECK(VariantChangeType(variantConv.GetAddress(), variant.GetAddress(), 0, typeConv));
+            value = GetValueFrom<ValType>(variantConv);
+        }
+        else
+            value = GetValueFrom<ValType>(variant);
+    }
+
+    /// <summary>
+    /// Gets the XML attribute value as a hash.
+    /// </summary>
+    /// <param name="attributes">The attributes.</param>
+    /// <param name="attrName">Name of the attribute.</param>
+    /// <param name="typeConv">The type conversion to perform.</param>
+    /// <param name="value">A reference to the variable to receive the value.</param>
+    /// <returns>The originally parsed BSTR value.</returns>
+    template <typename ValHashType>
+    _bstr_t GetAttributeValueHash(IXMLDOMNamedNodeMap *attributes,
+                                  BSTR attrName,
+                                  ValHashType &hash)
+    {
+        BSTR value;
+        GetAttributeValue(attributes, attrName, VT_BSTR, value);
+        hash = HashName(value);
+        return _bstr_t(value, false);
     }
 
     /// <summary>
@@ -104,7 +175,6 @@ namespace application
 
     typedef std::map<uint32_t, uint32_t> Hash2HashMap;
 
-    
     ////////////////////////////
     // MetadataMapCases Class
     ////////////////////////////
@@ -120,44 +190,38 @@ namespace application
         CALL_STACK_TRACE;
 
         HRESULT hr;
-        const CComBSTR attrNameFormats[] = { CComBSTR(L"srcFormat"), CComBSTR(L"destFormat") };
+        const _bstr_t attrNameFormats[] = { _bstr_t(L"srcFormat"), _bstr_t(L"destFormat") };
 
+        std::array<uint32_t, sizeof attrNameFormats / sizeof attrNameFormats[0]> hashedFormatGUIDs;
         std::array<uint32_t, sizeof attrNameFormats / sizeof attrNameFormats[0]> hashedFormatNames;
-
-        CComPtr<IXMLDOMNamedNodeMap> attributes;
-        CHECK(elemNode->get_attributes(&attributes));
+        
+        ComPtr<IXMLDOMNamedNodeMap> attributes;
+        CHECK(elemNode->get_attributes(attributes.GetAddressOf()));
 
         for (int idx = 0; idx < hashedFormatNames.size(); ++idx)
         {
-            // get container format name:
-            CComVariant formatNameAsVariant;
-            CComPtr<IXMLDOMNode> attrNode;
-            CHECK(attributes->getNamedItem(attrNameFormats[idx], &attrNode));
-            CHECK(attrNode->get_nodeValue(&formatNameAsVariant));
-            _ASSERTE(formatNameAsVariant.vt == VT_BSTR);
-
-            auto iter = containerFormatByName.find(
-                HashName(formatNameAsVariant.bstrVal)
-            );
-
+            // get container format name
+            auto formatName = GetAttributeValueHash(attributes.Get(), attrNameFormats[idx], hashedFormatNames[idx]);
+            
             // does the format have a GUID?
+            auto iter = containerFormatByName.find(hashedFormatNames[idx]);
             if (containerFormatByName.end() == iter)
             {
-                CComBSTR xmlSource;
-                elemNode->get_xml(&xmlSource);
+                _bstr_t xmlSource;
+                elemNode->get_xml(xmlSource.GetAddress());
 
                 std::wostringstream woss;
                 woss << L"Invalid setting in configuration file! Microsoft WIC GUID was not defined for container format "
-                     << formatNameAsVariant.bstrVal << L". Ocurred in:\r\n" << xmlSource;
+                     << formatName.GetBSTR() << L". Ocurred in:\r\n" << xmlSource.GetBSTR();
 
                 std::wstring_convert<std::codecvt_utf8<wchar_t>> strConv;
                 throw AppException<std::runtime_error>(strConv.to_bytes(woss.str()));
             }
 
-            hashedFormatNames[idx] = iter->second;
+            hashedFormatGUIDs[idx] = iter->second;
         }
 
-        return MakeKey(hashedFormatNames[0], hashedFormatNames[1]);
+        return MakeKey(hashedFormatGUIDs[0], hashedFormatGUIDs[1]);
     }
 
     /// <summary>
@@ -206,13 +270,13 @@ namespace application
                 HRESULT hr;
                 std::set<decltype(MapCaseEntry::key)> uniqueKeys;
 
-                const CComBSTR attrNameMetaFormat(L"metaFormat"),
-                               attrNamePathFrom(L"fromPath"),
-                               attrNamePathTo(L"toPath"),
-                               attrNameOnlyCommon(L"onlyCommon");
+                const _bstr_t attrNameMetaFormat(L"metaFormat"),
+                              attrNamePathFrom(L"fromPath"),
+                              attrNamePathTo(L"toPath"),
+                              attrNameOnlyCommon(L"onlyCommon");
 
-                CComPtr<IXMLDOMNodeList> listOfMapCaseNodes;
-                CHECK(dom->selectNodes(mapCasesXPath, &listOfMapCaseNodes));
+                ComPtr<IXMLDOMNodeList> listOfMapCaseNodes;
+                CHECK(dom->selectNodes(mapCasesXPath, listOfMapCaseNodes.GetAddressOf()));
 
                 long mapCaseNodesCount;
                 CHECK(listOfMapCaseNodes->get_length(&mapCaseNodesCount));
@@ -224,27 +288,27 @@ namespace application
 
                 for (long idxCase = 0; idxCase < mapCaseNodesCount; ++idxCase)
                 {
-                    CComPtr<IXMLDOMNode> mapCaseNode;
-                    CHECK(listOfMapCaseNodes->get_item(idxCase, &mapCaseNode));
+                    ComPtr<IXMLDOMNode> mapCaseNode;
+                    CHECK(listOfMapCaseNodes->get_item(idxCase, mapCaseNode.GetAddressOf()));
 
-                    auto mapCaseKey = GetMetadataMapCaseKey(mapCaseNode, containerFormatByName);
+                    auto mapCaseKey = GetMetadataMapCaseKey(mapCaseNode.Get(), containerFormatByName);
                     
                     // is map case unique?
                     if (!uniqueKeys.insert(mapCaseKey).second)
                     {
                         std::wstring_convert<std::codecvt_utf8<wchar_t>> strConv;
                         std::wostringstream woss;
-                        CComBSTR xmlSource;
-                        mapCaseNode->get_xml(&xmlSource);
-                        woss << L"Configuration file cannot have duplicated metadata map cases! Ocurred in:\r\n" << xmlSource;
+                        _bstr_t xmlSource;
+                        mapCaseNode->get_xml(xmlSource.GetAddress());
+                        woss << L"Configuration file cannot have duplicated metadata map cases! Ocurred in:\r\n" << xmlSource.GetBSTR();
                         throw AppException<std::runtime_error>(strConv.to_bytes(woss.str()));
                     }
 
                     // Iterate over list entries:
 
                     long entryNodesCount;
-                    CComPtr<IXMLDOMNodeList> listOfEntryNodes;
-                    CHECK(mapCaseNode->get_childNodes(&listOfEntryNodes));
+                    ComPtr<IXMLDOMNodeList> listOfEntryNodes;
+                    CHECK(mapCaseNode->get_childNodes(listOfEntryNodes.GetAddressOf()));
                     CHECK(listOfEntryNodes->get_length(&entryNodesCount));
 
                     for (long idxEntry = 0; idxEntry < entryNodesCount; ++idxEntry)
@@ -253,59 +317,32 @@ namespace application
                         auto &newEntry = mapCasesEntries.back();
                         newEntry.key = mapCaseKey;
 
-                        CComPtr<IXMLDOMNode> entryNode;
-                        CHECK(listOfEntryNodes->get_item(idxEntry, &entryNode));
+                        ComPtr<IXMLDOMNode> entryNode;
+                        CHECK(listOfEntryNodes->get_item(idxEntry, entryNode.GetAddressOf()));
 
-                        CComPtr<IXMLDOMNamedNodeMap> attributes;
-                        CHECK(entryNode->get_attributes(&attributes));
+                        ComPtr<IXMLDOMNamedNodeMap> attributes;
+                        CHECK(entryNode->get_attributes(attributes.GetAddressOf()));
 
-                        // get metadata format:
-
-                        CComVariant metaFormatNameAsVar;
-                        CComPtr<IXMLDOMNode> metaFormatAttrNode;
-                        CHECK(attributes->getNamedItem(attrNameMetaFormat, &metaFormatAttrNode));
-                        CHECK(metaFormatAttrNode->get_nodeValue(&metaFormatNameAsVar));
-                        _ASSERTE(metaFormatNameAsVar.vt == VT_BOOL);
-                        newEntry.metaFmtNameHash = HashName(metaFormatNameAsVar.bstrVal);
+                        // get metadata format
+                        auto metaFormatName = GetAttributeValueHash(attributes.Get(), attrNameMetaFormat, newEntry.metaFmtNameHash);
 
                         // does the format have a GUID?
                         if (metadataFormatByName.find(newEntry.metaFmtNameHash) == metadataFormatByName.end())
                         {
-                            CComBSTR xmlSource;
-                            mapCaseNode->get_xml(&xmlSource);
+                            _bstr_t xmlSource;
+                            mapCaseNode->get_xml(xmlSource.GetAddress());
 
                             std::wostringstream woss;
                             woss << L"Invalid setting in configuration file! Microsoft WIC GUID was not defined for metadata format "
-                                 << metaFormatNameAsVar.bstrVal << L". Ocurred in:\r\n" << xmlSource;
+                                 << metaFormatName.GetBSTR() << L". Ocurred in:\r\n" << xmlSource.GetBSTR();
 
                             std::wstring_convert<std::codecvt_utf8<wchar_t>> strConv;
                             throw AppException<std::runtime_error>(strConv.to_bytes(woss.str()));
                         }
 
-                        // get metadata source path:
-
-                        CComVariant fromPathAsVar;
-                        CComPtr<IXMLDOMNode> fromPathAttrNode;
-                        CHECK(attributes->getNamedItem(attrNamePathFrom, &fromPathAttrNode));
-                        CHECK(fromPathAttrNode->get_nodeValue(&fromPathAsVar));
-                        newEntry.fromPath = ExtractBstrFrom(fromPathAsVar);
-
-                        // get metadata destination path:
-
-                        CComVariant toPathAsVar;
-                        CComPtr<IXMLDOMNode> toPathAttrNode;
-                        CHECK(attributes->getNamedItem(attrNamePathTo, &toPathAttrNode));
-                        CHECK(toPathAttrNode->get_nodeValue(&toPathAsVar));
-                        newEntry.toPath = ExtractBstrFrom(toPathAsVar);
-
-                        // copy only common items?
-
-                        CComVariant onlyCommonAsVar;
-                        CComPtr<IXMLDOMNode> onlyCommonAttrNode;
-                        CHECK(attributes->getNamedItem(attrNameOnlyCommon, &onlyCommonAttrNode));
-                        CHECK(onlyCommonAttrNode->get_nodeValue(&onlyCommonAsVar));
-                        _ASSERTE(onlyCommonAsVar.vt == VT_BOOL);
-                        newEntry.onlyCommon = (onlyCommonAsVar.boolVal == VARIANT_TRUE);
+                        GetAttributeValue(attributes.Get(), attrNamePathFrom, VT_BSTR, newEntry.fromPath);
+                        GetAttributeValue(attributes.Get(), attrNamePathTo, VT_BSTR, newEntry.toPath);
+                        GetAttributeValue(attributes.Get(), attrNameOnlyCommon, VT_BOOL, newEntry.onlyCommon);
 
                     }// end of inner for loop
 
@@ -322,9 +359,9 @@ namespace application
             {
                 throw; // just forward exceptions for errors known to have been already handled
             }
-            catch (CAtlException &ex)
+            catch (_com_error &ex)
             {
-                WWAPI::RaiseHResultException(ex, "Failed to read metadata map cases from configuration", "COM ATL");
+                WWAPI::RaiseHResultException(ex, "Failed to read metadata map cases from configuration");
             }
             catch (std::exception &ex)
             {
@@ -410,13 +447,13 @@ namespace application
                 HRESULT hr;
                 std::set<decltype(ItemEntry::id)> uniqueKeys;
 
-                const CComBSTR attrNameId(L"id"),
-                               attrNameMetaFormat(L"metaFormat"),
-                               attrNameRational(L"rational"),
-                               attrNameName(L"name");
+                const _bstr_t attrNameId(L"id"),
+                              attrNameMetaFormat(L"metaFormat"),
+                              attrNameRational(L"rational"),
+                              attrNameName(L"name");
 
-                CComPtr<IXMLDOMNodeList> listOfNodes;
-                CHECK(dom->selectNodes(itemsXPath, &listOfNodes));
+                ComPtr<IXMLDOMNodeList> listOfNodes;
+                CHECK(dom->selectNodes(itemsXPath, listOfNodes.GetAddressOf()));
 
                 long nodesCount;
                 CHECK(listOfNodes->get_length(&nodesCount));
@@ -426,80 +463,54 @@ namespace application
 
                 // Iterate over list of items:
 
-                for (long idxCase = 0; idxCase < nodesCount; ++idxCase)
+                for (long idx = 0; idx < nodesCount; ++idx)
                 {
                     items.emplace_back();
                     auto &newEntry = items.back();
 
-                    CComPtr<IXMLDOMNode> elemNode;
-                    CHECK(listOfNodes->get_item(idxCase, &elemNode));
+                    ComPtr<IXMLDOMNode> elemNode;
+                    CHECK(listOfNodes->get_item(idx, elemNode.GetAddressOf()));
 
-                    CComPtr<IXMLDOMNamedNodeMap> attributes;
-                    CHECK(elemNode->get_attributes(&attributes));
+                    ComPtr<IXMLDOMNamedNodeMap> attributes;
+                    CHECK(elemNode->get_attributes(attributes.GetAddressOf()));
 
-                    // get item ID:
-
-                    CComVariant idAsVar;
-                    CComPtr<IXMLDOMNode> idAttrNode;
-                    CHECK(attributes->getNamedItem(attrNameId, &idAttrNode));
-                    CHECK(idAttrNode->get_nodeValue(&idAsVar));
-                    _ASSERTE(idAsVar.vt == VT_UINT);
-                    newEntry.id = static_cast<unsigned short> (idAsVar.uintVal);
+                    // get item ID
+                    GetAttributeValue(attributes.Get(), attrNameId, VT_UI2, newEntry.id);
 
                     // is the item ID unique?
                     if (!uniqueKeys.insert(newEntry.id).second)
                     {
                         std::wstring_convert<std::codecvt_utf8<wchar_t>> strConv;
                         std::wostringstream woss;
-                        CComBSTR xmlSource;
-                        elemNode->get_xml(&xmlSource);
-                        woss << L"Configuration file cannot have duplicated metadata items! Ocurred in:\r\n" << xmlSource;
+                        _bstr_t xmlSource;
+                        elemNode->get_xml(xmlSource.GetAddress());
+                        woss << L"Configuration file cannot have duplicated metadata items! Ocurred in:\r\n" << xmlSource.GetBSTR();
                         throw AppException<std::runtime_error>(strConv.to_bytes(woss.str()));
                     }
 
-                    // get metadata format:
-
-                    CComVariant metaFormatNameAsVar;
-                    CComPtr<IXMLDOMNode> metaFormatAttrNode;
-                    CHECK(attributes->getNamedItem(attrNameMetaFormat, &metaFormatAttrNode));
-                    CHECK(metaFormatAttrNode->get_nodeValue(&metaFormatNameAsVar));
-                    _ASSERTE(metaFormatNameAsVar.vt == VT_BOOL);
-                    newEntry.metaFmtNameHash = HashName(metaFormatNameAsVar.bstrVal);
+                    // get metadata format
+                    auto metaFormatName = GetAttributeValueHash(attributes.Get(), attrNameMetaFormat, newEntry.metaFmtNameHash);
 
                     // does the format have a GUID?
                     if (metadataFormatByName.find(newEntry.metaFmtNameHash) == metadataFormatByName.end())
                     {
-                        CComBSTR xmlSource;
-                        elemNode->get_xml(&xmlSource);
+                        _bstr_t xmlSource;
+                        elemNode->get_xml(xmlSource.GetAddress());
 
                         std::wostringstream woss;
                         woss << L"Invalid setting in configuration file! Microsoft WIC GUID was not defined for metadata format "
-                             << metaFormatNameAsVar.bstrVal << L". Ocurred in:\r\n" << xmlSource;
+                             << metaFormatName.GetBSTR() << L". Ocurred in:\r\n" << xmlSource.GetBSTR();
 
                         std::wstring_convert<std::codecvt_utf8<wchar_t>> strConv;
                         throw AppException<std::runtime_error>(strConv.to_bytes(woss.str()));
                     }
 
-                    // does the item have a rational value?
-
-                    CComVariant rationalAsVar;
-                    CComPtr<IXMLDOMNode> rationalAttrNode;
-                    CHECK(attributes->getNamedItem(attrNameRational, &rationalAttrNode));
-                    CHECK(rationalAttrNode->get_nodeValue(&rationalAsVar));
-                    _ASSERTE(rationalAsVar.vt == VT_BOOL);
-                    newEntry.rational = (rationalAsVar.boolVal == VARIANT_TRUE);
-
-                    // get item name:
-
-                    CComVariant nameAsVar;
-                    CComPtr<IXMLDOMNode> nameAttrNode;
-                    CHECK(attributes->getNamedItem(attrNameName, &nameAttrNode));
-                    CHECK(nameAttrNode->get_nodeValue(&nameAsVar));
-                    newEntry.name = ExtractBstrFrom(nameAsVar);
+                    GetAttributeValue(attributes.Get(), attrNameRational, VT_BOOL, newEntry.rational);
+                    GetAttributeValue(attributes.Get(), attrNameName, VT_BSTR, newEntry.name);
 
                 }// end of loop
 
-                 // sort the entries by metadata format:
+                // sort the entries by metadata format:
                 std::sort(items.begin(), items.end(),
                     [](const ItemEntry &left, const ItemEntry &right) { return left.metaFmtNameHash < right.metaFmtNameHash; }
                 );
@@ -510,9 +521,9 @@ namespace application
             {
                 throw; // just forward exceptions for errors known to have been already handled
             }
-            catch (CAtlException &ex)
+            catch (_com_error &ex)
             {
-                WWAPI::RaiseHResultException(ex, "Failed to read metadata items from configuration", "COM ATL");
+                WWAPI::RaiseHResultException(ex, "Failed to read metadata items from configuration");
             }
             catch (std::exception &ex)
             {
@@ -571,65 +582,59 @@ namespace application
         try
         {
             HRESULT hr;
-            CComPtr<IXMLDOMNodeList> nodeList;
+            ComPtr<IXMLDOMNodeList> nodeList;
             CHECK(dom->selectNodes(listXPath, &nodeList));
 
-            const CComBSTR attrNameGuid(L"guid"),
-                           attrNameName(L"name");
+            const _bstr_t attrNameGuid(L"guid"),
+                          attrNameName(L"name");
 
             // Iterate over list of container formats:
-
+            
             long nodeCount;
             CHECK(nodeList->get_length(&nodeCount));
             for (long idx = 0; idx < nodeCount; ++idx)
             {
-                CComPtr<IXMLDOMNode> node;
-                CHECK(nodeList->get_item(idx, &node));
+                ComPtr<IXMLDOMNode> node;
+                CHECK(nodeList->get_item(idx, node.GetAddressOf()));
 
-                CComPtr<IXMLDOMNamedNodeMap> attributes;
-                CHECK(node->get_attributes(&attributes));
+                ComPtr<IXMLDOMNamedNodeMap> attributes;
+                CHECK(node->get_attributes(attributes.GetAddressOf()));
 
-                // get GUID:
+                // get GUID & name:
 
                 GUID guid;
-                CComVariant guidAsVariant;
-                CComPtr<IXMLDOMNode> guidAttrNode;
-                CHECK(attributes->getNamedItem(attrNameGuid, &guidAttrNode));
-                CHECK(guidAttrNode->get_nodeValue(&guidAsVariant));
+                _variant_t guidAsVariant;
+                ComPtr<IXMLDOMNode> guidAttrNode;
+                CHECK(attributes->getNamedItem(attrNameGuid, guidAttrNode.GetAddressOf()));
+                CHECK(guidAttrNode->get_nodeValue(guidAsVariant.GetAddress()));
                 _ASSERTE(guidAsVariant.vt == VT_BSTR);
                 CHECK(IIDFromString(guidAsVariant.bstrVal, &guid));
                 uint32_t hashedGuid = HashGuid(guid);
 
-                // get name:
-
-                CComVariant nameAsVariant;
-                CComPtr<IXMLDOMNode> nameAttrNode;
-                CHECK(attributes->getNamedItem(attrNameName, &nameAttrNode));
-                CHECK(nameAttrNode->get_nodeValue(&nameAsVariant));
-                _ASSERTE(nameAsVariant.vt == VT_BSTR);
-                uint32_t hashedName = HashName(nameAsVariant.bstrVal);
+                uint32_t hashedName;
+                GetAttributeValueHash(attributes.Get(), attrNameName, hashedName);
 
                 // check whether GUID is unique in list:
                 if (!nameByGuid.emplace(hashedGuid, hashedName).second)
                 {
-                    CComBSTR xmlSource;
-                    node->get_xml(&xmlSource);
+                    _bstr_t xmlSource;
+                    node->get_xml(xmlSource.GetAddress());
 
                     std::wstring_convert<std::codecvt_utf8<wchar_t>> strConv;
                     std::wostringstream woss;
-                    woss << L"Configuration file cannot have duplicated GUID in list of formats: ocurred in " << xmlSource;
+                    woss << L"Configuration file cannot have duplicated GUID in list of formats: ocurred in " << xmlSource.GetBSTR();
                     throw AppException<std::runtime_error>(strConv.to_bytes(woss.str()));
                 }
 
                 // check whether name is unique in list:
                 if (!guidByName.emplace(hashedName, hashedGuid).second)
                 {
-                    CComBSTR xmlSource;
-                    node->get_xml(&xmlSource);
+                    _bstr_t xmlSource;
+                    node->get_xml(xmlSource.GetAddress());
                     
                     std::wstring_convert<std::codecvt_utf8<wchar_t>> strConv;
                     std::wostringstream woss;
-                    woss << L"Configuration file cannot have duplicated name in list of formats: ocurred in " << xmlSource;
+                    woss << L"Configuration file cannot have duplicated name in list of formats: ocurred in " << xmlSource.GetBSTR();
                     throw AppException<std::runtime_error>(strConv.to_bytes(woss.str()));
                 }
             }
@@ -638,9 +643,9 @@ namespace application
         {
             throw; // just forward exceptions for errors known to have been already handled
         }
-        catch (CAtlException &ex)
+        catch (_com_error &ex)
         {
-            WWAPI::RaiseHResultException(ex, "Failed to read formats from configuration", "COM ATL");
+            WWAPI::RaiseHResultException(ex, "Failed to read formats from configuration");
         }
         catch (std::exception &ex)
         {
@@ -655,6 +660,8 @@ namespace application
     /// </summary>
     /// <param name="cfgFilePath">The path for the XML configuration file.</param>
     MetadataCopier::MetadataCopier(const string &cfgFilePath)
+        : m_mapCases(nullptr)
+        , m_items(nullptr)
     {
         CALL_STACK_TRACE;
         
@@ -662,12 +669,13 @@ namespace application
         {
             // Instantiante the DOM parser:
 
-            CComPtr<IXMLDOMDocument2> dom;
-            auto hr = dom.CoCreateInstance(__uuidof(DOMDocument60),
-                                           nullptr,
-                                           CLSCTX_INPROC_SERVER);
+            ComPtr<IXMLDOMDocument2> dom;
+            auto hr = CoCreateInstance(__uuidof(DOMDocument60),
+                                       nullptr,
+                                       CLSCTX_INPROC_SERVER,
+                                       IID_PPV_ARGS(dom.GetAddressOf()));
             if (FAILED(hr))
-                WWAPI::RaiseHResultException(hr, "Could not instantiate MSXML6 DOM document parser", "CComPtr<IXMLDOMDocument2>::CoCreateInstance");
+                WWAPI::RaiseHResultException(hr, "Could not instantiate MSXML6 DOM document parser", "CoCreateInstance");
 
             dom->put_async(VARIANT_FALSE);
             dom->put_validateOnParse(VARIANT_TRUE);
@@ -676,56 +684,61 @@ namespace application
             // Parse the XML document:
 
             VARIANT_BOOL parserSucceeded;
-            hr = dom->load(CComVariant(cfgFilePath.c_str()), &parserSucceeded);
+            hr = dom->load(_variant_t(cfgFilePath.c_str()), &parserSucceeded);
             if (FAILED(hr))
                 WWAPI::RaiseHResultException(hr, "Failed to load XML configuration file into DOM parser", "IXMLDOMDocument2::load");
 
             if (parserSucceeded == VARIANT_FALSE)
             {
                 long lineNumber;
-                CComBSTR reason, xmlSource;
-                CComPtr<IXMLDOMParseError> parseError;
-                dom->get_parseError(&parseError);
-                parseError->get_reason(&reason);
-                parseError->get_srcText(&xmlSource);
+                _bstr_t reason, xmlSource;
+                ComPtr<IXMLDOMParseError> parseError;
+                dom->get_parseError(parseError.GetAddressOf());
+                parseError->get_reason(reason.GetAddress());
+                parseError->get_srcText(xmlSource.GetAddress());
                 parseError->get_line(&lineNumber);
 
                 std::wostringstream woss;
-                woss << L"Failed to parse configuration file! "
-                     << static_cast <LPWSTR> (reason)
-                     << L" - at line " << lineNumber << L": "
-                     << static_cast<LPWSTR> (xmlSource);
+                woss << L"Failed to parse configuration file! " << reason.GetBSTR()
+                     << L" - at line " << lineNumber
+                     << L": " << xmlSource.GetBSTR();
 
                 std::wstring_convert<std::codecvt_utf8<wchar_t>> strConv;
                 throw AppException<std::runtime_error>(strConv.to_bytes(woss.str()));
             }
+            
+            CHECK(dom->setProperty(_bstr_t(L"SelectionLanguage"), _variant_t(_bstr_t(L"XPath"))));
+            CHECK(dom->setProperty(_bstr_t(L"SelectionNamespaces"), _variant_t(_bstr_t(L"xmlns:def='http://3fd.codeplex.com/MetadataCopyMap.xsd'"))));
 
             Hash2HashMap containerFormatByName, containerFormatByGuid;
-            ReadFormats(dom, CComBSTR(L"//metadata/formats/container/*"), containerFormatByGuid, containerFormatByName);
+            ReadFormats(dom.Get(), _bstr_t(L"//def:metadata/def:formats/def:container/*"), containerFormatByGuid, containerFormatByName);
 
             Hash2HashMap metadataFormatByName, metadataFormatByGuid;
-            ReadFormats(dom, CComBSTR(L"//metadata/formats/metadata/*"), metadataFormatByGuid, metadataFormatByName);
+            ReadFormats(dom.Get(), _bstr_t(L"//def:metadata/def:formats/def:metadata/*"), metadataFormatByGuid, metadataFormatByName);
 
-            m_mapCases.reset(
-                new MetadataMapCases(dom,
-                                     CComBSTR(L"//metadata/map/*"),
+            std::unique_ptr<MetadataMapCases> metadataMapCases(
+                new MetadataMapCases(dom.Get(),
+                                     _bstr_t(L"//def:metadata/def:map/*"),
                                      containerFormatByName,
                                      metadataFormatByName)
             );
 
-            m_items.reset(
-                new MetadataItems(dom,
-                                  CComBSTR(L"//metadata/items/*"),
+            std::unique_ptr<MetadataItems> metadataItems(
+                new MetadataItems(dom.Get(),
+                                  _bstr_t(L"//def:metadata/def:items/*"),
                                   metadataFormatByName)
             );
+
+            m_mapCases = metadataMapCases.release();
+            m_items = metadataItems.release();
         }
         catch (IAppException &)
         {
             throw; // just forward exceptions for errors known to have been already handled
         }
-        catch (CAtlException &ex)
+        catch (_com_error &ex)
         {
-            WWAPI::RaiseHResultException(ex, "Failed when loading configuration", "COM ATL");
+            WWAPI::RaiseHResultException(ex, "Failed when loading configuration");
         }
         catch (std::exception &ex)
         {
@@ -733,6 +746,15 @@ namespace application
             oss << "Generic failure when loading configuration: " << ex.what();
             throw AppException<std::runtime_error>(oss.str());
         }
+    }
+
+    /// <summary>
+    /// Finalizes an instance of the <see cref="MetadataCopier"/> class.
+    /// </summary>
+    MetadataCopier::~MetadataCopier()
+    {
+        delete m_items;
+        delete m_mapCases;
     }
 
 }// end of namespace application

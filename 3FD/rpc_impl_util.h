@@ -1,5 +1,5 @@
-#ifndef RPC_UTIL_IMPL_H // header guard
-#define RPC_UTIL_IMPL_H
+#ifndef RPC_IMPL_UTIL_H // header guard
+#define RPC_IMPL_UTIL_H
 
 #include "rpc_helpers.h"
 

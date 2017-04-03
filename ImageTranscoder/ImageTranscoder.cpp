@@ -5,6 +5,8 @@
 #include "3FD\runtime.h"
 #include "3FD\callstacktracer.h"
 #include "3FD\exceptions.h"
+#include "3FD\logger.h"
+#include "MetadataCopier.h"
 
 /////////////////////
 // Entry Point
@@ -20,11 +22,11 @@ int main(int argc, char *argv[])
 
     try
     {
-
+        application::MetadataCopier metaDataCopier("MetadataCopyMap.xml");
     }
     catch (IAppException &ex)
     {
-
+        Logger::Write(ex, Logger::PRIO_FATAL);
     }
 
     return EXIT_SUCCESS;

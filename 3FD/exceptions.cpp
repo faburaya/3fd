@@ -3,7 +3,7 @@
 #include <codecvt>
 #include <sstream>
 
-#if defined _3FD_PLATFORM_WIN32API || defined _3FD_PLATFORM_WINRT_UWP
+#if defined _3FD_PLATFORM_WIN32API || defined _3FD_PLATFORM_WINRT
 #   include <comdef.h>
 #endif
 
@@ -57,7 +57,6 @@ namespace _3fd
 			return oss.str();
 		}
 
-#   if defined _3FD_PLATFORM_WIN32API || defined _3FD_PLATFORM_WINRT_UWP
         /// <summary>
         /// Get a description for an HRESULT code.
         /// </summary>
@@ -68,7 +67,7 @@ namespace _3fd
             _ASSERTE(FAILED(errCode));
             std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
 
-#	    ifdef _3FD_PLATFORM_WINRT_UWP
+#	    ifdef _3FD_PLATFORM_WINRT
             _com_error comErrObj(errCode, nullptr);
 #       else
             _com_error comErrObj(errCode);
@@ -87,7 +86,7 @@ namespace _3fd
             _ASSERTE(FAILED(errCode));
             std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
 
-#	    ifdef _3FD_PLATFORM_WINRT_UWP
+#	    ifdef _3FD_PLATFORM_WINRT
             _com_error comErrObj(errCode, nullptr);
 #       else
             _com_error comErrObj(errCode);
@@ -99,7 +98,20 @@ namespace _3fd
 
             throw HResultException(errCode, oss.str());
         }
-#   endif
+
+        /// <summary>
+        /// Raises an exception for a COM error.
+        /// </summary>
+        /// <param name="errCode">The COM exception.</param>
+        /// <param name="message">The main error message.</param>
+        void WWAPI::RaiseHResultException(const _com_error &ex, const char *message)
+        {
+            std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
+            std::ostringstream oss;
+            oss << message << " - " << transcoder.to_bytes(ex.ErrorMessage());
+            throw HResultException(ex.Error(), oss.str());
+        }
+
 #   ifdef _3FD_PLATFORM_WIN32API // only for classic desktop apps:
         /// <summary>
         /// Generates an error message for a DWORD error code.

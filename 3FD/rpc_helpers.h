@@ -1,5 +1,5 @@
-#ifndef RPC_H // header guard
-#define RPC_H
+#ifndef RPC_HELPERS_H // header guard
+#define RPC_HELPERS_H
 
 #include "base.h"
 #include "exceptions.h"

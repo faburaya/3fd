@@ -55,4 +55,9 @@
       <Filter>Resource Files</Filter>
     </Xsd>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="application.config">
+      <Filter>Resource Files</Filter>
+    </None>
+  </ItemGroup>
 </Project>

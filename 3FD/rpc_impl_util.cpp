@@ -708,7 +708,7 @@ namespace rpc
 
         if (status != RPC_S_OK)
             return "";
-        
+
         // Remove the CRLF at the end of the error message:
         auto lastCharPos = wcslen(errorMessage) - 1;
         if (errorMessage[lastCharPos] == '\n' && errorMessage[lastCharPos - 1] == '\r')

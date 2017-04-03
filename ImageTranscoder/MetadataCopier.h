@@ -3,7 +3,6 @@
 
 #include <vector>
 #include <string>
-#include <memory>
 #include <cinttypes>
 #include <wtypes.h>
 
@@ -21,12 +20,14 @@ namespace application
     {
     private:
 
-        std::unique_ptr<MetadataMapCases> m_mapCases;
-        std::unique_ptr<MetadataItems> m_items;
+        MetadataMapCases *m_mapCases;
+        MetadataItems *m_items;
 
     public:
 
         MetadataCopier(const string &cfgFilePath);
+
+        ~MetadataCopier();
     };
 
 }// end of namespace application

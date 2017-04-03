@@ -69,6 +69,11 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>Shlwapi.lib;Propsys.lib;msxml6.lib;Windowscodecs.lib;comsuppwd.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>copy "$(ProjectDir)application.config" "$(TargetPath).3fd.config"
+copy "$(ProjectDir)MetadataCopyMap.xml" "$(TargetDir)MetadataCopyMap.xml"
+copy "$(ProjectDir)MetadataCopyMap.xsd" "$(TargetDir)MetadataCopyMap.xsd"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -89,6 +94,11 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>Shlwapi.lib;Propsys.lib;msxml6.lib;Windowscodecs.lib;comsuppw.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>copy "$(ProjectDir)application.config" "$(TargetPath).3fd.config"
+copy "$(ProjectDir)MetadataCopyMap.xml" "$(TargetDir)MetadataCopyMap.xml"
+copy "$(ProjectDir)MetadataCopyMap.xsd" "$(TargetDir)MetadataCopyMap.xsd"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -121,6 +131,9 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </Xsd>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="application.config" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
