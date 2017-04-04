@@ -2,6 +2,7 @@
 #include "MetadataCopier.h"
 #include "3FD\callstacktracer.h"
 #include "3FD\exceptions.h"
+#include "3FD\logger.h"
 #include "3FD\utils_algorithms.h"
 #include <MsXml6.h>
 #include <map>
@@ -12,6 +13,9 @@
 #include <codecvt>
 #include <algorithm>
 #include <cassert>
+
+#undef min
+#undef max
 
 /* XML parsing validates the content against the referenced schema (XSD), thus the calls for
    browsing the DOM are not supposed to fail. Their results are only checked because failures
@@ -44,7 +48,7 @@ namespace application
     }
 
     /// <summary>
-    /// Gets the value reference from a VARIANT.
+    /// Gets the value from a VARIANT.
     /// </summary>
     /// <param name="variant">The variant object.</param>
     /// <returns>A reference to the value held by the VARIANT.</returns>
@@ -55,19 +59,78 @@ namespace application
         return variant;
     }
 
-    template <> bool GetValueFrom<bool>(_variant_t &variant) { _ASSERTE(variant.vt == VT_BOOL);  return (variant.boolVal == VARIANT_TRUE); }
-    template <> BSTR GetValueFrom<BSTR>(_variant_t &variant) { _ASSERTE(variant.vt == VT_BSTR);  return ExtractBstrFrom(variant); }
-    template <> uint16_t GetValueFrom<uint16_t>(_variant_t &variant) { _ASSERTE(variant.vt == VT_UI2);  return variant.uiVal; }
-    template <> uint32_t GetValueFrom<uint32_t>(_variant_t &variant) { _ASSERTE(variant.vt == VT_UI4);  return variant.uintVal; }
-    template <> int16_t GetValueFrom<int16_t>(_variant_t &variant) { _ASSERTE(variant.vt == VT_I2);  return variant.iVal; }
-    template <> int32_t GetValueFrom<int32_t>(_variant_t &variant) { _ASSERTE(variant.vt == VT_I4);  return variant.intVal; }
+    template <> BSTR GetValueFrom<BSTR>(_variant_t &variant)
+    {
+        return ExtractBstrFrom(variant);
+    }
+
+    template <> bool GetValueFrom<bool>(_variant_t &variant)
+    {
+        if (wcscmp(variant.bstrVal, L"true") == 0 || wcscmp(variant.bstrVal, L"1") == 0)
+            return true;
+        else if (wcscmp(variant.bstrVal, L"false") == 0 || wcscmp(variant.bstrVal, L"0") == 0)
+            return false;
+        else
+            throw AppException<std::logic_error>("Validation of XML configuraton file is broken: not a valid boolean!");
+    }
+
+    template <> uint16_t GetValueFrom<uint16_t>(_variant_t &variant)
+    {
+        _set_errno(0);
+        unsigned long integer = wcstoul(variant.bstrVal, nullptr, 10);
+
+        if (integer == 0 && wcscmp(variant.bstrVal, L"0") != 0)
+            throw AppException<std::logic_error>("Validation of XML configuraton file is broken: not a valid uint16!");
+        else if (errno == ERANGE || std::numeric_limits<uint16_t>::max() < integer)
+            throw AppException<std::logic_error>("Validation of XML configuraton file is broken: out of uint16 range!");
+        else
+            return static_cast<uint16_t> (integer);
+    }
+
+    template <> uint32_t GetValueFrom<uint32_t>(_variant_t &variant)
+    {
+        _set_errno(0);
+        unsigned long integer = wcstoul(variant.bstrVal, nullptr, 10);
+
+        if (integer == 0 && wcscmp(variant.bstrVal, L"0") != 0)
+            throw AppException<std::logic_error>("Validation of XML configuraton file is broken: not a valid uint32!");
+        else if (errno == ERANGE)
+            throw AppException<std::logic_error>("Validation of XML configuraton file is broken: out of uint32 range!");
+        else
+            return static_cast<uint32_t> (integer);
+    }
+
+    template <> int16_t GetValueFrom<int16_t>(_variant_t &variant)
+    {
+        _set_errno(0);
+        long integer = wcstol(variant.bstrVal, nullptr, 10);
+
+        if (integer == 0 && wcscmp(variant.bstrVal, L"0") != 0)
+            throw AppException<std::logic_error>("Validation of XML configuraton file is broken: not a valid int16!");
+        else if (errno == ERANGE || std::numeric_limits<int16_t>::max() < integer || std::numeric_limits<int16_t>::min() > integer)
+            throw AppException<std::logic_error>("Validation of XML configuraton file is broken: out of int16 range!");
+        else
+            return static_cast<int16_t> (integer);
+    }
+
+    template <> int32_t GetValueFrom<int32_t>(_variant_t &variant)
+    {
+        _set_errno(0);
+        long integer = wcstol(variant.bstrVal, nullptr, 10);
+
+        if (integer == 0 && wcscmp(variant.bstrVal, L"0") != 0)
+            throw AppException<std::logic_error>("Validation of XML configuraton file is broken: not a valid int32!");
+        else if (errno == ERANGE)
+            throw AppException<std::logic_error>("Validation of XML configuraton file is broken: out of int32 range!");
+        else
+            return static_cast<int32_t> (integer);
+    }
 
     /// <summary>
     /// Gets the XML attribute value.
     /// </summary>
     /// <param name="attributes">The attributes.</param>
     /// <param name="attrName">Name of the attribute.</param>
-    /// <param name="typeConv">The type conversion to perform.</param>
     /// <param name="value">A reference to the variable to receive the value.</param>
     template <typename ValType>
     void GetAttributeValue(IXMLDOMNamedNodeMap *attributes,
@@ -78,19 +141,12 @@ namespace application
         CALL_STACK_TRACE;
 
         HRESULT hr;
-        _variant_t variant, variantConv;
+        _variant_t variant;
         ComPtr<IXMLDOMNode> attrNode;
         CHECK(attributes->getNamedItem(attrName, attrNode.GetAddressOf()));
         CHECK(attrNode->get_nodeValue(variant.GetAddress()));
-        
         _ASSERTE(variant.vt == VT_BSTR);
-        if (typeConv != VT_BSTR)
-        {
-            CHECK(VariantChangeType(variantConv.GetAddress(), variant.GetAddress(), 0, typeConv));
-            value = GetValueFrom<ValType>(variantConv);
-        }
-        else
-            value = GetValueFrom<ValType>(variant);
+        value = GetValueFrom<ValType>(variant);
     }
 
     /// <summary>
@@ -397,6 +453,15 @@ namespace application
             return utils::BinSearchSubRange(searchKey, subRangeBegin, subRangeEnd);
         }
 
+        /// <summary>
+        /// Counts this how many map cases have been loaded from configuration file.
+        /// </summary>
+        /// <returns>The number of map cases.</returns>
+        uint16_t Count() const
+        {
+            return m_mapCasesEntries.size();
+        }
+
     };// end of MetadataMapCases class
 
 
@@ -558,6 +623,15 @@ namespace application
             return utils::BinSearchSubRange(searchKey, subRangeBegin, subRangeEnd);
         }
 
+        /// <summary>
+        /// Counts how manu metadata items have been loaded from the configuration file.
+        /// </summary>
+        /// <returns>The number of metadata items.</returns>
+        uint16_t Count() const
+        {
+            return m_items.size();
+        }
+
     };// end of MetadataItems class
 
 
@@ -637,7 +711,8 @@ namespace application
                     woss << L"Configuration file cannot have duplicated name in list of formats: ocurred in " << xmlSource.GetBSTR();
                     throw AppException<std::runtime_error>(strConv.to_bytes(woss.str()));
                 }
-            }
+
+            }// for loop end
         }
         catch (IAppException &)
         {
@@ -731,6 +806,13 @@ namespace application
 
             m_mapCases = metadataMapCases.release();
             m_items = metadataItems.release();
+
+            std::ostringstream oss;
+            oss << "Finished loading configurations from file.\nSupporting " << containerFormatByName.size()
+                << " container formats and " << metadataFormatByName.size() << " metadata formats.\nLoaded "
+                << m_mapCases->Count() << " map cases and " << m_items->Count() << " common items.";
+
+            Logger::Write(oss.str(), Logger::PRIO_DEBUG);
         }
         catch (IAppException &)
         {
