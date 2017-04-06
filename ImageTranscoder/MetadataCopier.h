@@ -3,12 +3,18 @@
 
 #include <vector>
 #include <string>
+#include <mutex>
+#include <memory>
 #include <cinttypes>
+#include <wincodec.h>
 #include <wtypes.h>
+#include <wrl.h>
 
 namespace application
 {
     using std::string;
+
+    using namespace Microsoft::WRL;
 
     class MetadataMapCases;
     class MetadataItems;
@@ -20,14 +26,25 @@ namespace application
     {
     private:
 
+        ComPtr<IWICImagingFactory> m_wicImagingFactory;
+
         MetadataMapCases *m_mapCases;
         MetadataItems *m_items;
 
-    public:
-
         MetadataCopier(const string &cfgFilePath);
 
+        static std::mutex singletonCreationMutex;
+        static std::unique_ptr<MetadataCopier> uniqueInstance;
+
+    public:
+
+        static MetadataCopier &GetInstance();
+
+        static void Finalize();
+
         ~MetadataCopier();
+
+        void Copy(IWICMetadataQueryReader *from, IWICMetadataQueryWriter *to);
     };
 
 }// end of namespace application

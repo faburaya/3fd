@@ -22,7 +22,8 @@ int main(int argc, char *argv[])
 
     try
     {
-        application::MetadataCopier metaDataCopier("MetadataCopyMap.xml");
+        auto &ref = application::MetadataCopier::GetInstance();
+        application::MetadataCopier::Finalize();
     }
     catch (IAppException &ex)
     {

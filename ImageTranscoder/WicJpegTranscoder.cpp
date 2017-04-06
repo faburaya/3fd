@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "WicJpegTranscoder.h"
+#include "MetadataCopier.h"
 #include "3FD\callstacktracer.h"
 #include "3FD\exceptions.h"
 #include <wincodecsdk.h>
@@ -10,7 +11,9 @@ namespace application
 {
     using namespace _3fd::core;
 
-
+    /// <summary>
+    /// Initializes a new instance of the <see cref="WicJpegTranscoder"/> class.
+    /// </summary>
     WicJpegTranscoder::WicJpegTranscoder()
     {
         CALL_STACK_TRACE;
@@ -105,12 +108,12 @@ namespace application
             ComPtr<IWICMetadataBlockReader> metadataBlockReader;
             hr = decodedFrame->QueryInterface(IID_PPV_ARGS(metadataBlockReader.GetAddressOf()));
             if (FAILED(hr))
-                WWAPI::RaiseHResultException(hr, "Failed to retrieve metadata block reader", "IWICBitmapFrameDecode::QueryInterface");
+                WWAPI::RaiseHResultException(hr, "Failed to obtain metadata block reader", "IWICBitmapFrameDecode::QueryInterface");
 
             ComPtr<IWICMetadataBlockWriter> metadataBlockWriter;
             hr = transcodedFrame->QueryInterface(IID_PPV_ARGS(metadataBlockWriter.GetAddressOf()));
             if (FAILED(hr))
-                WWAPI::RaiseHResultException(hr, "Failed to retrieve metadata block writer", "IWICBitmapFrameEncode::QueryInterface");
+                WWAPI::RaiseHResultException(hr, "Failed to obtain metadata block writer", "IWICBitmapFrameEncode::QueryInterface");
 
             hr = metadataBlockWriter->InitializeFromBlockReader(metadataBlockReader.Get());
             if (FAILED(hr))
@@ -119,7 +122,19 @@ namespace application
             return;
         }
 
-        // TO DO
+        // Use metadata copier configured by XML:
+
+        ComPtr<IWICMetadataQueryReader> metadataQueryReader;
+        hr = decodedFrame->GetMetadataQueryReader(metadataQueryReader.GetAddressOf());
+        if (FAILED(hr))
+            WWAPI::RaiseHResultException(hr, "Failed to obtain metadata query reader", "IWICBitmapFrameDecode::GetMetadataQueryReader");
+
+        ComPtr<IWICMetadataQueryWriter> metadataQueryWriter;
+        hr = transcodedFrame->GetMetadataQueryWriter(metadataQueryWriter.GetAddressOf());
+        if (FAILED(hr))
+            WWAPI::RaiseHResultException(hr, "Failed to obtain metadata query writer", "IWICBitmapFrameEncode::GetMetadataQueryWriter");
+
+        MetadataCopier::GetInstance().Copy(metadataQueryReader.Get(), metadataQueryWriter.Get());
     }
 
     /// <summary>
@@ -188,20 +203,6 @@ namespace application
             if (FAILED(hr))
                 WWAPI::RaiseHResultException(hr, "Failed to decode image frame data", "IWICBitmapDecoder::GetFrame");
 
-            WICPixelFormatGUID pixelFormat;
-            double dpiX, dpiY;
-            UINT width, height;
-            
-            // get frame properties:
-            if (FAILED(hr = decodedFrame->GetSize(&width, &height)) ||
-                FAILED(hr = decodedFrame->GetResolution(&dpiX, &dpiY)) ||
-                FAILED(hr = decodedFrame->GetPixelFormat(&pixelFormat)))
-            {
-                WWAPI::RaiseHResultException(hr,
-                    "Failed to retrieve property value from decoded image frame",
-                    "in IWICBitmapFrameDecode");
-            }
-
             // create frame to receive transcoded data:
             ComPtr<IPropertyBag2> encPropBag;
             ComPtr<IWICBitmapFrameEncode> transcodedFrame;
@@ -215,30 +216,36 @@ namespace application
             if (FAILED(hr))
                 WWAPI::RaiseHResultException(hr, "Failed to set properties for transcoded image frame", "IWICBitmapFrameEncode::Initialize");
             
-            // set properties in new frame:
-            if (FAILED(hr = transcodedFrame->SetPixelFormat(&pixelFormat)) ||
-                FAILED(hr = transcodedFrame->SetResolution(dpiX, dpiY)) ||
-                FAILED(hr = transcodedFrame->SetSize(width, height)))
-            {
-                WWAPI::RaiseHResultException(hr,
-                    "Failed to set property value for transcoded image frame",
-                    "in IWICBitmapFrameEncode");
-            }
-
-            // TO DO
-
-            hr = transcodedFrame->Commit();
+            // reencode
+            hr = transcodedFrame->WriteSource(decodedFrame.Get(), nullptr);
             if (FAILED(hr))
+                WWAPI::RaiseHResultException(hr, "Failed to reencode bitmap", "IWICBitmapFrameEncode::WriteSource");
+
+            CopyFrameMetadata(decodedFrame.Get(), transcodedFrame.Get(), toSameFormat);
+
+            // copy the frame thumbnail:
+
+            ComPtr<IWICBitmapSource> thumbnail;
+            hr = decodedFrame->GetThumbnail(thumbnail.GetAddressOf());
+            if (FAILED(hr))
+                WWAPI::RaiseHResultException(hr, "Failed to retrieve image frame thumbnail", "IWICBitmapFrameDecode::GetThumbnail");
+
+            hr = transcodedFrame->SetThumbnail(thumbnail.Get());
+            if (FAILED(hr))
+                WWAPI::RaiseHResultException(hr, "Failed to copy image frame thumbnail", "IWICBitmapFrameEncode::SetThumbnail");
+
+            // commit to frame
+            if (FAILED(hr = transcodedFrame->Commit()))
                 WWAPI::RaiseHResultException(hr, "Failed to commit transcoded image frame", "IWICBitmapFrameEncode::Commit");
 
         }// for loop end
 
-        hr = encoder->Commit();
-        if (FAILED(hr))
+        // commit to encoder
+        if (FAILED(hr = encoder->Commit()))
             WWAPI::RaiseHResultException(hr, "Encoder failed to commit changes to transcoded image", "IWICBitmapEncoder::Commit");
 
-        hr = fileOutStream->Commit(STGC_DEFAULT);
-        if (FAILED(hr))
+        // commit to stream
+        if (FAILED(hr = fileOutStream->Commit(STGC_DEFAULT)))
             WWAPI::RaiseHResultException(hr, "File stream failed to commit changes to storage", "IWICStream::Commit");
     }
 

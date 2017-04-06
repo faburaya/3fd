@@ -1,233 +1,28 @@
 #include "stdafx.h"
 #include "MetadataCopier.h"
+#include "WicUtilities.h"
 #include "3FD\callstacktracer.h"
 #include "3FD\exceptions.h"
 #include "3FD\logger.h"
 #include "3FD\utils_algorithms.h"
+#include <wincodecsdk.h>
 #include <MsXml6.h>
 #include <map>
 #include <set>
 #include <array>
-#include <memory>
 #include <sstream>
 #include <codecvt>
 #include <algorithm>
 #include <cassert>
 
-#undef min
-#undef max
-
 /* XML parsing validates the content against the referenced schema (XSD), thus the calls for
    browsing the DOM are not supposed to fail. Their results are only checked because failures
    such as running out of memory can always happen. */
-
-#define CHECK(COM_CALL_EXPR) if ((hr = (COM_CALL_EXPR)) < 0) { WWAPI::RaiseHResultException(hr, "Unexpected error in COM interface call", #COM_CALL_EXPR); }
 
 namespace application
 {
     using namespace _3fd;
     using namespace _3fd::core;
-
-    using namespace Microsoft::WRL;
-
-    //////////////////
-    // Utilities
-    //////////////////
-
-    /// <summary>
-    /// Extracts the BSTR from a COM wrapped VARIANT, bypassing its deallocation.
-    /// </summary>
-    /// <param name="wrappedVar">The wrapped VARIANT.</param>
-    /// <returns>The extracted BSTR.</returns>
-    static BSTR ExtractBstrFrom(_variant_t &wrappedVar)
-    {
-        _ASSERTE(wrappedVar.vt == VT_BSTR);
-        VARIANT rawVar;
-        rawVar = wrappedVar.Detach();
-        return rawVar.bstrVal;
-    }
-
-    /// <summary>
-    /// Gets the value from a VARIANT.
-    /// </summary>
-    /// <param name="variant">The variant object.</param>
-    /// <returns>A reference to the value held by the VARIANT.</returns>
-    template <typename ValType>
-    ValType GetValueFrom(_variant_t &variant)
-    {
-        static_cast(false);
-        return variant;
-    }
-
-    template <> BSTR GetValueFrom<BSTR>(_variant_t &variant)
-    {
-        return ExtractBstrFrom(variant);
-    }
-
-    template <> bool GetValueFrom<bool>(_variant_t &variant)
-    {
-        if (wcscmp(variant.bstrVal, L"true") == 0 || wcscmp(variant.bstrVal, L"1") == 0)
-            return true;
-        else if (wcscmp(variant.bstrVal, L"false") == 0 || wcscmp(variant.bstrVal, L"0") == 0)
-            return false;
-        else
-            throw AppException<std::logic_error>("Validation of XML configuraton file is broken: not a valid boolean!");
-    }
-
-    template <> uint16_t GetValueFrom<uint16_t>(_variant_t &variant)
-    {
-        _set_errno(0);
-        unsigned long integer = wcstoul(variant.bstrVal, nullptr, 10);
-
-        if (integer == 0 && wcscmp(variant.bstrVal, L"0") != 0)
-            throw AppException<std::logic_error>("Validation of XML configuraton file is broken: not a valid uint16!");
-        else if (errno == ERANGE || std::numeric_limits<uint16_t>::max() < integer)
-            throw AppException<std::logic_error>("Validation of XML configuraton file is broken: out of uint16 range!");
-        else
-            return static_cast<uint16_t> (integer);
-    }
-
-    template <> uint32_t GetValueFrom<uint32_t>(_variant_t &variant)
-    {
-        _set_errno(0);
-        unsigned long integer = wcstoul(variant.bstrVal, nullptr, 10);
-
-        if (integer == 0 && wcscmp(variant.bstrVal, L"0") != 0)
-            throw AppException<std::logic_error>("Validation of XML configuraton file is broken: not a valid uint32!");
-        else if (errno == ERANGE)
-            throw AppException<std::logic_error>("Validation of XML configuraton file is broken: out of uint32 range!");
-        else
-            return static_cast<uint32_t> (integer);
-    }
-
-    template <> int16_t GetValueFrom<int16_t>(_variant_t &variant)
-    {
-        _set_errno(0);
-        long integer = wcstol(variant.bstrVal, nullptr, 10);
-
-        if (integer == 0 && wcscmp(variant.bstrVal, L"0") != 0)
-            throw AppException<std::logic_error>("Validation of XML configuraton file is broken: not a valid int16!");
-        else if (errno == ERANGE || std::numeric_limits<int16_t>::max() < integer || std::numeric_limits<int16_t>::min() > integer)
-            throw AppException<std::logic_error>("Validation of XML configuraton file is broken: out of int16 range!");
-        else
-            return static_cast<int16_t> (integer);
-    }
-
-    template <> int32_t GetValueFrom<int32_t>(_variant_t &variant)
-    {
-        _set_errno(0);
-        long integer = wcstol(variant.bstrVal, nullptr, 10);
-
-        if (integer == 0 && wcscmp(variant.bstrVal, L"0") != 0)
-            throw AppException<std::logic_error>("Validation of XML configuraton file is broken: not a valid int32!");
-        else if (errno == ERANGE)
-            throw AppException<std::logic_error>("Validation of XML configuraton file is broken: out of int32 range!");
-        else
-            return static_cast<int32_t> (integer);
-    }
-
-    /// <summary>
-    /// Gets the XML attribute value.
-    /// </summary>
-    /// <param name="attributes">The attributes.</param>
-    /// <param name="attrName">Name of the attribute.</param>
-    /// <param name="value">A reference to the variable to receive the value.</param>
-    template <typename ValType>
-    void GetAttributeValue(IXMLDOMNamedNodeMap *attributes,
-                           BSTR attrName,
-                           VARTYPE typeConv,
-                           ValType &value)
-    {
-        CALL_STACK_TRACE;
-
-        HRESULT hr;
-        _variant_t variant;
-        ComPtr<IXMLDOMNode> attrNode;
-        CHECK(attributes->getNamedItem(attrName, attrNode.GetAddressOf()));
-        CHECK(attrNode->get_nodeValue(variant.GetAddress()));
-        _ASSERTE(variant.vt == VT_BSTR);
-        value = GetValueFrom<ValType>(variant);
-    }
-
-    /// <summary>
-    /// Gets the XML attribute value as a hash.
-    /// </summary>
-    /// <param name="attributes">The attributes.</param>
-    /// <param name="attrName">Name of the attribute.</param>
-    /// <param name="typeConv">The type conversion to perform.</param>
-    /// <param name="value">A reference to the variable to receive the value.</param>
-    /// <returns>The originally parsed BSTR value.</returns>
-    template <typename ValHashType>
-    _bstr_t GetAttributeValueHash(IXMLDOMNamedNodeMap *attributes,
-                                  BSTR attrName,
-                                  ValHashType &hash)
-    {
-        BSTR value;
-        GetAttributeValue(attributes, attrName, VT_BSTR, value);
-        hash = HashName(value);
-        return _bstr_t(value, false);
-    }
-
-    /// <summary>
-    /// Hashes the unique identifier using FNV1a algorithm.
-    /// </summary>
-    /// <param name="guid">The unique identifier.</param>
-    /// <returns>The GUID hashed to an unsigned 32 bits integer.</returns>
-    static uint32_t HashGuid(const GUID &guid)
-    {
-        uint32_t hash(2166136261);
-
-        auto data = (uint8_t *)&guid;
-        for (int idx = 0; idx < sizeof guid; ++idx)
-        {
-            hash = hash ^ data[idx];
-            hash = static_cast<uint32_t> (hash * 16777619ULL);
-        }
-
-        return hash;
-    }
-
-    /// <summary>
-    /// Makes the key by concatenating 2 hash values.
-    /// </summary>
-    /// <param name="low">The low part of the key.</param>
-    /// <param name="high">The high part of the key.</param>
-    /// <returns>The key as a 64 bits long unsigned integer.</returns>
-    static uint64_t MakeKey(uint32_t low, uint32_t high)
-    {
-        struct { uint32_t low, high; } key;
-        key.low = low;
-        key.high = high;
-        return *reinterpret_cast<uint64_t *> (&key);
-    }
-
-    /// <summary>
-    /// Makes a key given the source and destination format GUID's.
-    /// </summary>
-    /// <param name="srcFormatGuid">The source format unique identifier.</param>
-    /// <param name="destFormatGuid">The destination format unique identifier.</param>
-    /// <returns>The key as a 64 bits long unsigned integer.</returns>
-    static uint64_t MakeKey(const GUID &srcFormatGuid, const GUID &destFormatGuid)
-    {
-        return MakeKey(HashGuid(srcFormatGuid), HashGuid(destFormatGuid));
-    }
-
-    /// <summary>
-    /// Hashes a given BSTR string, using SDBM algorithm.
-    /// </summary>
-    /// <param name="str">The string, which is a BSTR (UCS-2 encoded),
-    /// but supposed to have ASCII characters for better results.</param>
-    /// <returns>The key as a 32 bits long unsigned integer.</returns>
-    static uint32_t HashName(BSTR str)
-    {
-        uint32_t hash(0);
-
-        wchar_t ch;
-        while (ch = *str++)
-            hash = static_cast<uint32_t> (towupper(ch) + (hash << 6) + (hash << 16) - hash);
-
-        return hash;
-    }
 
     typedef std::map<uint32_t, uint32_t> Hash2HashMap;
 
@@ -639,6 +434,10 @@ namespace application
     // MetadataCopier Class
     ////////////////////////////
 
+    std::mutex MetadataCopier::singletonCreationMutex;
+
+    std::unique_ptr<MetadataCopier> MetadataCopier::uniqueInstance;
+
     /// <summary>
     /// Reads the container and metadata formats in XML configuration file.
     /// </summary>
@@ -742,10 +541,17 @@ namespace application
         
         try
         {
+            auto hr = CoCreateInstance(CLSID_WICImagingFactory,
+                                       nullptr,
+                                       CLSCTX_INPROC_SERVER,
+                                       IID_PPV_ARGS(m_wicImagingFactory.GetAddressOf()));
+            if (FAILED(hr))
+                WWAPI::RaiseHResultException(hr, "Failed to create imaging factory", "CoCreateInstance");
+
             // Instantiante the DOM parser:
 
             ComPtr<IXMLDOMDocument2> dom;
-            auto hr = CoCreateInstance(__uuidof(DOMDocument60),
+            hr = CoCreateInstance(__uuidof(DOMDocument60),
                                        nullptr,
                                        CLSCTX_INPROC_SERVER,
                                        IID_PPV_ARGS(dom.GetAddressOf()));
@@ -837,6 +643,260 @@ namespace application
     {
         delete m_items;
         delete m_mapCases;
+    }
+
+    /// <summary>
+    /// Finalizes the singleton.
+    /// </summary>
+    void MetadataCopier::Finalize()
+    {
+        uniqueInstance.reset();
+    }
+
+    /// <summary>
+    /// Gets the singleton instance.
+    /// </summary>
+    /// <returns>A reference to the initialized singleton.</returns>
+    MetadataCopier & MetadataCopier::GetInstance()
+    {
+        if (uniqueInstance)
+            return *uniqueInstance;
+
+        CALL_STACK_TRACE;
+
+        try
+        {
+            std::lock_guard<std::mutex> lock(singletonCreationMutex);
+
+            if (!uniqueInstance)
+                uniqueInstance.reset(new MetadataCopier("MetadataCopyMap.xml"));
+
+            return *uniqueInstance;
+        }
+        catch (IAppException &)
+        {
+            throw; // just forward exceptions for errors known to have been already handled
+        }
+        catch (std::system_error &ex)
+        {
+            std::ostringstream oss;
+            oss << "Failed to instantiate the metadata copier: " << core::StdLibExt::GetDetailsFromSystemError(ex);
+            throw AppException<std::runtime_error>(oss.str());
+        }
+        catch (std::exception &ex)
+        {
+            std::ostringstream oss;
+            oss << "Generic failure when instantiating the metadata copier: " << ex.what();
+            throw AppException<std::runtime_error>(oss.str());
+        }
+    }
+
+    /// <summary>
+    /// Copies all metadata items under the current path of the query reader to the query writer.
+    /// </summary>
+    /// <param name="embQueryReader">The embedded metadata query reader.</param>
+    /// <param name="embQueryWriter">The embedded metadata query writer.</param>
+    static void CopyAllItems(IWICMetadataQueryReader *embQueryReader, IWICMetadataQueryWriter *embQueryWriter)
+    {
+        CALL_STACK_TRACE;
+
+        ComPtr<IEnumString> stringEnumerator;
+        auto hr = embQueryReader->GetEnumerator(stringEnumerator.GetAddressOf());
+        if (FAILED(hr))
+            WWAPI::RaiseHResultException(hr, "Failed to get enumerator of metadata query strings", "IWICMetadataQueryReader::GetEnumerator");
+
+        ULONG numFetched;
+        std::array<LPOLESTR, 4096 / sizeof(void *)> queryStrings;
+        
+        do
+        {
+            hr = stringEnumerator->Next(queryStrings.size(), queryStrings.data(), &numFetched);
+            if (FAILED(hr))
+                WWAPI::RaiseHResultException(hr, "Failed to read query strings from enumerator", "IEnumString::Next");
+
+            for (int idx = 0; idx < numFetched; ++idx)
+            {
+                _propvariant_t propVar;
+                auto query = queryStrings[idx];
+
+                hr = embQueryReader->GetMetadataByName(query, &propVar);
+                if (FAILED(hr))
+                {
+                    std::wstring_convert<std::codecvt_utf8<wchar_t>> strConv;
+                    std::wostringstream woss;
+                    woss << L"Failed to get metadata item '" << query << L"' from embedded query reader";
+                    WWAPI::RaiseHResultException(hr, strConv.to_bytes(woss.str()).c_str(), "IWICMetadataQueryReader::GetMetadataByName");
+                }
+
+                hr = embQueryWriter->SetMetadataByName(query, &propVar);
+                if (FAILED(hr))
+                {
+                    std::wstring_convert<std::codecvt_utf8<wchar_t>> strConv;
+                    std::wostringstream woss;
+                    woss << L"Failed to set metadata item '" << query << L"' into embedded query writer";
+                    WWAPI::RaiseHResultException(hr, strConv.to_bytes(woss.str()).c_str(), "IWICMetadataQueryWriter::SetMetadataByName");
+                }
+            }
+
+        } while (queryStrings.size() == numFetched);
+    }
+
+    /// <summary>
+    /// Copies selected metadata items under the current path of the query reader to the query writer.
+    /// </summary>
+    /// <param name="embQueryReader">The embedded metadata query reader.</param>
+    /// <param name="embQueryWriter">The embedded metadata query writer.</param>
+    /// <param name="beginItem">An iterator to the first entry in a list describing the selected items.</param>
+    /// <param name="endItem">An iterator to one position past the last item in a list describing the selected items.</param>
+    static void CopySelectedItems(IWICMetadataQueryReader *embQueryReader,
+                                  IWICMetadataQueryWriter *embQueryWriter,
+                                  const VecOfItems::const_iterator &beginItem,
+                                  const VecOfItems::const_iterator &endItem)
+    {
+        CALL_STACK_TRACE;
+
+        std::for_each(beginItem, endItem, [embQueryReader, embQueryWriter](const ItemEntry &entry)
+        {
+            _propvariant_t propVar;
+            wchar_t query[64];
+            swprintf(query, L"/{ushort=%u}", entry.id);
+
+            auto hr = embQueryReader->GetMetadataByName(query, &propVar);
+            if (FAILED(hr))
+            {
+                std::wstring_convert<std::codecvt_utf8<wchar_t>> strConv;
+                std::wostringstream woss;
+                woss << L"Failed to get metadata item '" << entry.name
+                     << L"' (id = " << entry.id
+                     << L", query = '" << query
+                     << L"') from embedded query reader";
+
+                WWAPI::RaiseHResultException(hr, strConv.to_bytes(woss.str()).c_str(), "IWICMetadataQueryReader::GetMetadataByName");
+            }
+
+            hr = embQueryWriter->SetMetadataByName(query, &propVar);
+            if (FAILED(hr))
+            {
+                std::wstring_convert<std::codecvt_utf8<wchar_t>> strConv;
+                std::wostringstream woss;
+                woss << L"Failed to set metadata item '" << entry.name
+                     << L"' (id = " << entry.id
+                     << L", query = '" << query
+                     << L"') into embedded query writer";
+
+                WWAPI::RaiseHResultException(hr, strConv.to_bytes(woss.str()).c_str(), "IWICMetadataQueryWriter::SetMetadataByName");
+            }
+        });
+    }
+
+    /// <summary>
+    /// Copies metadata, as configured, from the decoder query reader to the encoder query writer.
+    /// </summary>
+    /// <param name="from">The metadata query reader retrieved from the decoder.</param>
+    /// <param name="to">The metadata query writer retrieved from the encoder.</param>
+    void MetadataCopier::Copy(IWICMetadataQueryReader *from, IWICMetadataQueryWriter *to)
+    {
+        CALL_STACK_TRACE;
+
+        GUID srcFormat;
+        auto hr = from->GetContainerFormat(&srcFormat);
+        if (FAILED(hr))
+            WWAPI::RaiseHResultException(hr, "Failed to retrieve container format", "IWICMetadataQueryReader::GetContainerFormat");
+
+        GUID destFormat;
+        hr = to->GetContainerFormat(&destFormat);
+        if (FAILED(hr))
+            WWAPI::RaiseHResultException(hr, "Failed to retrieve container format", "IWICMetadataQueryWriter::GetContainerFormat");
+
+        /* Look for the metadata map case that goes from the
+           original container format to the destination format: */
+
+        VecOfCaseEntries::const_iterator beginMap, endMap;
+        auto mapCaseKey = MakeKey(srcFormat, destFormat);
+
+        if (!m_mapCases->GetSubRange(mapCaseKey, beginMap, endMap))
+            return;
+
+        // iterate over the map case entries:
+        std::for_each(beginMap, endMap, [this, from, to](const MapCaseEntry &entry)
+        {
+            // get embedded query reader for specific metadata format:
+
+            _propvariant_t readerPropVar;
+            auto hr = from->GetMetadataByName(entry.fromPath, &readerPropVar);
+            if (FAILED(hr))
+            {
+                std::wstring_convert<std::codecvt_utf8<wchar_t>> strConv;
+                std::wostringstream woss;
+                woss << L"Failed to retrieve reader for metadata in path " << entry.fromPath;
+
+                WWAPI::RaiseHResultException(hr,
+                    strConv.to_bytes(woss.str()).c_str(),
+                    "IWICMetadataQueryReader::GetMetadataByName");
+            }
+
+            _ASSERTE(readerPropVar.vt == VT_UNKNOWN);
+            ComPtr<IWICMetadataQueryReader> embQueryReader;
+            hr = readerPropVar.punkVal->QueryInterface(IID_PPV_ARGS(embQueryReader.GetAddressOf()));
+            if (FAILED(hr))
+            {
+                std::wstring_convert<std::codecvt_utf8<wchar_t>> strConv;
+                std::wostringstream woss;
+                woss << L"Failed to get interface for embedded query reader of metadata in path " << entry.fromPath;
+
+                WWAPI::RaiseHResultException(hr,
+                    strConv.to_bytes(woss.str()).c_str(),
+                    "IUnknown::QueryInterface");
+            }
+
+            // create embedded query writer for same metadata format:
+
+            ComPtr<IWICMetadataQueryWriter> embQueryWriter;
+            hr = m_wicImagingFactory->CreateQueryWriterFromReader(embQueryReader.Get(),
+                                                                  nullptr,
+                                                                  embQueryWriter.GetAddressOf());
+            if (FAILED(hr))
+            {
+                WWAPI::RaiseHResultException(hr,
+                    "Failed to create metadata query writer from reader info",
+                    "IWICImagingFactory::CreateQueryWriterFromReader");
+            }
+
+            // copy the items:
+
+            if (entry.onlyCommon)
+            {
+                VecOfItems::const_iterator beginItem, endItem;
+
+                if (m_items->GetSubRange(entry.metaFmtNameHash, beginItem, endItem))
+                {
+                    CopySelectedItems(embQueryReader.Get(),
+                                      embQueryWriter.Get(),
+                                      beginItem,
+                                      endItem);
+                }
+            }
+            else
+                CopyAllItems(embQueryReader.Get(), embQueryWriter.Get());
+
+            _propvariant_t writerPropVar;
+            writerPropVar.vt = VT_UNKNOWN;
+            writerPropVar.punkVal = embQueryWriter.Get();
+            writerPropVar.punkVal->AddRef();
+
+            hr = to->SetMetadataByName(entry.toPath, &writerPropVar);
+            if (FAILED(hr))
+            {
+                std::wstring_convert<std::codecvt_utf8<wchar_t>> strConv;
+                std::wostringstream woss;
+                woss << L"Failed to write path '" << entry.toPath << L"' into metadata query writer";
+
+                WWAPI::RaiseHResultException(hr,
+                    strConv.to_bytes(woss.str()).c_str(),
+                    "IWICMetadataQueryWriter::SetMetadataByName");
+            }
+            
+        });// for_each loop end
     }
 
 }// end of namespace application
