@@ -382,7 +382,7 @@ namespace integration_tests
 	};
 
 	// Thumbprint of client side certificate for transport security
-	const char *clientCertificateThumbprint("e5c3ab3bb2a991a79381fece6638e861314706ec");
+	const char *clientCertificateThumbprint("83ae63ceed5df1304e7d12f5ecd791c82d71e0a5");
 
 	/// <summary>
 	/// Tests synchronous web service access

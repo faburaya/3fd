@@ -102,7 +102,7 @@ namespace unit_tests
         // Search it a few times (NO match):
         for (int idx = 0; idx < 4; ++idx)
         {
-            int key = (abs(rand()) % 69) + numEntries;
+            int key = (abs(rand()) % 69) + list.back().key + 1;
 
             auto subRangeBegin = list.begin();
             auto subRangeEnd = list.end();

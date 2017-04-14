@@ -39,6 +39,9 @@
     <ClCompile Include="pch.cpp">
       <Filter>Backend</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\UnitTests\tests_utils_algorithms.cpp">
+      <Filter>Backend</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.xaml.h" />

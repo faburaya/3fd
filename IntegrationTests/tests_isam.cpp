@@ -100,7 +100,7 @@ namespace integration_tests
 
 					p[i].id = i;
 					p[i].name = "banana";
-					p[i].price = 2.89;
+					p[i].price = 2.89F;
 					p[i].amount = 500;
 					p[i].expiration = now + 1e6;
 					p[i].fragile = true;
@@ -114,7 +114,7 @@ namespace integration_tests
 
 					p[i].id = i;
 					p[i].name = "banana";
-					p[i].price = 2.59;
+					p[i].price = 2.59F;
 					p[i].amount = 500;
 					p[i].expiration = now + 1e6;
 					p[i].fragile = true;
@@ -128,7 +128,7 @@ namespace integration_tests
 						
 					p[i].id = i;
 					p[i].name = "washmachine";
-					p[i].price = 789.99;
+					p[i].price = 789.99F;
 					p[i].amount = 12;
 					p[i].expiration = -1;
 					p[i].fragile = false;
@@ -141,7 +141,7 @@ namespace integration_tests
 						
 					p[i].id = i;
 					p[i].name = "pistol";
-					p[i].price = 1185.50;
+					p[i].price = 1185.50F;
 					p[i].amount = 5;
 					p[i].expiration = -1;
 					p[i].fragile = false;
@@ -154,7 +154,7 @@ namespace integration_tests
 						
 					p[i].id = i;
 					p[i].name = "tire";
-					p[i].price = 52.20;
+					p[i].price = 52.20F;
 					p[i].amount = 150;
 					p[i].expiration = -1;
 					p[i].fragile = true;
@@ -168,7 +168,7 @@ namespace integration_tests
 						
 					p[i].id = i;
 					p[i].name = "tire";
-					p[i].price = 52.20;
+					p[i].price = 52.20F;
 					p[i].amount = 150;
 					p[i].expiration = -1;
 					p[i].fragile = true;
@@ -182,7 +182,7 @@ namespace integration_tests
 						
 					p[i].id = i;
 					p[i].name = "tomato";
-					p[i].price = 1.78;
+					p[i].price = 1.78F;
 					p[i].amount = 350;
 					p[i].expiration = now + 1e6;
 					p[i].fragile = true;
@@ -197,7 +197,7 @@ namespace integration_tests
 						
 					p[i].id = i;
 					p[i].name = "rowingmachine";
-					p[i].price = 92.25;
+					p[i].price = 92.25F;
 					p[i].amount = 12;
 					p[i].expiration = -1;
 					p[i].fragile = false;
@@ -210,7 +210,7 @@ namespace integration_tests
 						
 					p[i].id = i;
 					p[i].name = "hammer";
-					p[i].price = 19.50;
+					p[i].price = 19.50F;
 					p[i].amount = 55;
 					p[i].expiration = -1;
 					p[i].fragile = false;
@@ -223,7 +223,7 @@ namespace integration_tests
 						
 					p[i].id = i;
 					p[i].name = "pcdesktop";
-					p[i].price = 555.0;
+					p[i].price = 555.0F;
 					p[i].amount = 15;
 					p[i].expiration = -1;
 					p[i].fragile = false;
@@ -238,7 +238,7 @@ namespace integration_tests
 						
 					p[i].id = i;
 					p[i].name = "pcdesktop";
-					p[i].price = 539.0;
+					p[i].price = 539.0F;
 					p[i].amount = 16;
 					p[i].expiration = -1;
 					p[i].fragile = false;
@@ -252,7 +252,7 @@ namespace integration_tests
 
 					p[i].id = i;
 					p[i].name = "pepino";
-					p[i].price = 1.15;
+					p[i].price = 1.15F;
 					p[i].amount = 400;
 					p[i].expiration = now + 2e6;
 					p[i].fragile = true;
@@ -266,7 +266,7 @@ namespace integration_tests
 						
 					p[i].id = i;
 					p[i].name = "microwaveoven";
-					p[i].price = 79.50;
+					p[i].price = 79.50F;
 					p[i].amount = 52;
 					p[i].expiration = -1;
 					p[i].fragile = false;
@@ -279,7 +279,7 @@ namespace integration_tests
 						
 					p[i].id = i;
 					p[i].name = "armymentoys";
-					p[i].price = 25.50;
+					p[i].price = 25.50F;
 					p[i].amount = 60;
 					p[i].expiration = -1;
 					p[i].fragile = false;
@@ -294,7 +294,7 @@ namespace integration_tests
 
 					p[i].id = i;
 					p[i].name = "ammunition";
-					p[i].price = 85.60;
+					p[i].price = 85.60F;
 					p[i].amount = 35;
 					p[i].expiration = -1;
 					p[i].fragile = true;
@@ -308,7 +308,7 @@ namespace integration_tests
 
 					p[i].id = i;
 					p[i].name = "grapefruit";
-					p[i].price = 1.05;
+					p[i].price = 1.05F;
 					p[i].amount = 250;
 					p[i].expiration = now + 1e6;
 					p[i].fragile = true;
@@ -322,7 +322,7 @@ namespace integration_tests
 						
 					p[i].id = i;
 					p[i].name = "dinamite";
-					p[i].price = 2.25;
+					p[i].price = 2.25F;
 					p[i].amount = 600;
 					p[i].expiration = -1;
 					p[i].fragile = true;
@@ -334,7 +334,7 @@ namespace integration_tests
 						
 					p[i].id = i;
 					p[i].name = "nails";
-					p[i].price = 11.99;
+					p[i].price = 11.99F;
 					p[i].amount = 400;
 					p[i].expiration = -1;
 					p[i].fragile = false;
@@ -348,7 +348,7 @@ namespace integration_tests
 						
 					p[i].id = i;
 					p[i].name = "pclaptop";
-					p[i].price = 665.90;
+					p[i].price = 665.90F;
 					p[i].amount = 35;
 					p[i].expiration = -1;
 					p[i].fragile = false;
@@ -363,7 +363,7 @@ namespace integration_tests
 						
 					p[i].id = i;
 					p[i].name = "pclaptop";
-					p[i].price = 705.35;
+					p[i].price = 705.35F;
 					p[i].amount = 32;
 					p[i].expiration = -1;
 					p[i].fragile = false;

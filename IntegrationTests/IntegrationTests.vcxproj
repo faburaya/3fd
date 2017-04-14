@@ -169,6 +169,7 @@ copy "$(SolutionDir)TestShared\calculator.wsdl" "$(TargetDir)"</Command>
       <AdditionalIncludeDirectories>$(SolutionDir)3FD;$(SolutionDir)TestShared;$(SolutionDir)OpenCL;$(SolutionDir)gtest\include;$(SolutionDir)btree;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/D POCO_STATIC /D _VARIADIC_MAX=10 %(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>4244</DisableSpecificWarnings>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

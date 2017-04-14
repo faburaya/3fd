@@ -22,7 +22,7 @@ makecert -pe -n "CN=MyComputerName" -ss My -sr LocalMachine -a sha256 -in "Certi
 
 Because both client and server must rely in the same certificate CA, when you create the CA in one box, you must export the certificate to a file (including the private key) and import it into the other box. This way, the certificates create in both boxes will have been issued by a common trusted CA.
 
-(3) SERVER ONLY - In the management console (mmc.exe), use the snap-in for certificate management to look for the certificate you have just created. The thumbprint is the hash you will use in the command below. These commands will assign the new certificate to the endpoints SomeName:8888 and SomeName:8989:
+(3) SERVER ONLY - In the management console (mmc.exe), use the snap-in for certificate management to look for the certificate you have just created. The thumbprint is the hash you will use in the command below. These commands will assign the new certificate to the endpoints localhost:8888 and localhost:8989:
 
 netsh http add sslcert ipport=0.0.0.0:8888 certhash=8f43288ad272f3103b6fb1428485ea3014c0bcfe appid={04EBD759-F3FF-4992-8D02-C1BFDB027A58} clientcertnegotiation=enable
 
