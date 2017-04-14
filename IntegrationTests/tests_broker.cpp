@@ -17,7 +17,7 @@ namespace integration_tests
 #ifdef _WIN32
     const char *msSqlDbConnString("Driver={SQL Server Native Client 11.0};Server=(localdb)\\MSSQLLocalDB;Database=SvcBrokerTest;Trusted_Connection=yes;");
 #else
-    const char *msSqlDbConnString("Driver={SQL Server Native Client 11.0};Server=CASE\\SQLEXPRESS;Database=SvcBrokerTest;Uid=tester;Pwd=tester;");
+    const char *msSqlDbConnString("Driver={ODBC Driver 13 for SQL Server};Server=tcp:192.168.1.35,1433;Database=SvcBrokerTest;Uid=tester;Pwd=tester;");
 #endif
     
     /// <summary>

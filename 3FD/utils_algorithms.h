@@ -63,6 +63,13 @@ namespace utils
             return begin = end = endOfRange;
     }
 
+    template <typename KeyType, typename IterType>
+    IterType BinarySearch(KeyType searchKey,
+                          IterType &&begin,
+                          IterType &&end)
+    {
+        return BinarySearch(searchKey, begin, end);
+    }
 
     /// <summary>
     /// Gets the sub range of entries that match the given key (using binary search).
