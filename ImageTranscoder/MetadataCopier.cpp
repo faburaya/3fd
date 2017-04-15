@@ -552,9 +552,9 @@ namespace application
 
             ComPtr<IXMLDOMDocument2> dom;
             hr = CoCreateInstance(__uuidof(DOMDocument60),
-                                       nullptr,
-                                       CLSCTX_INPROC_SERVER,
-                                       IID_PPV_ARGS(dom.GetAddressOf()));
+                                  nullptr,
+                                  CLSCTX_INPROC_SERVER,
+                                  IID_PPV_ARGS(dom.GetAddressOf()));
             if (FAILED(hr))
                 WWAPI::RaiseHResultException(hr, "Could not instantiate MSXML6 DOM document parser", "CoCreateInstance");
 
