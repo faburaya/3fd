@@ -88,6 +88,66 @@ namespace application
             WWAPI::RaiseHResultException(hr, "Failed to set image quality for transcoded frame", "IPropertyBag2::Write");
     }
 
+    // Template function to copy metadata:
+
+    template <typename IntfType1, typename IntfType2>
+    void CopyMetadata(IntfType1 *source, IntfType2 *dest, bool sameFormat)
+    {
+        HRESULT hr;
+
+        // When formats are the same, metadata can be copied directly:
+        if (sameFormat)
+        {
+            ComPtr<IWICMetadataBlockReader> metadataBlockReader;
+            hr = source->QueryInterface(IID_PPV_ARGS(metadataBlockReader.GetAddressOf()));
+            if (FAILED(hr))
+                WWAPI::RaiseHResultException(hr, "Failed to obtain metadata block reader", "QueryInterface");
+
+            ComPtr<IWICMetadataBlockWriter> metadataBlockWriter;
+            hr = dest->QueryInterface(IID_PPV_ARGS(metadataBlockWriter.GetAddressOf()));
+            if (FAILED(hr))
+                WWAPI::RaiseHResultException(hr, "Failed to obtain metadata block writer", "QueryInterface");
+
+            hr = metadataBlockWriter->InitializeFromBlockReader(metadataBlockReader.Get());
+            if (FAILED(hr))
+            {
+                WWAPI::RaiseHResultException(hr,
+                    "Failed to copy image metadata associated to container",
+                    "IWICMetadataBlockWriter::InitializeFromBlockReader");
+            }
+
+            return;
+        }
+
+        // Use metadata copier configured by XML:
+
+        ComPtr<IWICMetadataQueryReader> metadataQueryReader;
+        hr = source->GetMetadataQueryReader(metadataQueryReader.GetAddressOf());
+        if (FAILED(hr))
+            WWAPI::RaiseHResultException(hr, "Failed to obtain metadata query reader", "GetMetadataQueryReader");
+
+        ComPtr<IWICMetadataQueryWriter> metadataQueryWriter;
+        hr = dest->GetMetadataQueryWriter(metadataQueryWriter.GetAddressOf());
+        if (FAILED(hr))
+            WWAPI::RaiseHResultException(hr, "Failed to obtain metadata query writer", "GetMetadataQueryWriter");
+
+        MetadataCopier::GetInstance().Copy(metadataQueryReader.Get(), metadataQueryWriter.Get());
+    }
+
+    /// <summary>
+    /// Copies the container (not frame) associated metadata from source to destination image.
+    /// </summary>
+    /// <param name="decoder">The image decoder.</param>
+    /// <param name="encoder">The image encoder.</param>
+    /// <param name="sameFormat">if set to <c>true</c>, source and destination image have the same format.</param>
+    static void CopyContainerMetadata(IWICBitmapDecoder *decoder,
+                                      IWICBitmapEncoder *encoder,
+                                      bool sameFormat)
+    {
+        CALL_STACK_TRACE;
+        CopyMetadata(decoder, encoder, sameFormat);
+    }
+
     /// <summary>
     /// Copies the metadata from source to destination image frame.
     /// </summary>
@@ -99,42 +159,7 @@ namespace application
                                   bool sameFormat)
     {
         CALL_STACK_TRACE;
- 
-        HRESULT hr;
-
-        // When formats are the same, metadata can be copied directly:
-        if (sameFormat)
-        {
-            ComPtr<IWICMetadataBlockReader> metadataBlockReader;
-            hr = decodedFrame->QueryInterface(IID_PPV_ARGS(metadataBlockReader.GetAddressOf()));
-            if (FAILED(hr))
-                WWAPI::RaiseHResultException(hr, "Failed to obtain metadata block reader", "IWICBitmapFrameDecode::QueryInterface");
-
-            ComPtr<IWICMetadataBlockWriter> metadataBlockWriter;
-            hr = transcodedFrame->QueryInterface(IID_PPV_ARGS(metadataBlockWriter.GetAddressOf()));
-            if (FAILED(hr))
-                WWAPI::RaiseHResultException(hr, "Failed to obtain metadata block writer", "IWICBitmapFrameEncode::QueryInterface");
-
-            hr = metadataBlockWriter->InitializeFromBlockReader(metadataBlockReader.Get());
-            if (FAILED(hr))
-                WWAPI::RaiseHResultException(hr, "Failed to copy metadata from image frame", "IWICMetadataBlockWriter::InitializeFromBlockReader");
-
-            return;
-        }
-
-        // Use metadata copier configured by XML:
-
-        ComPtr<IWICMetadataQueryReader> metadataQueryReader;
-        hr = decodedFrame->GetMetadataQueryReader(metadataQueryReader.GetAddressOf());
-        if (FAILED(hr))
-            WWAPI::RaiseHResultException(hr, "Failed to obtain metadata query reader", "IWICBitmapFrameDecode::GetMetadataQueryReader");
-
-        ComPtr<IWICMetadataQueryWriter> metadataQueryWriter;
-        hr = transcodedFrame->GetMetadataQueryWriter(metadataQueryWriter.GetAddressOf());
-        if (FAILED(hr))
-            WWAPI::RaiseHResultException(hr, "Failed to obtain metadata query writer", "IWICBitmapFrameEncode::GetMetadataQueryWriter");
-
-        MetadataCopier::GetInstance().Copy(metadataQueryReader.Get(), metadataQueryWriter.Get());
+        CopyMetadata(decodedFrame, transcodedFrame, sameFormat);
     }
 
     /// <summary>
@@ -185,9 +210,24 @@ namespace application
         if (FAILED(hr))
             WWAPI::RaiseHResultException(hr, "Failed to initialize image encoder", "IWICBitmapEncoder::Initialize");
 
-        // Transcode frame data:
+        // Copy the container thumbnail:
+
+        ComPtr<IWICBitmapSource> ctnrThumbnail;
+        hr = decoder->GetThumbnail(ctnrThumbnail.GetAddressOf());
+        if (hr != WINCODEC_ERR_CODECNOTHUMBNAIL)
+        {
+            if (FAILED(hr))
+                WWAPI::RaiseHResultException(hr, "Failed to retrieve image container thumbnail", "IWICBitmapDecoder::GetThumbnail");
+
+            hr = encoder->SetThumbnail(ctnrThumbnail.Get());
+            if (FAILED(hr))
+                WWAPI::RaiseHResultException(hr, "Failed to copy image container thumbnail", "IWICBitmapEncoder::SetThumbnail");
+        }
 
         bool toSameFormat = AreFormatsTheSame(decoder.Get(), encoder.Get());
+        CopyContainerMetadata(decoder.Get(), encoder.Get(), toSameFormat);
+
+        // Transcode frame data:
 
         UINT frameCount;
         hr = decoder->GetFrameCount(&frameCount);
@@ -221,18 +261,20 @@ namespace application
             if (FAILED(hr))
                 WWAPI::RaiseHResultException(hr, "Failed to reencode bitmap", "IWICBitmapFrameEncode::WriteSource");
 
-            CopyFrameMetadata(decodedFrame.Get(), transcodedFrame.Get(), toSameFormat);
-
             // copy the frame thumbnail:
-
             ComPtr<IWICBitmapSource> thumbnail;
             hr = decodedFrame->GetThumbnail(thumbnail.GetAddressOf());
-            if (FAILED(hr))
-                WWAPI::RaiseHResultException(hr, "Failed to retrieve image frame thumbnail", "IWICBitmapFrameDecode::GetThumbnail");
+            if (hr != WINCODEC_ERR_CODECNOTHUMBNAIL)
+            {
+                if (FAILED(hr))
+                    WWAPI::RaiseHResultException(hr, "Failed to retrieve image frame thumbnail", "IWICBitmapFrameDecode::GetThumbnail");
 
-            hr = transcodedFrame->SetThumbnail(thumbnail.Get());
-            if (FAILED(hr))
-                WWAPI::RaiseHResultException(hr, "Failed to copy image frame thumbnail", "IWICBitmapFrameEncode::SetThumbnail");
+                hr = transcodedFrame->SetThumbnail(thumbnail.Get());
+                if (FAILED(hr))
+                    WWAPI::RaiseHResultException(hr, "Failed to copy image frame thumbnail", "IWICBitmapFrameEncode::SetThumbnail");
+            }
+
+            CopyFrameMetadata(decodedFrame.Get(), transcodedFrame.Get(), toSameFormat);
 
             // commit to frame
             if (FAILED(hr = transcodedFrame->Commit()))

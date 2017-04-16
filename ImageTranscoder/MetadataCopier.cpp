@@ -758,7 +758,7 @@ namespace application
         std::for_each(beginItem, endItem, [embQueryReader, embQueryWriter](const ItemEntry &entry)
         {
             _propvariant_t propVar;
-            wchar_t query[64];
+            wchar_t query[16];
             swprintf(query, L"/{ushort=%u}", entry.id);
 
             auto hr = embQueryReader->GetMetadataByName(query, &propVar);
@@ -773,6 +773,9 @@ namespace application
 
                 WWAPI::RaiseHResultException(hr, strConv.to_bytes(woss.str()).c_str(), "IWICMetadataQueryReader::GetMetadataByName");
             }
+
+            if (propVar.vt == VT_EMPTY || propVar.vt == VT_NULL)
+                return;
 
             hr = embQueryWriter->SetMetadataByName(query, &propVar);
             if (FAILED(hr))
