@@ -132,6 +132,8 @@ namespace application
         ComPtr<IWICMetadataQueryReader> metadataQueryReader;
         hr = source->GetMetadataQueryReader(metadataQueryReader.GetAddressOf());
 
+        /* when the source interface is an encoder object, the image format might not support
+           container level metadata, in which case the function must quit at this point */
         if (hr == WINCODEC_ERR_UNSUPPORTEDOPERATION)
             return;
 
@@ -177,7 +179,7 @@ namespace application
     /// <summary>
     /// Transcodes the specified image file from any format supported by Windows to JPEG.
     /// </summary>
-    /// <param name="fileName">Name of the file.</param>
+    /// <param name="fileName">Full name of the file.</param>
     /// <param name="toJXR">if set to <c>true</c>, reencodes to JPEG XR.</param>
     /// <param name="imgQualityRatio">The image quality ratio, as a real number in the [0,1] interval.</param>
     void WicJpegTranscoder::Transcode(const string &fileName, bool toJXR, float imgQualityRatio)
@@ -299,10 +301,6 @@ namespace application
              // commit to encoder
             if (FAILED(hr = encoder->Commit()))
                 WWAPI::RaiseHResultException(hr, "Encoder failed to commit changes to transcoded image", "IWICBitmapEncoder::Commit");
-
-            // commit to stream
-            if (FAILED(hr = fileOutStream->Commit(STGC_DEFAULT)))
-                WWAPI::RaiseHResultException(hr, "File stream failed to commit changes to storage", "IWICStream::Commit");
         }
         catch (IAppException &ex)
         {

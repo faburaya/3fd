@@ -95,6 +95,7 @@ namespace application
 
 #include <boost\filesystem.hpp>
 #include <algorithm>
+#include <vector>
 #include <ctime>
 #include "WicJpegTranscoder.h"
 
@@ -106,6 +107,8 @@ int main(int argc, const char *argv[])
 {
     using namespace _3fd::core;
     using namespace boost;
+
+    auto startTime = clock();
 
     FrameworkInstance _framework(RO_INIT_MULTITHREADED);
 
@@ -119,10 +122,7 @@ int main(int argc, const char *argv[])
         if (application::ParseCommandLineArgs(argc, argv, params) == STATUS_FAIL)
             return EXIT_FAILURE;
 
-        unsigned int imgFilesTransCount(0);
-        application::WicJpegTranscoder transcoder;
-
-        auto startTime = clock();
+        std::vector<string> inputFiles;
 
         // Iterate over directories:
         for (int idx = 0; idx < params.dirPaths.size(); ++idx)
@@ -166,17 +166,28 @@ int main(int argc, const char *argv[])
                         continue;
                 }
 
-                // transcode image file
-                transcoder.Transcode(dirEntry.path().string(), params.toJXR, params.targetQuality);
-                ++imgFilesTransCount;
+                // keep this file path for later processing
+                inputFiles.push_back(dirEntry.path().string());
             }
 
         }// outer for loop end
 
+        if (inputFiles.empty())
+        {
+            std::cout << "There was no image file to transcode" << std::endl;
+            return EXIT_SUCCESS;
+        }
+
+        application::WicJpegTranscoder transcoder;
+
+        // transcode image file
+        for (auto &filePath : inputFiles)
+            transcoder.Transcode(filePath, params.toJXR, params.targetQuality);
+
         auto endTime = clock();
         auto elapsedTime = static_cast<double>(endTime - startTime) / CLOCKS_PER_SEC;
 
-        std::cout << "Successfully transcoded " << imgFilesTransCount << " image file(s) in "
+        std::cout << "Successfully transcoded " << inputFiles.size() << " image file(s) in "
                   << std::setprecision(3) << elapsedTime << " second(s)\n" << std::endl;
     }
     catch (filesystem::filesystem_error &ex)

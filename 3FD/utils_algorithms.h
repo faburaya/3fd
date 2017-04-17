@@ -53,14 +53,13 @@ namespace utils
         {
             if (lessThan(begin->GetKey(), searchKey))
                 ++begin;
+            else if (!lessThan(searchKey, begin->GetKey()))
+                return begin;
             else
                 break;
         }
 
-        if (!lessThan(searchKey, begin->GetKey()))
-            return begin;
-        else
-            return begin = end = endOfRange;
+        return begin = end = endOfRange;
     }
 
     template <typename KeyType, typename IterType>

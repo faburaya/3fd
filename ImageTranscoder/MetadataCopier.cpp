@@ -835,6 +835,10 @@ namespace application
 
             _propvariant_t readerPropVar;
             auto hr = from->GetMetadataByName(entry.fromPath, &readerPropVar);
+
+            if (hr == WINCODEC_ERR_PROPERTYNOTFOUND)
+                return;
+
             if (FAILED(hr))
             {
                 std::wstring_convert<std::codecvt_utf8<wchar_t>> strConv;
