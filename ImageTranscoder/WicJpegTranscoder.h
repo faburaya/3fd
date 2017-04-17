@@ -23,6 +23,7 @@ namespace application
     public:
 
         WicJpegTranscoder();
+        ~WicJpegTranscoder();
 
         void Transcode(const string &fileName, bool toJXR, float imgQualityRatio);
     };

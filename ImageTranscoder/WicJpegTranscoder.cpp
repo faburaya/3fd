@@ -28,6 +28,14 @@ namespace application
     }
 
     /// <summary>
+    /// Finalizes an instance of the <see cref="WicJpegTranscoder"/> class.
+    /// </summary>
+    WicJpegTranscoder::~WicJpegTranscoder()
+    {
+        MetadataCopier::Finalize();
+    }
+
+    /// <summary>
     /// Generates the name of the output file.
     /// </summary>
     /// <param name="inputFileName">Name of the input file.</param>
@@ -76,7 +84,7 @@ namespace application
     {
         CALL_STACK_TRACE;
 
-        PROPBAG2 optImgQuality;
+        PROPBAG2 optImgQuality{};
         optImgQuality.pstrName = L"ImageQuality";
         VARIANT varImgQuality;
         VariantInit(&varImgQuality);
@@ -123,6 +131,10 @@ namespace application
 
         ComPtr<IWICMetadataQueryReader> metadataQueryReader;
         hr = source->GetMetadataQueryReader(metadataQueryReader.GetAddressOf());
+
+        if (hr == WINCODEC_ERR_UNSUPPORTEDOPERATION)
+            return;
+
         if (FAILED(hr))
             WWAPI::RaiseHResultException(hr, "Failed to obtain metadata query reader", "GetMetadataQueryReader");
 
@@ -172,123 +184,132 @@ namespace application
     {
         CALL_STACK_TRACE;
 
-        std::wstring_convert<std::codecvt_utf8<wchar_t>> strConv;
-        auto ucs2fInName = strConv.from_bytes(fileName);
-
-        // Create decoder from input image file:
-
-        HRESULT hr;
-        ComPtr<IWICBitmapDecoder> decoder;
-        hr = m_wicImagingFactory->CreateDecoderFromFilename(ucs2fInName.c_str(),
-                                                            nullptr,
-                                                            GENERIC_READ,
-                                                            WICDecodeMetadataCacheOnLoad,
-                                                            decoder.GetAddressOf());
-        if (FAILED(hr))
-            WWAPI::RaiseHResultException(hr, "Failed to create image decoder", "IWICImagingFactory::CreateDecoderFromFilename");
-
-        // Create output file stream:
-
-        ComPtr<IWICStream> fileOutStream;
-        hr = m_wicImagingFactory->CreateStream(fileOutStream.GetAddressOf());
-        if (FAILED(hr))
-            WWAPI::RaiseHResultException(hr, "Failed to create file stream", "IWICImagingFactory::CreateStream");
-
-        auto ucs2fOutName = GenerateOutputFileName(ucs2fInName, toJXR);
-        hr = fileOutStream->InitializeFromFilename(ucs2fOutName.c_str(), GENERIC_WRITE);
-        if (FAILED(hr))
-            WWAPI::RaiseHResultException(hr, "Failed to initialize output file stream", "IWICStream::InitializeFromFilename");
-
-        // Create & initialized encoder:
-
-        ComPtr<IWICBitmapEncoder> encoder;
-        hr = m_wicImagingFactory->CreateEncoder(GUID_ContainerFormatWmp, nullptr, encoder.GetAddressOf());
-        if (FAILED(hr))
-            WWAPI::RaiseHResultException(hr, "Failed to create image encoder", "IWICImagingFactory::CreateEncoder");
-
-        hr = encoder->Initialize(fileOutStream.Get(), WICBitmapEncoderCacheInMemory);
-        if (FAILED(hr))
-            WWAPI::RaiseHResultException(hr, "Failed to initialize image encoder", "IWICBitmapEncoder::Initialize");
-
-        // Copy the container thumbnail:
-
-        ComPtr<IWICBitmapSource> ctnrThumbnail;
-        hr = decoder->GetThumbnail(ctnrThumbnail.GetAddressOf());
-        if (hr != WINCODEC_ERR_CODECNOTHUMBNAIL)
+        try
         {
+            std::wstring_convert<std::codecvt_utf8<wchar_t>> strConv;
+            auto ucs2fInName = strConv.from_bytes(fileName);
+
+            // Create decoder from input image file:
+
+            HRESULT hr;
+            ComPtr<IWICBitmapDecoder> decoder;
+            hr = m_wicImagingFactory->CreateDecoderFromFilename(ucs2fInName.c_str(),
+                nullptr,
+                GENERIC_READ,
+                WICDecodeMetadataCacheOnLoad,
+                decoder.GetAddressOf());
             if (FAILED(hr))
-                WWAPI::RaiseHResultException(hr, "Failed to retrieve image container thumbnail", "IWICBitmapDecoder::GetThumbnail");
+                WWAPI::RaiseHResultException(hr, "Failed to create image decoder", "IWICImagingFactory::CreateDecoderFromFilename");
 
-            hr = encoder->SetThumbnail(ctnrThumbnail.Get());
+            // Create output file stream:
+
+            ComPtr<IWICStream> fileOutStream;
+            hr = m_wicImagingFactory->CreateStream(fileOutStream.GetAddressOf());
             if (FAILED(hr))
-                WWAPI::RaiseHResultException(hr, "Failed to copy image container thumbnail", "IWICBitmapEncoder::SetThumbnail");
-        }
+                WWAPI::RaiseHResultException(hr, "Failed to create file stream", "IWICImagingFactory::CreateStream");
 
-        bool toSameFormat = AreFormatsTheSame(decoder.Get(), encoder.Get());
-        CopyContainerMetadata(decoder.Get(), encoder.Get(), toSameFormat);
-
-        // Transcode frame data:
-
-        UINT frameCount;
-        hr = decoder->GetFrameCount(&frameCount);
-        if (FAILED(hr))
-            WWAPI::RaiseHResultException(hr, "Failed to retrieve image frame count", "IWICBitmapDecoder::GetFrameCount");
-
-        // iterate over the image frames:
-        for (UINT idx = 0; idx < frameCount; ++idx)
-        {
-            // decode the frame:
-            ComPtr<IWICBitmapFrameDecode> decodedFrame;
-            hr = decoder->GetFrame(idx, decodedFrame.GetAddressOf());
+            auto ucs2fOutName = GenerateOutputFileName(ucs2fInName, toJXR);
+            hr = fileOutStream->InitializeFromFilename(ucs2fOutName.c_str(), GENERIC_WRITE);
             if (FAILED(hr))
-                WWAPI::RaiseHResultException(hr, "Failed to decode image frame data", "IWICBitmapDecoder::GetFrame");
+                WWAPI::RaiseHResultException(hr, "Failed to initialize output file stream", "IWICStream::InitializeFromFilename");
 
-            // create frame to receive transcoded data:
-            ComPtr<IPropertyBag2> encPropBag;
-            ComPtr<IWICBitmapFrameEncode> transcodedFrame;
-            hr = encoder->CreateNewFrame(transcodedFrame.GetAddressOf(), encPropBag.GetAddressOf());
-            if (FAILED(hr))
-                WWAPI::RaiseHResultException(hr, "Failed to create image frame", "IWICBitmapEncoder::CreateNewFrame");
+            // Create & initialized encoder:
 
-            // configure encoder for new frame:
-            ConfigureJpegEncoder(encPropBag.Get(), imgQualityRatio);
-            hr = transcodedFrame->Initialize(encPropBag.Get());
+            ComPtr<IWICBitmapEncoder> encoder;
+            hr = m_wicImagingFactory->CreateEncoder(GUID_ContainerFormatWmp, nullptr, encoder.GetAddressOf());
             if (FAILED(hr))
-                WWAPI::RaiseHResultException(hr, "Failed to set properties for transcoded image frame", "IWICBitmapFrameEncode::Initialize");
-            
-            // reencode
-            hr = transcodedFrame->WriteSource(decodedFrame.Get(), nullptr);
-            if (FAILED(hr))
-                WWAPI::RaiseHResultException(hr, "Failed to reencode bitmap", "IWICBitmapFrameEncode::WriteSource");
+                WWAPI::RaiseHResultException(hr, "Failed to create image encoder", "IWICImagingFactory::CreateEncoder");
 
-            // copy the frame thumbnail:
-            ComPtr<IWICBitmapSource> thumbnail;
-            hr = decodedFrame->GetThumbnail(thumbnail.GetAddressOf());
+            hr = encoder->Initialize(fileOutStream.Get(), WICBitmapEncoderCacheInMemory);
+            if (FAILED(hr))
+                WWAPI::RaiseHResultException(hr, "Failed to initialize image encoder", "IWICBitmapEncoder::Initialize");
+
+            // Copy the container thumbnail:
+
+            ComPtr<IWICBitmapSource> ctnrThumbnail;
+            hr = decoder->GetThumbnail(ctnrThumbnail.GetAddressOf());
             if (hr != WINCODEC_ERR_CODECNOTHUMBNAIL)
             {
                 if (FAILED(hr))
-                    WWAPI::RaiseHResultException(hr, "Failed to retrieve image frame thumbnail", "IWICBitmapFrameDecode::GetThumbnail");
+                    WWAPI::RaiseHResultException(hr, "Failed to retrieve image container thumbnail", "IWICBitmapDecoder::GetThumbnail");
 
-                hr = transcodedFrame->SetThumbnail(thumbnail.Get());
+                hr = encoder->SetThumbnail(ctnrThumbnail.Get());
                 if (FAILED(hr))
-                    WWAPI::RaiseHResultException(hr, "Failed to copy image frame thumbnail", "IWICBitmapFrameEncode::SetThumbnail");
+                    WWAPI::RaiseHResultException(hr, "Failed to copy image container thumbnail", "IWICBitmapEncoder::SetThumbnail");
             }
 
-            CopyFrameMetadata(decodedFrame.Get(), transcodedFrame.Get(), toSameFormat);
+            bool toSameFormat = AreFormatsTheSame(decoder.Get(), encoder.Get());
+            CopyContainerMetadata(decoder.Get(), encoder.Get(), toSameFormat);
 
-            // commit to frame
-            if (FAILED(hr = transcodedFrame->Commit()))
-                WWAPI::RaiseHResultException(hr, "Failed to commit transcoded image frame", "IWICBitmapFrameEncode::Commit");
+            // Transcode frame data:
 
-        }// for loop end
+            UINT frameCount;
+            hr = decoder->GetFrameCount(&frameCount);
+            if (FAILED(hr))
+                WWAPI::RaiseHResultException(hr, "Failed to retrieve image frame count", "IWICBitmapDecoder::GetFrameCount");
 
-        // commit to encoder
-        if (FAILED(hr = encoder->Commit()))
-            WWAPI::RaiseHResultException(hr, "Encoder failed to commit changes to transcoded image", "IWICBitmapEncoder::Commit");
+            // iterate over the image frames:
+            for (UINT idx = 0; idx < frameCount; ++idx)
+            {
+                // decode the frame:
+                ComPtr<IWICBitmapFrameDecode> decodedFrame;
+                hr = decoder->GetFrame(idx, decodedFrame.GetAddressOf());
+                if (FAILED(hr))
+                    WWAPI::RaiseHResultException(hr, "Failed to decode image frame data", "IWICBitmapDecoder::GetFrame");
 
-        // commit to stream
-        if (FAILED(hr = fileOutStream->Commit(STGC_DEFAULT)))
-            WWAPI::RaiseHResultException(hr, "File stream failed to commit changes to storage", "IWICStream::Commit");
+                // create frame to receive transcoded data:
+                ComPtr<IPropertyBag2> encPropBag;
+                ComPtr<IWICBitmapFrameEncode> transcodedFrame;
+                hr = encoder->CreateNewFrame(transcodedFrame.GetAddressOf(), encPropBag.GetAddressOf());
+                if (FAILED(hr))
+                    WWAPI::RaiseHResultException(hr, "Failed to create image frame", "IWICBitmapEncoder::CreateNewFrame");
+
+                // configure encoder for new frame:
+                ConfigureJpegEncoder(encPropBag.Get(), imgQualityRatio);
+                hr = transcodedFrame->Initialize(encPropBag.Get());
+                if (FAILED(hr))
+                    WWAPI::RaiseHResultException(hr, "Failed to set properties for transcoded image frame", "IWICBitmapFrameEncode::Initialize");
+
+                // reencode
+                hr = transcodedFrame->WriteSource(decodedFrame.Get(), nullptr);
+                if (FAILED(hr))
+                    WWAPI::RaiseHResultException(hr, "Failed to reencode bitmap", "IWICBitmapFrameEncode::WriteSource");
+
+                // copy the frame thumbnail:
+                ComPtr<IWICBitmapSource> thumbnail;
+                hr = decodedFrame->GetThumbnail(thumbnail.GetAddressOf());
+                if (hr != WINCODEC_ERR_CODECNOTHUMBNAIL)
+                {
+                    if (FAILED(hr))
+                        WWAPI::RaiseHResultException(hr, "Failed to retrieve image frame thumbnail", "IWICBitmapFrameDecode::GetThumbnail");
+
+                    hr = transcodedFrame->SetThumbnail(thumbnail.Get());
+                    if (FAILED(hr))
+                        WWAPI::RaiseHResultException(hr, "Failed to copy image frame thumbnail", "IWICBitmapFrameEncode::SetThumbnail");
+                }
+
+                CopyFrameMetadata(decodedFrame.Get(), transcodedFrame.Get(), toSameFormat);
+
+                // commit to frame
+                if (FAILED(hr = transcodedFrame->Commit()))
+                    WWAPI::RaiseHResultException(hr, "Failed to commit transcoded image frame", "IWICBitmapFrameEncode::Commit");
+
+            }// for loop end
+
+             // commit to encoder
+            if (FAILED(hr = encoder->Commit()))
+                WWAPI::RaiseHResultException(hr, "Encoder failed to commit changes to transcoded image", "IWICBitmapEncoder::Commit");
+
+            // commit to stream
+            if (FAILED(hr = fileOutStream->Commit(STGC_DEFAULT)))
+                WWAPI::RaiseHResultException(hr, "File stream failed to commit changes to storage", "IWICStream::Commit");
+        }
+        catch (IAppException &ex)
+        {
+            std::ostringstream oss;
+            oss << "Failed to transcode image file " << fileName;
+            throw AppException<std::runtime_error>(oss.str(), ex);
+        }
     }
 
 } // end of namespace application

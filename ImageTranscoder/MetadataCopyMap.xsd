@@ -50,7 +50,7 @@
                                         <xs:restriction base="xs:token">
                                             <xs:minLength value="1"/>
                                             <xs:maxLength value="32"/>
-                                            <xs:pattern value="/([0-9a-zA-Z]+/)*"/>
+                                            <xs:pattern value="(/[0-9a-zA-Z]+)*"/>
                                         </xs:restriction>
                                     </xs:simpleType>
                                 </xs:attribute>
@@ -59,7 +59,7 @@
                                         <xs:restriction base="xs:token">
                                             <xs:minLength value="1"/>
                                             <xs:maxLength value="32"/>
-                                            <xs:pattern value="/([0-9a-zA-Z]+/)*"/>
+                                            <xs:pattern value="(/[0-9a-zA-Z]+)*"/>
                                         </xs:restriction>
                                     </xs:simpleType>
                                 </xs:attribute>

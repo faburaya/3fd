@@ -245,6 +245,8 @@ namespace application
                          VecOfCaseEntries::const_iterator &subRangeBegin,
                          VecOfCaseEntries::const_iterator &subRangeEnd) const
         {
+            subRangeEnd = m_mapCasesEntries.end();
+            subRangeBegin = m_mapCasesEntries.begin();
             return utils::BinSearchSubRange(searchKey, subRangeBegin, subRangeEnd);
         }
 
@@ -415,6 +417,8 @@ namespace application
                          VecOfItems::const_iterator &subRangeBegin,
                          VecOfItems::const_iterator &subRangeEnd) const
         {
+            subRangeEnd = m_items.end();
+            subRangeBegin = m_items.begin();
             return utils::BinSearchSubRange(searchKey, subRangeBegin, subRangeEnd);
         }
 
@@ -581,7 +585,7 @@ namespace application
 
                 std::wostringstream woss;
                 woss << L"Failed to parse configuration file! " << reason.GetBSTR()
-                     << L" - at line " << lineNumber
+                     << L"At line " << lineNumber
                      << L": " << xmlSource.GetBSTR();
 
                 std::wstring_convert<std::codecvt_utf8<wchar_t>> strConv;
@@ -762,6 +766,10 @@ namespace application
             swprintf(query, L"/{ushort=%u}", entry.id);
 
             auto hr = embQueryReader->GetMetadataByName(query, &propVar);
+            
+            if (hr == WINCODEC_ERR_PROPERTYNOTFOUND)
+                return;
+
             if (FAILED(hr))
             {
                 std::wstring_convert<std::codecvt_utf8<wchar_t>> strConv;
@@ -814,9 +822,9 @@ namespace application
         /* Look for the metadata map case that goes from the
            original container format to the destination format: */
 
-        VecOfCaseEntries::const_iterator beginMap, endMap;
         auto mapCaseKey = MakeKey(srcFormat, destFormat);
 
+        VecOfCaseEntries::const_iterator beginMap, endMap;
         if (!m_mapCases->GetSubRange(mapCaseKey, beginMap, endMap))
             return;
 
@@ -866,21 +874,30 @@ namespace application
             }
 
             // copy the items:
-
-            if (entry.onlyCommon)
+            try
             {
-                VecOfItems::const_iterator beginItem, endItem;
-
-                if (m_items->GetSubRange(entry.metaFmtNameHash, beginItem, endItem))
+                if (entry.onlyCommon)
                 {
-                    CopySelectedItems(embQueryReader.Get(),
-                                      embQueryWriter.Get(),
-                                      beginItem,
-                                      endItem);
+                    VecOfItems::const_iterator beginItem, endItem;
+
+                    if (m_items->GetSubRange(entry.metaFmtNameHash, beginItem, endItem))
+                    {
+                        CopySelectedItems(embQueryReader.Get(),
+                                          embQueryWriter.Get(),
+                                          beginItem,
+                                          endItem);
+                    }
                 }
+                else
+                    CopyAllItems(embQueryReader.Get(), embQueryWriter.Get());
             }
-            else
-                CopyAllItems(embQueryReader.Get(), embQueryWriter.Get());
+            catch (IAppException &ex)
+            {
+                std::wstring_convert<std::codecvt_utf8<wchar_t>> strConv;
+                std::wostringstream woss;
+                woss << L"Failed to copy metadata from " << entry.fromPath;
+                throw AppException<std::runtime_error>(strConv.to_bytes(woss.str()), ex);
+            }
 
             _propvariant_t writerPropVar;
             writerPropVar.vt = VT_UNKNOWN;
