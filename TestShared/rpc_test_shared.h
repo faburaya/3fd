@@ -5,6 +5,12 @@
 #include <gtest/gtest-param-test.h>
 #include <array>
 
+// Choose the scenario uncommenting one of the following macros:
+
+#define SCENARIO_SINGLE_BOX_LOCAL_SEC
+//#define SCENARIO_SINGLE_BOX_AD_SEC
+//#define SCENARIO_REMOTE_WITH_AD_SEC
+
 namespace _3fd
 {
 namespace integration_tests
