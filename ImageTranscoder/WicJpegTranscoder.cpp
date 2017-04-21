@@ -196,10 +196,10 @@ namespace application
             HRESULT hr;
             ComPtr<IWICBitmapDecoder> decoder;
             hr = m_wicImagingFactory->CreateDecoderFromFilename(ucs2fInName.c_str(),
-                nullptr,
-                GENERIC_READ,
-                WICDecodeMetadataCacheOnLoad,
-                decoder.GetAddressOf());
+                                                                nullptr,
+                                                                GENERIC_READ,
+                                                                WICDecodeMetadataCacheOnLoad,
+                                                                decoder.GetAddressOf());
             if (FAILED(hr))
                 WWAPI::RaiseHResultException(hr, "Failed to create image decoder", "IWICImagingFactory::CreateDecoderFromFilename");
 

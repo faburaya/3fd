@@ -96,8 +96,11 @@ namespace application
 #include <boost\filesystem.hpp>
 #include <algorithm>
 #include <vector>
+#include <string>
 #include <ctime>
 #include "WicJpegTranscoder.h"
+
+void PrintProgressBar(double progress, const std::string &label);
 
 /////////////////////
 // Entry Point
@@ -140,8 +143,6 @@ int main(int argc, const char *argv[])
                 continue;
             }
 
-            std::cout << "Processing files in " << dirPath.string() << " ...\n";
-
             // Iterate over files in each directory:
             for (auto &dirEntry : filesystem::directory_iterator(dirPath))
             {
@@ -158,7 +159,17 @@ int main(int argc, const char *argv[])
                     auto iter = std::find_if(
                         supImgFileExts.begin(),
                         supImgFileExts.end(),
-                        [&fileExt](const filesystem::path &supExt) { return fileExt.compare(supExt) == 0; }
+                        [&fileExt](const filesystem::path &supExt)
+                        {
+                            string supExtStr = supExt.string();
+                            string fileExtStr = fileExt.string();
+
+                            return std::equal(
+                                supExtStr.begin(), supExtStr.end(),
+                                fileExtStr.begin(), fileExtStr.end(),
+                                [](char chLow, char chX) { return chLow == tolower(chX); }
+                            );
+                        }
                     );
 
                     // not a supported extension?
@@ -181,13 +192,19 @@ int main(int argc, const char *argv[])
         application::WicJpegTranscoder transcoder;
 
         // transcode image file
-        for (auto &filePath : inputFiles)
+        for (int idx = 0; idx < inputFiles.size(); ++idx)
+        {
+            auto &filePath = inputFiles[idx];
+            PrintProgressBar(static_cast<double> (idx) / inputFiles.size(), filePath);
             transcoder.Transcode(filePath, params.toJXR, params.targetQuality);
+        }
+
+        PrintProgressBar(1.0, "DONE!");
 
         auto endTime = clock();
         auto elapsedTime = static_cast<double>(endTime - startTime) / CLOCKS_PER_SEC;
 
-        std::cout << "Successfully transcoded " << inputFiles.size() << " image file(s) in "
+        std::cout << "\n\nSuccessfully transcoded " << inputFiles.size() << " image file(s) in "
                   << std::setprecision(3) << elapsedTime << " second(s)\n" << std::endl;
     }
     catch (filesystem::filesystem_error &ex)
@@ -208,4 +225,23 @@ int main(int argc, const char *argv[])
     }
 
     return EXIT_SUCCESS;
+}
+
+// Prints a pretty progress bar
+void PrintProgressBar(double progress, const std::string &label)
+{
+    const int qtBarSteps(30);
+    int done = (int)(qtBarSteps * progress);
+
+    std::cout << "\r[";
+
+    for (int idx = 0; idx < done; ++idx)
+        std::cout << '#';
+
+    int remaining = qtBarSteps - done;
+    for (int idx = 0; idx < remaining; ++idx)
+        std::cout << ' ';
+
+    std::cout << "] " << std::setw(3) << std::right << static_cast<int> (100 * progress + 0.5) << " % - "
+              << std::setprecision(40) << std::setw(40) << std::left << label << std::flush;
 }

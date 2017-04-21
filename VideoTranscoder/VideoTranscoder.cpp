@@ -69,15 +69,7 @@ namespace application
 
         CommandLineArguments cmdLineArgs(80, CommandLineArguments::ArgValSeparator::Colon, true, false);
 
-        enum { ArgOptHelp, ArgValEncoder, ArgValTgtSizeFactor, ArgValsListIO };
-
-        cmdLineArgs.AddExpectedArgument(CommandLineArguments::ArgDeclaration{
-            ArgOptHelp,
-            CommandLineArguments::ArgType::OptionSwitch,
-            CommandLineArguments::ArgValType::None,
-            'h', "help",
-            "Displays these information about usage of application command line arguments"
-        });
+        enum { ArgValEncoder, ArgValTgtSizeFactor, ArgValsListIO };
 
         cmdLineArgs.AddExpectedArgument(CommandLineArguments::ArgDeclaration{
             ArgValEncoder,
