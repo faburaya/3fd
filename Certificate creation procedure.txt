@@ -20,7 +20,7 @@ makecert -pe -n "CN=MyComputerName" -ss My -sr LocalMachine -a sha256 -in "Certi
 
 (In a development environment confined within a single box, you can choose to have only one certificate for both client and server authentication, hence eliminating the "-eku" option.)
 
-Because both client and server must rely in the same certificate CA, when you create the CA in one box, you must export the certificate to a file (including the private key) and import it into the other box. This way, the certificates create in both boxes will have been issued by a common trusted CA.
+Because both client and server must rely in the same certificate CA, when you create the CA in one box, you must export the certificate to a file (including the private key) and import it into the other box. This way, the certificates in both boxes will have been issued by a common trusted CA.
 
 (3) SERVER ONLY - In the management console (mmc.exe), use the snap-in for certificate management to look for the certificate you have just created. The thumbprint is the hash you will use in the command below. These commands will assign the new certificate to the endpoints localhost:8888 and localhost:8989:
 

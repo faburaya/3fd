@@ -75,9 +75,6 @@
     <ClInclude Include="calculator.wsdl.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="resource.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="AcmeTesting_w32.h">
       <Filter>Header Files</Filter>
     </ClInclude>
