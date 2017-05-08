@@ -108,6 +108,12 @@ namespace application
         {
             ComPtr<IWICMetadataBlockReader> metadataBlockReader;
             hr = source->QueryInterface(IID_PPV_ARGS(metadataBlockReader.GetAddressOf()));
+
+            /* when the source interface is an encoder object, if the image format does not support container
+               level metadata, this operation is expected to fail and the function should quit at this point */
+            if (hr == E_NOINTERFACE)
+                return;
+
             if (FAILED(hr))
                 WWAPI::RaiseHResultException(hr, "Failed to obtain metadata block reader", "QueryInterface");
 
@@ -132,8 +138,8 @@ namespace application
         ComPtr<IWICMetadataQueryReader> metadataQueryReader;
         hr = source->GetMetadataQueryReader(metadataQueryReader.GetAddressOf());
 
-        /* when the source interface is an encoder object, the image format might not support
-           container level metadata, in which case the function must quit at this point */
+        /* when the source interface is an encoder object, if the image format does not support container
+           level metadata, this operation is expected to fail and the function should quit at this point */
         if (hr == WINCODEC_ERR_UNSUPPORTEDOPERATION)
             return;
 
@@ -259,6 +265,11 @@ namespace application
                 if (FAILED(hr))
                     WWAPI::RaiseHResultException(hr, "Failed to decode image frame data", "IWICBitmapDecoder::GetFrame");
 
+                WICPixelFormatGUID pixelFormat;
+                hr = decodedFrame->GetPixelFormat(&pixelFormat);
+                if (FAILED(hr))
+                    WWAPI::RaiseHResultException(hr, "Could not get pixel format", "IWICBitmapFrameDecode::GetPixelFormat");
+
                 // create frame to receive transcoded data:
                 ComPtr<IPropertyBag2> encPropBag;
                 ComPtr<IWICBitmapFrameEncode> transcodedFrame;
@@ -270,7 +281,11 @@ namespace application
                 ConfigureJpegEncoder(encPropBag.Get(), imgQualityRatio);
                 hr = transcodedFrame->Initialize(encPropBag.Get());
                 if (FAILED(hr))
-                    WWAPI::RaiseHResultException(hr, "Failed to set properties for transcoded image frame", "IWICBitmapFrameEncode::Initialize");
+                    WWAPI::RaiseHResultException(hr, "Could not set properties for transcoded image frame", "IWICBitmapFrameEncode::Initialize");
+
+                hr = transcodedFrame->SetPixelFormat(&pixelFormat);
+                if (FAILED(hr))
+                    WWAPI::RaiseHResultException(hr, "Could not set pixel format", "IWICBitmapFrameEncode::SetPixelFormat");
 
                 // reencode
                 hr = transcodedFrame->WriteSource(decodedFrame.Get(), nullptr);

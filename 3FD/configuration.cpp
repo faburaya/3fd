@@ -137,15 +137,15 @@ namespace _3fd
 		/// <summary>
 		/// Gets an ID for the running application, invoking a system call.
 		/// </summary>
-		/// <param name="appFilePath">Where to store the retrieved file path for the running application.</param>
+		/// <param name="appCfgFileName">Where to store the configuration file name for the running application.</param>
 		/// <returns>A text ID (UTF-8 encoded) for the running application.</returns>
-		static string CallSysForApplicationId(Platform::String ^&appFilePath)
+		static string CallSysForApplicationId(Platform::String ^&appCfgFileName)
 		{
 			auto curPackageId = Windows::ApplicationModel::Package::Current->Id->Name;
 
 			try
 			{
-				appFilePath = curPackageId + Platform::StringReference(L".3fd.config");
+                appCfgFileName = curPackageId + Platform::StringReference(L".3fd.config");
 				std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
 				return converter.to_bytes(curPackageId->Data());
 			}
@@ -332,11 +332,11 @@ namespace _3fd
 		{
 			try
 			{
-				Platform::String ^appFilePath;
-				m_applicationId = CallSysForApplicationId(appFilePath);
+				Platform::String ^cfgFileName;
+				m_applicationId = CallSysForApplicationId(cfgFileName);
 
 				auto file = utils::WinRTExt::WaitForAsync(
-					Windows::ApplicationModel::Package::Current->InstalledLocation->GetFileAsync(appFilePath)
+					Windows::ApplicationModel::Package::Current->InstalledLocation->GetFileAsync(cfgFileName)
 				);
 				
 				auto config = utils::WinRTExt::WaitForAsync(

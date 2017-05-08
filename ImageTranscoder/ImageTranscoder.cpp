@@ -100,7 +100,7 @@ namespace application
 #include <ctime>
 #include "WicJpegTranscoder.h"
 
-void PrintProgressBar(double progress, const std::string &label);
+void PrintProgressBar(uint32_t done, uint32_t total);
 
 /////////////////////
 // Entry Point
@@ -192,14 +192,12 @@ int main(int argc, const char *argv[])
         application::WicJpegTranscoder transcoder;
 
         // transcode image file
-        for (int idx = 0; idx < inputFiles.size(); ++idx)
+        for (uint32_t idx = 0; idx < inputFiles.size(); ++idx)
         {
             auto &filePath = inputFiles[idx];
-            PrintProgressBar(static_cast<double> (idx) / inputFiles.size(), filePath);
             transcoder.Transcode(filePath, params.toJXR, params.targetQuality);
+            PrintProgressBar(idx + 1, inputFiles.size());
         }
-
-        PrintProgressBar(1.0, "DONE!");
 
         auto endTime = clock();
         auto elapsedTime = static_cast<double>(endTime - startTime) / CLOCKS_PER_SEC;
@@ -214,11 +212,13 @@ int main(int argc, const char *argv[])
     }
     catch (IAppException &ex)
     {
+        std::cout << std::endl;
         Logger::Write(ex, Logger::PRIO_FATAL);
         return EXIT_FAILURE;
     }
     catch (std::exception &ex)
     {
+        std::cout << std::endl;
         std::ostringstream oss;
         oss << "Generic failure: " << ex.what();
         Logger::Write(oss.str(), Logger::PRIO_FATAL);
@@ -228,20 +228,22 @@ int main(int argc, const char *argv[])
 }
 
 // Prints a pretty progress bar
-void PrintProgressBar(double progress, const std::string &label)
+void PrintProgressBar(uint32_t done, uint32_t total)
 {
-    const int qtBarSteps(30);
-    int done = (int)(qtBarSteps * progress);
+    const int numBarSteps(30);
+    auto percentage = static_cast<double> (done) / total;
+    auto nStepsDone = (int)(numBarSteps * percentage);
 
     std::cout << "\r[";
 
-    for (int idx = 0; idx < done; ++idx)
+    for (int idx = 0; idx < nStepsDone; ++idx)
         std::cout << '#';
 
-    int remaining = qtBarSteps - done;
-    for (int idx = 0; idx < remaining; ++idx)
+    int nStepsRemain = numBarSteps - nStepsDone;
+    for (int idx = 0; idx < nStepsRemain; ++idx)
         std::cout << ' ';
 
-    std::cout << "] " << std::setw(3) << std::right << static_cast<int> (100 * progress + 0.5) << " % - "
-              << std::setprecision(40) << std::setw(40) << std::left << label << std::flush;
+    std::cout << "] " << std::setw(3) << std::right << static_cast<int> (100 * percentage + 0.5)
+              << " % - " << done << " out of " << total
+              << std::setprecision(10) << std::setw(10) << std::left << " files" << std::flush;
 }
