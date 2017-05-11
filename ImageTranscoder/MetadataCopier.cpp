@@ -5,8 +5,14 @@
 #include "3FD\exceptions.h"
 #include "3FD\logger.h"
 #include "3FD\utils_algorithms.h"
+
+#ifdef _3FD_PLATFORM_WIN32API
+#   include <MsXml6.h>
+#elif defined _3FD_PLATFORM_WINRT
+#   include "utils_winrt.h"
+#endif
+
 #include <wincodecsdk.h>
-#include <MsXml6.h>
 #include <map>
 #include <set>
 #include <array>
@@ -14,10 +20,6 @@
 #include <codecvt>
 #include <algorithm>
 #include <cassert>
-
-/* XML parsing validates the content against the referenced schema (XSD), thus the calls for
-   browsing the DOM are not supposed to fail. Their results are only checked because failures
-   such as running out of memory can always happen. */
 
 namespace application
 {
@@ -36,34 +38,30 @@ namespace application
     /// <param name="elemNode">The map case node.</param>
     /// <param name="containerFormatByName">A dictionary of container formats ordered by the hash of their names.</param>
     /// <returns>The key composed of the hashed GUID's of both source and destination container formats.</returns>
-    static uint64_t GetMetadataMapCaseKey(IXMLDOMNode *elemNode, const Hash2HashMap &containerFormatByName)
+    static uint64_t GetMetadataMapCaseKey(XmlNode elemNode, const Hash2HashMap &containerFormatByName)
     {
         CALL_STACK_TRACE;
 
-        HRESULT hr;
-        const _bstr_t attrNameFormats[] = { _bstr_t(L"srcFormat"), _bstr_t(L"destFormat") };
+        const XmlStrWrap attrNameFormats[] = { XmlStrWrap(L"srcFormat"), XmlStrWrap(L"destFormat") };
 
         std::array<uint32_t, sizeof attrNameFormats / sizeof attrNameFormats[0]> hashedFormatGUIDs;
         std::array<uint32_t, sizeof attrNameFormats / sizeof attrNameFormats[0]> hashedFormatNames;
         
-        ComPtr<IXMLDOMNamedNodeMap> attributes;
-        CHECK(elemNode->get_attributes(attributes.GetAddressOf()));
+        XmlNamedNodeMap attributes = XmlGetAttributes(elemNode);
 
         for (int idx = 0; idx < hashedFormatNames.size(); ++idx)
         {
             // get container format name
-            auto formatName = GetAttributeValueHash(attributes.Get(), attrNameFormats[idx], hashedFormatNames[idx]);
+            auto formatName = GetAttributeValueHash(attributes, attrNameFormats[idx], hashedFormatNames[idx]);
             
             // does the format have a GUID?
             auto iter = containerFormatByName.find(hashedFormatNames[idx]);
             if (containerFormatByName.end() == iter)
             {
-                _bstr_t xmlSource;
-                elemNode->get_xml(xmlSource.GetAddress());
-
+                auto xmlSource = XmlGetXml(elemNode);
                 std::wostringstream woss;
                 woss << L"Invalid setting in configuration file! Microsoft WIC GUID was not defined for container format "
-                     << formatName.GetBSTR() << L". Ocurred in:\r\n" << xmlSource.GetBSTR();
+                     << UnwrapCString(formatName) << L". Ocurred in:\r\n" << UnwrapCString(xmlSource);
 
                 std::wstring_convert<std::codecvt_utf8<wchar_t>> strConv;
                 throw AppException<std::runtime_error>(strConv.to_bytes(woss.str()));
@@ -81,8 +79,8 @@ namespace application
     struct MapCaseEntry
     {
         uint64_t key;
-        BSTR fromPath;
-        BSTR toPath;
+        XMLSTR fromPath;
+        XMLSTR toPath;
         uint32_t metaFmtNameHash;
         bool onlyCommon;
 
@@ -109,8 +107,8 @@ namespace application
         /// <param name="mapCasesXPath">The XPath to the map cases.</param>
         /// <param name="containerFormatByName">A dictionary of container formats ordered by the hash of their names.</param>
         /// <param name="metadataFormatByName">A dictionary of metadata formats ordered by the hash of their names.</param>
-        MetadataMapCases(IXMLDOMDocument2 *dom,
-                         BSTR mapCasesXPath,
+        MetadataMapCases(XmlDom dom,
+                         XMLSTR mapCasesXPath,
                          const Hash2HashMap &containerFormatByName,
                          const Hash2HashMap &metadataFormatByName)
         {
@@ -118,82 +116,68 @@ namespace application
 
             try
             {
-                HRESULT hr;
                 std::set<decltype(MapCaseEntry::key)> uniqueKeys;
 
-                const _bstr_t attrNameMetaFormat(L"metaFormat"),
-                              attrNamePathFrom(L"fromPath"),
-                              attrNamePathTo(L"toPath"),
-                              attrNameOnlyCommon(L"onlyCommon");
+                const XmlStrWrap attrNameMetaFormat(L"metaFormat"),
+                                 attrNamePathFrom(L"fromPath"),
+                                 attrNamePathTo(L"toPath"),
+                                 attrNameOnlyCommon(L"onlyCommon");
 
-                ComPtr<IXMLDOMNodeList> listOfMapCaseNodes;
-                CHECK(dom->selectNodes(mapCasesXPath, listOfMapCaseNodes.GetAddressOf()));
-
-                long mapCaseNodesCount;
-                CHECK(listOfMapCaseNodes->get_length(&mapCaseNodesCount));
+                XmlNodeList listOfMapCaseNodes = XmlSelectNodes(dom, mapCasesXPath);
+                auto mapCaseNodesCount = XmlGetLength(listOfMapCaseNodes);
 
                 std::vector<MapCaseEntry> mapCasesEntries;
                 mapCasesEntries.reserve(mapCaseNodesCount);
 
                 // Iterate over list of map cases:
 
-                for (long idxCase = 0; idxCase < mapCaseNodesCount; ++idxCase)
+                for (decltype(mapCaseNodesCount) idxCase = 0; idxCase < mapCaseNodesCount; ++idxCase)
                 {
-                    ComPtr<IXMLDOMNode> mapCaseNode;
-                    CHECK(listOfMapCaseNodes->get_item(idxCase, mapCaseNode.GetAddressOf()));
-
-                    auto mapCaseKey = GetMetadataMapCaseKey(mapCaseNode.Get(), containerFormatByName);
+                    XmlNode mapCaseNode = XmlGetItem(listOfMapCaseNodes, idxCase);
+                    auto mapCaseKey = GetMetadataMapCaseKey(mapCaseNode, containerFormatByName);
                     
                     // is map case unique?
                     if (!uniqueKeys.insert(mapCaseKey).second)
                     {
                         std::wstring_convert<std::codecvt_utf8<wchar_t>> strConv;
                         std::wostringstream woss;
-                        _bstr_t xmlSource;
-                        mapCaseNode->get_xml(xmlSource.GetAddress());
-                        woss << L"Configuration file cannot have duplicated metadata map cases! Ocurred in:\r\n" << xmlSource.GetBSTR();
+                        auto xmlSource = XmlGetXml(mapCaseNode);
+                        woss << L"Configuration file cannot have duplicated metadata map cases! Ocurred in:\r\n" << UnwrapCString(xmlSource);
                         throw AppException<std::runtime_error>(strConv.to_bytes(woss.str()));
                     }
 
                     // Iterate over list entries:
 
-                    long entryNodesCount;
-                    ComPtr<IXMLDOMNodeList> listOfEntryNodes;
-                    CHECK(mapCaseNode->get_childNodes(listOfEntryNodes.GetAddressOf()));
-                    CHECK(listOfEntryNodes->get_length(&entryNodesCount));
+                    XmlNodeList listOfEntryNodes = XmlGetChildNodes(mapCaseNode);
+                    auto entryNodesCount = XmlGetLength(listOfEntryNodes);
 
-                    for (long idxEntry = 0; idxEntry < entryNodesCount; ++idxEntry)
+                    for (decltype(entryNodesCount) idxEntry = 0; idxEntry < entryNodesCount; ++idxEntry)
                     {
                         mapCasesEntries.emplace_back();
                         auto &newEntry = mapCasesEntries.back();
                         newEntry.key = mapCaseKey;
 
-                        ComPtr<IXMLDOMNode> entryNode;
-                        CHECK(listOfEntryNodes->get_item(idxEntry, entryNode.GetAddressOf()));
-
-                        ComPtr<IXMLDOMNamedNodeMap> attributes;
-                        CHECK(entryNode->get_attributes(attributes.GetAddressOf()));
+                        XmlNode entryNode = XmlGetItem(listOfEntryNodes, idxEntry);
+                        XmlNamedNodeMap attributes = XmlGetAttributes(entryNode);
 
                         // get metadata format
-                        auto metaFormatName = GetAttributeValueHash(attributes.Get(), attrNameMetaFormat, newEntry.metaFmtNameHash);
+                        auto metaFormatName = GetAttributeValueHash(attributes, attrNameMetaFormat, newEntry.metaFmtNameHash);
 
                         // does the format have a GUID?
                         if (metadataFormatByName.find(newEntry.metaFmtNameHash) == metadataFormatByName.end())
                         {
-                            _bstr_t xmlSource;
-                            mapCaseNode->get_xml(xmlSource.GetAddress());
-
+                            auto xmlSource = XmlGetXml(mapCaseNode);
                             std::wostringstream woss;
                             woss << L"Invalid setting in configuration file! Microsoft WIC GUID was not defined for metadata format "
-                                 << metaFormatName.GetBSTR() << L". Ocurred in:\r\n" << xmlSource.GetBSTR();
+                                 << UnwrapCString(metaFormatName) << L". Ocurred in:\r\n" << UnwrapCString(xmlSource);
 
                             std::wstring_convert<std::codecvt_utf8<wchar_t>> strConv;
                             throw AppException<std::runtime_error>(strConv.to_bytes(woss.str()));
                         }
 
-                        GetAttributeValue(attributes.Get(), attrNamePathFrom, VT_BSTR, newEntry.fromPath);
-                        GetAttributeValue(attributes.Get(), attrNamePathTo, VT_BSTR, newEntry.toPath);
-                        GetAttributeValue(attributes.Get(), attrNameOnlyCommon, VT_BOOL, newEntry.onlyCommon);
+                        GetAttributeValue(attributes, attrNamePathFrom, newEntry.fromPath);
+                        GetAttributeValue(attributes, attrNamePathTo, newEntry.toPath);
+                        GetAttributeValue(attributes, attrNameOnlyCommon, newEntry.onlyCommon);
 
                     }// end of inner for loop
 
@@ -210,10 +194,19 @@ namespace application
             {
                 throw; // just forward exceptions for errors known to have been already handled
             }
+#       ifdef _3FD_PLATFORM_WIN32API
             catch (_com_error &ex)
             {
                 WWAPI::RaiseHResultException(ex, "Failed to read metadata map cases from configuration");
             }
+#       elif defined _3FD_PLATFORM_WINRT
+            catch (Platform::Exception ^ex)
+            {
+                std::ostringstream oss;
+                oss << "Failed to read metadata map cases from configuration: " << WWAPI::GetDetailsFromWinRTEx(ex);
+                throw AppException<std::runtime_error>(oss.str());
+            }
+#       endif
             catch (std::exception &ex)
             {
                 std::ostringstream oss;
@@ -227,11 +220,13 @@ namespace application
         /// </summary>
         ~MetadataMapCases()
         {
+#       ifdef _3FD_PLATFORM_WIN32API
             for (auto &entry : m_mapCasesEntries)
             {
                 SysFreeString(entry.fromPath);
                 SysFreeString(entry.toPath);
             }
+#       endif
         }
 
         /// <summary>
@@ -274,7 +269,7 @@ namespace application
         uint32_t metaFmtNameHash;
         uint16_t id;
         bool rational;
-        BSTR name;
+        XMLSTR name;
 
         uint32_t GetKey() const { return metaFmtNameHash;  }
     };
@@ -298,77 +293,67 @@ namespace application
         /// <param name="dom">The DOM parsed from the XML configuration file.</param>
         /// <param name="itemsXPath">The XPath to the items.</param>
         /// <param name="metadataFormatByName">A dictionary of metadata formats ordered by the hash of their names.</param>
-        MetadataItems(IXMLDOMDocument2 *dom,
-                      BSTR itemsXPath,
+        MetadataItems(XmlDom dom,
+                      XMLSTR itemsXPath,
                       const Hash2HashMap &metadataFormatByName)
         {
             CALL_STACK_TRACE;
 
             try
             {
-                HRESULT hr;
                 std::set<decltype(ItemEntry::id)> uniqueKeys;
 
-                const _bstr_t attrNameId(L"id"),
-                              attrNameMetaFormat(L"metaFormat"),
-                              attrNameRational(L"rational"),
-                              attrNameName(L"name");
+                const XmlStrWrap attrNameId(L"id"),
+                                 attrNameMetaFormat(L"metaFormat"),
+                                 attrNameRational(L"rational"),
+                                 attrNameName(L"name");
 
-                ComPtr<IXMLDOMNodeList> listOfNodes;
-                CHECK(dom->selectNodes(itemsXPath, listOfNodes.GetAddressOf()));
-
-                long nodesCount;
-                CHECK(listOfNodes->get_length(&nodesCount));
+                XmlNodeList listOfNodes = XmlSelectNodes(dom, itemsXPath);
+                auto nodesCount = XmlGetLength(listOfNodes);
 
                 std::vector<ItemEntry> items;
                 items.reserve(nodesCount);
 
                 // Iterate over list of items:
 
-                for (long idx = 0; idx < nodesCount; ++idx)
+                for (decltype(nodesCount) idx = 0; idx < nodesCount; ++idx)
                 {
                     items.emplace_back();
                     auto &newEntry = items.back();
 
-                    ComPtr<IXMLDOMNode> elemNode;
-                    CHECK(listOfNodes->get_item(idx, elemNode.GetAddressOf()));
-
-                    ComPtr<IXMLDOMNamedNodeMap> attributes;
-                    CHECK(elemNode->get_attributes(attributes.GetAddressOf()));
+                    XmlNode elemNode = XmlGetItem(listOfNodes, idx);
+                    XmlNamedNodeMap attributes = XmlGetAttributes(elemNode);
 
                     // get item ID
-                    GetAttributeValue(attributes.Get(), attrNameId, VT_UI2, newEntry.id);
+                    GetAttributeValue(attributes, attrNameId, newEntry.id);
 
                     // is the item ID unique?
                     if (!uniqueKeys.insert(newEntry.id).second)
                     {
                         std::wstring_convert<std::codecvt_utf8<wchar_t>> strConv;
+                        auto xmlSource = XmlGetXml(elemNode);
                         std::wostringstream woss;
-                        _bstr_t xmlSource;
-                        elemNode->get_xml(xmlSource.GetAddress());
-                        woss << L"Configuration file cannot have duplicated metadata items! Ocurred in:\r\n" << xmlSource.GetBSTR();
+                        woss << L"Configuration file cannot have duplicated metadata items! Ocurred in:\r\n" << UnwrapCString(xmlSource);
                         throw AppException<std::runtime_error>(strConv.to_bytes(woss.str()));
                     }
 
                     // get metadata format
-                    auto metaFormatName = GetAttributeValueHash(attributes.Get(), attrNameMetaFormat, newEntry.metaFmtNameHash);
+                    auto metaFormatName = GetAttributeValueHash(attributes, attrNameMetaFormat, newEntry.metaFmtNameHash);
 
                     // does the format have a GUID?
                     if (metadataFormatByName.find(newEntry.metaFmtNameHash) == metadataFormatByName.end())
                     {
-                        _bstr_t xmlSource;
-                        elemNode->get_xml(xmlSource.GetAddress());
-
+                        auto xmlSource = XmlGetXml(elemNode);
                         std::wostringstream woss;
                         woss << L"Invalid setting in configuration file! Microsoft WIC GUID was not defined for metadata format "
-                             << metaFormatName.GetBSTR() << L". Ocurred in:\r\n" << xmlSource.GetBSTR();
+                             << UnwrapCString(metaFormatName) << L". Ocurred in:\r\n" << UnwrapCString(xmlSource);
 
                         std::wstring_convert<std::codecvt_utf8<wchar_t>> strConv;
                         throw AppException<std::runtime_error>(strConv.to_bytes(woss.str()));
                     }
 
-                    GetAttributeValue(attributes.Get(), attrNameRational, VT_BOOL, newEntry.rational);
-                    GetAttributeValue(attributes.Get(), attrNameName, VT_BSTR, newEntry.name);
+                    GetAttributeValue(attributes, attrNameRational, newEntry.rational);
+                    GetAttributeValue(attributes, attrNameName, newEntry.name);
 
                 }// end of loop
 
@@ -383,10 +368,19 @@ namespace application
             {
                 throw; // just forward exceptions for errors known to have been already handled
             }
+#       ifdef _3FD_PLATFORM_WIN32API
             catch (_com_error &ex)
             {
                 WWAPI::RaiseHResultException(ex, "Failed to read metadata items from configuration");
             }
+#       elif defined _3FD_PLATFORM_WINRT
+            catch (Platform::Exception ^ex)
+            {
+                std::ostringstream oss;
+                oss << "Failed to read metadata items from configuration: " << WWAPI::GetDetailsFromWinRTEx(ex);
+                throw AppException<std::runtime_error>(oss.str());
+            }
+#       endif
             catch (std::exception &ex)
             {
                 std::ostringstream oss;
@@ -400,10 +394,12 @@ namespace application
         /// </summary>
         ~MetadataItems()
         {
+#       ifdef _3FD_PLATFORM_WIN32API
             for (auto &entry : m_items)
             {
                 SysFreeString(entry.name);
             }
+#       endif
         }
 
         /// <summary>
@@ -449,8 +445,8 @@ namespace application
     /// <param name="listXPath">The XPath to the list of formats.</param>
     /// <param name="nameByGuid">A dictionary of names ordered by unique identifier.</param>
     /// <param name="guidByName">A dictionary of unique identifiers ordered by name.</param>
-    static void ReadFormats(IXMLDOMDocument2 *dom,
-                            BSTR listXPath,
+    static void ReadFormats(XmlDom dom,
+                            XMLSTR listXPath,
                             Hash2HashMap &nameByGuid,
                             Hash2HashMap &guidByName)
     {
@@ -458,60 +454,49 @@ namespace application
 
         try
         {
-            HRESULT hr;
-            ComPtr<IXMLDOMNodeList> nodeList;
-            CHECK(dom->selectNodes(listXPath, &nodeList));
-
-            const _bstr_t attrNameGuid(L"guid"),
-                          attrNameName(L"name");
+            XmlNodeList nodeList = XmlSelectNodes(dom, listXPath);
+            
+            const XmlStrWrap attrNameGuid(L"guid"),
+                             attrNameName(L"name");
 
             // Iterate over list of container formats:
             
-            long nodeCount;
-            CHECK(nodeList->get_length(&nodeCount));
-            for (long idx = 0; idx < nodeCount; ++idx)
+            auto nodeCount = XmlGetLength(nodeList);
+            for (decltype(nodeCount) idx = 0; idx < nodeCount; ++idx)
             {
-                ComPtr<IXMLDOMNode> node;
-                CHECK(nodeList->get_item(idx, node.GetAddressOf()));
-
-                ComPtr<IXMLDOMNamedNodeMap> attributes;
-                CHECK(node->get_attributes(attributes.GetAddressOf()));
+                XmlNode node = XmlGetItem(nodeList, idx);
+                XmlNamedNodeMap attributes = XmlGetAttributes(node);
 
                 // get GUID & name:
 
-                GUID guid;
-                _variant_t guidAsVariant;
-                ComPtr<IXMLDOMNode> guidAttrNode;
-                CHECK(attributes->getNamedItem(attrNameGuid, guidAttrNode.GetAddressOf()));
-                CHECK(guidAttrNode->get_nodeValue(guidAsVariant.GetAddress()));
-                _ASSERTE(guidAsVariant.vt == VT_BSTR);
-                CHECK(IIDFromString(guidAsVariant.bstrVal, &guid));
-                uint32_t hashedGuid = HashGuid(guid);
+                XmlNode guidAttrNode = XmlGetNamedItem(attributes, attrNameGuid);
+                auto guidString = XmlGetNodeValue(guidAttrNode);
 
+                HRESULT hr;
+                GUID guid;
+                CHECK(IIDFromString(UnwrapCString(guidString), &guid));
+
+                uint32_t hashedGuid = HashGuid(guid);
                 uint32_t hashedName;
-                GetAttributeValueHash(attributes.Get(), attrNameName, hashedName);
+                GetAttributeValueHash(attributes, attrNameName, hashedName);
 
                 // check whether GUID is unique in list:
                 if (!nameByGuid.emplace(hashedGuid, hashedName).second)
                 {
-                    _bstr_t xmlSource;
-                    node->get_xml(xmlSource.GetAddress());
-
                     std::wstring_convert<std::codecvt_utf8<wchar_t>> strConv;
+                    auto xmlSource = XmlGetXml(node);
                     std::wostringstream woss;
-                    woss << L"Configuration file cannot have duplicated GUID in list of formats: ocurred in " << xmlSource.GetBSTR();
+                    woss << L"Configuration file cannot have duplicated GUID in list of formats: ocurred in " << UnwrapCString(xmlSource);
                     throw AppException<std::runtime_error>(strConv.to_bytes(woss.str()));
                 }
 
                 // check whether name is unique in list:
                 if (!guidByName.emplace(hashedName, hashedGuid).second)
                 {
-                    _bstr_t xmlSource;
-                    node->get_xml(xmlSource.GetAddress());
-                    
                     std::wstring_convert<std::codecvt_utf8<wchar_t>> strConv;
+                    auto xmlSource = XmlGetXml(node);
                     std::wostringstream woss;
-                    woss << L"Configuration file cannot have duplicated name in list of formats: ocurred in " << xmlSource.GetBSTR();
+                    woss << L"Configuration file cannot have duplicated name in list of formats: ocurred in " << UnwrapCString(xmlSource);
                     throw AppException<std::runtime_error>(strConv.to_bytes(woss.str()));
                 }
 
@@ -525,6 +510,14 @@ namespace application
         {
             WWAPI::RaiseHResultException(ex, "Failed to read formats from configuration");
         }
+#   ifdef _3FD_PLATFORM_WINRT
+        catch (Platform::Exception ^ex)
+        {
+            std::ostringstream oss;
+            oss << "Failed to read formats from configuration: " << WWAPI::GetDetailsFromWinRTEx(ex);
+            throw AppException<std::runtime_error>(oss.str());
+        }
+#   endif
         catch (std::exception &ex)
         {
             std::ostringstream oss;
@@ -542,7 +535,7 @@ namespace application
         , m_items(nullptr)
     {
         CALL_STACK_TRACE;
-        
+
         try
         {
             auto hr = CoCreateInstance(CLSID_WICImagingFactory,
@@ -551,6 +544,8 @@ namespace application
                                        IID_PPV_ARGS(m_wicImagingFactory.GetAddressOf()));
             if (FAILED(hr))
                 WWAPI::RaiseHResultException(hr, "Failed to create imaging factory", "CoCreateInstance");
+
+#   ifdef _3FD_PLATFORM_WIN32API
 
             // Instantiante the DOM parser:
 
@@ -593,24 +588,34 @@ namespace application
             }
             
             CHECK(dom->setProperty(_bstr_t(L"SelectionLanguage"), _variant_t(_bstr_t(L"XPath"))));
-            CHECK(dom->setProperty(_bstr_t(L"SelectionNamespaces"), _variant_t(_bstr_t(L"xmlns:def='http://3fd.codeplex.com/MetadataCopyMap.xsd'"))));
+            CHECK(dom->setProperty(_bstr_t(L"SelectionNamespaces"), _variant_t(_bstr_t(L"xmlns:tns='http://3fd.codeplex.com/MetadataCopyMap.xsd'"))));
 
+#   elif defined _3FD_PLATFORM_WINRT
+
+            auto configFile = utils::WinRTExt::WaitForAsync(
+                Windows::ApplicationModel::Package::Current->InstalledLocation->GetFileAsync(L"MetadataCopyMap.xml")
+            );
+
+            auto dom = utils::WinRTExt::WaitForAsync(
+                Windows::Data::Xml::Dom::XmlDocument::LoadFromFileAsync(configFile)
+            );
+#   endif
             Hash2HashMap containerFormatByName, containerFormatByGuid;
-            ReadFormats(dom.Get(), _bstr_t(L"//def:metadata/def:formats/def:container/*"), containerFormatByGuid, containerFormatByName);
+            ReadFormats(dom, XmlStrWrap(L"//tns:metadata/tns:formats/tns:container/*"), containerFormatByGuid, containerFormatByName);
 
             Hash2HashMap metadataFormatByName, metadataFormatByGuid;
-            ReadFormats(dom.Get(), _bstr_t(L"//def:metadata/def:formats/def:metadata/*"), metadataFormatByGuid, metadataFormatByName);
+            ReadFormats(dom, XmlStrWrap(L"//tns:metadata/tns:formats/tns:metadata/*"), metadataFormatByGuid, metadataFormatByName);
 
             std::unique_ptr<MetadataMapCases> metadataMapCases(
-                new MetadataMapCases(dom.Get(),
-                                     _bstr_t(L"//def:metadata/def:map/*"),
+                new MetadataMapCases(dom,
+                                     XmlStrWrap(L"//tns:metadata/tns:map/*"),
                                      containerFormatByName,
                                      metadataFormatByName)
             );
 
             std::unique_ptr<MetadataItems> metadataItems(
-                new MetadataItems(dom.Get(),
-                                  _bstr_t(L"//def:metadata/def:items/*"),
+                new MetadataItems(dom,
+                                  XmlStrWrap(L"//tns:metadata/tns:items/*"),
                                   metadataFormatByName)
             );
 
@@ -620,17 +625,25 @@ namespace application
             std::ostringstream oss;
             oss << "Finished loading configurations from file.\nSupporting " << containerFormatByName.size()
                 << " container formats and " << metadataFormatByName.size() << " metadata formats.\nLoaded "
-                << m_mapCases->Count() << " map cases and " << m_items->Count() << " common items.";
+                << m_mapCases->Count() << " map cases and " << m_items->Count() << " common items.\n";
 
             Logger::Write(oss.str(), Logger::PRIO_DEBUG);
-        }
-        catch (IAppException &)
-        {
-            throw; // just forward exceptions for errors known to have been already handled
         }
         catch (_com_error &ex)
         {
             WWAPI::RaiseHResultException(ex, "Failed when loading configuration");
+        }
+#   ifdef _3FD_PLATFORM_WINRT
+        catch (Platform::Exception ^ex)
+        {
+            std::ostringstream oss;
+            oss << "Failed when loading configuration: " << core::WWAPI::GetDetailsFromWinRTEx(ex);
+            throw AppException<std::runtime_error>(oss.str());
+        }
+#   endif
+        catch (IAppException &)
+        {
+            throw; // just forward exceptions for errors known to have been already handled
         }
         catch (std::exception &ex)
         {
@@ -763,7 +776,7 @@ namespace application
         {
             _propvariant_t propVar;
             wchar_t query[16];
-            swprintf(query, L"/{ushort=%u}", entry.id);
+            swprintf(query, sizeof query, L"/{ushort=%u}", entry.id);
 
             auto hr = embQueryReader->GetMetadataByName(query, &propVar);
             
@@ -774,7 +787,7 @@ namespace application
             {
                 std::wstring_convert<std::codecvt_utf8<wchar_t>> strConv;
                 std::wostringstream woss;
-                woss << L"Failed to get metadata item '" << entry.name
+                woss << L"Failed to get metadata item '" << UnwrapCString(entry.name)
                      << L"' (id = " << entry.id
                      << L", query = '" << query
                      << L"') from embedded query reader";
@@ -790,7 +803,7 @@ namespace application
             {
                 std::wstring_convert<std::codecvt_utf8<wchar_t>> strConv;
                 std::wostringstream woss;
-                woss << L"Failed to set metadata item '" << entry.name
+                woss << L"Failed to set metadata item '" << UnwrapCString(entry.name)
                      << L"' (id = " << entry.id
                      << L", query = '" << query
                      << L"') into embedded query writer";
@@ -834,7 +847,7 @@ namespace application
             // get embedded query reader for specific metadata format:
 
             _propvariant_t readerPropVar;
-            auto hr = from->GetMetadataByName(entry.fromPath, &readerPropVar);
+            auto hr = from->GetMetadataByName(UnwrapCString(entry.fromPath), &readerPropVar);
 
             if (hr == WINCODEC_ERR_PROPERTYNOTFOUND)
                 return;
@@ -843,7 +856,7 @@ namespace application
             {
                 std::wstring_convert<std::codecvt_utf8<wchar_t>> strConv;
                 std::wostringstream woss;
-                woss << L"Failed to retrieve reader for metadata in path " << entry.fromPath;
+                woss << L"Failed to retrieve reader for metadata in path " << UnwrapCString(entry.fromPath);
 
                 WWAPI::RaiseHResultException(hr,
                     strConv.to_bytes(woss.str()).c_str(),
@@ -857,7 +870,7 @@ namespace application
             {
                 std::wstring_convert<std::codecvt_utf8<wchar_t>> strConv;
                 std::wostringstream woss;
-                woss << L"Failed to get interface for embedded query reader of metadata in path " << entry.fromPath;
+                woss << L"Failed to get interface for embedded query reader of metadata in path " << UnwrapCString(entry.fromPath);
 
                 WWAPI::RaiseHResultException(hr,
                     strConv.to_bytes(woss.str()).c_str(),
@@ -899,7 +912,7 @@ namespace application
             {
                 std::wstring_convert<std::codecvt_utf8<wchar_t>> strConv;
                 std::wostringstream woss;
-                woss << L"Failed to copy metadata from " << entry.fromPath;
+                woss << L"Failed to copy metadata from " << UnwrapCString(entry.fromPath);
                 throw AppException<std::runtime_error>(strConv.to_bytes(woss.str()), ex);
             }
 
@@ -908,12 +921,12 @@ namespace application
             writerPropVar.punkVal = embQueryWriter.Get();
             writerPropVar.punkVal->AddRef();
 
-            hr = to->SetMetadataByName(entry.toPath, &writerPropVar);
+            hr = to->SetMetadataByName(UnwrapCString(entry.toPath), &writerPropVar);
             if (FAILED(hr))
             {
                 std::wstring_convert<std::codecvt_utf8<wchar_t>> strConv;
                 std::wostringstream woss;
-                woss << L"Failed to write path '" << entry.toPath << L"' into metadata query writer";
+                woss << L"Failed to write path '" << UnwrapCString(entry.toPath) << L"' into metadata query writer";
 
                 WWAPI::RaiseHResultException(hr,
                     strConv.to_bytes(woss.str()).c_str(),

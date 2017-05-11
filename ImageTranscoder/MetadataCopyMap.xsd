@@ -3,7 +3,7 @@
     targetNamespace="http://3fd.codeplex.com/MetadataCopyMap.xsd"
     elementFormDefault="qualified"
     xmlns="http://3fd.codeplex.com/MetadataCopyMap.xsd"
-    xmlns:mstns="http://3fd.codeplex.com/MetadataCopyMap.xsd"
+    xmlns:tns="http://3fd.codeplex.com/MetadataCopyMap.xsd"
     xmlns:xs="http://www.w3.org/2001/XMLSchema">
 
     <xs:complexType name="listOfFormats">

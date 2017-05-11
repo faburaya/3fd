@@ -4,8 +4,27 @@
 #include "3FD\base.h"
 #include "3FD\exceptions.h"
 #include "3FD\logger.h"
-#include <MsXml6.h>
 #include <comutil.h>
+
+#ifdef _3FD_PLATFORM_WIN32API
+#   include <MsXml6.h>
+#   define XMLSTR               BSTR
+#   define XmlStrWrap           _bstr_t
+#   define XmlDom               ComPtr<IXMLDOMDocument2>
+#   define XmlNode              ComPtr<IXMLDOMNode>
+#   define XmlNodeList          ComPtr<IXMLDOMNodeList>
+#   define XmlNamedNodeMap      ComPtr<IXMLDOMNamedNodeMap>
+
+#elif defined _3FD_PLATFORM_WINRT
+#   define XMLSTR           Platform::String^
+#   define XmlStrWrap       Platform::StringReference
+#   define XmlDom           Windows::Data::Xml::Dom::XmlDocument^
+#   define XmlNode          Windows::Data::Xml::Dom::IXmlNode^
+#   define XmlNodeList      Windows::Data::Xml::Dom::XmlNodeList^
+#   define XmlNamedNodeMap  Windows::Data::Xml::Dom::XmlNamedNodeMap^
+#endif
+
+#define CHECK(COM_CALL_EXPR) if ((hr = (COM_CALL_EXPR)) < 0) { WWAPI::RaiseHResultException(hr, "Unexpected error in COM interface call", #COM_CALL_EXPR); }
 
 #undef min
 #undef max
@@ -16,8 +35,6 @@
 #include <cerrno>
 #include <limits>
 
-#define CHECK(COM_CALL_EXPR) if ((hr = (COM_CALL_EXPR)) < 0) { WWAPI::RaiseHResultException(hr, "Unexpected error in COM interface call", #COM_CALL_EXPR); }
-
 namespace application
 {
     using namespace _3fd;
@@ -25,7 +42,13 @@ namespace application
 
     using namespace Microsoft::WRL;
 
-    BSTR ExtractBstrFrom(_variant_t &wrappedVar);
+    ///////////////////////
+    // VARIANT handling
+    ///////////////////////
+
+    const wchar_t *UnwrapCString(_variant_t variant);
+
+#ifdef _3FD_PLATFORM_WIN32API
 
     /// <summary>
     /// Gets the value from a VARIANT.
@@ -36,7 +59,6 @@ namespace application
     ValType GetValueFrom(_variant_t &variant)
     {
         static_cast<false>; // causes compilation failure in case this generic implementation gets compiled
-        return variant;
     }
 
     template <> BSTR GetValueFrom<BSTR>(_variant_t &variant);
@@ -46,56 +68,8 @@ namespace application
     template <> int16_t GetValueFrom<int16_t>(_variant_t &variant);
     template <> int32_t GetValueFrom<int32_t>(_variant_t &variant);
 
-    /// <summary>
-    /// Gets the XML attribute value.
-    /// </summary>
-    /// <param name="attributes">The attributes.</param>
-    /// <param name="attrName">Name of the attribute.</param>
-    /// <param name="value">A reference to the variable to receive the value.</param>
-    template <typename ValType>
-    void GetAttributeValue(IXMLDOMNamedNodeMap *attributes,
-                           BSTR attrName,
-                           VARTYPE typeConv,
-                           ValType &value)
-    {
-        CALL_STACK_TRACE;
+#endif
 
-        HRESULT hr;
-        _variant_t variant;
-        ComPtr<IXMLDOMNode> attrNode;
-        CHECK(attributes->getNamedItem(attrName, attrNode.GetAddressOf()));
-        CHECK(attrNode->get_nodeValue(variant.GetAddress()));
-        _ASSERTE(variant.vt == VT_BSTR);
-        value = GetValueFrom<ValType>(variant);
-    }
-
-    /// <summary>
-    /// Gets the XML attribute value as a hash.
-    /// </summary>
-    /// <param name="attributes">The attributes.</param>
-    /// <param name="attrName">Name of the attribute.</param>
-    /// <param name="typeConv">The type conversion to perform.</param>
-    /// <param name="value">A reference to the variable to receive the value.</param>
-    /// <returns>The originally parsed BSTR value.</returns>
-    template <typename ValHashType>
-    _bstr_t GetAttributeValueHash(IXMLDOMNamedNodeMap *attributes,
-                                  BSTR attrName,
-                                  ValHashType &hash)
-    {
-        BSTR value;
-        GetAttributeValue(attributes, attrName, VT_BSTR, value);
-        hash = HashName(value);
-        return _bstr_t(value, false);
-    }
-
-    uint32_t HashGuid(const GUID &guid);
-
-    uint64_t MakeKey(uint32_t low, uint32_t high);
-
-    uint64_t MakeKey(const GUID &srcFormatGuid, const GUID &destFormatGuid);
-
-    uint32_t HashName(BSTR str);
-    
     /// <summary>
     /// PROPVARIANT wrapper class
     /// </summary>
@@ -129,6 +103,118 @@ namespace application
         }
     };
 
+
+    /////////////////////
+    // XML handling
+    /////////////////////
+
+    /// <summary>
+    /// Gets the XML attribute value.
+    /// </summary>
+    /// <param name="attributes">The attributes.</param>
+    /// <param name="attrName">Name of the attribute.</param>
+    /// <param name="value">A reference to the variable to receive the value.</param>
+    template <typename ValType>
+    void GetAttributeValue(XmlNamedNodeMap attributes,
+                           XMLSTR attrName,
+                           ValType &value)
+    {
+#   ifdef _3FD_PLATFORM_WIN32API
+
+        CALL_STACK_TRACE;
+
+        HRESULT hr;
+        _variant_t variant;
+        ComPtr<IXMLDOMNode> attrNode;
+        CHECK(attributes->getNamedItem(attrName, attrNode.GetAddressOf()));
+        CHECK(attrNode->get_nodeValue(variant.GetAddress()));
+        _ASSERTE(variant.vt == VT_BSTR);
+        value = GetValueFrom<ValType>(variant);
+
+#   elif defined _3FD_PLATFORM_WINRT
+
+        auto attrNode = attributes->GetNamedItem(attrName);
+        _ASSERTE(attrNode != nullptr);
+        auto boxedVal = attrNode->NodeValue;
+        value = safe_cast<ValType> (boxedVal);
+
+#   endif
+    }
+
+// XML handling for Win32 (MSXML6):
+#ifdef _3FD_PLATFORM_WIN32API
+
+    BSTR ExtractBstrFrom(_variant_t &wrappedVar);
+
+    _bstr_t GetAttributeValueHash(XmlNamedNodeMap attributes,
+                                  BSTR attrName,
+                                  uint32_t &hash);
+
+    XmlNodeList XmlSelectNodes(XmlDom dom, BSTR xpath);
+
+    long XmlGetLength(XmlNodeList nodes);
+
+    XmlNode XmlGetItem(XmlNodeList nodes, long index);
+
+    _variant_t XmlGetNodeValue(XmlNode node);
+
+    _bstr_t XmlGetXml(XmlNode node);
+
+    XmlNodeList XmlGetChildNodes(XmlNode node);
+
+    XmlNamedNodeMap XmlGetAttributes(XmlNode elemNode);
+
+    XmlNode XmlGetNamedItem(XmlNamedNodeMap attributes, BSTR name);
+
+    BSTR UnwrapCString(_bstr_t str);
+
+    BSTR UnwrapCString(BSTR str);
+
+// XML handling for WinRT:
+#elif defined _3FD_PLATFORM_WINRT
+
+    using Platform::Object;
+    using Platform::String;
+    using Platform::StringReference;
+    
+    String ^GetAttributeValueHash(XmlNamedNodeMap attributes,
+                                  String ^attrName,
+                                  uint32_t &hash);
+
+    XmlNodeList XmlSelectNodes(XmlDom dom, String ^xpath);
+
+    unsigned int XmlGetLength(XmlNodeList nodes);
+
+    XmlNode XmlGetItem(XmlNodeList nodes, unsigned int index);
+
+    Object ^XmlGetNodeValue(XmlNode node);
+
+    String ^XmlGetXml(XmlNode node);
+
+    XmlNodeList XmlGetChildNodes(XmlNode node);
+
+    XmlNamedNodeMap XmlGetAttributes(XmlNode elemNode);
+
+    XmlNode XmlGetNamedItem(XmlNamedNodeMap attributes, String ^name);
+
+    const wchar_t *UnwrapCString(String ^str);
+
+    const wchar_t *UnwrapCString(Object ^obj);
+
+#endif
+
+    ////////////////
+    // Hashing
+    ////////////////
+
+    uint32_t HashGuid(const GUID &guid);
+
+    uint64_t MakeKey(uint32_t low, uint32_t high);
+
+    uint64_t MakeKey(const GUID &srcFormatGuid, const GUID &destFormatGuid);
+
+    uint32_t HashName(XMLSTR str);
+    
 }// end of namespace application
 
 #endif // end of header guard

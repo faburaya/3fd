@@ -2,6 +2,7 @@
 <!-- Configures how application handles metadata -->
 <metadata xmlns="http://3fd.codeplex.com/MetadataCopyMap.xsd"
           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xmlns:tns="http://3fd.codeplex.com/MetadataCopyMap.xsd"
           xsi:schemaLocation="http://3fd.codeplex.com/MetadataCopyMap.xsd MetadataCopyMap.xsd">
     
     <!-- Tells the application how the GUID's used by WIC API relate to the format names used in this XML -->

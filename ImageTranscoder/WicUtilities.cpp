@@ -1,8 +1,21 @@
 #include "stdafx.h"
 #include "WicUtilities.h"
+#include <codecvt>
 
 namespace application
 {
+    ///////////////////////
+    // VARIANT handling
+    ///////////////////////
+
+    const wchar_t *UnwrapCString(_variant_t variant)
+    {
+        _ASSERTE(variant.vt == VT_BSTR);
+        return variant.bstrVal;
+    }
+
+#ifdef _3FD_PLATFORM_WIN32API
+
     template <> BSTR GetValueFrom<BSTR>(_variant_t &variant)
     {
         return ExtractBstrFrom(variant);
@@ -83,6 +96,208 @@ namespace application
         return rawVar.bstrVal;
     }
 
+#endif
+
+    /////////////////////
+    // XML handling
+    /////////////////////
+
+#ifdef _3FD_PLATFORM_WIN32API
+
+    /* MSXML parsing validates the content against the referenced schema (XSD), thus the calls for
+       browsing the DOM are not supposed to fail. Their results are only checked because failures
+       such as running out of memory can always happen. */
+
+    XmlNodeList XmlSelectNodes(XmlDom dom, BSTR xpath)
+    {
+        HRESULT hr;
+        XmlNodeList nodes;
+        CHECK(dom->selectNodes(xpath, nodes.GetAddressOf()));
+        return nodes;
+    }
+
+    long XmlGetLength(XmlNodeList nodes)
+    {
+        HRESULT hr;
+        long nodeCount;
+        CHECK(nodes->get_length(&nodeCount));
+        return nodeCount;
+    }
+
+    XmlNode XmlGetItem(XmlNodeList nodes, long index)
+    {
+        HRESULT hr;
+        XmlNode node;
+        CHECK(nodes->get_item(index, node.GetAddressOf()));
+        return node;
+    }
+
+    _variant_t XmlGetNodeValue(XmlNode node)
+    {
+        HRESULT hr;
+        _variant_t variant;
+        CHECK(node->get_nodeValue(variant.GetAddress()));
+        _ASSERTE(variant.vt == VT_BSTR);
+        return variant;
+    }
+
+    _bstr_t XmlGetXml(XmlNode node)
+    {
+        _bstr_t content;
+        node->get_xml(content.GetAddress());
+        return content;
+    }
+
+    XmlNodeList XmlGetChildNodes(XmlNode node)
+    {
+        HRESULT hr;
+        XmlNodeList nodes;
+        CHECK(node->get_childNodes(nodes.GetAddressOf()));
+        return nodes;
+    }
+
+    XmlNamedNodeMap XmlGetAttributes(XmlNode elemNode)
+    {
+        HRESULT hr;
+        XmlNamedNodeMap attributes;
+        CHECK(elemNode->get_attributes(attributes.GetAddressOf()));
+        return attributes;
+    }
+
+    XmlNode XmlGetNamedItem(XmlNamedNodeMap attributes, BSTR name)
+    {
+        HRESULT hr;
+        XmlNode node;
+        CHECK(attributes->getNamedItem(name, node.GetAddressOf()));
+        return node;
+    }
+
+    BSTR UnwrapCString(_bstr_t str) { return str.GetBSTR(); }
+
+    BSTR UnwrapCString(BSTR str) { return str; } // no-op
+
+    /// <summary>
+    /// Gets the XML attribute value as a hash.
+    /// </summary>
+    /// <param name="attributes">The attributes.</param>
+    /// <param name="attrName">Name of the attribute.</param>
+    /// <param name="value">A reference to the variable to receive the value.</param>
+    /// <returns>The originally parsed string value.</returns>
+    _bstr_t GetAttributeValueHash(XmlNamedNodeMap attributes,
+                                  BSTR attrName,
+                                  uint32_t &hash)
+    {
+        BSTR value;
+        GetAttributeValue(attributes, attrName, value);
+        hash = HashName(value);
+        return _bstr_t(value, false);
+    }
+
+#elif defined _3FD_PLATFORM_WINRT
+
+    /// <summary>
+    /// Gets the XML attribute value as a hash.
+    /// </summary>
+    /// <param name="attributes">The attributes.</param>
+    /// <param name="attrName">Name of the attribute.</param>
+    /// <param name="value">A reference to the variable to receive the value.</param>
+    /// <returns>The originally parsed string value.</returns>
+    String ^GetAttributeValueHash(XmlNamedNodeMap attributes,
+                                  String ^attrName,
+                                  uint32_t &hash)
+    {
+        String ^value;
+        GetAttributeValue(attributes, attrName, value);
+        hash = HashName(value);
+        return value;
+    }
+
+    /* Windows Runtime XML parsing does not support XSD validation, neither does it need
+       that, because XML configuration for metadata mapping is taken as valid (after the
+       application tests that take place before shipping it to Windows Store.)
+       Once installed in a device, it can only be modified by the developer in another
+       release. Thus, the thrown exceptions are meant to help the developer to debug. */
+
+    // XML DOM method to select nodes
+    XmlNodeList XmlSelectNodes(XmlDom dom, String ^xpath) { return dom->SelectNodes(xpath); }
+
+    // XML DOM method to get nodes list lenght
+    unsigned int XmlGetLength(XmlNodeList nodes) { return nodes->Length; }
+
+    // XML DOM method to get indexed item in list of nodes
+    XmlNode XmlGetItem(XmlNodeList nodes, unsigned int index) { return nodes->Item(index); }
+
+    // XML DOM method to get node value
+    Object ^XmlGetNodeValue(XmlNode node)
+    {
+        auto value = node->NodeValue;
+
+        if (value == nullptr)
+        {
+            std::wostringstream woss;
+            woss << L"Could not get value from XML node '" << node->NodeName->Data()
+                 << L"' in\r\n" << node->GetXml()->Data();
+
+            std::wstring_convert<std::codecvt_utf8<wchar_t>> strConv;
+            throw AppException<std::runtime_error>(strConv.to_bytes(woss.str()));
+        }
+        
+        return value;
+    }
+
+    // XML DOM method to get XML content of node
+    String ^XmlGetXml(XmlNode node) { return node->GetXml(); }
+
+    // XML DOM method to get child nodes
+    XmlNodeList XmlGetChildNodes(XmlNode node) { return node->ChildNodes; }
+
+    // XML DOM method to get attributes from node
+    XmlNamedNodeMap XmlGetAttributes(XmlNode node)
+    {
+        auto attributes = node->Attributes;
+
+        if (attributes == nullptr)
+        {
+            std::wostringstream woss;
+            woss << L"Cannot get attributes from XML node '" << node->NodeName->Data()
+                 << L"' in\r\n" << node->GetXml()->Data();
+
+            std::wstring_convert<std::codecvt_utf8<wchar_t>> strConv;
+            throw AppException<std::runtime_error>(strConv.to_bytes(woss.str()));
+        }
+
+        return attributes;
+    }
+
+    // XML DOM method to get a named item from a list of attributes
+    XmlNode XmlGetNamedItem(XmlNamedNodeMap attributes, String ^name)
+    {
+        auto item = attributes->GetNamedItem(name);
+
+        if (item == nullptr)
+        {
+            std::wstring_convert<std::codecvt_utf8<wchar_t>> strConv;
+            std::wostringstream woss;
+            woss << L"Cannot get item '" << name->Data() << L"' from list of attributes";
+            throw AppException<std::runtime_error>(strConv.to_bytes(woss.str()));
+        }
+
+        return item;
+    }
+
+    const wchar_t *UnwrapCString(String ^str)
+    {
+        return str->Data();
+    }
+
+    const wchar_t *UnwrapCString(Object ^obj)
+    {
+        auto str = safe_cast<String ^> (obj);
+        return str->Data();
+    }
+
+#endif
+
     /// <summary>
     /// Hashes the unique identifier using FNV1a algorithm.
     /// </summary>
@@ -133,8 +348,10 @@ namespace application
     /// <param name="str">The string, which is a BSTR (UCS-2 encoded),
     /// but supposed to have ASCII characters for better results.</param>
     /// <returns>The key as a 32 bits long unsigned integer.</returns>
-    uint32_t HashName(BSTR str)
+    uint32_t HashName(XMLSTR str)
     {
+#ifdef _3FD_PLATFORM_WIN32API
+
         uint32_t hash(0);
 
         wchar_t ch;
@@ -142,6 +359,11 @@ namespace application
             hash = static_cast<uint32_t> (towupper(ch) + (hash << 6) + (hash << 16) - hash);
 
         return hash;
+
+#elif defined _3FD_PLATFORM_WINRT
+        
+        return static_cast<uint32_t> (str->GetHashCode());
+#endif 
     }
 
 }// end of namespace application

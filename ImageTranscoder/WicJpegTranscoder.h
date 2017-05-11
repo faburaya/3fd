@@ -1,20 +1,28 @@
 #ifndef WICJPEGTRANSCODER_H // header guard
 #define WICJPEGTRANSCODER_H
 
+#include "3FD\base.h"
+#include "3FD\preprocessing.h"
 #include <string>
 #include <wrl.h>
 #include <wincodec.h>
 
 namespace application
 {
-    using std::string;
-
     using namespace Microsoft::WRL;
+
+#ifdef _3FD_PLATFORM_WIN32API
+#   define class_WicJpegTranscoder class WicJpegTranscoder : notcopiable
+#   define _string const std::string &
+#elif defined _3FD_PLATFORM_WINRT
+#   define class_WicJpegTranscoder  public ref class WicJpegTranscoder sealed
+#   define _string Platform::String ^
+#endif
 
     /// <summary>
     /// Transcodes images from any format supported by Windows to JPEG.
     /// </summary>
-    class WicJpegTranscoder
+    class_WicJpegTranscoder
     {
     private:
 
@@ -23,9 +31,9 @@ namespace application
     public:
 
         WicJpegTranscoder();
-        ~WicJpegTranscoder();
+        virtual ~WicJpegTranscoder();
 
-        void Transcode(const string &fileName, bool toJXR, float imgQualityRatio);
+        void Transcode(_string filePath, bool toJXR, float imgQualityRatio);
     };
 
 } // end of namespace application
