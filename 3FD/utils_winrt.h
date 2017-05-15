@@ -3,6 +3,7 @@
 
 #include "base.h"
 #include "exceptions.h"
+#include "logger.h"
 
 #include <functional>
 #include <future>
@@ -29,7 +30,7 @@ namespace utils
 
 		static bool IsCurrentThreadASTA();
 
-		static core::AppException<std::runtime_error> TranslateAsyncWinRTEx(Platform::Exception ^ex);
+        static core::AppException<std::runtime_error> TranslateAsyncWinRTEx(Platform::Exception ^ex);
 
 	internal:
 
@@ -214,6 +215,36 @@ namespace utils
 		static void WaitForAsync(IAsyncAction ^asyncAction);
 
 	};// end of WinRTExt class
+
+
+    ////////////////////////////////////
+    // UWP XAML application utilities
+    ////////////////////////////////////
+
+    /// <summary>
+    /// Gathers XAML utilities for UWP apps.
+    /// </summary>
+    struct UwpXaml
+    {
+        static void Notify(Platform::String ^title,
+                           Platform::String ^content,
+                           Platform::String ^closeButtonText);
+
+        static void NotifyAndLog(std::exception &ex,
+                                 Platform::String ^title,
+                                 Platform::String ^closeButtonText,
+                                 core::Logger::Priority logEntryPrio = core::Logger::PRIO_ERROR);
+
+        static void NotifyAndLog(Platform::Exception ^ex,
+                                 Platform::String ^title,
+                                 Platform::String ^closeButtonText,
+                                 core::Logger::Priority logEntryPrio = core::Logger::PRIO_ERROR);
+
+        static void NotifyAndLog(core::IAppException &ex,
+                                 Platform::String ^title,
+                                 Platform::String ^closeButtonText,
+                                 core::Logger::Priority logEntryPrio = core::Logger::PRIO_ERROR);
+    };
 
 }// end of namespace utils
 }// end of namespace _3fd

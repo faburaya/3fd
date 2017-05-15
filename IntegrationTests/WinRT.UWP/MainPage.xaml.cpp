@@ -63,7 +63,7 @@ void MainPage::OnClickRunButton(Object ^sender, RoutedEventArgs ^evArgs)
 
             mainTextBlock->Text =
                 ref new String(
-                    transcoder.from_bytes(ex.ToPrettyString()).c_str()
+                    transcoder.from_bytes(ex.ToString()).c_str()
                 );
         }
         catch (std::exception &ex)

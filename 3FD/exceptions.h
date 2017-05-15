@@ -76,7 +76,6 @@ namespace core
 		virtual string What() const = 0;
 		virtual string Details() const = 0;
 		virtual string ToString() const = 0;
-		virtual string ToPrettyString() const = 0;
 	};
 
 	/// <summary>
@@ -204,47 +203,16 @@ namespace core
 #		ifdef ENABLE_3FD_ERR_IMPL_DETAILS
 			if(m_details.empty() == false)
 				oss << " - " << m_details;
-#		endif
-#		ifdef ENABLE_3FD_CST
-			if(m_cst.empty() == false)
+
+#		    ifdef ENABLE_3FD_CST
+            if (m_cst.empty() == false)
                 oss << newLine << newLine << "### CALL STACK TRACE ###" << newLine << m_cst;
-#		endif	
-
-			return oss.str();
-		}
-
-		/// <summary>
-		/// Gets the exception content, including the details and stack trace (when present)
-		/// if in debug mode, serialized to prettyfied text.
-		/// </summary>
-		virtual string ToPrettyString() const override
-		{
-			std::ostringstream oss;
-			oss << StdExType::what();
-
-#		ifdef ENABLE_3FD_ERR_IMPL_DETAILS
-			if (m_details.empty() == false)
-				oss << '\n' << m_details;
+#		    endif	
 #		endif
-#		ifdef ENABLE_3FD_CST
-			if (m_cst.empty() == false)
-			{
-				auto prettyCST = m_cst;
-				for (auto &ch : prettyCST)
-				{
-					if (ch != ';')
-						continue;
-					else
-						ch = '\n';
-				}
-
-				oss << "\n\n### CALL STACK ###\n" << prettyCST;
-			}
-#		endif	
-
 			return oss.str();
 		}
-	};
+
+	};// end of class exception
 
 #if defined _3FD_PLATFORM_WIN32API || defined _3FD_PLATFORM_WINRT
     /// <summary>
