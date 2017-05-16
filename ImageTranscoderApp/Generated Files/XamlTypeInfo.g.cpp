@@ -46,6 +46,12 @@ template<typename TDeclaringType>
 }
 
 template<typename TDeclaringType>
+::Platform::Object^ GetReferenceTypeMember_Thumbnail(::Platform::Object^ instance)
+{
+    return safe_cast<TDeclaringType^>(instance)->Thumbnail;
+}
+
+template<typename TDeclaringType>
 ::Platform::Object^ GetReferenceTypeMember_Description(::Platform::Object^ instance)
 {
     return safe_cast<TDeclaringType^>(instance)->Description;
@@ -55,6 +61,12 @@ template<typename TDeclaringType>
 ::Platform::Object^ GetReferenceTypeMember_File(::Platform::Object^ instance)
 {
     return safe_cast<TDeclaringType^>(instance)->File;
+}
+
+template<typename TDeclaringType, typename TValue>
+void SetReferenceTypeMember_Thumbnail(::Platform::Object^ instance, ::Platform::Object^ value)
+{
+    safe_cast<TDeclaringType^>(instance)->Thumbnail = safe_cast<TValue^>(value);
 }
 
 template<typename TDeclaringType, typename TValue>
@@ -123,19 +135,25 @@ TypeInfo TypeInfos[] =
     L"Windows.UI.Xaml.Controls.UserControl", L"",
     nullptr, nullptr, nullptr, nullptr,
     -1,
-    3, 0, ::Windows::UI::Xaml::Interop::TypeKind::Metadata,
+    4, 0, ::Windows::UI::Xaml::Interop::TypeKind::Metadata,
     false, true,  false, false,
     //   7
+    L"Windows.UI.Xaml.Media.Imaging.BitmapImage", L"",
+    nullptr, nullptr, nullptr, nullptr,
+    -1,
+    4, 0, ::Windows::UI::Xaml::Interop::TypeKind::Metadata,
+    false, true,  false, false,
+    //   8
     L"Windows.Foundation.Collections.IObservableVector`1<ImageTranscoderApp.FileListItem>", L"",
     nullptr, &CollectionAdd<::Windows::Foundation::Collections::IObservableVector<::ImageTranscoderApp::FileListItem^>, ::ImageTranscoderApp::FileListItem^>, nullptr, nullptr,
     -1,
-    3, 0, ::Windows::UI::Xaml::Interop::TypeKind::Metadata,
+    4, 0, ::Windows::UI::Xaml::Interop::TypeKind::Metadata,
     false, false, true,  false,
     //  Last type here is for padding
     L"", L"",
     nullptr, nullptr, nullptr, nullptr,
     -1, 
-    3, 0,::Windows::UI::Xaml::Interop::TypeKind::Custom,
+    4, 0,::Windows::UI::Xaml::Interop::TypeKind::Custom,
     false, false, false, false,
 };
 
@@ -182,49 +200,49 @@ UINT TypeInfoLookup[] = {
       7,   //  39
       7,   //  40
       7,   //  41
-      7,   //  42
-      7,   //  43
-      7,   //  44
-      7,   //  45
-      7,   //  46
-      7,   //  47
-      7,   //  48
-      7,   //  49
-      7,   //  50
-      7,   //  51
-      7,   //  52
-      7,   //  53
-      7,   //  54
-      7,   //  55
-      7,   //  56
-      7,   //  57
-      7,   //  58
-      7,   //  59
-      7,   //  60
-      7,   //  61
-      7,   //  62
-      7,   //  63
-      7,   //  64
-      7,   //  65
-      7,   //  66
-      7,   //  67
-      7,   //  68
-      7,   //  69
-      7,   //  70
-      7,   //  71
-      7,   //  72
-      7,   //  73
-      7,   //  74
-      7,   //  75
-      7,   //  76
-      7,   //  77
-      7,   //  78
-      7,   //  79
-      7,   //  80
-      7,   //  81
-      7,   //  82
-      7,   //  83
-      8,   //  84
+      8,   //  42
+      8,   //  43
+      8,   //  44
+      8,   //  45
+      8,   //  46
+      8,   //  47
+      8,   //  48
+      8,   //  49
+      8,   //  50
+      8,   //  51
+      8,   //  52
+      8,   //  53
+      8,   //  54
+      8,   //  55
+      8,   //  56
+      8,   //  57
+      8,   //  58
+      8,   //  59
+      8,   //  60
+      8,   //  61
+      8,   //  62
+      8,   //  63
+      8,   //  64
+      8,   //  65
+      8,   //  66
+      8,   //  67
+      8,   //  68
+      8,   //  69
+      8,   //  70
+      8,   //  71
+      8,   //  72
+      8,   //  73
+      8,   //  74
+      8,   //  75
+      8,   //  76
+      8,   //  77
+      8,   //  78
+      8,   //  79
+      8,   //  80
+      8,   //  81
+      8,   //  82
+      8,   //  83
+      9,   //  84
 };
 
 struct MemberInfo 
@@ -245,17 +263,24 @@ MemberInfo MemberInfos[] =
     L"InputImages",
     &GetReferenceTypeMember_InputImages<::ImageTranscoderApp::MainPage>,
     nullptr,
-    7, // Windows.Foundation.Collections.IObservableVector`1<ImageTranscoderApp.FileListItem>
+    8, // Windows.Foundation.Collections.IObservableVector`1<ImageTranscoderApp.FileListItem>
     -1,
     true,  false, false,
-    //   1 - ImageTranscoderApp.FileListItem.Description
+    //   1 - ImageTranscoderApp.FileListItem.Thumbnail
+    L"Thumbnail",
+    &GetReferenceTypeMember_Thumbnail<::ImageTranscoderApp::FileListItem>,
+    &SetReferenceTypeMember_Thumbnail<::ImageTranscoderApp::FileListItem, ::Windows::UI::Xaml::Media::Imaging::BitmapImage>,
+    7, // Windows.UI.Xaml.Media.Imaging.BitmapImage
+    -1,
+    false, false, false,
+    //   2 - ImageTranscoderApp.FileListItem.Description
     L"Description",
     &GetReferenceTypeMember_Description<::ImageTranscoderApp::FileListItem>,
     nullptr,
     1, // String
     -1,
     true,  false, false,
-    //   2 - ImageTranscoderApp.FileListItem.File
+    //   3 - ImageTranscoderApp.FileListItem.File
     L"File",
     &GetReferenceTypeMember_File<::ImageTranscoderApp::FileListItem>,
     &SetReferenceTypeMember_File<::ImageTranscoderApp::FileListItem, ::Windows::Storage::StorageFile>,

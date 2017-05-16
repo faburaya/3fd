@@ -258,6 +258,14 @@ namespace XamlBindingInfo
             }
             obj->Text = value;
         }
+        static void Set_Windows_UI_Xaml_Controls_Image_Source(::Windows::UI::Xaml::Controls::Image^ obj, ::Windows::UI::Xaml::Media::ImageSource^ value, ::Platform::String^ targetNullValue)
+        {
+            if (value == nullptr && targetNullValue != nullptr)
+            {
+                value = (::Windows::UI::Xaml::Media::ImageSource^) ::Windows::UI::Xaml::Markup::XamlBindingHelper::ConvertValue(::Windows::UI::Xaml::Media::ImageSource::typeid, targetNullValue);
+            }
+            obj->Source = value;
+        }
     };
 
     template <typename T>

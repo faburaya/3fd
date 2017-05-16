@@ -53,35 +53,26 @@ MainPage::MainPage()
 // Shows the files picker
 void MainPage::OnClickSelImagesButton(Object ^sender, RoutedEventArgs ^evArgs)
 {
-    CALL_STACK_TRACE;
+    using namespace Windows::Storage;
+    using namespace Windows::Storage::FileProperties;
 
-    try
+    concurrency::create_task(
+        m_filesPicker->PickMultipleFilesAsync()
+    ).then([this](IVectorView<StorageFile ^> ^selectedFiles)
     {
-        using namespace Windows::Storage;
-
-        concurrency::create_task(m_filesPicker->PickMultipleFilesAsync()).then([this](IVectorView<StorageFile ^> ^selectedImages)
+        for (auto file : selectedFiles)
         {
-            CALL_STACK_TRACE;
-
-            try
+            concurrency::create_task(
+                file->GetThumbnailAsync(ThumbnailMode::ListView)
+            ).then([this, file](StorageItemThumbnail ^thumbnail)
             {
-                for (auto file : selectedImages)
-                    InputImages->Append(ref new FileListItem(file));
-            }
-            catch (Exception ^ex)
-            {
-                DEFAULT_EXCEPTION_HANDLER(ex);
-            }
-        });
-    }
-    catch (Exception ^ex)
-    {
-        DEFAULT_EXCEPTION_HANDLER(ex);
-    }
-    catch (std::exception &ex)
-    {
-        DEFAULT_EXCEPTION_HANDLER(ex);
-    }
+                auto newListItem = ref new FileListItem(file);
+                newListItem->Thumbnail = ref new Imaging::BitmapImage();
+                newListItem->Thumbnail->SetSource(thumbnail);
+                this->InputImages->Append(newListItem);
+            }, concurrency::task_continuation_context::use_current());
+        }
+    }, concurrency::task_continuation_context::use_current());
 }
 
 // Starts transcoding selected images

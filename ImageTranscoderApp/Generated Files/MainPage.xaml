@@ -69,7 +69,10 @@
                               SelectionMode="None" IsItemClickEnabled="False">
                         <ListView.ItemTemplate>
                             <DataTemplate                                >
-                                <TextBlock x:ConnectionId='13'                            />
+                                <StackPanel x:ConnectionId='13' Orientation="Horizontal">
+                                    <Image x:ConnectionId='14' Width="40"                            />
+                                    <TextBlock x:ConnectionId='15'                             TextTrimming="WordEllipsis"/>
+                                </StackPanel>
                             </DataTemplate>
                         </ListView.ItemTemplate>
                     </ListView>

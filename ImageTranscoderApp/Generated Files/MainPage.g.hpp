@@ -39,8 +39,11 @@ public:
     {
         switch(__connectionId)
         {
-            case 13:
-                this->obj13 = safe_cast<::Windows::UI::Xaml::Controls::TextBlock^>(__target);
+            case 14:
+                this->obj14 = safe_cast<::Windows::UI::Xaml::Controls::Image^>(__target);
+                break;
+            case 15:
+                this->obj15 = safe_cast<::Windows::UI::Xaml::Controls::TextBlock^>(__target);
                 break;
         }
     }
@@ -70,7 +73,8 @@ public:
     }
 private:
     // Fields for each control that has bindings.
-    ::Platform::WeakReference obj13;
+    ::Windows::UI::Xaml::Controls::Image^ obj14;
+    ::Windows::UI::Xaml::Controls::TextBlock^ obj15;
 
     // Update methods for each path node used in binding steps.
     void Update_(::ImageTranscoderApp::FileListItem^ obj, int phase)
@@ -79,15 +83,23 @@ private:
         {
             if ((phase & (NOT_PHASED | (1 << 0))) != 0)
             {
+                this->Update_Thumbnail(obj->Thumbnail, phase);
                 this->Update_Description(obj->Description, phase);
             }
+        }
+    }
+    void Update_Thumbnail(::Windows::UI::Xaml::Media::Imaging::BitmapImage^ obj, int phase)
+    {
+        if((phase & ((1 << 0) | NOT_PHASED )) != 0)
+        {
+            ::XamlBindingInfo::XamlBindingSetters::Set_Windows_UI_Xaml_Controls_Image_Source(this->obj14, obj, nullptr);
         }
     }
     void Update_Description(::Platform::String^ obj, int phase)
     {
         if((phase & ((1 << 0) | NOT_PHASED )) != 0)
         {
-            ::XamlBindingInfo::XamlBindingSetters::Set_Windows_UI_Xaml_Controls_TextBlock_Text(this->obj13.Resolve<::Windows::UI::Xaml::Controls::TextBlock>(), obj, nullptr);
+            ::XamlBindingInfo::XamlBindingSetters::Set_Windows_UI_Xaml_Controls_TextBlock_Text(this->obj15, obj, nullptr);
         }
     }
 };
@@ -220,7 +232,7 @@ void ::ImageTranscoderApp::MainPage::Connect(int __connectionId, ::Platform::Obj
             break;
         case 13:
             {
-                ::Windows::UI::Xaml::Controls::TextBlock^ element13 = safe_cast<::Windows::UI::Xaml::Controls::TextBlock^>(__target);
+                ::Windows::UI::Xaml::Controls::StackPanel^ element13 = safe_cast<::Windows::UI::Xaml::Controls::StackPanel^>(__target);
                 MainPage_obj13_Bindings* objBindings = new MainPage_obj13_Bindings();
                 objBindings->SetDataRoot(element13->DataContext);
                 bindings = ref new ::XamlBindingInfo::XamlBindings(objBindings);

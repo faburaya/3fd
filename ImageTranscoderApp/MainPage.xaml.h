@@ -24,8 +24,10 @@ namespace ImageTranscoderApp
 
         property String ^Description
         {
-            String ^get() { return File->Path; }
+            String ^get() { return File->Name; }
         }
+
+        property UI::Xaml::Media::Imaging::BitmapImage ^Thumbnail;
 
         FileListItem(Storage::StorageFile ^file) { File = file; }
     };

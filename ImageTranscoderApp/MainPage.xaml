@@ -69,7 +69,10 @@
                               SelectionMode="None" IsItemClickEnabled="False">
                         <ListView.ItemTemplate>
                             <DataTemplate x:DataType="local:FileListItem">
-                                <TextBlock Text="{x:Bind Description}"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <Image Width="40" Source="{x:Bind Thumbnail}"/>
+                                    <TextBlock Text="{x:Bind Description}" TextTrimming="WordEllipsis"/>
+                                </StackPanel>
                             </DataTemplate>
                         </ListView.ItemTemplate>
                     </ListView>
