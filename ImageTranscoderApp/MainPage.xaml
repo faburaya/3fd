@@ -38,6 +38,7 @@
 
         <Grid.Resources>
             <Thickness x:Key="RightAlignedMargin">15,0,0,0</Thickness>
+            <Thickness x:Key="ThumbnailTextMargin">10,0,0,0</Thickness>
         </Grid.Resources>
 
         <Grid x:Name="LayoutRoot">
@@ -71,7 +72,12 @@
                             <DataTemplate x:DataType="local:FileListItem">
                                 <StackPanel Orientation="Horizontal">
                                     <Image Width="40" Source="{x:Bind Thumbnail}"/>
-                                    <TextBlock Text="{x:Bind Description}" TextTrimming="WordEllipsis"/>
+                                    <StackPanel Orientation="Vertical" Margin="{StaticResource ThumbnailTextMargin}">
+                                        <TextBlock Text="{x:Bind FileExtension}"/>
+                                        <TextBlock Text="{x:Bind Description}"
+                                                   Opacity="0.50"
+                                                   TextTrimming="WordEllipsis"/>
+                                    </StackPanel>
                                 </StackPanel>
                             </DataTemplate>
                         </ListView.ItemTemplate>

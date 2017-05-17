@@ -58,6 +58,12 @@ template<typename TDeclaringType>
 }
 
 template<typename TDeclaringType>
+::Platform::Object^ GetReferenceTypeMember_FileExtension(::Platform::Object^ instance)
+{
+    return safe_cast<TDeclaringType^>(instance)->FileExtension;
+}
+
+template<typename TDeclaringType>
 ::Platform::Object^ GetReferenceTypeMember_File(::Platform::Object^ instance)
 {
     return safe_cast<TDeclaringType^>(instance)->File;
@@ -135,25 +141,25 @@ TypeInfo TypeInfos[] =
     L"Windows.UI.Xaml.Controls.UserControl", L"",
     nullptr, nullptr, nullptr, nullptr,
     -1,
-    4, 0, ::Windows::UI::Xaml::Interop::TypeKind::Metadata,
+    5, 0, ::Windows::UI::Xaml::Interop::TypeKind::Metadata,
     false, true,  false, false,
     //   7
     L"Windows.UI.Xaml.Media.Imaging.BitmapImage", L"",
     nullptr, nullptr, nullptr, nullptr,
     -1,
-    4, 0, ::Windows::UI::Xaml::Interop::TypeKind::Metadata,
+    5, 0, ::Windows::UI::Xaml::Interop::TypeKind::Metadata,
     false, true,  false, false,
     //   8
     L"Windows.Foundation.Collections.IObservableVector`1<ImageTranscoderApp.FileListItem>", L"",
     nullptr, &CollectionAdd<::Windows::Foundation::Collections::IObservableVector<::ImageTranscoderApp::FileListItem^>, ::ImageTranscoderApp::FileListItem^>, nullptr, nullptr,
     -1,
-    4, 0, ::Windows::UI::Xaml::Interop::TypeKind::Metadata,
+    5, 0, ::Windows::UI::Xaml::Interop::TypeKind::Metadata,
     false, false, true,  false,
     //  Last type here is for padding
     L"", L"",
     nullptr, nullptr, nullptr, nullptr,
     -1, 
-    4, 0,::Windows::UI::Xaml::Interop::TypeKind::Custom,
+    5, 0,::Windows::UI::Xaml::Interop::TypeKind::Custom,
     false, false, false, false,
 };
 
@@ -280,7 +286,14 @@ MemberInfo MemberInfos[] =
     1, // String
     -1,
     true,  false, false,
-    //   3 - ImageTranscoderApp.FileListItem.File
+    //   3 - ImageTranscoderApp.FileListItem.FileExtension
+    L"FileExtension",
+    &GetReferenceTypeMember_FileExtension<::ImageTranscoderApp::FileListItem>,
+    nullptr,
+    1, // String
+    -1,
+    true,  false, false,
+    //   4 - ImageTranscoderApp.FileListItem.File
     L"File",
     &GetReferenceTypeMember_File<::ImageTranscoderApp::FileListItem>,
     &SetReferenceTypeMember_File<::ImageTranscoderApp::FileListItem, ::Windows::Storage::StorageFile>,

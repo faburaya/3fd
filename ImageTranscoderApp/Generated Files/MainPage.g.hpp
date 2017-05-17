@@ -45,6 +45,9 @@ public:
             case 15:
                 this->obj15 = safe_cast<::Windows::UI::Xaml::Controls::TextBlock^>(__target);
                 break;
+            case 16:
+                this->obj16 = safe_cast<::Windows::UI::Xaml::Controls::TextBlock^>(__target);
+                break;
         }
     }
 
@@ -75,6 +78,7 @@ private:
     // Fields for each control that has bindings.
     ::Windows::UI::Xaml::Controls::Image^ obj14;
     ::Windows::UI::Xaml::Controls::TextBlock^ obj15;
+    ::Windows::UI::Xaml::Controls::TextBlock^ obj16;
 
     // Update methods for each path node used in binding steps.
     void Update_(::ImageTranscoderApp::FileListItem^ obj, int phase)
@@ -84,6 +88,7 @@ private:
             if ((phase & (NOT_PHASED | (1 << 0))) != 0)
             {
                 this->Update_Thumbnail(obj->Thumbnail, phase);
+                this->Update_FileExtension(obj->FileExtension, phase);
                 this->Update_Description(obj->Description, phase);
             }
         }
@@ -95,11 +100,18 @@ private:
             ::XamlBindingInfo::XamlBindingSetters::Set_Windows_UI_Xaml_Controls_Image_Source(this->obj14, obj, nullptr);
         }
     }
-    void Update_Description(::Platform::String^ obj, int phase)
+    void Update_FileExtension(::Platform::String^ obj, int phase)
     {
         if((phase & ((1 << 0) | NOT_PHASED )) != 0)
         {
             ::XamlBindingInfo::XamlBindingSetters::Set_Windows_UI_Xaml_Controls_TextBlock_Text(this->obj15, obj, nullptr);
+        }
+    }
+    void Update_Description(::Platform::String^ obj, int phase)
+    {
+        if((phase & ((1 << 0) | NOT_PHASED )) != 0)
+        {
+            ::XamlBindingInfo::XamlBindingSetters::Set_Windows_UI_Xaml_Controls_TextBlock_Text(this->obj16, obj, nullptr);
         }
     }
 };

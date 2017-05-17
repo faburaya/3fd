@@ -250,14 +250,6 @@ namespace XamlBindingInfo
             }
             obj->ItemsSource = value;
         }
-        static void Set_Windows_UI_Xaml_Controls_TextBlock_Text(::Windows::UI::Xaml::Controls::TextBlock^ obj, ::Platform::String^ value, ::Platform::String^ targetNullValue)
-        {
-            if (value == nullptr && targetNullValue != nullptr)
-            {
-                value = targetNullValue;
-            }
-            obj->Text = value;
-        }
         static void Set_Windows_UI_Xaml_Controls_Image_Source(::Windows::UI::Xaml::Controls::Image^ obj, ::Windows::UI::Xaml::Media::ImageSource^ value, ::Platform::String^ targetNullValue)
         {
             if (value == nullptr && targetNullValue != nullptr)
@@ -265,6 +257,14 @@ namespace XamlBindingInfo
                 value = (::Windows::UI::Xaml::Media::ImageSource^) ::Windows::UI::Xaml::Markup::XamlBindingHelper::ConvertValue(::Windows::UI::Xaml::Media::ImageSource::typeid, targetNullValue);
             }
             obj->Source = value;
+        }
+        static void Set_Windows_UI_Xaml_Controls_TextBlock_Text(::Windows::UI::Xaml::Controls::TextBlock^ obj, ::Platform::String^ value, ::Platform::String^ targetNullValue)
+        {
+            if (value == nullptr && targetNullValue != nullptr)
+            {
+                value = targetNullValue;
+            }
+            obj->Text = value;
         }
     };
 

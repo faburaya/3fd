@@ -38,6 +38,7 @@
 
         <Grid.Resources>
             <Thickness x:Key="RightAlignedMargin">15,0,0,0</Thickness>
+            <Thickness x:Key="ThumbnailTextMargin">10,0,0,0</Thickness>
         </Grid.Resources>
 
         <Grid x:ConnectionId='4' x:Name="LayoutRoot">
@@ -71,7 +72,12 @@
                             <DataTemplate                                >
                                 <StackPanel x:ConnectionId='13' Orientation="Horizontal">
                                     <Image x:ConnectionId='14' Width="40"                            />
-                                    <TextBlock x:ConnectionId='15'                             TextTrimming="WordEllipsis"/>
+                                    <StackPanel Orientation="Vertical" Margin="{StaticResource ThumbnailTextMargin}">
+                                        <TextBlock x:ConnectionId='15'                              />
+                                        <TextBlock x:ConnectionId='16'                            
+                                                   Opacity="0.50"
+                                                   TextTrimming="WordEllipsis"/>
+                                    </StackPanel>
                                 </StackPanel>
                             </DataTemplate>
                         </ListView.ItemTemplate>

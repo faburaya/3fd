@@ -180,7 +180,8 @@ namespace utils
 			{
 				try
 				{
-					return concurrency::create_task(asyncAction).get();
+					concurrency::create_task(asyncAction).get();
+                    return;
 				}
 				catch (Platform::Exception ^ex)
 				{
@@ -303,7 +304,7 @@ namespace utils
                                core::Logger::Priority logEntryPrio)
     {
         Notify(title, ex->Message, closeButtonText);
-
+        
         std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
         core::Logger::Write(transcoder.to_bytes(ex->Message->Data()), logEntryPrio);
     }
@@ -326,8 +327,38 @@ namespace utils
         );
 
         Notify(title, content, closeButtonText);
-
         core::Logger::Write(ex.ToString(), logEntryPrio);
+    }
+
+    /// <summary>
+    /// Receives an asynchronous action to handle an eventual thrown
+    /// exception by notifying with a dialog and logging the event.
+    /// </summary>
+    /// <param name="task">The task.</param>
+    /// <param name="exHndParams">The parameters for notification and logging of the event.</param>
+    void UwpXaml::CheckActionTask(const concurrency::task<void> &task, const ExNotifAndLogParams &exHndParams)
+    {
+        try
+        {
+            task.get();
+            return;
+        }
+        catch (Platform::Exception ^ex)
+        {
+            NotifyAndLog(ex, exHndParams.title, exHndParams.closeButtonText, exHndParams.logEntryPrio);
+        }
+        catch (core::IAppException &ex)
+        {
+            NotifyAndLog(ex, exHndParams.title, exHndParams.closeButtonText, exHndParams.logEntryPrio);
+        }
+        catch (std::exception &ex)
+        {
+            NotifyAndLog(ex, exHndParams.title, exHndParams.closeButtonText, exHndParams.logEntryPrio);
+        }
+        catch (...)
+        {
+            _ASSERTE(false); // extend implementation to handle more exception types!
+        }
     }
 
 } // end of namespace utils

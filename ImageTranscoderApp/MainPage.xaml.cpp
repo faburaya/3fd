@@ -7,6 +7,7 @@
 #include "MainPage.xaml.h"
 #include "3FD\callstacktracer.h"
 #include "3FD\utils_winrt.h"
+#include <functional>
 
 using namespace _3fd;
 using namespace _3fd::core;
@@ -26,7 +27,13 @@ using namespace Windows::UI::Xaml::Navigation;
 
 // The Blank Page item template is documented at http://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
 
-#define DEFAULT_EXCEPTION_HANDLER(EX) utils::UwpXaml::NotifyAndLog((EX), StringReference(L"Application error!"), StringReference(L"Puch me in the face"));
+// default parameters for exception notification and logging
+static const utils::UwpXaml::ExNotifAndLogParams exHndParams
+{
+    Platform::StringReference(L"Application error!"),
+    Platform::StringReference(L"Punch me in the face"),
+    core::Logger::PRIO_ERROR
+};
 
 MainPage::MainPage()
 {
@@ -53,26 +60,57 @@ MainPage::MainPage()
 // Shows the files picker
 void MainPage::OnClickSelImagesButton(Object ^sender, RoutedEventArgs ^evArgs)
 {
+    CALL_STACK_TRACE;
+
+    using concurrency::task;
     using namespace Windows::Storage;
     using namespace Windows::Storage::FileProperties;
 
+    // Launch file picker for selection of images:
     concurrency::create_task(
         m_filesPicker->PickMultipleFilesAsync()
-    ).then([this](IVectorView<StorageFile ^> ^selectedFiles)
+    ).then([this](task<IVectorView<StorageFile ^> ^> priorTask)
     {
+        CALL_STACK_TRACE;
+
+        auto selectedFiles = utils::UwpXaml::GetTaskRetAndHndEx(priorTask, exHndParams);
+
+        static const std::hash<std::wstring> hashText;
+
         for (auto file : selectedFiles)
         {
+            // Skip an already selected file:
+            auto filePathHash = hashText(file->Path->Data());
+            if (!m_setOfSelFiles.insert(filePathHash).second)
+                continue;
+
+            // Get the thumbnail:
             concurrency::create_task(
-                file->GetThumbnailAsync(ThumbnailMode::ListView)
-            ).then([this, file](StorageItemThumbnail ^thumbnail)
+                file->GetThumbnailAsync(ThumbnailMode::ListView, 64)
+            ).then([this, file](task<StorageItemThumbnail ^> priorTask)
             {
+                CALL_STACK_TRACE;
+
+                auto thumbnail = utils::UwpXaml::GetTaskRetAndHndEx(priorTask, exHndParams);
+
                 auto newListItem = ref new FileListItem(file);
                 newListItem->Thumbnail = ref new Imaging::BitmapImage();
-                newListItem->Thumbnail->SetSource(thumbnail);
-                this->InputImages->Append(newListItem);
-            }, concurrency::task_continuation_context::use_current());
+
+                // Load thumbnail:
+                concurrency::create_task(
+                    newListItem->Thumbnail->SetSourceAsync(thumbnail)
+                ).then([this, newListItem](task<void> priorTask)
+                {
+                    CALL_STACK_TRACE;
+
+                    utils::UwpXaml::CheckActionTask(priorTask, exHndParams);
+
+                    // add new list item to observable vector, so the UI updates to show it
+                    this->InputImages->Append(newListItem);
+                });
+            });
         }
-    }, concurrency::task_continuation_context::use_current());
+    });
 }
 
 // Starts transcoding selected images

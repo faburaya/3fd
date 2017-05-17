@@ -7,6 +7,9 @@
 
 #include "3FD\runtime.h"
 #include "MainPage.g.h"
+#include <cstring>
+#include <cstdio>
+#include <set>
 
 namespace ImageTranscoderApp
 {
@@ -21,6 +24,18 @@ namespace ImageTranscoderApp
     public:
 
         property Storage::StorageFile ^File;
+
+        property String ^FileExtension
+        {
+            String ^get()
+            {
+                const size_t bufSize(32);
+                wchar_t buffer[bufSize];
+                _snwprintf(buffer, bufSize, L"%s", File->FileType->Data() + 1);
+                _wcsupr_s(buffer, bufSize);
+                return ref new String(buffer);
+            }
+        }
 
         property String ^Description
         {
@@ -42,6 +57,8 @@ namespace ImageTranscoderApp
     private:
 
         _3fd::core::FrameworkInstance m_3fdInstance;
+
+        std::set<size_t> m_setOfSelFiles;
 
         Storage::Pickers::FileOpenPicker ^m_filesPicker;
         

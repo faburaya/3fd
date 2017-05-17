@@ -50,9 +50,11 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="ImageTranscoderApp_TemporaryKey.pfx" />
-    <None Include="15ad02a6-93e8-499d-a669-397faecda74f.3fd.config" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="MainPage.xaml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="15ad02a6-93e8-499d-a669-397faecda74f.3fd.config" />
   </ItemGroup>
 </Project>

@@ -244,7 +244,54 @@ namespace utils
                                  Platform::String ^title,
                                  Platform::String ^closeButtonText,
                                  core::Logger::Priority logEntryPrio = core::Logger::PRIO_ERROR);
-    };
+
+        /// <summary>
+        /// Packs some parameters for <see cref="NotifyAndLog"/>.
+        /// </summary>
+        struct ExNotifAndLogParams
+        {
+            Platform::StringReference title;
+            Platform::StringReference closeButtonText;
+            core::Logger::Priority logEntryPrio;
+        };
+
+        static void CheckActionTask(const concurrency::task<void> &task, const ExNotifAndLogParams &exHndParams);
+
+        /// <summary>
+        /// Gets the returned value from an asynchronous task, but also handles an
+        /// eventual thrown exception by notifying with a dialog and logging the event.
+        /// </summary>
+        /// <param name="task">The task.</param>
+        /// <param name="exHndParams">The parameters for notification and logging of the event.</param>
+        /// <returns>The value returned from the task.</returns>
+        template <typename ResultType>
+        static ResultType GetTaskRetAndHndEx(
+            const concurrency::task<ResultType> &task,
+            const ExNotifAndLogParams &exHndParams)
+        {
+            try
+            {
+                return task.get();
+            }
+            catch (Platform::Exception ^ex)
+            {
+                NotifyAndLog(ex, exHndParams.title, exHndParams.closeButtonText, exHndParams.logEntryPrio);
+            }
+            catch (core::IAppException &ex)
+            {
+                NotifyAndLog(ex, exHndParams.title, exHndParams.closeButtonText, exHndParams.logEntryPrio);
+            }
+            catch (std::exception &ex)
+            {
+                NotifyAndLog(ex, exHndParams.title, exHndParams.closeButtonText, exHndParams.logEntryPrio);
+            }
+            catch (...)
+            {
+                _ASSERTE(false); // extend implementation to handle more exception types!
+            }
+        }
+
+    };// end of struct UwpXaml
 
 }// end of namespace utils
 }// end of namespace _3fd
