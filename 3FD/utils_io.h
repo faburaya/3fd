@@ -85,121 +85,131 @@ namespace utils
             throw core::AppException<std::runtime_error>("swprintf: buffer error!", strerror(errno));
     }
 
+    template <typename CharType> struct PrintFormats {};
+
     /// <summary>
     /// A collection of static functions that retrieve the formats
     /// expected by printf for several built-in types.
     /// </summary>
-    struct PrintFormats
+    template<> struct PrintFormats<char>
     {
-        static constexpr const char *utf8(char) { return "%c"; }
-        static const constexpr char *utf8(void *) { return "%p"; }
-        static const constexpr char *utf8(const char *) { return "%s"; }
-        static const constexpr char *utf8(signed short) { return "%hd"; }
-        static const constexpr char *utf8(unsigned short) { return "%hu"; }
-        static const constexpr char *utf8(signed int) { return "%d"; }
-        static const constexpr char *utf8(unsigned int) { return "%u"; }
-        static const constexpr char *utf8(signed long) { return "%ld"; }
-        static const constexpr char *utf8(unsigned long) { return "%lu"; }
-        static const constexpr char *utf8(signed long long) { return "%lld"; }
-        static const constexpr char *utf8(unsigned long long) { return "%llu"; }
-        static const constexpr char *utf8(double) { return "%G"; }
-        static const constexpr char *utf8(long double) { return "%lG"; }
+         static constexpr const char *place_holder(char) { return "%c"; }
+         static constexpr const char *place_holder(void *) { return "%p"; }
+         static constexpr const char *place_holder(const char *) { return "%s"; }
+         static constexpr const char *place_holder(signed short) { return "%hd"; }
+         static constexpr const char *place_holder(unsigned short) { return "%hu"; }
+         static constexpr const char *place_holder(signed int) { return "%d"; }
+         static constexpr const char *place_holder(unsigned int) { return "%u"; }
+         static constexpr const char *place_holder(signed long) { return "%ld"; }
+         static constexpr const char *place_holder(unsigned long) { return "%lu"; }
+         static constexpr const char *place_holder(signed long long) { return "%lld"; }
+         static constexpr const char *place_holder(unsigned long long) { return "%llu"; }
+         static constexpr const char *place_holder(double) { return "%G"; }
+         static constexpr const char *place_holder(long double) { return "%lG"; }
 
-        static const constexpr char *utf8_width(void *) { return "%*p"; }
-        static const constexpr char *utf8_width(const char *) { return "%*s"; }
-        static const constexpr char *utf8_width(signed short) { return "%*hd"; }
-        static const constexpr char *utf8_width(unsigned short) { return "%*hu"; }
-        static const constexpr char *utf8_width(signed int) { return "%*d"; }
-        static const constexpr char *utf8_width(unsigned int) { return "%*u"; }
-        static const constexpr char *utf8_width(signed long) { return "%*ld"; }
-        static const constexpr char *utf8_width(unsigned long) { return "%*lu"; }
-        static const constexpr char *utf8_width(signed long long) { return "%*lld"; }
-        static const constexpr char *utf8_width(unsigned long long) { return "%*llu"; }
-        static const constexpr char *utf8_width(double) { return "%*G"; }
-        static const constexpr char *utf8_width(long double) { return "%*lG"; }
+         static constexpr const char *place_holder_width(void *) { return "%*p"; }
+         static constexpr const char *place_holder_width(const char *) { return "%*s"; }
+         static constexpr const char *place_holder_width(signed short) { return "%*hd"; }
+         static constexpr const char *place_holder_width(unsigned short) { return "%*hu"; }
+         static constexpr const char *place_holder_width(signed int) { return "%*d"; }
+         static constexpr const char *place_holder_width(unsigned int) { return "%*u"; }
+         static constexpr const char *place_holder_width(signed long) { return "%*ld"; }
+         static constexpr const char *place_holder_width(unsigned long) { return "%*lu"; }
+         static constexpr const char *place_holder_width(signed long long) { return "%*lld"; }
+         static constexpr const char *place_holder_width(unsigned long long) { return "%*llu"; }
+         static constexpr const char *place_holder_width(double) { return "%*G"; }
+         static constexpr const char *place_holder_width(long double) { return "%*lG"; }
 
-        static const constexpr char *utf8_precision(void *) { return "%.*p"; }
-        static const constexpr char *utf8_precision(const char *) { return "%.*s"; }
-        static const constexpr char *utf8_precision(signed short) { return "%.*hd"; }
-        static const constexpr char *utf8_precision(unsigned short) { return "%.*hu"; }
-        static const constexpr char *utf8_precision(signed int) { return "%.*d"; }
-        static const constexpr char *utf8_precision(unsigned int) { return "%.*u"; }
-        static const constexpr char *utf8_precision(signed long) { return "%.*ld"; }
-        static const constexpr char *utf8_precision(unsigned long) { return "%.*lu"; }
-        static const constexpr char *utf8_precision(signed long long) { return "%.*lld"; }
-        static const constexpr char *utf8_precision(unsigned long long) { return "%.*llu"; }
-        static const constexpr char *utf8_precision(double) { return "%.*G"; }
-        static const constexpr char *utf8_precision(long double) { return "%.*lG"; }
+         static constexpr const char *place_holder_precision(void *) { return "%.*p"; }
+         static constexpr const char *place_holder_precision(const char *) { return "%.*s"; }
+         static constexpr const char *place_holder_precision(signed short) { return "%.*hd"; }
+         static constexpr const char *place_holder_precision(unsigned short) { return "%.*hu"; }
+         static constexpr const char *place_holder_precision(signed int) { return "%.*d"; }
+         static constexpr const char *place_holder_precision(unsigned int) { return "%.*u"; }
+         static constexpr const char *place_holder_precision(signed long) { return "%.*ld"; }
+         static constexpr const char *place_holder_precision(unsigned long) { return "%.*lu"; }
+         static constexpr const char *place_holder_precision(signed long long) { return "%.*lld"; }
+         static constexpr const char *place_holder_precision(unsigned long long) { return "%.*llu"; }
+         static constexpr const char *place_holder_precision(double) { return "%.*G"; }
+         static constexpr const char *place_holder_precision(long double) { return "%.*lG"; }
 
-        static const constexpr char *utf8_width_precision(void *) { return "%*.*p"; }
-        static const constexpr char *utf8_width_precision(const char *) { return "%*.*s"; }
-        static const constexpr char *utf8_width_precision(signed short) { return "%*.*hd"; }
-        static const constexpr char *utf8_width_precision(unsigned short) { return "%*.*hu"; }
-        static const constexpr char *utf8_width_precision(signed int) { return "%*.*d"; }
-        static const constexpr char *utf8_width_precision(unsigned int) { return "%*.*u"; }
-        static const constexpr char *utf8_width_precision(signed long) { return "%*.*ld"; }
-        static const constexpr char *utf8_width_precision(unsigned long) { return "%*.*lu"; }
-        static const constexpr char *utf8_width_precision(signed long long) { return "%*.*lld"; }
-        static const constexpr char *utf8_width_precision(unsigned long long) { return "%*.*llu"; }
-        static const constexpr char *utf8_width_precision(double) { return "%*.*G"; }
-        static const constexpr char *utf8_width_precision(long double) { return "%*.*lG"; }
-
-        static const constexpr wchar_t *ucs2(wchar_t) { return L"%c"; }
-        static const constexpr wchar_t *ucs2(void *) { return L"%p"; }
-        static const constexpr wchar_t *ucs2(const wchar_t *) { return L"%s"; }
-        static const constexpr wchar_t *ucs2(signed short) { return L"%hd"; }
-        static const constexpr wchar_t *ucs2(unsigned short) { return L"%hu"; }
-        static const constexpr wchar_t *ucs2(signed int) { return L"%d"; }
-        static const constexpr wchar_t *ucs2(unsigned int) { return L"%u"; }
-        static const constexpr wchar_t *ucs2(signed long) { return L"%ld"; }
-        static const constexpr wchar_t *ucs2(unsigned long) { return L"%lu"; }
-        static const constexpr wchar_t *ucs2(signed long long) { return L"%lld"; }
-        static const constexpr wchar_t *ucs2(unsigned long long) { return L"%llu"; }
-        static const constexpr wchar_t *ucs2(double) { return L"%G"; }
-        static const constexpr wchar_t *ucs2(long double) { return L"%lG"; }
-
-        static const constexpr wchar_t *ucs2_width(void *) { return L"%*p"; }
-        static const constexpr wchar_t *ucs2_width(const wchar_t *) { return L"%*s"; }
-        static const constexpr wchar_t *ucs2_width(signed short) { return L"%*hd"; }
-        static const constexpr wchar_t *ucs2_width(unsigned short) { return L"%*hu"; }
-        static const constexpr wchar_t *ucs2_width(signed int) { return L"%*d"; }
-        static const constexpr wchar_t *ucs2_width(unsigned int) { return L"%*u"; }
-        static const constexpr wchar_t *ucs2_width(signed long) { return L"%*ld"; }
-        static const constexpr wchar_t *ucs2_width(unsigned long) { return L"%*lu"; }
-        static const constexpr wchar_t *ucs2_width(signed long long) { return L"%*lld"; }
-        static const constexpr wchar_t *ucs2_width(unsigned long long) { return L"%*llu"; }
-        static const constexpr wchar_t *ucs2_width(double) { return L"%*G"; }
-        static const constexpr wchar_t *ucs2_width(long double) { return L"%*lG"; }
-
-        static const constexpr wchar_t *ucs2_precision(void *) { return L"%.*p"; }
-        static const constexpr wchar_t *ucs2_precision(const wchar_t *) { return L"%.*s"; }
-        static const constexpr wchar_t *ucs2_precision(signed short) { return L"%.*hd"; }
-        static const constexpr wchar_t *ucs2_precision(unsigned short) { return L"%.*hu"; }
-        static const constexpr wchar_t *ucs2_precision(signed int) { return L"%.*d"; }
-        static const constexpr wchar_t *ucs2_precision(unsigned int) { return L"%.*u"; }
-        static const constexpr wchar_t *ucs2_precision(signed long) { return L"%.*ld"; }
-        static const constexpr wchar_t *ucs2_precision(unsigned long) { return L"%.*lu"; }
-        static const constexpr wchar_t *ucs2_precision(signed long long) { return L"%.*lld"; }
-        static const constexpr wchar_t *ucs2_precision(unsigned long long) { return L"%.*llu"; }
-        static const constexpr wchar_t *ucs2_precision(double) { return L"%.*G"; }
-        static const constexpr wchar_t *ucs2_precision(long double) { return L"%.*lG"; }
-
-        static const constexpr wchar_t *ucs2_width_precision(void *) { return L"%*.*p"; }
-        static const constexpr wchar_t *ucs2_width_precision(const wchar_t *) { return L"%*.*s"; }
-        static const constexpr wchar_t *ucs2_width_precision(signed short) { return L"%*.*hd"; }
-        static const constexpr wchar_t *ucs2_width_precision(unsigned short) { return L"%*.*hu"; }
-        static const constexpr wchar_t *ucs2_width_precision(signed int) { return L"%*.*d"; }
-        static const constexpr wchar_t *ucs2_width_precision(unsigned int) { return L"%*.*u"; }
-        static const constexpr wchar_t *ucs2_width_precision(signed long) { return L"%*.*ld"; }
-        static const constexpr wchar_t *ucs2_width_precision(unsigned long) { return L"%*.*lu"; }
-        static const constexpr wchar_t *ucs2_width_precision(signed long long) { return L"%*.*lld"; }
-        static const constexpr wchar_t *ucs2_width_precision(unsigned long long) { return L"%*.*llu"; }
-        static const constexpr wchar_t *ucs2_width_precision(double) { return L"%*.*G"; }
-        static const constexpr wchar_t *ucs2_width_precision(long double) { return L"%*.*lG"; }
+         static constexpr const char *place_holder_width_precision(void *) { return "%*.*p"; }
+         static constexpr const char *place_holder_width_precision(const char *) { return "%*.*s"; }
+         static constexpr const char *place_holder_width_precision(signed short) { return "%*.*hd"; }
+         static constexpr const char *place_holder_width_precision(unsigned short) { return "%*.*hu"; }
+         static constexpr const char *place_holder_width_precision(signed int) { return "%*.*d"; }
+         static constexpr const char *place_holder_width_precision(unsigned int) { return "%*.*u"; }
+         static constexpr const char *place_holder_width_precision(signed long) { return "%*.*ld"; }
+         static constexpr const char *place_holder_width_precision(unsigned long) { return "%*.*lu"; }
+         static constexpr const char *place_holder_width_precision(signed long long) { return "%*.*lld"; }
+         static constexpr const char *place_holder_width_precision(unsigned long long) { return "%*.*llu"; }
+         static constexpr const char *place_holder_width_precision(double) { return "%*.*G"; }
+         static constexpr const char *place_holder_width_precision(long double) { return "%*.*lG"; }
     };
 
     /// <summary>
-    /// Wraps a generic value for serialization.
+    /// A collection of static functions that retrieve the formats
+    /// expected by wprintf for several built-in types.
+    /// </summary>
+    template<> struct PrintFormats<wchar_t>
+    {
+         static constexpr const wchar_t *place_holder(wchar_t) { return L"%c"; }
+         static constexpr const wchar_t *place_holder(void *) { return L"%p"; }
+         static constexpr const wchar_t *place_holder(const wchar_t *) { return L"%s"; }
+         static constexpr const wchar_t *place_holder(signed short) { return L"%hd"; }
+         static constexpr const wchar_t *place_holder(unsigned short) { return L"%hu"; }
+         static constexpr const wchar_t *place_holder(signed int) { return L"%d"; }
+         static constexpr const wchar_t *place_holder(unsigned int) { return L"%u"; }
+         static constexpr const wchar_t *place_holder(signed long) { return L"%ld"; }
+         static constexpr const wchar_t *place_holder(unsigned long) { return L"%lu"; }
+         static constexpr const wchar_t *place_holder(signed long long) { return L"%lld"; }
+         static constexpr const wchar_t *place_holder(unsigned long long) { return L"%llu"; }
+         static constexpr const wchar_t *place_holder(double) { return L"%G"; }
+         static constexpr const wchar_t *place_holder(long double) { return L"%lG"; }
+
+         static constexpr const wchar_t *place_holder_width(void *) { return L"%*p"; }
+         static constexpr const wchar_t *place_holder_width(const wchar_t *) { return L"%*s"; }
+         static constexpr const wchar_t *place_holder_width(signed short) { return L"%*hd"; }
+         static constexpr const wchar_t *place_holder_width(unsigned short) { return L"%*hu"; }
+         static constexpr const wchar_t *place_holder_width(signed int) { return L"%*d"; }
+         static constexpr const wchar_t *place_holder_width(unsigned int) { return L"%*u"; }
+         static constexpr const wchar_t *place_holder_width(signed long) { return L"%*ld"; }
+         static constexpr const wchar_t *place_holder_width(unsigned long) { return L"%*lu"; }
+         static constexpr const wchar_t *place_holder_width(signed long long) { return L"%*lld"; }
+         static constexpr const wchar_t *place_holder_width(unsigned long long) { return L"%*llu"; }
+         static constexpr const wchar_t *place_holder_width(double) { return L"%*G"; }
+         static constexpr const wchar_t *place_holder_width(long double) { return L"%*lG"; }
+
+         static constexpr const wchar_t *place_holder_precision(void *) { return L"%.*p"; }
+         static constexpr const wchar_t *place_holder_precision(const wchar_t *) { return L"%.*s"; }
+         static constexpr const wchar_t *place_holder_precision(signed short) { return L"%.*hd"; }
+         static constexpr const wchar_t *place_holder_precision(unsigned short) { return L"%.*hu"; }
+         static constexpr const wchar_t *place_holder_precision(signed int) { return L"%.*d"; }
+         static constexpr const wchar_t *place_holder_precision(unsigned int) { return L"%.*u"; }
+         static constexpr const wchar_t *place_holder_precision(signed long) { return L"%.*ld"; }
+         static constexpr const wchar_t *place_holder_precision(unsigned long) { return L"%.*lu"; }
+         static constexpr const wchar_t *place_holder_precision(signed long long) { return L"%.*lld"; }
+         static constexpr const wchar_t *place_holder_precision(unsigned long long) { return L"%.*llu"; }
+         static constexpr const wchar_t *place_holder_precision(double) { return L"%.*G"; }
+         static constexpr const wchar_t *place_holder_precision(long double) { return L"%.*lG"; }
+
+         static constexpr const wchar_t *place_holder_width_precision(void *) { return L"%*.*p"; }
+         static constexpr const wchar_t *place_holder_width_precision(const wchar_t *) { return L"%*.*s"; }
+         static constexpr const wchar_t *place_holder_width_precision(signed short) { return L"%*.*hd"; }
+         static constexpr const wchar_t *place_holder_width_precision(unsigned short) { return L"%*.*hu"; }
+         static constexpr const wchar_t *place_holder_width_precision(signed int) { return L"%*.*d"; }
+         static constexpr const wchar_t *place_holder_width_precision(unsigned int) { return L"%*.*u"; }
+         static constexpr const wchar_t *place_holder_width_precision(signed long) { return L"%*.*ld"; }
+         static constexpr const wchar_t *place_holder_width_precision(unsigned long) { return L"%*.*lu"; }
+         static constexpr const wchar_t *place_holder_width_precision(signed long long) { return L"%*.*lld"; }
+         static constexpr const wchar_t *place_holder_width_precision(unsigned long long) { return L"%*.*llu"; }
+         static constexpr const wchar_t *place_holder_width_precision(double) { return L"%*.*G"; }
+         static constexpr const wchar_t *place_holder_width_precision(long double) { return L"%*.*lG"; }
+    };
+
+    /// <summary>
+    /// Wraps a generic value for serialization,
+    /// packing it along with format information.
     /// </summary>
     template <typename ValType>
     class SerializableValue
@@ -228,43 +238,23 @@ namespace utils
             return *this;
         }
 
-        // Serializes the held value to UTF-8 encoded text
-        template <typename OutType>
-        size_t SerializeUtf8To(OutType output) const
+        // Serializes the held value to text
+        template <typename CharType, typename OutType>
+        size_t SerializeTo(OutType output) const
         {
             if (m_precision < 0)
             {
                 if (m_width < 0)
-                    return xprintf(output, PrintFormats::utf8(m_value), m_value);
+                    return xprintf(output, PrintFormats<CharType>::place_holder(m_value), m_value);
                 else
-                    return xprintf(output, PrintFormats::utf8_width(m_value), m_width, m_value);
+                    return xprintf(output, PrintFormats<CharType>::place_holder_width(m_value), m_width, m_value);
             }
             else
             {
                 if (m_width < 0)
-                    return xprintf(output, PrintFormats::utf8_precision(m_value), m_precision, m_value);
+                    return xprintf(output, PrintFormats<CharType>::place_holder_precision(m_value), m_precision, m_value);
                 else
-                    return xprintf(output, PrintFormats::utf8_width_precision(m_value), m_width, m_precision, m_value);
-            }
-        }
-
-        // Serializes the held value to UCS-2 encoded text
-        template <typename OutType>
-        size_t SerializeUcs2To(OutType output) const
-        {
-            if (m_precision < 0)
-            {
-                if (m_width < 0)
-                    return xprintf(output, PrintFormats::ucs2(m_value), m_value);
-                else
-                    return xprintf(output, PrintFormats::ucs2_width(m_value), m_width, m_value);
-            }
-            else
-            {
-                if (m_width < 0)
-                    return xprintf(output, PrintFormats::ucs2_precision(m_value), m_precision, m_value);
-                else
-                    return xprintf(output, PrintFormats::ucs2_width_precision(m_value), m_width, m_precision, m_value);
+                    return xprintf(output, PrintFormats<CharType>::place_holder_width_precision(m_value), m_width, m_precision, m_value);
             }
         }
 
@@ -277,15 +267,26 @@ namespace utils
         }
     };
 
+    // Wraps an argument to prepare for serialization
     template <typename ValType>
-    SerializableValue<ValType> FormatArg(ValType value) { return SerializableValue<ValType>(value); }
+    SerializableValue<ValType> FormatArg(ValType value)
+    {
+        return SerializableValue<ValType>(value);
+    }
 
-    SerializableValue<const char *> FormatArg(const std::string &value);
+    // Wraps an string argument to prepare for serialization
+    template <typename CharType>
+    SerializableValue<const CharType *> FormatArg(const std::basic_string<CharType> &value)
+    {
+        return SerializableValue<const CharType *>(value.c_str());
+    }
 
-    SerializableValue<const wchar_t *> FormatArg(const std::wstring &value);
-
+    // Just forward an argument which is already wrapped for serialization
     template <typename ValType>
-    const SerializableValue<ValType> &FormatArg(const SerializableValue<ValType> &wsval) { return wsval; }
+    const SerializableValue<ValType> &FormatArg(const SerializableValue<ValType> &wsval)
+    {
+        return wsval;
+    }
 
 
     //////////////////////////////
@@ -306,36 +307,50 @@ namespace utils
         return _estimate_string_size(args ...);
     }
 
-    template <typename OutType, typename FirstArgVType, typename ... Args>
-    size_t _serialize_utf8_impl(OutType output, FirstArgVType &&firstArg, Args ... args)
+    template <typename CharType>
+    size_t _serialize_to_file_impl(FILE *)
     {
-        /* this compile-time assertion is triggered when there
-        is no specific implementation for output of printf-like
-        function fitting the provided arguments */
+        return 0; // NO-OP
+    }
+
+    template <typename CharType, typename ... Args>
+    size_t _serialize_to_file_impl(FILE *, Args ... args)
+    {
+        /* this compile-time assertion is triggered when there is
+        no specific implementation fitting the provided arguments */
         static_assert(0, "this generic implementation must not compile");
     }
 
-    template <typename FirstArgVType, typename ... Args>
-    size_t _serialize_utf8_impl(FILE *file, FirstArgVType &&firstArg, Args ... args)
+    template <typename CharType, typename FirstArgVType, typename ... Args>
+    size_t _serialize_to_file_impl(FILE *file, FirstArgVType &&firstArg, Args ... args)
     {
-        return FormatArg(firstArg).SerializeUtf8To(file) + _serialize_utf8_impl(file, args ...);
+        return FormatArg(firstArg).SerializeTo<CharType>(file)
+            + _serialize_to_file_impl<CharType>(file, args ...);
     }
 
-    template <typename FirstArgVType, typename ... Args>
-    size_t _serialize_utf8_impl(const RawBufferInfo<char> &buffer, FirstArgVType &&firstArg, Args ... args)
-    {
-        auto pcount = FormatArg(firstArg).SerializeUtf8To(buffer);
-
-        if (pcount < buffer.count)
-            return pcount + _serialize_utf8_impl(RawBufferInfo<char>{ buffer.data + pcount, buffer.count - pcount }, args ...);
-        else
-            return pcount + 1; // needs more room
-    }
-
-    template <typename OutType>
-    size_t _serialize_utf8_impl(OutType output)
+    template <typename CharType>
+    size_t _serialize_to_buffer_impl(const RawBufferInfo<CharType> &)
     {
         return 0; // NO-OP
+    }
+
+    template <typename CharType, typename ... Args>
+    size_t _serialize_to_buffer_impl(const RawBufferInfo<CharType> &, Args ... args)
+    {
+        /* this compile-time assertion is triggered when there is
+        no specific implementation fitting the provided arguments */
+        static_assert(0, "this generic implementation must not compile");
+    }
+
+    template <typename CharType, typename FirstArgVType, typename ... Args>
+    size_t _serialize_to_buffer_impl(const RawBufferInfo<CharType> &buffer, FirstArgVType &&firstArg, Args ... args)
+    {
+        auto pcount = FormatArg(firstArg).SerializeTo<CharType>(buffer);
+
+        if (pcount < buffer.count)
+            return pcount + _serialize_to_buffer_impl<CharType>(RawBufferInfo<CharType>{ buffer.data + pcount, buffer.count - pcount }, args ...);
+        else
+            return pcount + 1; // needs more room
     }
 
     /// <summary>
@@ -344,25 +359,25 @@ namespace utils
     /// <param name="file">The output file.</param>
     /// <param name="...args">The values to serialize, all wrapped in <see cref="SerializableValue" /> objects.</param>
     /// <returns>The length of text written into the output file.</returns>
-    template <typename ... Args>
-    size_t SerializeUTF8(FILE *file, Args ... args)
+    template <typename CharType, typename ... Args>
+    size_t SerializeTo(FILE *file, Args ... args)
     {
         CALL_STACK_TRACE;
-        return _serialize_utf8_impl(file, args ...);
+        return _serialize_to_file_impl<CharType>(file, args ...);
     }
 
     /// <summary>
-    /// Serializes to a buffer the argument values as UTF-8 encoded text.
+    /// Serializes to a buffer the argument values as text.
     /// </summary>
     /// <param name="buffer">The output buffer.</param>
     /// <param name="...args">The values to serialize, all wrapped in <see cref="SerializableValue" /> objects.</param>
     /// <returns>The length of text written into the buffer.</returns>
-    template <size_t N, typename ... Args>
-    size_t SerializeUTF8(std::array<char, N> &buffer, Args ... args)
+    template <typename CharType, size_t N, typename ... Args>
+    size_t SerializeTo(std::array<CharType, N> &buffer, Args ... args)
     {
         CALL_STACK_TRACE;
 
-        auto pcount = _serialize_utf8_impl(RawBufferInfo<char>{ buffer.data(), buffer.size() }, args ...);
+        auto pcount = _serialize_to_buffer_impl(RawBufferInfo<CharType>{ buffer.data(), buffer.size() }, args ...);
 
         if (pcount < buffer.size())
             return pcount;
@@ -371,13 +386,13 @@ namespace utils
     }
 
     /// <summary>
-    /// Serializes to a string the argument values as UTF-8 encoded text.
+    /// Serializes to a string the argument values as text.
     /// </summary>
     /// <param name="out">The output string.</param>
     /// <param name="...args">The values to serialize, all wrapped in <see cref="SerializableValue" /> objects.</param>
     /// <returns>The length of text written into the string.</returns>
-    template <typename ... Args>
-    size_t SerializeUTF8(std::string &out, Args ... args)
+    template <typename CharType, typename ... Args>
+    size_t SerializeTo(std::basic_string<CharType> &out, Args ... args)
     {
         CALL_STACK_TRACE;
 
@@ -400,7 +415,7 @@ namespace utils
 
             while (true)
             {
-                auto pcount = _serialize_utf8_impl(RawBufferInfo<char>{ &out[0], out.size() }, args ...);
+                auto pcount = _serialize_to_buffer_impl(RawBufferInfo<CharType>{ &out[0], out.size() }, args ...);
 
                 // string buffer was big enough?
                 if (out.size() > pcount)
@@ -409,127 +424,6 @@ namespace utils
                     return pcount;
                 }
                 
-                // need more room?
-                out.resize(
-                    (out.size() * 2 > pcount) ? out.size() * 2 : out.size() + pcount
-                );
-            }
-        }
-        catch (core::IAppException &)
-        {
-            throw; // just forward already prepared application exceptions
-        }
-        catch (std::exception &ex)
-        {
-            std::ostringstream oss;
-            oss << "Failed to serialize arguments: " << ex.what();
-            throw core::AppException<std::runtime_error>(oss.str());
-        }
-    }
-
-    template <typename OutType, typename FirstArgVType, typename ... Args>
-    size_t _serialize_ucs2_impl(OutType output, FirstArgVType &&firstArg, Args ... args)
-    {
-        /* this compile-time assertion is triggered when there
-        is no specific implementation for output of printf-like
-        function fitting the provided arguments */
-        static_assert(0, "this generic implementation must not compile");
-    }
-
-    template <typename FirstArgVType, typename ... Args>
-    size_t _serialize_ucs2_impl(FILE *file, FirstArgVType &&firstArg, Args ... args)
-    {
-        return FormatArg(firstArg).SerializeUcs2To(file) + _serialize_ucs2_impl(file, args ...);
-    }
-
-    template <typename FirstArgVType, typename ... Args>
-    size_t _serialize_ucs2_impl(const RawBufferInfo<wchar_t> &buffer, FirstArgVType &&firstArg, Args ... args)
-    {
-        auto pcount = FormatArg(firstArg).SerializeUcs2To(buffer);
-
-        if (pcount < buffer.count)
-            return pcount + _serialize_ucs2_impl(RawBufferInfo<wchar_t>{ buffer.data + pcount, buffer.count - pcount }, args ...);
-        else
-            return pcount + 1; // needs more room
-    }
-
-    template <typename OutType>
-    size_t _serialize_ucs2_impl(OutType output)
-    {
-        return 0; // NO-OP
-    }
-
-    /// <summary>
-    /// Serializes to an output file the argument values as UCS-2 encoded text.
-    /// </summary>
-    /// <param name="file">The output file.</param>
-    /// <param name="...args">The values to serialize, all wrapped in <see cref="SerializableValue" /> objects.</param>
-    /// <returns>The length of text written into the output file.</returns>
-    template <typename ... Args>
-    size_t SerializeUCS2(FILE *file, Args ... args)
-    {
-        CALL_STACK_TRACE;
-        return _serialize_ucs2_impl(file, args ...);
-    }
-
-    /// <summary>
-    /// Serializes to a buffer the argument values as UCS-2 encoded text.
-    /// </summary>
-    /// <param name="file">The output buffer.</param>
-    /// <param name="...args">The values to serialize, all wrapped in <see cref="SerializableValue" /> objects.</param>
-    /// <returns>The length of text written into the buffer.</returns>
-    template <size_t N, typename ... Args>
-    size_t SerializeUCS2(std::array<wchar_t, N> &buffer, Args ... args)
-    {
-        CALL_STACK_TRACE;
-
-        auto pcount = _serialize_ucs2_impl(RawBufferInfo<wchar_t>{ buffer.data(), buffer.size() }, args ...);
-
-        if (pcount < buffer.size())
-            return pcount;
-        else
-            throw core::AppException<std::logic_error>("Failed to serialize: buffer is too short!");
-    }
-
-    /// <summary>
-    /// Serializes to a string the argument values as UCS-2 encoded text.
-    /// </summary>
-    /// <param name="out">The output string.</param>
-    /// <param name="...args">The values to serialize, all wrapped in <see cref="SerializableValue" /> objects.</param>
-    /// <returns>The length of text written into the string.</returns>
-    template <typename ... Args>
-    size_t SerializeUCS2(std::wstring &out, Args ... args)
-    {
-        CALL_STACK_TRACE;
-
-        try
-        {
-            /* Try to guarantee room in the string buffer using a rough estimation
-            for the serialized string size. If the current size exceeds the estimation,
-            do nothing, otherwise, expand it. When resizing, make use of all already
-            reserved capacity if that is enough, because such allocation is cheap,
-            otherwise, just allocate memory for the estimation and hope for the best.*/
-
-            auto estReqSize = _estimate_string_size(args ...);
-            if (out.size() < estReqSize)
-            {
-                if (out.capacity() < estReqSize)
-                    out.resize(estReqSize);
-                else
-                    out.resize(out.capacity());
-            }
-            
-            while (true)
-            {
-                auto pcount = _serialize_ucs2_impl(RawBufferInfo<wchar_t>{ &out[0], out.size() }, args ...);
-
-                // string buffer was big enough?
-                if (out.size() > pcount)
-                {
-                    out.resize(pcount + 1);
-                    return pcount;
-                }
-
                 // need more room?
                 out.resize(
                     (out.size() * 2 > pcount) ? out.size() * 2 : out.size() + pcount
