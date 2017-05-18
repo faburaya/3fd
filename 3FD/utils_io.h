@@ -100,7 +100,10 @@ namespace utils
         static const constexpr char *utf8(unsigned int) { return "%u"; }
         static const constexpr char *utf8(signed long) { return "%ld"; }
         static const constexpr char *utf8(unsigned long) { return "%lu"; }
-        static const constexpr char *utf8(long double) { return "%G"; }
+        static const constexpr char *utf8(signed long long) { return "%lld"; }
+        static const constexpr char *utf8(unsigned long long) { return "%llu"; }
+        static const constexpr char *utf8(double) { return "%G"; }
+        static const constexpr char *utf8(long double) { return "%lG"; }
 
         static const constexpr char *utf8_width(void *) { return "%*p"; }
         static const constexpr char *utf8_width(const char *) { return "%*s"; }
@@ -110,7 +113,10 @@ namespace utils
         static const constexpr char *utf8_width(unsigned int) { return "%*u"; }
         static const constexpr char *utf8_width(signed long) { return "%*ld"; }
         static const constexpr char *utf8_width(unsigned long) { return "%*lu"; }
-        static const constexpr char *utf8_width(long double) { return "%*G"; }
+        static const constexpr char *utf8_width(signed long long) { return "%*lld"; }
+        static const constexpr char *utf8_width(unsigned long long) { return "%*llu"; }
+        static const constexpr char *utf8_width(double) { return "%*G"; }
+        static const constexpr char *utf8_width(long double) { return "%*lG"; }
 
         static const constexpr char *utf8_precision(void *) { return "%.*p"; }
         static const constexpr char *utf8_precision(const char *) { return "%.*s"; }
@@ -120,7 +126,10 @@ namespace utils
         static const constexpr char *utf8_precision(unsigned int) { return "%.*u"; }
         static const constexpr char *utf8_precision(signed long) { return "%.*ld"; }
         static const constexpr char *utf8_precision(unsigned long) { return "%.*lu"; }
-        static const constexpr char *utf8_precision(long double) { return "%.*G"; }
+        static const constexpr char *utf8_precision(signed long long) { return "%.*lld"; }
+        static const constexpr char *utf8_precision(unsigned long long) { return "%.*llu"; }
+        static const constexpr char *utf8_precision(double) { return "%.*G"; }
+        static const constexpr char *utf8_precision(long double) { return "%.*lG"; }
 
         static const constexpr char *utf8_width_precision(void *) { return "%*.*p"; }
         static const constexpr char *utf8_width_precision(const char *) { return "%*.*s"; }
@@ -130,7 +139,10 @@ namespace utils
         static const constexpr char *utf8_width_precision(unsigned int) { return "%*.*u"; }
         static const constexpr char *utf8_width_precision(signed long) { return "%*.*ld"; }
         static const constexpr char *utf8_width_precision(unsigned long) { return "%*.*lu"; }
-        static const constexpr char *utf8_width_precision(long double) { return "%*.*G"; }
+        static const constexpr char *utf8_width_precision(signed long long) { return "%*.*lld"; }
+        static const constexpr char *utf8_width_precision(unsigned long long) { return "%*.*llu"; }
+        static const constexpr char *utf8_width_precision(double) { return "%*.*G"; }
+        static const constexpr char *utf8_width_precision(long double) { return "%*.*lG"; }
 
         static const constexpr wchar_t *ucs2(wchar_t) { return L"%c"; }
         static const constexpr wchar_t *ucs2(void *) { return L"%p"; }
@@ -141,7 +153,10 @@ namespace utils
         static const constexpr wchar_t *ucs2(unsigned int) { return L"%u"; }
         static const constexpr wchar_t *ucs2(signed long) { return L"%ld"; }
         static const constexpr wchar_t *ucs2(unsigned long) { return L"%lu"; }
-        static const constexpr wchar_t *ucs2(long double) { return L"%G"; }
+        static const constexpr wchar_t *ucs2(signed long long) { return L"%lld"; }
+        static const constexpr wchar_t *ucs2(unsigned long long) { return L"%llu"; }
+        static const constexpr wchar_t *ucs2(double) { return L"%G"; }
+        static const constexpr wchar_t *ucs2(long double) { return L"%lG"; }
 
         static const constexpr wchar_t *ucs2_width(void *) { return L"%*p"; }
         static const constexpr wchar_t *ucs2_width(const wchar_t *) { return L"%*s"; }
@@ -151,7 +166,10 @@ namespace utils
         static const constexpr wchar_t *ucs2_width(unsigned int) { return L"%*u"; }
         static const constexpr wchar_t *ucs2_width(signed long) { return L"%*ld"; }
         static const constexpr wchar_t *ucs2_width(unsigned long) { return L"%*lu"; }
-        static const constexpr wchar_t *ucs2_width(long double) { return L"%*G"; }
+        static const constexpr wchar_t *ucs2_width(signed long long) { return L"%*lld"; }
+        static const constexpr wchar_t *ucs2_width(unsigned long long) { return L"%*llu"; }
+        static const constexpr wchar_t *ucs2_width(double) { return L"%*G"; }
+        static const constexpr wchar_t *ucs2_width(long double) { return L"%*lG"; }
 
         static const constexpr wchar_t *ucs2_precision(void *) { return L"%.*p"; }
         static const constexpr wchar_t *ucs2_precision(const wchar_t *) { return L"%.*s"; }
@@ -161,7 +179,10 @@ namespace utils
         static const constexpr wchar_t *ucs2_precision(unsigned int) { return L"%.*u"; }
         static const constexpr wchar_t *ucs2_precision(signed long) { return L"%.*ld"; }
         static const constexpr wchar_t *ucs2_precision(unsigned long) { return L"%.*lu"; }
-        static const constexpr wchar_t *ucs2_precision(long double) { return L"%.*G"; }
+        static const constexpr wchar_t *ucs2_precision(signed long long) { return L"%.*lld"; }
+        static const constexpr wchar_t *ucs2_precision(unsigned long long) { return L"%.*llu"; }
+        static const constexpr wchar_t *ucs2_precision(double) { return L"%.*G"; }
+        static const constexpr wchar_t *ucs2_precision(long double) { return L"%.*lG"; }
 
         static const constexpr wchar_t *ucs2_width_precision(void *) { return L"%*.*p"; }
         static const constexpr wchar_t *ucs2_width_precision(const wchar_t *) { return L"%*.*s"; }
@@ -171,7 +192,10 @@ namespace utils
         static const constexpr wchar_t *ucs2_width_precision(unsigned int) { return L"%*.*u"; }
         static const constexpr wchar_t *ucs2_width_precision(signed long) { return L"%*.*ld"; }
         static const constexpr wchar_t *ucs2_width_precision(unsigned long) { return L"%*.*lu"; }
-        static const constexpr wchar_t *ucs2_width_precision(long double) { return L"%*.*G"; }
+        static const constexpr wchar_t *ucs2_width_precision(signed long long) { return L"%*.*lld"; }
+        static const constexpr wchar_t *ucs2_width_precision(unsigned long long) { return L"%*.*llu"; }
+        static const constexpr wchar_t *ucs2_width_precision(double) { return L"%*.*G"; }
+        static const constexpr wchar_t *ucs2_width_precision(long double) { return L"%*.*lG"; }
     };
 
     /// <summary>
@@ -249,31 +273,31 @@ namespace utils
         {
             auto width = (m_width >= 0) ? m_width : 0;
             auto precision = (m_precision >= 0) ? m_precision : 0;
-            return std::max(std::max(width, precision), 8);
+            return std::max((uint32_t)std::max(width, precision), (uint32_t)sizeof (ValType));
         }
     };
 
     template <typename ValType>
-    SerializableValue<ValType> WrapSerialArg(ValType value) { return SerializableValue<ValType>(value); }
+    SerializableValue<ValType> FormatArg(ValType value) { return SerializableValue<ValType>(value); }
 
-    SerializableValue<const char *> WrapSerialArg(const std::string &value);
+    SerializableValue<const char *> FormatArg(const std::string &value);
 
-    SerializableValue<const wchar_t *> WrapSerialArg(const std::wstring &value);
+    SerializableValue<const wchar_t *> FormatArg(const std::wstring &value);
 
     template <typename ValType>
-    const SerializableValue<ValType> &WrapSerialArg(const SerializableValue<ValType> &wsval) { return wsval; }
+    const SerializableValue<ValType> &FormatArg(const SerializableValue<ValType> &wsval) { return wsval; }
 
 
     //////////////////////////////
     // Serialization Helpers
     //////////////////////////////
 
-    size_t _estimate_string_size() { return 0; }
+    size_t _estimate_string_size();
 
     template <typename FirstArgVType, typename ... Args>
     size_t _estimate_string_size(FirstArgVType &&firstArg, Args ... args)
     {
-        return WrapSerialArg(std::forward(firstArg)).EstimateStringSize() + _estimate_string_size(args ...);
+        return FormatArg(firstArg).EstimateStringSize() + _estimate_string_size(args ...);
     }
 
     template <typename ... Args>
@@ -294,18 +318,18 @@ namespace utils
     template <typename FirstArgVType, typename ... Args>
     size_t _serialize_utf8_impl(FILE *file, FirstArgVType &&firstArg, Args ... args)
     {
-        return WrapSerialArg(firstArg).SerializeUtf8To(file) + _serialize_utf8_impl(file, args ...);
+        return FormatArg(firstArg).SerializeUtf8To(file) + _serialize_utf8_impl(file, args ...);
     }
 
     template <typename FirstArgVType, typename ... Args>
     size_t _serialize_utf8_impl(const RawBufferInfo<char> &buffer, FirstArgVType &&firstArg, Args ... args)
     {
-        auto wcount = WrapSerialArg(firstArg).SerializeUtf8To(buffer);
+        auto pcount = FormatArg(firstArg).SerializeUtf8To(buffer);
 
-        if (wcount < buffer.count)
-            return wcount + _serialize_utf8_impl(RawBufferInfo<char>{ buffer.data + wcount, buffer.count - wcount }, args ...);
+        if (pcount < buffer.count)
+            return pcount + _serialize_utf8_impl(RawBufferInfo<char>{ buffer.data + pcount, buffer.count - pcount }, args ...);
         else
-            return wcount + 1; // needs more room
+            return pcount + 1; // needs more room
     }
 
     template <typename OutType>
@@ -338,10 +362,10 @@ namespace utils
     {
         CALL_STACK_TRACE;
 
-        auto wcount = _serialize_utf8_impl(RawBufferInfo<char>{ buffer.data(), buffer.size() }, args ...);
+        auto pcount = _serialize_utf8_impl(RawBufferInfo<char>{ buffer.data(), buffer.size() }, args ...);
 
-        if (wcount < buffer.size())
-            return wcount;
+        if (pcount < buffer.size())
+            return pcount;
         else
             throw core::AppException<std::logic_error>("Failed to serialize arguments: buffer is too short!");
     }
@@ -359,24 +383,35 @@ namespace utils
 
         try
         {
+            /* Try to guarantee room in the string buffer using a rough estimation
+            for the serialized string size. If the current size exceeds the estimation,
+            do nothing, otherwise, expand it. When resizing, make use of all already
+            reserved capacity if that is enough, because such allocation is cheap,
+            otherwise, just allocate memory for the estimation and hope for the best.*/
+
             auto estReqSize = _estimate_string_size(args ...);
             if (out.size() < estReqSize)
-                out.resize(estReqSize);
+            {
+                if (out.capacity() < estReqSize)
+                    out.resize(estReqSize);
+                else
+                    out.resize(out.capacity());
+            }
 
             while (true)
             {
-                auto wcount = _serialize_utf8_impl(RawBufferInfo<char>{ out.data(), out.size() }, args ...);
+                auto pcount = _serialize_utf8_impl(RawBufferInfo<char>{ &out[0], out.size() }, args ...);
 
                 // string buffer was big enough?
-                if (out.size() > wcount)
+                if (out.size() > pcount)
                 {
-                    out.resize(wcount + 1);
-                    return wcount;
+                    out.resize(pcount + 1);
+                    return pcount;
                 }
                 
-                // make more room:
+                // need more room?
                 out.resize(
-                    (out.size() * 2 > wcount) ? out.size() * 2 : out.size() + wcount
+                    (out.size() * 2 > pcount) ? out.size() * 2 : out.size() + pcount
                 );
             }
         }
@@ -404,18 +439,18 @@ namespace utils
     template <typename FirstArgVType, typename ... Args>
     size_t _serialize_ucs2_impl(FILE *file, FirstArgVType &&firstArg, Args ... args)
     {
-        return WrapSerialArg(firstArg).SerializeUcs2To(file) + _serialize_ucs2_impl(file, args ...);
+        return FormatArg(firstArg).SerializeUcs2To(file) + _serialize_ucs2_impl(file, args ...);
     }
 
     template <typename FirstArgVType, typename ... Args>
     size_t _serialize_ucs2_impl(const RawBufferInfo<wchar_t> &buffer, FirstArgVType &&firstArg, Args ... args)
     {
-        auto wcount = WrapSerialArg(firstArg).SerializeUcs2To(buffer);
+        auto pcount = FormatArg(firstArg).SerializeUcs2To(buffer);
 
-        if (wcount < buffer.count)
-            return wcount + _serialize_ucs2_impl(RawBufferInfo<wchar_t>{ buffer.data + wcount, buffer.count - wcount }, args ...);
+        if (pcount < buffer.count)
+            return pcount + _serialize_ucs2_impl(RawBufferInfo<wchar_t>{ buffer.data + pcount, buffer.count - pcount }, args ...);
         else
-            return wcount + 1; // needs more room
+            return pcount + 1; // needs more room
     }
 
     template <typename OutType>
@@ -444,14 +479,14 @@ namespace utils
     /// <param name="...args">The values to serialize, all wrapped in <see cref="SerializableValue" /> objects.</param>
     /// <returns>The length of text written into the buffer.</returns>
     template <size_t N, typename ... Args>
-    size_t SerializeUTF8(std::array<wchar_t, N> &buffer, Args ... args)
+    size_t SerializeUCS2(std::array<wchar_t, N> &buffer, Args ... args)
     {
         CALL_STACK_TRACE;
 
-        auto wcount = _serialize_ucs2_impl(RawBufferInfo<wchar_t>{ buffer.data(), buffer.size() }, args ...);
+        auto pcount = _serialize_ucs2_impl(RawBufferInfo<wchar_t>{ buffer.data(), buffer.size() }, args ...);
 
-        if (wcount < buffer.size())
-            return wcount;
+        if (pcount < buffer.size())
+            return pcount;
         else
             throw core::AppException<std::logic_error>("Failed to serialize: buffer is too short!");
     }
@@ -469,24 +504,35 @@ namespace utils
 
         try
         {
+            /* Try to guarantee room in the string buffer using a rough estimation
+            for the serialized string size. If the current size exceeds the estimation,
+            do nothing, otherwise, expand it. When resizing, make use of all already
+            reserved capacity if that is enough, because such allocation is cheap,
+            otherwise, just allocate memory for the estimation and hope for the best.*/
+
             auto estReqSize = _estimate_string_size(args ...);
             if (out.size() < estReqSize)
-                out.resize(estReqSize);
-
+            {
+                if (out.capacity() < estReqSize)
+                    out.resize(estReqSize);
+                else
+                    out.resize(out.capacity());
+            }
+            
             while (true)
             {
-                auto wcount = _serialize_ucs2_impl(RawBufferInfo<wchar_t>{ out.data(), out.size() }, args ...);
+                auto pcount = _serialize_ucs2_impl(RawBufferInfo<wchar_t>{ &out[0], out.size() }, args ...);
 
                 // string buffer was big enough?
-                if (out.size() > wcount)
+                if (out.size() > pcount)
                 {
-                    out.resize(wcount + 1);
-                    return wcount;
+                    out.resize(pcount + 1);
+                    return pcount;
                 }
 
-                // make more room:
+                // need more room?
                 out.resize(
-                    (out.size() * 2 > wcount) ? out.size() * 2 : out.size() + wcount
+                    (out.size() * 2 > pcount) ? out.size() * 2 : out.size() + pcount
                 );
             }
         }
