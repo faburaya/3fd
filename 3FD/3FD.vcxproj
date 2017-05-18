@@ -292,6 +292,7 @@
     <ClInclude Include="targetver.h" />
     <ClInclude Include="utils.h" />
     <ClInclude Include="utils_algorithms.h" />
+    <ClInclude Include="utils_io.h" />
     <ClInclude Include="utils_lockfreequeue.h" />
     <ClInclude Include="web_wws_impl_host.h" />
     <ClInclude Include="web_wws_impl_proxy.h" />
@@ -371,6 +372,7 @@
     <ClCompile Include="utils_dynmempool.cpp" />
     <ClCompile Include="utils_event.cpp" />
     <ClCompile Include="gc_arrayofedges.cpp" />
+    <ClCompile Include="utils_io.cpp" />
     <ClCompile Include="utils_memorypool.cpp" />
     <ClCompile Include="utils_sharedmutex.cpp" />
     <ClCompile Include="web_wws_impl_utils.cpp" />

@@ -69,7 +69,7 @@
                               ItemsSource="{x:Bind InputImages}"
                               SelectionMode="None" IsItemClickEnabled="False">
                         <ListView.ItemTemplate>
-                            <DataTemplate x:DataType="local:FileListItem">
+                            <DataTemplate x:ValType="local:FileListItem">
                                 <StackPanel Orientation="Horizontal">
                                     <Image Width="40" Source="{x:Bind Thumbnail}"/>
                                     <StackPanel Orientation="Vertical" Margin="{StaticResource ThumbnailTextMargin}">

@@ -218,6 +218,9 @@
     <ClInclude Include="utils_algorithms.h">
       <Filter>Header Files\utilities</Filter>
     </ClInclude>
+    <ClInclude Include="utils_io.h">
+      <Filter>Header Files\utilities</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="sqlite3.c">
@@ -390,6 +393,9 @@
     </ClCompile>
     <ClCompile Include="broker_impl.cpp">
       <Filter>Source Files\Broker</Filter>
+    </ClCompile>
+    <ClCompile Include="utils_io.cpp">
+      <Filter>Source Files\utilities</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

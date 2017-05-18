@@ -58,7 +58,7 @@ namespace application
     template <typename ValType>
     ValType GetValueFrom(_variant_t &variant)
     {
-        static_cast<false>; // causes compilation failure in case this generic implementation gets compiled
+        static_assert(0, "this generic implementation must not compile");
     }
 
     template <> BSTR GetValueFrom<BSTR>(_variant_t &variant);
