@@ -77,10 +77,17 @@ namespace utils
     template <typename ... Args>
     int xprintf(const RawBufferInfo<wchar_t> &buffer, const wchar_t *format, Args ... args)
     {
+#   ifdef _WIN32
+        _set_errno(0);
+#   else
+        *errno = 0;
+#   endif
         int rc = swprintf(buffer.data, buffer.count, format, args ...);
 
         if (rc >= 0)
             return rc;
+        else if (errno == 0)
+            return static_cast<int> (2 * buffer.count);
         else
             throw core::AppException<std::runtime_error>("swprintf: buffer error!", strerror(errno));
     }
@@ -94,8 +101,10 @@ namespace utils
     template<> struct PrintFormats<char>
     {
          static constexpr const char *place_holder(char) { return "%c"; }
+         static constexpr const char *place_holder(wchar_t) { return "%lc"; }
          static constexpr const char *place_holder(void *) { return "%p"; }
          static constexpr const char *place_holder(const char *) { return "%s"; }
+         static constexpr const char *place_holder(const wchar_t *) { return "%ls"; }
          static constexpr const char *place_holder(signed short) { return "%hd"; }
          static constexpr const char *place_holder(unsigned short) { return "%hu"; }
          static constexpr const char *place_holder(signed int) { return "%d"; }
@@ -109,6 +118,7 @@ namespace utils
 
          static constexpr const char *place_holder_width(void *) { return "%*p"; }
          static constexpr const char *place_holder_width(const char *) { return "%*s"; }
+         static constexpr const char *place_holder_width(const wchar_t *) { return "%*ls"; }
          static constexpr const char *place_holder_width(signed short) { return "%*hd"; }
          static constexpr const char *place_holder_width(unsigned short) { return "%*hu"; }
          static constexpr const char *place_holder_width(signed int) { return "%*d"; }
@@ -122,6 +132,7 @@ namespace utils
 
          static constexpr const char *place_holder_precision(void *) { return "%.*p"; }
          static constexpr const char *place_holder_precision(const char *) { return "%.*s"; }
+         static constexpr const char *place_holder_precision(const wchar_t *) { return "%.*ls"; }
          static constexpr const char *place_holder_precision(signed short) { return "%.*hd"; }
          static constexpr const char *place_holder_precision(unsigned short) { return "%.*hu"; }
          static constexpr const char *place_holder_precision(signed int) { return "%.*d"; }
@@ -135,6 +146,7 @@ namespace utils
 
          static constexpr const char *place_holder_width_precision(void *) { return "%*.*p"; }
          static constexpr const char *place_holder_width_precision(const char *) { return "%*.*s"; }
+         static constexpr const char *place_holder_width_precision(const wchar_t *) { return "%*.*ls"; }
          static constexpr const char *place_holder_width_precision(signed short) { return "%*.*hd"; }
          static constexpr const char *place_holder_width_precision(unsigned short) { return "%*.*hu"; }
          static constexpr const char *place_holder_width_precision(signed int) { return "%*.*d"; }
@@ -153,8 +165,10 @@ namespace utils
     /// </summary>
     template<> struct PrintFormats<wchar_t>
     {
+         static constexpr const wchar_t *place_holder(char) { return L"%hc"; }
          static constexpr const wchar_t *place_holder(wchar_t) { return L"%c"; }
          static constexpr const wchar_t *place_holder(void *) { return L"%p"; }
+         static constexpr const wchar_t *place_holder(const char *) { return L"%hs"; }
          static constexpr const wchar_t *place_holder(const wchar_t *) { return L"%s"; }
          static constexpr const wchar_t *place_holder(signed short) { return L"%hd"; }
          static constexpr const wchar_t *place_holder(unsigned short) { return L"%hu"; }
@@ -168,6 +182,7 @@ namespace utils
          static constexpr const wchar_t *place_holder(long double) { return L"%lG"; }
 
          static constexpr const wchar_t *place_holder_width(void *) { return L"%*p"; }
+         static constexpr const wchar_t *place_holder_width(const char *) { return L"%*hs"; }
          static constexpr const wchar_t *place_holder_width(const wchar_t *) { return L"%*s"; }
          static constexpr const wchar_t *place_holder_width(signed short) { return L"%*hd"; }
          static constexpr const wchar_t *place_holder_width(unsigned short) { return L"%*hu"; }
@@ -181,6 +196,7 @@ namespace utils
          static constexpr const wchar_t *place_holder_width(long double) { return L"%*lG"; }
 
          static constexpr const wchar_t *place_holder_precision(void *) { return L"%.*p"; }
+         static constexpr const wchar_t *place_holder_precision(const char *) { return L"%.*hs"; }
          static constexpr const wchar_t *place_holder_precision(const wchar_t *) { return L"%.*s"; }
          static constexpr const wchar_t *place_holder_precision(signed short) { return L"%.*hd"; }
          static constexpr const wchar_t *place_holder_precision(unsigned short) { return L"%.*hu"; }
@@ -194,6 +210,7 @@ namespace utils
          static constexpr const wchar_t *place_holder_precision(long double) { return L"%.*lG"; }
 
          static constexpr const wchar_t *place_holder_width_precision(void *) { return L"%*.*p"; }
+         static constexpr const wchar_t *place_holder_width_precision(const char *) { return L"%*.*hs"; }
          static constexpr const wchar_t *place_holder_width_precision(const wchar_t *) { return L"%*.*s"; }
          static constexpr const wchar_t *place_holder_width_precision(signed short) { return L"%*.*hd"; }
          static constexpr const wchar_t *place_holder_width_precision(unsigned short) { return L"%*.*hu"; }
@@ -308,17 +325,9 @@ namespace utils
     }
 
     template <typename CharType>
-    size_t _serialize_to_file_impl(FILE *)
+    constexpr size_t _serialize_to_file_impl(FILE *)
     {
         return 0; // NO-OP
-    }
-
-    template <typename CharType, typename ... Args>
-    size_t _serialize_to_file_impl(FILE *, Args ... args)
-    {
-        /* this compile-time assertion is triggered when there is
-        no specific implementation fitting the provided arguments */
-        static_assert(0, "this generic implementation must not compile");
     }
 
     template <typename CharType, typename FirstArgVType, typename ... Args>
@@ -329,17 +338,9 @@ namespace utils
     }
 
     template <typename CharType>
-    size_t _serialize_to_buffer_impl(const RawBufferInfo<CharType> &)
+    constexpr size_t _serialize_to_buffer_impl(const RawBufferInfo<CharType> &)
     {
         return 0; // NO-OP
-    }
-
-    template <typename CharType, typename ... Args>
-    size_t _serialize_to_buffer_impl(const RawBufferInfo<CharType> &, Args ... args)
-    {
-        /* this compile-time assertion is triggered when there is
-        no specific implementation fitting the provided arguments */
-        static_assert(0, "this generic implementation must not compile");
     }
 
     template <typename CharType, typename FirstArgVType, typename ... Args>
@@ -420,7 +421,7 @@ namespace utils
                 // string buffer was big enough?
                 if (out.size() > pcount)
                 {
-                    out.resize(pcount + 1);
+                    out.resize(pcount);
                     return pcount;
                 }
                 
