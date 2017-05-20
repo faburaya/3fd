@@ -71,7 +71,7 @@ namespace utils
         if (rc >= 0)
             return rc;
         else
-            throw core::AppException<std::runtime_error>("snprintf: buffer error!", strerror(errno));
+            throw core::AppException<std::runtime_error>("snprintf: encoding error!", strerror(errno));
     }
 
     template <typename ... Args>
@@ -89,7 +89,7 @@ namespace utils
         else if (errno == 0)
             return static_cast<int> (2 * buffer.count);
         else
-            throw core::AppException<std::runtime_error>("swprintf: buffer error!", strerror(errno));
+            throw core::AppException<std::runtime_error>("swprintf: encoding error!", strerror(errno));
     }
 
     template <typename CharType> struct PrintFormats {};
@@ -333,8 +333,8 @@ namespace utils
     template <typename CharType, typename FirstArgVType, typename ... Args>
     size_t _serialize_to_file_impl(FILE *file, FirstArgVType &&firstArg, Args ... args)
     {
-        return FormatArg(firstArg).SerializeTo<CharType>(file)
-            + _serialize_to_file_impl<CharType>(file, args ...);
+        auto pcount = FormatArg(firstArg).SerializeTo<CharType>(file);
+        return pcount + _serialize_to_file_impl<CharType>(file, args ...);
     }
 
     template <typename CharType>
@@ -371,19 +371,34 @@ namespace utils
     /// Serializes to a buffer the argument values as text.
     /// </summary>
     /// <param name="buffer">The output buffer.</param>
+    /// <param name="bufCharCount">The buffer size in number of characters.</param>
+    /// <param name="...args">The values to serialize, all wrapped in <see cref="SerializableValue" /> objects.</param>
+    /// <returns>
+    /// The length of text written into the buffer.
+    /// </returns>
+    template <typename CharType, typename ... Args>
+    size_t SerializeTo(CharType buffer[], size_t bufCharCount, Args ... args)
+    {
+        CALL_STACK_TRACE;
+
+        auto pcount = _serialize_to_buffer_impl(RawBufferInfo<CharType>{ buffer, bufCharCount }, args ...);
+
+        if (pcount < bufCharCount)
+            return pcount;
+        else
+            throw core::AppException<std::logic_error>("Failed to serialize arguments: buffer is too short!");
+    }
+
+    /// <summary>
+    /// Serializes to a buffer the argument values as text.
+    /// </summary>
+    /// <param name="buffer">The output buffer.</param>
     /// <param name="...args">The values to serialize, all wrapped in <see cref="SerializableValue" /> objects.</param>
     /// <returns>The length of text written into the buffer.</returns>
     template <typename CharType, size_t N, typename ... Args>
     size_t SerializeTo(std::array<CharType, N> &buffer, Args ... args)
     {
-        CALL_STACK_TRACE;
-
-        auto pcount = _serialize_to_buffer_impl(RawBufferInfo<CharType>{ buffer.data(), buffer.size() }, args ...);
-
-        if (pcount < buffer.size())
-            return pcount;
-        else
-            throw core::AppException<std::logic_error>("Failed to serialize arguments: buffer is too short!");
+        return SerializeTo(buffer.data(), buffer.size(), args ...);
     }
 
     /// <summary>

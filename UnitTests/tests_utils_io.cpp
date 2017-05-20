@@ -260,10 +260,10 @@ namespace unit_tests
         {// sstream:
             std::cout << "  sstream: ";
 
-            ScopedTimer timer;
-
             std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
             std::ostringstream oss;
+
+            ScopedTimer timer;
 
             for (int i = 0; i < nIterations; ++i)
             {
@@ -324,10 +324,10 @@ namespace unit_tests
         {// sstream:
             std::cout << "  sstream: ";
 
-            ScopedTimer timer;
-
             std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
             std::wostringstream woss;
+
+            ScopedTimer timer;
 
             for (int i = 0; i < nIterations; ++i)
             {
@@ -335,6 +335,136 @@ namespace unit_tests
                      << std::setprecision(2) << 0.42F
                      << L"; this is wide-char text; "
                      << transcoder.from_bytes("this is UTF-8 text");
+
+                woss.str(L"");
+            }
+        }
+
+        std::cout << std::endl;
+    }
+
+    /// <summary>
+    /// Tests serialization speed to encode UTF-8 text into an output string.
+    /// </summary>
+    TEST(Framework_Utils_TestCase, Serialization_UTF8_String_Speed_Test)
+    {
+        size_t nChars(0);
+        const int nIterations(32768);
+
+        {// framework serialization:
+            std::cout << "framework: ";
+
+            std::string out;
+            ScopedTimer timer;
+
+            for (int i = 0; i < nIterations; ++i)
+            {
+                nChars += utils::SerializeTo(out,
+                    "serialization test: ",
+                    (int32_t)42, "; ",
+                    format(0.42F).precision(2), "; ",
+                    "this is UTF-8 text; ",
+                    L"this is wide-char text");
+            }
+        }
+
+        std::cout << " (serialized " << nChars * sizeof(char) << " bytes)" << std::endl;
+
+        {// sprintf:
+            std::cout << "  sprintf: ";
+
+            std::array<char, 100> buffer;
+            ScopedTimer timer;
+
+            for (int i = 0; i < nIterations; ++i)
+            {
+                sprintf(buffer.data(),
+                    "initialization test: %d; %.2G; this is UTF-8 text; %ls",
+                    42, 0.42F, L"this is wide-char text");
+            }
+        }
+
+        std::cout << std::endl;
+
+        {// sstream:
+            std::cout << "  sstream: ";
+
+            std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
+            std::ostringstream oss;
+
+            ScopedTimer timer;
+
+            for (int i = 0; i < nIterations; ++i)
+            {
+                oss << "initialization test: " << 42 << "; "
+                    << std::setprecision(2) << 0.42F
+                    << "; this is UTF-8 text; "
+                    << transcoder.to_bytes(L"this is wide-char text");
+
+                oss.str("");
+            }
+        }
+
+        std::cout << std::endl;
+    }
+
+    //// <summary>
+    /// Tests serialization speed to encode wide-char text into an output string.
+    /// </summary>
+    TEST(Framework_Utils_TestCase, Serialization_WideChar_String_Speed_Test)
+    {
+        size_t nChars(0);
+        const int nIterations(32768);
+
+        {// framework serialization:
+            std::cout << "framework: ";
+
+            std::wstring out;
+            ScopedTimer timer;
+
+            for (int i = 0; i < nIterations; ++i)
+            {
+                nChars += utils::SerializeTo(out,
+                    L"serialization test: ",
+                    (int32_t)42, "; ",
+                    format(0.42F).precision(2), "; ",
+                    L"this is wide-char text; ",
+                    "this is UTF-8 text");
+            }
+        }
+
+        std::cout << " (serialized " << nChars * sizeof(wchar_t) << " bytes)" << std::endl;
+
+        {// sprintf:
+            std::cout << "  sprintf: ";
+
+            std::array<wchar_t, 100> buffer;
+            ScopedTimer timer;
+
+            for (int i = 0; i < nIterations; ++i)
+            {
+                swprintf(buffer.data(),
+                    L"initialization test: %d; %.2G; this is wide-char text; %hs",
+                    42, 0.42F, "this is UTF-8 text");
+            }
+        }
+
+        std::cout << std::endl;
+
+        {// sstream:
+            std::cout << "  sstream: ";
+
+            std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
+            std::wostringstream woss;
+
+            ScopedTimer timer;
+
+            for (int i = 0; i < nIterations; ++i)
+            {
+                woss << L"initialization test: " << 42 << "; "
+                    << std::setprecision(2) << 0.42F
+                    << L"; this is wide-char text; "
+                    << transcoder.from_bytes("this is UTF-8 text");
 
                 woss.str(L"");
             }

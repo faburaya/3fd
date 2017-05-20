@@ -24,6 +24,7 @@
     <ClCompile Include="..\tests_utils_pool.cpp" />
     <ClCompile Include="..\..\3FD\stdafx.cpp" />
     <ClCompile Include="pch.cpp" />
+    <ClCompile Include="..\tests_utils_io.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.xaml.h" />

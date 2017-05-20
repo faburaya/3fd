@@ -132,6 +132,9 @@
     <ClCompile Include="runtime.cpp">
       <Filter>core</Filter>
     </ClCompile>
+    <ClCompile Include="utils_io.cpp">
+      <Filter>utilities</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="gc.h">
@@ -214,6 +217,9 @@
     </ClInclude>
     <ClInclude Include="runtime.h">
       <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="utils_io.h">
+      <Filter>utilities</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
