@@ -321,7 +321,7 @@ namespace _3fd
 				return defaultValue;
 
 			auto innerText = nodeConfig->InnerText->Data();
-			long parsedVal = wcstod(innerText, nullptr);
+			float parsedVal = wcstod(innerText, nullptr);
 			return parsedVal > 0.0 ? parsedVal : defaultValue;
 		}
 
