@@ -6,6 +6,9 @@
 //------------------------------------------------------------------------------
 #include "pch.h"
 
+#pragma warning(push)
+#pragma warning(disable: 4100) // unreferenced formal parameter
+
 #if defined _DEBUG && !defined DISABLE_XAML_GENERATED_BINDING_DEBUG_OUTPUT
 extern "C" __declspec(dllimport) int __stdcall IsDebuggerPresent();
 #endif
@@ -27,11 +30,11 @@ void ::ImageTranscoderApp::MainPage::InitializeComponent()
 /// <summary>
 /// Auto generated class for compiled bindings.
 /// </summary>
-class ImageTranscoderApp::MainPage::MainPage_obj13_Bindings 
-    : public ::XamlBindingInfo::XamlBindingsBase<::ImageTranscoderApp::FileListItem>
+class ImageTranscoderApp::MainPage::MainPage_obj15_Bindings 
+    : public ::XamlBindingInfo::ReferenceTypeXamlBindings<::ImageTranscoderApp::FileListItem>
 {
 public:
-    MainPage_obj13_Bindings()
+    MainPage_obj15_Bindings()
     {
     }
 
@@ -39,14 +42,14 @@ public:
     {
         switch(__connectionId)
         {
-            case 14:
-                this->obj14 = safe_cast<::Windows::UI::Xaml::Controls::Image^>(__target);
-                break;
-            case 15:
-                this->obj15 = safe_cast<::Windows::UI::Xaml::Controls::TextBlock^>(__target);
-                break;
             case 16:
-                this->obj16 = safe_cast<::Windows::UI::Xaml::Controls::TextBlock^>(__target);
+                this->obj16 = safe_cast<::Windows::UI::Xaml::Controls::Image^>(__target);
+                break;
+            case 17:
+                this->obj17 = safe_cast<::Windows::UI::Xaml::Controls::TextBlock^>(__target);
+                break;
+            case 18:
+                this->obj18 = safe_cast<::Windows::UI::Xaml::Controls::TextBlock^>(__target);
                 break;
         }
     }
@@ -76,9 +79,9 @@ public:
     }
 private:
     // Fields for each control that has bindings.
-    ::Windows::UI::Xaml::Controls::Image^ obj14;
-    ::Windows::UI::Xaml::Controls::TextBlock^ obj15;
-    ::Windows::UI::Xaml::Controls::TextBlock^ obj16;
+    ::Windows::UI::Xaml::Controls::Image^ obj16;
+    ::Windows::UI::Xaml::Controls::TextBlock^ obj17;
+    ::Windows::UI::Xaml::Controls::TextBlock^ obj18;
 
     // Update methods for each path node used in binding steps.
     void Update_(::ImageTranscoderApp::FileListItem^ obj, int phase)
@@ -97,21 +100,21 @@ private:
     {
         if((phase & ((1 << 0) | NOT_PHASED )) != 0)
         {
-            ::XamlBindingInfo::XamlBindingSetters::Set_Windows_UI_Xaml_Controls_Image_Source(this->obj14, obj, nullptr);
+            ::XamlBindingInfo::XamlBindingSetters::Set_Windows_UI_Xaml_Controls_Image_Source(this->obj16, obj, nullptr);
         }
     }
     void Update_FileExtension(::Platform::String^ obj, int phase)
     {
         if((phase & ((1 << 0) | NOT_PHASED )) != 0)
         {
-            ::XamlBindingInfo::XamlBindingSetters::Set_Windows_UI_Xaml_Controls_TextBlock_Text(this->obj15, obj, nullptr);
+            ::XamlBindingInfo::XamlBindingSetters::Set_Windows_UI_Xaml_Controls_TextBlock_Text(this->obj17, obj, nullptr);
         }
     }
     void Update_Description(::Platform::String^ obj, int phase)
     {
         if((phase & ((1 << 0) | NOT_PHASED )) != 0)
         {
-            ::XamlBindingInfo::XamlBindingSetters::Set_Windows_UI_Xaml_Controls_TextBlock_Text(this->obj16, obj, nullptr);
+            ::XamlBindingInfo::XamlBindingSetters::Set_Windows_UI_Xaml_Controls_TextBlock_Text(this->obj18, obj, nullptr);
         }
     }
 };
@@ -120,7 +123,7 @@ private:
 /// Auto generated class for compiled bindings.
 /// </summary>
 class ImageTranscoderApp::MainPage::MainPage_obj1_Bindings 
-    : public ::XamlBindingInfo::XamlBindingsBase<::ImageTranscoderApp::MainPage>
+    : public ::XamlBindingInfo::ReferenceTypeXamlBindings<::ImageTranscoderApp::MainPage>
 {
 public:
     MainPage_obj1_Bindings()
@@ -164,65 +167,77 @@ void ::ImageTranscoderApp::MainPage::Connect(int __connectionId, ::Platform::Obj
 {
     switch (__connectionId)
     {
-        case 2:
-            {
-                this->wideState = safe_cast<::Windows::UI::Xaml::VisualState^>(__target);
-            }
-            break;
-        case 3:
-            {
-                this->narrowState = safe_cast<::Windows::UI::Xaml::VisualState^>(__target);
-            }
-            break;
-        case 4:
-            {
-                this->LayoutRoot = safe_cast<::Windows::UI::Xaml::Controls::Grid^>(__target);
-            }
-            break;
-        case 5:
-            {
-                this->titleTxtBlock = safe_cast<::Windows::UI::Xaml::Controls::TextBlock^>(__target);
-            }
-            break;
-        case 6:
-            {
-                this->ContentRoot = safe_cast<::Windows::UI::Xaml::Controls::Grid^>(__target);
-            }
-            break;
-        case 7:
-            {
-                this->CommandPanel = safe_cast<::Windows::UI::Xaml::Controls::StackPanel^>(__target);
-            }
-            break;
-        case 8:
-            {
-                this->selImagesButton = safe_cast<::Windows::UI::Xaml::Controls::Button^>(__target);
-                (safe_cast<::Windows::UI::Xaml::Controls::Button^>(this->selImagesButton))->Click += ref new ::Windows::UI::Xaml::RoutedEventHandler(this, (void (::ImageTranscoderApp::MainPage::*)
-                    (::Platform::Object^, ::Windows::UI::Xaml::RoutedEventArgs^))&MainPage::OnClickSelImagesButton);
-            }
-            break;
-        case 9:
-            {
-                this->startButton = safe_cast<::Windows::UI::Xaml::Controls::Button^>(__target);
-                (safe_cast<::Windows::UI::Xaml::Controls::Button^>(this->startButton))->Click += ref new ::Windows::UI::Xaml::RoutedEventHandler(this, (void (::ImageTranscoderApp::MainPage::*)
-                    (::Platform::Object^, ::Windows::UI::Xaml::RoutedEventArgs^))&MainPage::OnClickStartButton);
-            }
-            break;
-        case 10:
-            {
-                this->qualitySlider = safe_cast<::Windows::UI::Xaml::Controls::Slider^>(__target);
-            }
-            break;
-        case 11:
-            {
-                this->waitingRing = safe_cast<::Windows::UI::Xaml::Controls::ProgressRing^>(__target);
-            }
-            break;
-        case 12:
-            {
-                this->filesListView = safe_cast<::Windows::UI::Xaml::Controls::ListView^>(__target);
-            }
-            break;
+    case 2:
+        {
+            this->wideState = safe_cast<::Windows::UI::Xaml::VisualState^>(__target);
+        }
+        break;
+    case 3:
+        {
+            this->narrowState = safe_cast<::Windows::UI::Xaml::VisualState^>(__target);
+        }
+        break;
+    case 4:
+        {
+            this->LayoutRoot = safe_cast<::Windows::UI::Xaml::Controls::Grid^>(__target);
+        }
+        break;
+    case 5:
+        {
+            this->titleTxtBlock = safe_cast<::Windows::UI::Xaml::Controls::TextBlock^>(__target);
+        }
+        break;
+    case 6:
+        {
+            this->ContentRoot = safe_cast<::Windows::UI::Xaml::Controls::Grid^>(__target);
+        }
+        break;
+    case 7:
+        {
+            this->CommandPanel = safe_cast<::Windows::UI::Xaml::Controls::StackPanel^>(__target);
+        }
+        break;
+    case 8:
+        {
+            this->startButton = safe_cast<::Windows::UI::Xaml::Controls::Button^>(__target);
+            (safe_cast<::Windows::UI::Xaml::Controls::Button^>(this->startButton))->Click += ref new ::Windows::UI::Xaml::RoutedEventHandler(this, (void (::ImageTranscoderApp::MainPage::*)
+                (::Platform::Object^, ::Windows::UI::Xaml::RoutedEventArgs^))&MainPage::OnClickStartButton);
+        }
+        break;
+    case 9:
+        {
+            this->qualitySlider = safe_cast<::Windows::UI::Xaml::Controls::Slider^>(__target);
+        }
+        break;
+    case 10:
+        {
+            this->toJxrCheckBox = safe_cast<::Windows::UI::Xaml::Controls::CheckBox^>(__target);
+        }
+        break;
+    case 11:
+        {
+            this->waitingRing = safe_cast<::Windows::UI::Xaml::Controls::ProgressRing^>(__target);
+        }
+        break;
+    case 12:
+        {
+            this->filesListView = safe_cast<::Windows::UI::Xaml::Controls::ListView^>(__target);
+        }
+        break;
+    case 13:
+        {
+            this->selectImagesButton = safe_cast<::Windows::UI::Xaml::Controls::AppBarButton^>(__target);
+            (safe_cast<::Windows::UI::Xaml::Controls::AppBarButton^>(this->selectImagesButton))->Click += ref new ::Windows::UI::Xaml::RoutedEventHandler(this, (void (::ImageTranscoderApp::MainPage::*)
+                (::Platform::Object^, ::Windows::UI::Xaml::RoutedEventArgs^))&MainPage::OnClickSelectImagesButton);
+        }
+        break;
+    case 14:
+        {
+            this->clearSelImagesButton = safe_cast<::Windows::UI::Xaml::Controls::AppBarButton^>(__target);
+            (safe_cast<::Windows::UI::Xaml::Controls::AppBarButton^>(this->clearSelImagesButton))->Click += ref new ::Windows::UI::Xaml::RoutedEventHandler(this, (void (::ImageTranscoderApp::MainPage::*)
+                (::Platform::Object^, ::Windows::UI::Xaml::RoutedEventArgs^))&MainPage::OnClickClearSelImagesButton);
+        }
+        break;
     }
     _contentLoaded = true;
 }
@@ -242,18 +257,20 @@ void ::ImageTranscoderApp::MainPage::Connect(int __connectionId, ::Platform::Obj
                 element1->Loading += ref new ::Windows::Foundation::TypedEventHandler<::Windows::UI::Xaml::FrameworkElement^, ::Platform::Object^>(bindings, &::XamlBindingInfo::XamlBindings::Loading);
             }
             break;
-        case 13:
+        case 15:
             {
-                ::Windows::UI::Xaml::Controls::StackPanel^ element13 = safe_cast<::Windows::UI::Xaml::Controls::StackPanel^>(__target);
-                MainPage_obj13_Bindings* objBindings = new MainPage_obj13_Bindings();
-                objBindings->SetDataRoot(element13->DataContext);
+                ::Windows::UI::Xaml::Controls::StackPanel^ element15 = safe_cast<::Windows::UI::Xaml::Controls::StackPanel^>(__target);
+                MainPage_obj15_Bindings* objBindings = new MainPage_obj15_Bindings();
+                objBindings->SetDataRoot(element15->DataContext);
                 bindings = ref new ::XamlBindingInfo::XamlBindings(objBindings);
-                bindings->SubscribeForDataContextChanged(element13);
-                ::Windows::UI::Xaml::DataTemplate::SetExtensionInstance(element13, bindings);
+                bindings->SubscribeForDataContextChanged(element15);
+                ::Windows::UI::Xaml::DataTemplate::SetExtensionInstance(element15, bindings);
             }
             break;
     }
     return bindings;
 }
+
+#pragma warning(pop)
 
 

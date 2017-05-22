@@ -56,8 +56,6 @@ namespace ImageTranscoderApp
 	{
     private:
 
-        _3fd::core::FrameworkInstance m_3fdInstance;
-
         std::set<size_t> m_setOfSelFiles;
 
         Storage::Pickers::FileOpenPicker ^m_filesPicker;
@@ -79,7 +77,9 @@ namespace ImageTranscoderApp
             }
         }
 
-        void OnClickSelImagesButton(Object ^sender, Windows::UI::Xaml::RoutedEventArgs ^evArgs);
+        void OnClickSelectImagesButton(Object ^sender, Windows::UI::Xaml::RoutedEventArgs ^evArgs);
+
+        void OnClickClearSelImagesButton(Object ^sender, Windows::UI::Xaml::RoutedEventArgs ^evArgs);
 
         void OnClickStartButton(Object ^sender, Windows::UI::Xaml::RoutedEventArgs ^evArgs);
 	};

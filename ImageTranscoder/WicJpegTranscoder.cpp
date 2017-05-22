@@ -190,24 +190,20 @@ namespace application
     /// <param name="filePath">Full name of the file.</param>
     /// <param name="toJXR">if set to <c>true</c>, reencodes to JPEG XR.</param>
     /// <param name="imgQualityRatio">The image quality ratio, as a real number in the [0,1] interval.</param>
-    void WicJpegTranscoder::Transcode(_string filePath, bool toJXR, float imgQualityRatio)
+    void WicJpegTranscoder::Transcode(const string &filePath, bool toJXR, float imgQualityRatio)
     {
         CALL_STACK_TRACE;
 
         try
         {
-#   ifdef _3FD_PLATFORM_WIN32API
             std::wstring_convert<std::codecvt_utf8<wchar_t>> strConv;
-            auto ucs2filePath = strConv.from_bytes(filePath);
-            auto filePathCStr = ucs2filePath.c_str();
-#   elif defined _3FD_PLATFORM_WINRT
-            auto filePathCStr = filePath->Data();
-#   endif
+            const auto wcsFilePath = strConv.from_bytes(filePath);
+
             // Create decoder from input image file:
 
             HRESULT hr;
             ComPtr<IWICBitmapDecoder> decoder;
-            hr = m_wicImagingFactory->CreateDecoderFromFilename(filePathCStr,
+            hr = m_wicImagingFactory->CreateDecoderFromFilename(wcsFilePath.c_str(),
                                                                 nullptr,
                                                                 GENERIC_READ,
                                                                 WICDecodeMetadataCacheOnLoad,
@@ -222,8 +218,8 @@ namespace application
             if (FAILED(hr))
                 WWAPI::RaiseHResultException(hr, "Failed to create file stream", "IWICImagingFactory::CreateStream");
 
-            auto ucs2fOutName = GenerateOutputFileName(filePathCStr, toJXR);
-            hr = fileOutStream->InitializeFromFilename(filePathCStr, GENERIC_WRITE);
+            auto wcsFileOutName = GenerateOutputFileName(wcsFilePath.c_str(), toJXR);
+            hr = fileOutStream->InitializeFromFilename(wcsFileOutName.c_str(), GENERIC_WRITE);
             if (FAILED(hr))
                 WWAPI::RaiseHResultException(hr, "Failed to initialize output file stream", "IWICStream::InitializeFromFilename");
 
@@ -319,21 +315,14 @@ namespace application
 
             }// for loop end
 
-             // commit to encoder
+            // commit to encoder
             if (FAILED(hr = encoder->Commit()))
                 WWAPI::RaiseHResultException(hr, "Encoder failed to commit changes to transcoded image", "IWICBitmapEncoder::Commit");
         }
         catch (IAppException &ex)
         {
-#   ifdef _3FD_PLATFORM_WIN32API
-            auto filePathCStr = filePath.c_str();
-#   elif defined _3FD_PLATFORM_WINRT
-            std::wstring_convert<std::codecvt_utf8<wchar_t>> strConv;
-            auto utf8filePath = strConv.to_bytes(filePath->Data());
-            auto filePathCStr = utf8filePath.c_str();
-#   endif
             std::ostringstream oss;
-            oss << "Failed to transcode image file " << filePathCStr;
+            oss << "Failed to transcode image file " << filePath;
             throw AppException<std::runtime_error>(oss.str(), ex);
         }
     }

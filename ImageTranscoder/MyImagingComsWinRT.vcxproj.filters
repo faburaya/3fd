@@ -11,12 +11,14 @@
     <ClCompile Include="WicJpegTranscoder.cpp" />
     <ClCompile Include="WicUtilities.cpp" />
     <ClCompile Include="stdafx.cpp" />
+    <ClCompile Include="InterfaceWinRT.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="WicUtilities.h" />
     <ClInclude Include="WicJpegTranscoder.h" />
     <ClInclude Include="MetadataCopier.h" />
     <ClInclude Include="MetadataCopyMap.h" />
+    <ClInclude Include="InterfaceWinRT.h" />
   </ItemGroup>
   <ItemGroup>
     <Xml Include="MetadataCopyMap.xml">

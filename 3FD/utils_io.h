@@ -291,7 +291,7 @@ namespace utils
         return SerializableValue<ValType>(value);
     }
 
-    // Wraps an string argument to prepare for serialization
+    // Wraps a string argument to prepare for serialization
     template <typename CharType>
     SerializableValue<const CharType *> FormatArg(const std::basic_string<CharType> &value)
     {
@@ -305,6 +305,13 @@ namespace utils
         return wsval;
     }
 
+#ifdef _3FD_PLATFORM_WINRT
+    // Wraps a string argument to prepare for serialization
+    SerializableValue<const wchar_t *> FormatArg(Platform::String ^value)
+    {
+        return SerializableValue<const wchar_t *>(value->Data());
+    }
+#endif
 
     //////////////////////////////
     // Serialization Helpers

@@ -15,9 +15,9 @@
                         <AdaptiveTrigger MinWindowWidth="641" />
                     </VisualState.StateTriggers>
                     <VisualState.Setters>
-                        <Setter Target="titleTxtBlock.Margin" Value="30,15,30,15"/>
-                        <Setter Target="ContentRoot.Margin" Value="30,0,30,15"/>
-                        <Setter Target="CommandPanel.Margin" Value="30,15,30,15"/>
+                        <Setter Target="titleTxtBlock.Margin" Value="24,18,24,24"/>
+                        <Setter Target="ContentRoot.Margin" Value="24,0,24,18"/>
+                        <Setter Target="CommandPanel.Margin" Value="24,18,24,18"/>
                         <Setter Target="CommandPanel.Orientation" Value="Horizontal"/>
                         <Setter Target="CommandPanel.HorizontalAlignment" Value="Right"/>
                     </VisualState.Setters>
@@ -27,9 +27,9 @@
                         <AdaptiveTrigger MinWindowWidth="0" />
                     </VisualState.StateTriggers>
                     <VisualState.Setters>
-                        <Setter Target="titleTxtBlock.Margin" Value="16,8,16,8"/>
-                        <Setter Target="ContentRoot.Margin" Value="16,0,16,8"/>
-                        <Setter Target="CommandPanel.Margin" Value="16,8,16,8"/>
+                        <Setter Target="titleTxtBlock.Margin" Value="16,12,16,12"/>
+                        <Setter Target="ContentRoot.Margin" Value="16,0,16,12"/>
+                        <Setter Target="CommandPanel.Margin" Value="16,12,16,12"/>
                         <Setter Target="CommandPanel.Orientation" Value="Vertical"/>
                     </VisualState.Setters>
                 </VisualState>
@@ -37,7 +37,7 @@
         </VisualStateManager.VisualStateGroups>
 
         <Grid.Resources>
-            <Thickness x:Key="RightAlignedMargin">15,0,0,0</Thickness>
+            <Thickness x:Key="RightAlignedMargin">18,0,0,0</Thickness>
             <Thickness x:Key="ThumbnailTextMargin">10,0,0,0</Thickness>
         </Grid.Resources>
 
@@ -64,44 +64,59 @@
             <!-- Content should be placed within the following grid-->
             <Grid x:Name="ContentRoot" Grid.Row="1">
                 <ProgressRing Name="waitingRing" Visibility="Collapsed"></ProgressRing>
-                <ScrollViewer>
-                    <ListView Name="filesListView"
+                <ListView Name="filesListView"
                               ItemsSource="{x:Bind InputImages}"
                               SelectionMode="None" IsItemClickEnabled="False">
-                        <ListView.ItemTemplate>
-                            <DataTemplate x:ValType="local:FileListItem">
-                                <StackPanel Orientation="Horizontal">
-                                    <Image Width="40" Source="{x:Bind Thumbnail}"/>
-                                    <StackPanel Orientation="Vertical" Margin="{StaticResource ThumbnailTextMargin}">
-                                        <TextBlock Text="{x:Bind FileExtension}"/>
-                                        <TextBlock Text="{x:Bind Description}"
-                                                   Opacity="0.50"
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="local:FileListItem">
+                            <StackPanel Orientation="Horizontal">
+                                <Image Width="40" Source="{x:Bind Thumbnail}"/>
+                                <StackPanel Orientation="Vertical" Margin="{StaticResource ThumbnailTextMargin}">
+                                    <TextBlock Text="{x:Bind FileExtension}"/>
+                                    <TextBlock Text="{x:Bind Description}"
+                                                   Opacity="0.80"
                                                    TextTrimming="WordEllipsis"/>
-                                    </StackPanel>
                                 </StackPanel>
-                            </DataTemplate>
-                        </ListView.ItemTemplate>
-                    </ListView>
-                </ScrollViewer>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+                <CommandBar VerticalAlignment="Bottom"
+                            DefaultLabelPosition="Right"
+                            Opacity="0.50">
+                    <AppBarButton Name="selectImagesButton"
+                                  Icon="Add"
+                                  Label="Add &#x00AD;images"
+                                  Click="OnClickSelectImagesButton"/>
+                    <AppBarButton Name="clearSelImagesButton"
+                                  Icon="ClearSelection"
+                                  Label="Clear &#x00AD;Selection"
+                                  Click="OnClickClearSelImagesButton"/>
+                </CommandBar>
             </Grid>
 
             <!-- Bottom panel for commands -->
             <StackPanel x:Name="CommandPanel" Grid.Row="2">
                 <!-- Transcoding options -->
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                    <CheckBox HorizontalAlignment="Right" MinWidth="50">JXR</CheckBox>
                     <TextBlock VerticalAlignment="Center" Margin="{StaticResource RightAlignedMargin}">Quality</TextBlock>
+                    
                     <Slider Name="qualitySlider"
                             Minimum="1" Maximum="100"
                             TickFrequency="1" TickPlacement="Inline" 
                             Orientation="Horizontal" Width="160"
                             Margin="{StaticResource RightAlignedMargin}"/>
+                    
+                    <CheckBox Name="toJxrCheckBox"
+                              HorizontalAlignment="Right" MinWidth="50"
+                              Margin="{StaticResource RightAlignedMargin}">JXR</CheckBox>
                 </StackPanel>
 
                 <!-- Action buttons -->
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button Name="selImagesButton" Margin="{StaticResource RightAlignedMargin}" Click="OnClickSelImagesButton">Add images</Button>
-                    <Button Name="startButton" Margin="{StaticResource RightAlignedMargin}" Click="OnClickStartButton">Start</Button>
+                    <Button Name="startButton"
+                            Margin="{StaticResource RightAlignedMargin}"
+                            Click="OnClickStartButton">Start</Button>
                 </StackPanel>
             </StackPanel>
         </Grid>

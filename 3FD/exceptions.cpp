@@ -72,7 +72,12 @@ namespace _3fd
 #       else
             _com_error comErrObj(errCode);
 #       endif
-            return transcoder.to_bytes(comErrObj.ErrorMessage());
+            auto text = transcoder.to_bytes(comErrObj.ErrorMessage());
+
+            while (text.back() == '\n' || text.back() == '\r')
+                text.pop_back();
+
+            return std::move(text);
         }
 
         /// <summary>
@@ -83,18 +88,10 @@ namespace _3fd
         /// <param name="function">The name function of the function that returned the error code.</param>
         void WWAPI::RaiseHResultException(HRESULT errCode, const char *message, const char *function)
         {
-            _ASSERTE(FAILED(errCode));
-            std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
-
-#	    ifdef _3FD_PLATFORM_WINRT
-            _com_error comErrObj(errCode, nullptr);
-#       else
-            _com_error comErrObj(errCode);
-#       endif
             std::ostringstream oss;
             oss << message << " - API call "
                 << function << " returned: "
-                << transcoder.to_bytes(comErrObj.ErrorMessage());
+                << GetDetailsFromHResult(errCode);
 
             throw HResultException(errCode, oss.str());
         }
@@ -109,7 +106,12 @@ namespace _3fd
             std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
             std::ostringstream oss;
             oss << message << " - " << transcoder.to_bytes(ex.ErrorMessage());
-            throw HResultException(ex.Error(), oss.str());
+
+            auto text = oss.str();
+            while (text.back() == '\n' || text.back() == '\r')
+                text.pop_back();
+
+            throw HResultException(ex.Error(), std::move(text));
         }
 
 #   ifdef _3FD_PLATFORM_WIN32API // only for classic desktop apps:

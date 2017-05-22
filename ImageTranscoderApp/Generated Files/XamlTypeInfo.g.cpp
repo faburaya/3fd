@@ -99,7 +99,7 @@ struct TypeInfo
     bool    isBindable;
 };
 
-TypeInfo TypeInfos[] = 
+const TypeInfo TypeInfos[] = 
 {
     //   0
     L"Object", L"",
@@ -163,7 +163,7 @@ TypeInfo TypeInfos[] =
     false, false, false, false,
 };
 
-UINT TypeInfoLookup[] = { 
+const UINT TypeInfoLookup[] = { 
       0,   //   0
       0,   //   1
       0,   //   2
@@ -263,7 +263,7 @@ struct MemberInfo
     bool isAttachable;
 };
 
-MemberInfo MemberInfos[] = 
+const MemberInfo MemberInfos[] = 
 {
     //   0 - ImageTranscoderApp.MainPage.InputImages
     L"InputImages",
@@ -308,7 +308,7 @@ PCWSTR GetShortName(PCWSTR longName)
     return separator != nullptr ? separator + 1: longName;
 }
 
-TypeInfo* GetTypeInfo(::Platform::String^ typeName)
+const TypeInfo* GetTypeInfo(::Platform::String^ typeName)
 {
     int typeNameLength = typeName->Length();
     if (typeNameLength < _countof(TypeInfoLookup) - 1)
@@ -324,14 +324,14 @@ TypeInfo* GetTypeInfo(::Platform::String^ typeName)
     return nullptr;
 }
 
-MemberInfo* GetMemberInfo(::Platform::String^ longMemberName)
+const MemberInfo* GetMemberInfo(::Platform::String^ longMemberName)
 {
     for (int lastDotIndex = longMemberName->Length(); lastDotIndex >= 0; lastDotIndex--)
     {
         if (longMemberName->Data()[lastDotIndex] == '.')
         {
-            TypeInfo* pTypeInfo = GetTypeInfo(ref new ::Platform::String(longMemberName->Data(), lastDotIndex));
-            TypeInfo* pNextTypeInfo = pTypeInfo + 1;
+            const TypeInfo* pTypeInfo = GetTypeInfo(ref new ::Platform::String(longMemberName->Data(), lastDotIndex));
+            const TypeInfo* pNextTypeInfo = pTypeInfo + 1;
             if (pTypeInfo)
             {
                 PCWSTR shortMemberName = GetShortName(longMemberName->Data());
@@ -361,8 +361,8 @@ MemberInfo* GetMemberInfo(::Platform::String^ longMemberName)
 
 ::Windows::UI::Xaml::Markup::IXamlType^ ::XamlTypeInfo::InfoProvider::XamlTypeInfoProvider::CreateXamlType(::Platform::String^ typeName)
 {
-    TypeInfo* pTypeInfo = GetTypeInfo(typeName);
-    TypeInfo* pNextTypeInfo = pTypeInfo + 1;
+    const TypeInfo* pTypeInfo = GetTypeInfo(typeName);
+    const TypeInfo* pNextTypeInfo = pTypeInfo + 1;
     if (pTypeInfo == nullptr || pNextTypeInfo == nullptr)
     {
         return nullptr;
@@ -399,7 +399,7 @@ MemberInfo* GetMemberInfo(::Platform::String^ longMemberName)
 ::Windows::UI::Xaml::Markup::IXamlMember^ ::XamlTypeInfo::InfoProvider::XamlTypeInfoProvider::CreateXamlMember(::Platform::String^ longMemberName)
 {
     ::XamlTypeInfo::InfoProvider::XamlMember^ xamlMember = nullptr;
-    MemberInfo* pMemberInfo = GetMemberInfo(longMemberName);
+    const MemberInfo* pMemberInfo = GetMemberInfo(longMemberName);
     if (pMemberInfo != nullptr)
     {
         xamlMember = ref new ::XamlTypeInfo::InfoProvider::XamlMember(

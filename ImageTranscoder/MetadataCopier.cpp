@@ -9,7 +9,7 @@
 #ifdef _3FD_PLATFORM_WIN32API
 #   include <MsXml6.h>
 #elif defined _3FD_PLATFORM_WINRT
-#   include "utils_winrt.h"
+#   include "3FD\utils_winrt.h"
 #endif
 
 #include <wincodecsdk.h>
@@ -251,7 +251,7 @@ namespace application
         /// <returns>The number of map cases.</returns>
         uint16_t Count() const
         {
-            return m_mapCasesEntries.size();
+            return static_cast<uint16_t> (m_mapCasesEntries.size());
         }
 
     };// end of MetadataMapCases class

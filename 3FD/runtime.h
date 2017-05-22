@@ -4,6 +4,7 @@
 #include "preprocessing.h"
 #include "callstacktracer.h"
 #include "logger.h"
+#include <string>
 
 #ifdef _3FD_PLATFORM_WIN32API
 #   include <roapi.h>
@@ -17,21 +18,31 @@ namespace core
 	/// An object to be allocated on the stack which is responsible for 
 	/// starting or stopping the framework instance for the current thread.
 	/// </summary>
-	class FrameworkInstance
+	class FrameworkInstance : notcopiable
 	{
     private:
-#   ifdef _3FD_PLATFORM_WIN32API
+
+        std::string m_moduleName;
+
+#ifdef _3FD_PLATFORM_WIN32API
         bool m_isComLibInitialized;
-#   endif
+#endif
+        
 	public:
 
-		FrameworkInstance();
-#   ifdef _3FD_PLATFORM_WIN32API
+#ifdef _3FD_PLATFORM_WIN32API
+
         FrameworkInstance(RO_INIT_TYPE comThreadModel);
-#   endif
+        FrameworkInstance();
+
+#elif defined _3FD_PLATFORM_WINRT
+
+        FrameworkInstance(const char *thisComName = "UNKNOWN");
+#endif
 		~FrameworkInstance();
 	};
-}
-}
+
+}// end of namespace core
+}// end of namespace _3fd
 
 #endif // header guard

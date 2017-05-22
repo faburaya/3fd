@@ -32,7 +32,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Real Applications", "Real A
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ImageTranscoder", "ImageTranscoder\ImageTranscoder.vcxproj", "{78B91DF7-B30D-4479-BEBC-795C8617DC55}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ImageTranscoderComWinRT", "ImageTranscoder\ImageTranscoderComWinRT.vcxproj", "{EF5FD437-8033-4645-9977-D07323283556}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MyImagingComsWinRT", "ImageTranscoder\MyImagingComsWinRT.vcxproj", "{EF5FD437-8033-4645-9977-D07323283556}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "3FD.WinRT.UWP", "3FD\3FD.WinRT.UWP.vcxproj", "{793AC4E5-04FF-43C1-89F9-6D7212264A36}"
 EndProject

@@ -3,6 +3,7 @@
 #include "exceptions.h"
 #include "logger.h"
 
+#include <array>
 #include <cassert>
 #include <codecvt>
 
@@ -261,6 +262,7 @@ namespace utils
     {
         auto dialog = ref new Windows::UI::Xaml::Controls::ContentDialog();
         dialog->Title = title;
+        dialog->Content = content;
         dialog->SecondaryButtonText = closeButtonText;
         dialog->ShowAsync();
     }
@@ -303,10 +305,29 @@ namespace utils
                                Platform::String ^closeButtonText,
                                core::Logger::Priority logEntryPrio)
     {
-        Notify(title, ex->Message, closeButtonText);
-        
+        std::array<wchar_t, 256> buffer;
+        wcsncpy(buffer.data(), ex->Message->Data(), buffer.size());
+        buffer[buffer.size() - 1] = L'\0';
+
+        std::wostringstream woss;
+
+        auto token = wcstok(buffer.data(), L"\r\n");
+        while (true)
+        {
+            woss << token;
+
+            token = wcstok(nullptr, L"\r\n");
+            if (token != nullptr)
+                woss << L" - ";
+            else
+                break;
+        }
+
+        auto message = woss.str();
+        Notify(title, ref new Platform::String(message.c_str()), closeButtonText);
+
         std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
-        core::Logger::Write(transcoder.to_bytes(ex->Message->Data()), logEntryPrio);
+        core::Logger::Write(transcoder.to_bytes(message), logEntryPrio);
     }
 
     /// <summary>

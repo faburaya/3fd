@@ -85,6 +85,7 @@ namespace XamlBindingInfo
         virtual void CollectionChanged(::Platform::Object^ sender, ::Windows::UI::Xaml::Interop::NotifyCollectionChangedEventArgs^ e) = 0;
         virtual void DependencyPropertyChanged(::Windows::UI::Xaml::DependencyObject^ sender, Windows::UI::Xaml::DependencyProperty^ prop) = 0;
         virtual void VectorChanged(::Platform::Object^ sender, ::Windows::Foundation::Collections::IVectorChangedEventArgs^ e) = 0;
+        virtual void MapChanged(::Platform::Object^ sender, ::Windows::Foundation::Collections::IMapChangedEventArgs<::Platform::String^>^ e) = 0;
     };
 
     ref class XamlBindingTracking sealed
@@ -289,12 +290,8 @@ namespace XamlBindingInfo
 
     };
 
-    template<class T> 
     class XamlBindingsBase : public IXamlBindings
     {
-    private:
-        ::Platform::WeakReference _dataRoot;
-
     protected:
         bool _isInitialized;
         ::XamlBindingInfo::XamlBindingTracking^ _bindingsTracking;
@@ -318,23 +315,13 @@ namespace XamlBindingInfo
                 _bindingsTracking = nullptr;
             }
         }
-    
+
+        virtual void ReleaseAllListeners()
+        {
+            // Overridden in the binding class as needed.
+        }
+
     public:
-        T^ GetDataRoot()
-        {
-            return ResolveHelper<T>::Resolve(this->_dataRoot);
-        }
-
-        bool SetDataRoot(::Platform::Object^ data)
-        {
-            if (data != nullptr)
-            {
-                this->_dataRoot = data;
-                return true;
-            }
-            return false;
-        }
-
         void InitializeTracking(::XamlBindingInfo::IXamlBindingTracking* pBindingsTracking)
         {
             _bindingsTracking = ref new ::XamlBindingInfo::XamlBindingTracking();
@@ -352,11 +339,7 @@ namespace XamlBindingInfo
             return this->_isInitialized;
         }
 
-        virtual void Update() override
-        {
-            this->Update_(this->GetDataRoot(), NOT_PHASED);
-            this->_isInitialized = true;
-        }
+        virtual void Update() = 0;
 
         void SubscribeForDataContextChanged(::Windows::UI::Xaml::FrameworkElement^ object, ::XamlBindingInfo::XamlBindings^ handler)
         {
@@ -377,17 +360,79 @@ namespace XamlBindingInfo
             // Overridden in the binding class as needed.
             return -1;
         }
+    };
 
-protected:
-        virtual void Update_(T^ obj, int phase)
+    template<class T> 
+    class ReferenceTypeXamlBindings : public XamlBindingsBase
+    {
+    private:
+        ::Platform::WeakReference _dataRoot;
+
+    protected:
+        ReferenceTypeXamlBindings() {}
+
+        virtual void Update_(T^, int)
         {
             // Overridden in the binding class as needed.
-            phase; // unreferenced parameter
         }
 
-        virtual void ReleaseAllListeners()
+    public:
+        T^ GetDataRoot()
+        {
+            return ResolveHelper<T>::Resolve(this->_dataRoot);
+        }
+
+        bool SetDataRoot(::Platform::Object^ data)
+        {
+            if (data != nullptr)
+            {
+                this->_dataRoot = data;
+                return true;
+            }
+            return false;
+        }
+
+        virtual void Update() override
+        {
+            this->Update_(this->GetDataRoot(), NOT_PHASED);
+            this->_isInitialized = true;
+        }
+    };
+
+    template<class T> 
+    class ValueTypeXamlBindings : public XamlBindingsBase
+    {
+    private:
+        T _dataRoot;
+
+    protected:
+        ValueTypeXamlBindings() {}
+
+        virtual void Update_(T, int)
         {
             // Overridden in the binding class as needed.
+        }
+
+    public:
+        T GetDataRoot()
+        {
+            return this->_dataRoot;
+        }
+
+        bool SetDataRoot(::Platform::Object^ data)
+        {
+            if (data != nullptr)
+            {
+                this->_dataRoot = safe_cast<T>(data);
+                return true;
+            }
+            return false;
+        }
+
+        virtual void Update() override
+        {
+            this->Update_(this->GetDataRoot(), NOT_PHASED);
+            this->_isInitialized = true;
         }
     };
 }

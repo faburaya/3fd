@@ -29,7 +29,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{ef5fd437-8033-4645-9977-d07323283556}</ProjectGuid>
     <Keyword>WindowsRuntimeComponent</Keyword>
-    <RootNamespace>ImageTranscoderComWinRT</RootNamespace>
+    <RootNamespace>MyImagingComsWinRT</RootNamespace>
     <DefaultLanguage>en-US</DefaultLanguage>
     <MinimumVisualStudioVersion>14.0</MinimumVisualStudioVersion>
     <AppContainerApplication>true</AppContainerApplication>
@@ -101,27 +101,33 @@
     <GenerateManifest>false</GenerateManifest>
     <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\$(MSBuildProjectName)\</OutDir>
     <IntDir>$(Platform)\$(Configuration)\WinRT.UWP\</IntDir>
+    <TargetName>media</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <GenerateManifest>false</GenerateManifest>
     <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\$(MSBuildProjectName)\</OutDir>
     <IntDir>$(Platform)\$(Configuration)\WinRT.UWP\</IntDir>
+    <TargetName>media</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
     <GenerateManifest>false</GenerateManifest>
     <IntDir>$(Platform)\$(Configuration)\WinRT.UWP\</IntDir>
+    <TargetName>media</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
     <GenerateManifest>false</GenerateManifest>
     <IntDir>$(Platform)\$(Configuration)\WinRT.UWP\</IntDir>
+    <TargetName>media</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <GenerateManifest>false</GenerateManifest>
     <IntDir>$(Platform)\$(Configuration)\WinRT.UWP\</IntDir>
+    <TargetName>media</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <GenerateManifest>false</GenerateManifest>
     <IntDir>$(Platform)\$(Configuration)\WinRT.UWP\</IntDir>
+    <TargetName>$(ProjectName)</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -232,6 +238,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="InterfaceWinRT.h" />
     <ClInclude Include="MetadataCopier.h" />
     <ClInclude Include="MetadataCopyMap.h">
       <DependentUpon>MetadataCopyMap.xsd</DependentUpon>
@@ -240,6 +247,7 @@
     <ClInclude Include="WicUtilities.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="InterfaceWinRT.cpp" />
     <ClCompile Include="MetadataCopier.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

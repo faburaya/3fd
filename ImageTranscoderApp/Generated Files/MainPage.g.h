@@ -24,8 +24,10 @@ namespace Windows {
                 ref class StackPanel;
                 ref class Button;
                 ref class Slider;
+                ref class CheckBox;
                 ref class ProgressRing;
                 ref class ListView;
+                ref class AppBarButton;
             }
         }
     }
@@ -45,7 +47,7 @@ namespace ImageTranscoderApp
     
     private:
         bool _contentLoaded;
-        class MainPage_obj13_Bindings;
+        class MainPage_obj15_Bindings;
         class MainPage_obj1_Bindings;
     
         ::XamlBindingInfo::XamlBindings^ Bindings;
@@ -55,11 +57,13 @@ namespace ImageTranscoderApp
         private: ::Windows::UI::Xaml::Controls::TextBlock^ titleTxtBlock;
         private: ::Windows::UI::Xaml::Controls::Grid^ ContentRoot;
         private: ::Windows::UI::Xaml::Controls::StackPanel^ CommandPanel;
-        private: ::Windows::UI::Xaml::Controls::Button^ selImagesButton;
         private: ::Windows::UI::Xaml::Controls::Button^ startButton;
         private: ::Windows::UI::Xaml::Controls::Slider^ qualitySlider;
+        private: ::Windows::UI::Xaml::Controls::CheckBox^ toJxrCheckBox;
         private: ::Windows::UI::Xaml::Controls::ProgressRing^ waitingRing;
         private: ::Windows::UI::Xaml::Controls::ListView^ filesListView;
+        private: ::Windows::UI::Xaml::Controls::AppBarButton^ selectImagesButton;
+        private: ::Windows::UI::Xaml::Controls::AppBarButton^ clearSelImagesButton;
     };
 }
 

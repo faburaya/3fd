@@ -8,6 +8,9 @@
       <UniqueIdentifier>956a2eea-08f9-4a04-9a40-1a10b09e4ff0</UniqueIdentifier>
       <Extensions>bmp;fbx;gif;jpg;jpeg;tga;tiff;tif;png</Extensions>
     </Filter>
+    <Filter Include="Ported">
+      <UniqueIdentifier>{44ad6846-7f4a-46cd-83e2-0a562a9f1a12}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="App.xaml" />
@@ -15,22 +18,42 @@
   <ItemGroup>
     <ClCompile Include="App.xaml.cpp" />
     <ClCompile Include="MainPage.xaml.cpp" />
-    <ClCompile Include="..\tests_gc_arrayofedges.cpp" />
-    <ClCompile Include="..\tests_gc_hashtable.cpp" />
-    <ClCompile Include="..\tests_gc_vertex.cpp" />
-    <ClCompile Include="..\tests_gc_vertexstore.cpp" />
-    <ClCompile Include="..\tests_utils_algorithms.cpp" />
-    <ClCompile Include="..\tests_utils_lockfreequeue.cpp" />
-    <ClCompile Include="..\tests_utils_pool.cpp" />
-    <ClCompile Include="..\..\3FD\stdafx.cpp" />
     <ClCompile Include="pch.cpp" />
-    <ClCompile Include="..\tests_utils_io.cpp" />
+    <ClCompile Include="..\..\3FD\stdafx.cpp">
+      <Filter>Ported</Filter>
+    </ClCompile>
+    <ClCompile Include="..\tests_gc_arrayofedges.cpp">
+      <Filter>Ported</Filter>
+    </ClCompile>
+    <ClCompile Include="..\tests_gc_hashtable.cpp">
+      <Filter>Ported</Filter>
+    </ClCompile>
+    <ClCompile Include="..\tests_gc_vertex.cpp">
+      <Filter>Ported</Filter>
+    </ClCompile>
+    <ClCompile Include="..\tests_gc_vertexstore.cpp">
+      <Filter>Ported</Filter>
+    </ClCompile>
+    <ClCompile Include="..\tests_utils_algorithms.cpp">
+      <Filter>Ported</Filter>
+    </ClCompile>
+    <ClCompile Include="..\tests_utils_io.cpp">
+      <Filter>Ported</Filter>
+    </ClCompile>
+    <ClCompile Include="..\tests_utils_lockfreequeue.cpp">
+      <Filter>Ported</Filter>
+    </ClCompile>
+    <ClCompile Include="..\tests_utils_pool.cpp">
+      <Filter>Ported</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.xaml.h" />
     <ClInclude Include="MainPage.xaml.h" />
-    <ClInclude Include="..\..\3FD\stdafx.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="..\..\3FD\stdafx.h">
+      <Filter>Ported</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\LockScreenLogo.scale-200.png">

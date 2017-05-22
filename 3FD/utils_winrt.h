@@ -262,16 +262,18 @@ namespace utils
         /// eventual thrown exception by notifying with a dialog and logging the event.
         /// </summary>
         /// <param name="task">The task.</param>
+        /// <param name="result">A reference to receive the task return.</param>
         /// <param name="exHndParams">The parameters for notification and logging of the event.</param>
         /// <returns>The value returned from the task.</returns>
         template <typename ResultType>
-        static ResultType GetTaskRetAndHndEx(
+        static void GetTaskRetAndHndEx(
             const concurrency::task<ResultType> &task,
+            ResultType &result,
             const ExNotifAndLogParams &exHndParams)
         {
             try
             {
-                return task.get();
+                result = task.get();
             }
             catch (Platform::Exception ^ex)
             {
