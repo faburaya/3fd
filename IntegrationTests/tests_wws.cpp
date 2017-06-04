@@ -51,7 +51,7 @@ namespace integration_tests
         _In_ double first,
         _In_ double second,
         _Out_ double* result,
-        _In_ const WS_ASYNC_CONTEXT* asyncContext,
+        _In_ const WS_ASYNC_CONTEXT *asyncContext,
         _In_ WS_ERROR* wsErrorHandle
     );
 

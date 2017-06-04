@@ -53,7 +53,7 @@ namespace _3fd
 		string WWAPI::GetHResultLabel(HRESULT errCode)
 		{
 			std::ostringstream oss;
-			oss << "HRESULT error code = 0x" << std::hex << errCode << std::flush;
+			oss << "HRESULT error code = 0x" << std::hex << errCode;
 			return oss.str();
 		}
 
@@ -89,9 +89,9 @@ namespace _3fd
         void WWAPI::RaiseHResultException(HRESULT errCode, const char *message, const char *function)
         {
             std::ostringstream oss;
-            oss << message << " - API call "
-                << function << " returned: "
-                << GetDetailsFromHResult(errCode);
+            oss << message << " - API call " << function
+                << " returned HRESULT error code 0x" << std::hex << errCode
+                << ": " << GetDetailsFromHResult(errCode);
 
             throw HResultException(errCode, oss.str());
         }
@@ -105,7 +105,9 @@ namespace _3fd
         {
             std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
             std::ostringstream oss;
-            oss << message << " - " << transcoder.to_bytes(ex.ErrorMessage());
+            oss << message << " - HRESULT error code 0x"
+                << std::hex << ex.Error() << ": "
+                << transcoder.to_bytes(ex.ErrorMessage());
 
             auto text = oss.str();
             while (text.back() == '\n' || text.back() == '\r')
@@ -165,8 +167,8 @@ namespace _3fd
 		{
 			std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
 			std::ostringstream oss;
-			oss << "HRESULT error code = 0x" << std::hex << ex->HResult
-				<< " - " << transcoder.to_bytes(ex->Message->Data());
+			oss << "HRESULT error code 0x" << std::hex << ex->HResult
+				<< ": " << transcoder.to_bytes(ex->Message->Data());
 
 			return oss.str();
 		}

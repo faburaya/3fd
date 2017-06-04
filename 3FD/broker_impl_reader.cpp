@@ -198,7 +198,10 @@ namespace broker
         CALL_STACK_TRACE;
         std::ostringstream oss;
         oss << "Failed to create broker queue reader. "
-               "POCO C++ reported a generic error - " << ex.name() << ": " << ex.message();
+               "POCO C++ reported a generic error - " << ex.name();
+
+        if (!ex.message().empty())
+            oss << ": " << ex.message();
 
         throw core::AppException<std::runtime_error>(oss.str());
     }
@@ -274,7 +277,10 @@ namespace broker
             CALL_STACK_TRACE;
             std::ostringstream oss;
             oss << "Failed to read messages from broker queue. "
-                   "POCO C++ reported a generic error - " << ex.name() << ": " << ex.message();
+                   "POCO C++ reported a generic error - " << ex.name();
+
+            if (!ex.message().empty())
+                oss << ": " << ex.message();
 
             throw core::AppException<std::runtime_error>(oss.str());
         }
@@ -374,7 +380,10 @@ namespace broker
             {
                 std::ostringstream oss;
                 oss << "There was a failure when awaiting for the end of a read operation step in broker queue. "
-                       "POCO C++ reported an error - " << ex.name() << ": " << ex.message();
+                       "POCO C++ reported an error - " << ex.name();
+
+                if (!ex.message().empty())
+                    oss << ": " << ex.message();
 
                 throw core::AppException<std::runtime_error>(oss.str());
             }
@@ -419,7 +428,10 @@ namespace broker
             {
                 std::ostringstream oss;
                 oss << "Failed to step into execution of broker queue read. "
-                       "POCO C++ reported an error - " << ex.name() << ": " << ex.message();
+                       "POCO C++ reported an error - " << ex.name();
+
+                if (!ex.message().empty())
+                    oss << ": " << ex.message();
 
                 throw core::AppException<std::runtime_error>(oss.str());
             }
@@ -518,7 +530,10 @@ namespace broker
             {
                 std::ostringstream oss;
                 oss << "Failed to rollback transaction reading messages from broker queue. "
-                       "POCO C++ reported a generic error - " << ex.name() << ": " << ex.message();
+                       "POCO C++ reported a generic error - " << ex.name();
+
+                if (!ex.message().empty())
+                    oss << ": " << ex.message();
 
                 throw core::AppException<std::runtime_error>(oss.str());
             }
@@ -558,7 +573,10 @@ namespace broker
             {
                 std::ostringstream oss;
                 oss << "Failed to commit transaction reading messages from broker queue. "
-                       "POCO C++ reported a generic error - " << ex.name() << ": " << ex.message();
+                       "POCO C++ reported a generic error - " << ex.name();
+
+                if (!ex.message().empty())
+                    oss << ": " << ex.message();
 
                 throw core::AppException<std::runtime_error>(oss.str());
             }

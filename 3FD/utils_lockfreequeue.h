@@ -233,7 +233,7 @@ namespace utils
 
             // Iterates the singly-linked list backwards in order to get its elements in chronological order
             static size_t IterateRecursiveForEach(QueueItem *front,
-                                                    const std::function<void(const ItemType &)> &callback)
+                                                  const std::function<void(ItemType &)> &callback)
             {
                 if (front == nullptr)
                     return 0;
@@ -313,7 +313,7 @@ namespace utils
             /// </summary>
             /// <param name="callback">The callback to execute for each item.</param>
             /// <returns>How many items were flushed from the queue.</returns>
-            size_t ForEach(const std::function<void(const ItemType &)> &callback)
+            size_t ForEach(const std::function<void(ItemType &)> &callback)
             {
                 auto front = InterlockedFlushSList(m_front);
                 size_t size = m_itemsCount.exchange(0ULL, std::memory_order_acq_rel);
