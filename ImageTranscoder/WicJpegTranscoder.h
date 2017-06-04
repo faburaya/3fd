@@ -26,7 +26,13 @@ namespace application
         virtual ~WicJpegTranscoder();
 
         void Transcode(const std::string &filePath, bool toJXR, float imgQualityRatio);
+
+        void Transcode(IStream *inputStream, IStream *outputStream, bool toJXR, float imgQualityRatio);
     };
+
+
+    std::wstring GenerateOutputFileName(const std::wstring &inputFileName, bool isJXR);
+
 
 } // end of namespace application
 

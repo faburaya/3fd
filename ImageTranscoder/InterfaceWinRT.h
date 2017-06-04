@@ -16,7 +16,7 @@ namespace MyImagingComsWinRT
 
         JpegTranscoder();
 
-        void TranscodeSync(Platform::String ^filePath, bool toJXR, float imgQualityRatio);
+        void TranscodeSync(Windows::Storage::StorageFile ^file, bool toJXR, float imgQualityRatio);
     };
 
 }// end of namespace media

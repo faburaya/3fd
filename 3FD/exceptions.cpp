@@ -5,6 +5,7 @@
 
 #if defined _3FD_PLATFORM_WIN32API || defined _3FD_PLATFORM_WINRT
 #   include <comdef.h>
+#   include <array>
 #endif
 
 namespace _3fd
@@ -165,12 +166,27 @@ namespace _3fd
 		/// <returns>The details about the exception.</returns>
 		string WWAPI::GetDetailsFromWinRTEx(Platform::Exception ^ex)
 		{
-			std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
-			std::ostringstream oss;
-			oss << "HRESULT error code 0x" << std::hex << ex->HResult
-				<< ": " << transcoder.to_bytes(ex->Message->Data());
+            std::wostringstream woss;
+            woss << L"HRESULT error code 0x" << std::hex << ex->HResult << L": ";
 
-			return oss.str();
+            std::array<wchar_t, 256> buffer;
+            wcsncpy(buffer.data(), ex->Message->Data(), buffer.size());
+            buffer[buffer.size() - 1] = L'\0';
+
+            auto token = wcstok(buffer.data(), L"\r\n");
+            while (true)
+            {
+                woss << token;
+
+                token = wcstok(nullptr, L"\r\n");
+                if (token != nullptr)
+                    woss << L" - ";
+                else
+                    break;
+            }
+
+            std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
+            return transcoder.to_bytes(woss.str());
 		}
 #	endif
 

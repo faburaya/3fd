@@ -204,17 +204,17 @@ int main(int argc, const char *argv[])
 
         std::cout << "\n\nSuccessfully transcoded " << inputFiles.size() << " image file(s) in "
                   << std::setprecision(3) << elapsedTime << " second(s)\n" << std::endl;
+
+        return EXIT_SUCCESS;
     }
     catch (filesystem::filesystem_error &ex)
     {
         Logger::Write("File system error!", ex.what(), Logger::PRIO_FATAL);
-        return EXIT_FAILURE;
     }
     catch (IAppException &ex)
     {
         std::cout << std::endl;
         Logger::Write(ex, Logger::PRIO_FATAL);
-        return EXIT_FAILURE;
     }
     catch (std::exception &ex)
     {
@@ -224,7 +224,7 @@ int main(int argc, const char *argv[])
         Logger::Write(oss.str(), Logger::PRIO_FATAL);
     }
 
-    return EXIT_SUCCESS;
+    return EXIT_FAILURE;
 }
 
 // Prints a pretty progress bar

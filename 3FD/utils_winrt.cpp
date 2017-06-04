@@ -305,11 +305,12 @@ namespace utils
                                Platform::String ^closeButtonText,
                                core::Logger::Priority logEntryPrio)
     {
+        std::wostringstream woss;
+        woss << L"HRESULT error code 0x" << std::hex << ex->HResult << L": ";
+
         std::array<wchar_t, 256> buffer;
         wcsncpy(buffer.data(), ex->Message->Data(), buffer.size());
         buffer[buffer.size() - 1] = L'\0';
-
-        std::wostringstream woss;
 
         auto token = wcstok(buffer.data(), L"\r\n");
         while (true)

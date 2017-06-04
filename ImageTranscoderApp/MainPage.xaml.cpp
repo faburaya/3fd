@@ -36,7 +36,7 @@ MainPage::MainPage()
 
     m_filesPicker = ref new FileOpenPicker();
     m_filesPicker->CommitButtonText = StringReference(L"Add to list");
-    m_filesPicker->SuggestedStartLocation = PickerLocationId::ComputerFolder;
+    m_filesPicker->SuggestedStartLocation = PickerLocationId::PicturesLibrary;
     m_filesPicker->ViewMode = PickerViewMode::Thumbnail;
 
     // supported image formats:
@@ -63,7 +63,7 @@ void MainPage::OnClickSelectImagesButton(Object ^sender, RoutedEventArgs ^evArgs
     using concurrency::task;
     using namespace Windows::Storage;
     using namespace Windows::Storage::FileProperties;
-
+    
     // Launch file picker for selection of images:
     concurrency::create_task(
         m_filesPicker->PickMultipleFilesAsync()
@@ -175,7 +175,7 @@ void MainPage::OnClickStartButton(Object ^sender, RoutedEventArgs ^evArgs)
             while (itemsToProcess->Size > 0)
             {
                 auto item = itemsToProcess->GetAt(itemsToProcess->Size - 1);
-                jpegTranscoder->TranscodeSync(item->File->Path, toJXR, quality);
+                jpegTranscoder->TranscodeSync(item->File, toJXR, quality);
                 itemsToProcess->RemoveAtEnd();
             }
         })
