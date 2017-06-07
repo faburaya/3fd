@@ -745,6 +745,11 @@ namespace application
                     WWAPI::RaiseHResultException(hr, strConv.to_bytes(woss.str()).c_str(), "IWICMetadataQueryReader::GetMetadataByName");
                 }
 
+                /* If the item is in fact a group of sub-items, then it cannot be copied like this.
+                   Instead, such group would have to be explicitly listed in MetadataCopyMap.xml. */
+                if (propVar.vt == VT_UNKNOWN)
+                    continue;
+
                 hr = embQueryWriter->SetMetadataByName(query, &propVar);
                 if (FAILED(hr))
                 {
@@ -919,7 +924,7 @@ namespace application
             _propvariant_t writerPropVar;
             writerPropVar.vt = VT_UNKNOWN;
             writerPropVar.punkVal = embQueryWriter.Get();
-            writerPropVar.punkVal->AddRef();
+            //writerPropVar.punkVal->AddRef();
 
             hr = to->SetMetadataByName(UnwrapCString(entry.toPath), &writerPropVar);
             if (FAILED(hr))
@@ -932,7 +937,7 @@ namespace application
                     strConv.to_bytes(woss.str()).c_str(),
                     "IWICMetadataQueryWriter::SetMetadataByName");
             }
-            
+
         });// for_each loop end
     }
 

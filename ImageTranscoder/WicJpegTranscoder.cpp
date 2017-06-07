@@ -51,8 +51,8 @@ namespace application
     std::wstring GenerateOutputFileName(const std::wstring &inputFileName, bool isJXR)
     {
         return std::wstring(inputFileName.begin(),
-            inputFileName.begin() + inputFileName.find_last_of(L'.'))
-            + (isJXR ? L".jxr" : L"_R.jpg");
+            inputFileName.begin() + inputFileName.find_last_of(L'.')
+        ) + (isJXR ? L"_R.jxr" : L"_R.jpg");
     }
 
 
@@ -109,15 +109,15 @@ namespace application
     void CopyMetadata(IntfType1 *source, IntfType2 *dest, bool sameFormat)
     {
         HRESULT hr;
-
+        
         // When formats are the same, metadata can be copied directly:
         if (sameFormat)
         {
             ComPtr<IWICMetadataBlockReader> metadataBlockReader;
             hr = source->QueryInterface(IID_PPV_ARGS(metadataBlockReader.GetAddressOf()));
 
-            /* when the source interface is an encoder object, if the image format does not support container
-               level metadata, this operation is expected to fail and the function should quit at this point */
+            // when the source interface is an encoder object, if the image format does not support container
+            // level metadata, this operation is expected to fail and the function should quit at this point
             if (hr == E_NOINTERFACE)
                 return;
 
@@ -290,6 +290,7 @@ namespace application
 
     /// <summary>
     /// Transcodes the specified image file from any format supported by Windows to JPEG.
+    /// This version of implementation is meant for classical desktop apps.
     /// </summary>
     /// <param name="filePath">Full name of the file.</param>
     /// <param name="toJXR">if set to <c>true</c>, reencodes to JPEG XR.</param>
@@ -301,7 +302,7 @@ namespace application
         try
         {
             std::wstring_convert<std::codecvt_utf8<wchar_t>> strConv;
-            const auto wcsFilePath = strConv.from_bytes(filePath);
+            auto wcsFilePath = strConv.from_bytes(filePath);
 
             // Create decoder from input image file:
 
@@ -322,8 +323,8 @@ namespace application
             if (FAILED(hr))
                 WWAPI::RaiseHResultException(hr, "Failed to create file stream", "IWICImagingFactory::CreateStream");
 
-            auto wcsFileOutName = GenerateOutputFileName(wcsFilePath.c_str(), toJXR);
-            hr = fileOutStream->InitializeFromFilename(wcsFileOutName.c_str(), GENERIC_WRITE);
+            auto outFileName = GenerateOutputFileName(wcsFilePath.c_str(), toJXR);
+            hr = fileOutStream->InitializeFromFilename(outFileName.c_str(), GENERIC_WRITE);
             if (FAILED(hr))
                 WWAPI::RaiseHResultException(hr, "Failed to initialize output file stream", "IWICStream::InitializeFromFilename");
 
@@ -356,6 +357,7 @@ namespace application
 
     /// <summary>
     /// Transcodes the specified image file from any format supported by Windows to JPEG.
+    /// This version of implementation is meant for WinRT.
     /// </summary>
     /// <param name="inputStream">The stream for the input image file.</param>
     /// <param name="outputStream">The stream for the output image file.</param>
@@ -370,9 +372,9 @@ namespace application
         HRESULT hr;
         ComPtr<IWICBitmapDecoder> decoder;
         hr = m_wicImagingFactory->CreateDecoderFromStream(inputStream,
-            nullptr,
-            WICDecodeMetadataCacheOnLoad,
-            decoder.GetAddressOf());
+                                                          nullptr,
+                                                          WICDecodeMetadataCacheOnLoad,
+                                                          decoder.GetAddressOf());
         if (FAILED(hr))
             WWAPI::RaiseHResultException(hr, "Failed to create image decoder", "IWICImagingFactory::CreateDecoderFromStream");
 

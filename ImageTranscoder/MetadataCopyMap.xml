@@ -13,10 +13,16 @@
             <entry guid="{19e4a5aa-5662-4fc5-a0c0-1758028e1057}" name="jpeg"/>
         </container>
         <metadata>
+            <entry guid="{79007028-268D-45D6-A3C2-354E6A504BC9}" name="App0"/>
+            <entry guid="{8FD3DFC3-F951-492B-817F-69C2E6D9A5B0}" name="App1"/>
+            <entry guid="{326556A2-F502-4354-9CC0-8E3F48EAF6B5}" name="App13"/>
             <entry guid="{537396C6-2D8A-4BB6-9BF8-2F0A8E2A3ADF}" name="IFD"/>
-            <entry guid="{BB5ACC38-F216-4CEC-A6C5-5F6E739763A9}" name="XMP"/>
             <entry guid="{1C3C4F9D-B84A-467D-9493-36CFBD59EA57}" name="EXIF"/>
+            <entry guid="{7134AB8A-9351-44AD-AF62-448DB6B502EC}" name="GPS"/>
+            <entry guid="{BB5ACC38-F216-4CEC-A6C5-5F6E739763A9}" name="XMP"/>
+            <entry guid="{16100D66-8570-4BB9-B92D-FDA4B23ECE67}" name="IRB"/>
             <entry guid="{4FAB0914-E129-4087-A1D1-BC812D45A7B5}" name="IPTC"/>
+            <entry guid="{0010568C-0852-4E6A-B191-5C33AC5B0430}" name="8BIMIPTC"/>
         </metadata>
     </formats>
 
@@ -26,45 +32,64 @@
     <map>
         <case srcFormat="tiff" destFormat="jpeg">
             <entry metaFormat="IFD"  fromPath="/ifd"                   toPath="/app1/ifd"                onlyCommon="true"/>
-            <entry metaFormat="XMP"  fromPath="/ifd/xmp"               toPath="/xmp"                     onlyCommon="true"/>
+            <entry metaFormat="XMP"  fromPath="/ifd/xmp"               toPath="/xmp"                     onlyCommon="false"/>
             <entry metaFormat="EXIF" fromPath="/ifd/exif"              toPath="/app1/ifd/exif"           onlyCommon="true"/>
+            <entry metaFormat="GPS"  fromPath="/ifd/gps"               toPath="/app1/ifd/exif"           onlyCommon="true"/>
             <entry metaFormat="IPTC" fromPath="/ifd/irb/8bimiptc/iptc" toPath="/app13/irb/8bimiptc/iptc" onlyCommon="false"/>
         </case>
         <case srcFormat="jpeg" destFormat="tiff">
             <entry metaFormat="IFD"  fromPath="/app1/ifd"                toPath="/ifd"                   onlyCommon="true"/>
-            <entry metaFormat="IFD"  fromPath="/app1"                    toPath="/ifd"                   onlyCommon="true"/>
-            <entry metaFormat="XMP"  fromPath="/xmp"                     toPath="/ifd/xmp"               onlyCommon="true"/>
+            <entry metaFormat="XMP"  fromPath="/xmp"                     toPath="/ifd/xmp"               onlyCommon="false"/>
             <entry metaFormat="EXIF" fromPath="/app1/ifd/exif"           toPath="/ifd/exif"              onlyCommon="true"/>
             <entry metaFormat="IPTC" fromPath="/app13/irb/8bimiptc/iptc" toPath="/ifd/irb/8bimiptc/iptc" onlyCommon="false"/>
         </case>
         <case srcFormat="jpegxr" destFormat="jpeg">
             <entry metaFormat="IFD"  fromPath="/ifd"                   toPath="/app1/ifd"                onlyCommon="true"/>
-            <entry metaFormat="XMP"  fromPath="/ifd/xmp"               toPath="/xmp"                     onlyCommon="true"/>
+            <entry metaFormat="XMP"  fromPath="/ifd/xmp"               toPath="/xmp"                     onlyCommon="false"/>
             <entry metaFormat="EXIF" fromPath="/ifd/exif"              toPath="/app1/ifd/exif"           onlyCommon="true"/>
+            <entry metaFormat="GPS"  fromPath="/ifd/gps"               toPath="/app1/ifd/exif"           onlyCommon="true"/>
             <entry metaFormat="IPTC" fromPath="/ifd/irb/8bimiptc/iptc" toPath="/app13/irb/8bimiptc/iptc" onlyCommon="false"/>
         </case>
         <case srcFormat="jpeg" destFormat="jpegxr">
             <entry metaFormat="IFD"  fromPath="/app1/ifd"                toPath="/ifd"                   onlyCommon="true"/>
-            <entry metaFormat="XMP"  fromPath="/xmp"                     toPath="/ifd/xmp"               onlyCommon="true"/>
+            <entry metaFormat="XMP"  fromPath="/xmp"                     toPath="/ifd/xmp"               onlyCommon="false"/>
             <entry metaFormat="EXIF" fromPath="/app1/ifd/exif"           toPath="/ifd/exif"              onlyCommon="true"/>
             <entry metaFormat="IPTC" fromPath="/app13/irb/8bimiptc/iptc" toPath="/ifd/irb/8bimiptc/iptc" onlyCommon="false"/>
         </case>
         <case srcFormat="tiff" destFormat="jpegxr">
             <entry metaFormat="IFD"  fromPath="/ifd"                   toPath="/ifd"                   onlyCommon="true"/>
-            <entry metaFormat="XMP"  fromPath="/ifd/xmp"               toPath="/ifd/xmp"               onlyCommon="true"/>
+            <entry metaFormat="XMP"  fromPath="/ifd/xmp"               toPath="/ifd/xmp"               onlyCommon="false"/>
             <entry metaFormat="EXIF" fromPath="/ifd/exif"              toPath="/ifd/exif"              onlyCommon="true"/>
+            <entry metaFormat="GPS"  fromPath="/ifd/gps"              toPath="/ifd/gps"                onlyCommon="true"/>
             <entry metaFormat="IPTC" fromPath="/ifd/irb/8bimiptc/iptc" toPath="/ifd/irb/8bimiptc/iptc" onlyCommon="false"/>
         </case>
         <case srcFormat="jpegxr" destFormat="tiff">
             <entry metaFormat="IFD"  fromPath="/ifd"                   toPath="/ifd"                   onlyCommon="true"/>
-            <entry metaFormat="XMP"  fromPath="/ifd/xmp"               toPath="/ifd/xmp"               onlyCommon="true"/>
+            <entry metaFormat="XMP"  fromPath="/ifd/xmp"               toPath="/ifd/xmp"               onlyCommon="false"/>
             <entry metaFormat="EXIF" fromPath="/ifd/exif"              toPath="/ifd/exif"              onlyCommon="true"/>
+            <entry metaFormat="GPS"  fromPath="/ifd/gps"              toPath="/ifd/gps"                onlyCommon="true"/>
             <entry metaFormat="IPTC" fromPath="/ifd/irb/8bimiptc/iptc" toPath="/ifd/irb/8bimiptc/iptc" onlyCommon="false"/>
         </case>
     </map>
 
     <!-- The items that are common to several container formats -->
     <items>
+        <entry id="0"     metaFormat="GPS"  rational="false" name="GPSVersionID"/>
+        <entry id="1"     metaFormat="GPS"  rational="false" name="GPSLatitudeRef"/>
+        <entry id="2"     metaFormat="GPS"  rational="true"  name="GPSLatitude"/>
+        <entry id="3"     metaFormat="GPS"  rational="false" name="GPSLongitudeRef"/>
+        <entry id="4"     metaFormat="GPS"  rational="true"  name="GPSLongitude"/>
+        <entry id="5"     metaFormat="GPS"  rational="false" name="GPSAltitudeRef"/>
+        <entry id="6"     metaFormat="GPS"  rational="true"  name="GPSAltitude"/>
+        <entry id="7"     metaFormat="GPS"  rational="true"  name="GPSTimeStamp"/>
+        <entry id="8"     metaFormat="GPS"  rational="false" name="GPSSatellites"/>
+        <entry id="9"     metaFormat="GPS"  rational="false" name="GPSStatus"/>
+        <entry id="10"    metaFormat="GPS"  rational="false" name="GPSMeasureMode"/>
+        <entry id="11"    metaFormat="GPS"  rational="true"  name="GPSDOP"/>
+        <entry id="12"    metaFormat="GPS"  rational="false" name="GPSSpeedRef"/>
+        <entry id="13"    metaFormat="GPS"  rational="true"  name="GPSSpeed"/>
+        <entry id="14"    metaFormat="GPS"  rational="false" name="GPSTrackRef"/>
+        <entry id="15"    metaFormat="GPS"  rational="true"  name="GPSTrack"/>
         <entry id="256"   metaFormat="IFD"  rational="false" name="ImageWidth"/>
         <entry id="257"   metaFormat="IFD"  rational="false" name="ImageLength"/>
         <entry id="258"   metaFormat="IFD"  rational="false" name="BitsPerSample"/>
@@ -152,21 +177,5 @@
         <entry id="41994" metaFormat="EXIF" rational="false" name="Sharpness"/>
         <entry id="41995" metaFormat="EXIF" rational="false" name="DeviceSettingDescription"/>
         <entry id="41996" metaFormat="EXIF" rational="false" name="SubjectDistanceRange"/>
-        <entry id="0"     metaFormat="EXIF" rational="false" name="GPSVersionID"/>
-        <entry id="1"     metaFormat="EXIF" rational="false" name="GPSLatitudeRef"/>
-        <entry id="2"     metaFormat="EXIF" rational="true"  name="GPSLatitude"/>
-        <entry id="3"     metaFormat="EXIF" rational="false" name="GPSLongitudeRef"/>
-        <entry id="4"     metaFormat="EXIF" rational="true"  name="GPSLongitude"/>
-        <entry id="5"     metaFormat="EXIF" rational="false" name="GPSAltitudeRef"/>
-        <entry id="6"     metaFormat="EXIF" rational="true"  name="GPSAltitude"/>
-        <entry id="7"     metaFormat="EXIF" rational="true"  name="GPSTimeStamp"/>
-        <entry id="8"     metaFormat="EXIF" rational="false" name="GPSSatellites"/>
-        <entry id="9"     metaFormat="EXIF" rational="false" name="GPSStatus"/>
-        <entry id="10"    metaFormat="EXIF" rational="false" name="GPSMeasureMode"/>
-        <entry id="11"    metaFormat="EXIF" rational="true"  name="GPSDOP"/>
-        <entry id="12"    metaFormat="EXIF" rational="false" name="GPSSpeedRef"/>
-        <entry id="13"    metaFormat="EXIF" rational="true"  name="GPSSpeed"/>
-        <entry id="14"    metaFormat="EXIF" rational="false" name="GPSTrackRef"/>
-        <entry id="15"    metaFormat="EXIF" rational="true"  name="GPSTrack"/>
     </items>
 </metadata>
