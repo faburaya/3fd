@@ -91,6 +91,7 @@ add_executable(UnitTests
     tests_gc_vertex.cpp
     tests_gc_vertexstore.cpp
     tests_utils_algorithms.cpp
+    tests_utils_io.cpp
     tests_utils_pool.cpp
     tests_utils_lockfreequeue.cpp
     UnitTests.3fd.config

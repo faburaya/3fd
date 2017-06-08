@@ -65,6 +65,7 @@ add_library(3FD STATIC
     utils_asynchronous.cpp
     utils_dynmempool.cpp
     utils_event.cpp
+    utils_io.cpp
     utils_memorypool.cpp
 )
 

@@ -35,6 +35,8 @@ namespace unit_tests
         EXPECT_EQ(27, utils::SerializeTo<char>(stdout, "serialize double: ", format(42.4242).width(8).precision(4), '\n'));
     }
 
+#ifdef _WIN32
+
     /// <summary>
     /// Tests serializing arguments to wide-char text into an output file.
     /// </summary>
@@ -58,6 +60,8 @@ namespace unit_tests
         EXPECT_EQ(27, utils::SerializeTo<wchar_t>(stdout, L"serialize  float: ", format(42.42F).width(8).precision(4), L'\n'));
         EXPECT_EQ(27, utils::SerializeTo<wchar_t>(stdout, L"serialize double: ", format(42.4242).width(8).precision(4), L'\n'));
     }
+
+#endif
 
     /// <summary>
     /// Tests serializing arguments to UTF-8 text into a statically sized output buffer.
@@ -313,7 +317,7 @@ namespace unit_tests
 
             for (int i = 0; i < nIterations; ++i)
             {
-                swprintf(buffer.data(),
+                swprintf(buffer.data(), buffer.size(),
                     L"initialization test: %d; %.2G; this is wide-char text; %hs",
                     42, 0.42F, "this is UTF-8 text");
             }
@@ -443,7 +447,7 @@ namespace unit_tests
 
             for (int i = 0; i < nIterations; ++i)
             {
-                swprintf(buffer.data(),
+                swprintf(buffer.data(), buffer.size(),
                     L"initialization test: %d; %.2G; this is wide-char text; %hs",
                     42, 0.42F, "this is UTF-8 text");
             }

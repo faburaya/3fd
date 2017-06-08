@@ -14,6 +14,10 @@
 #include <string>
 #include <array>
 
+#ifdef __linux__
+#   include <wchar.h>
+#endif
+
 namespace _3fd
 {
 namespace utils
@@ -28,10 +32,16 @@ namespace utils
     template <typename OutType, typename CharType, typename ... Args>
     int xprintf(OutType output, const CharType *format, Args ... args)
     {
+    #ifdef _MSC_VER
         /* this compile-time assertion is triggered when there
         is no specific implementation of printf-like function
         fitting the provided arguments */
         static_assert(0, "this generic implementation must not compile");
+    #else
+        // NOT IMPLEMENTED:
+        assert(false);
+        throw core::AppException<std::runtime_error>("xprintf: overload not implemented!");
+    #endif
     }
 
     template <typename ... Args>
@@ -80,7 +90,7 @@ namespace utils
 #   ifdef _WIN32
         _set_errno(0);
 #   else
-        *errno = 0;
+        errno = 0;
 #   endif
         int rc = swprintf(buffer.data, buffer.count, format, args ...);
 
@@ -165,11 +175,17 @@ namespace utils
     /// </summary>
     template<> struct PrintFormats<wchar_t>
     {
-         static constexpr const wchar_t *place_holder(char) { return L"%hc"; }
          static constexpr const wchar_t *place_holder(wchar_t) { return L"%c"; }
          static constexpr const wchar_t *place_holder(void *) { return L"%p"; }
+    #ifdef _MSC_VER
+         static constexpr const wchar_t *place_holder(char) { return L"%hc"; }
          static constexpr const wchar_t *place_holder(const char *) { return L"%hs"; }
          static constexpr const wchar_t *place_holder(const wchar_t *) { return L"%s"; }
+    #else
+         static constexpr const wchar_t *place_holder(char) { return L"%c"; }
+         static constexpr const wchar_t *place_holder(const char *) { return L"%s"; }
+         static constexpr const wchar_t *place_holder(const wchar_t *) { return L"%ls"; }
+    #endif
          static constexpr const wchar_t *place_holder(signed short) { return L"%hd"; }
          static constexpr const wchar_t *place_holder(unsigned short) { return L"%hu"; }
          static constexpr const wchar_t *place_holder(signed int) { return L"%d"; }
@@ -182,8 +198,13 @@ namespace utils
          static constexpr const wchar_t *place_holder(long double) { return L"%lG"; }
 
          static constexpr const wchar_t *place_holder_width(void *) { return L"%*p"; }
+    #ifdef _MSC_VER
          static constexpr const wchar_t *place_holder_width(const char *) { return L"%*hs"; }
          static constexpr const wchar_t *place_holder_width(const wchar_t *) { return L"%*s"; }
+    #else
+         static constexpr const wchar_t *place_holder_width(const char *) { return L"%*s"; }
+         static constexpr const wchar_t *place_holder_width(const wchar_t *) { return L"%*ls"; }
+    #endif
          static constexpr const wchar_t *place_holder_width(signed short) { return L"%*hd"; }
          static constexpr const wchar_t *place_holder_width(unsigned short) { return L"%*hu"; }
          static constexpr const wchar_t *place_holder_width(signed int) { return L"%*d"; }
@@ -196,8 +217,13 @@ namespace utils
          static constexpr const wchar_t *place_holder_width(long double) { return L"%*lG"; }
 
          static constexpr const wchar_t *place_holder_precision(void *) { return L"%.*p"; }
+    #ifdef _MSC_VER
          static constexpr const wchar_t *place_holder_precision(const char *) { return L"%.*hs"; }
          static constexpr const wchar_t *place_holder_precision(const wchar_t *) { return L"%.*s"; }
+    #else
+         static constexpr const wchar_t *place_holder_precision(const char *) { return L"%.*s"; }
+         static constexpr const wchar_t *place_holder_precision(const wchar_t *) { return L"%.*ls"; }
+    #endif
          static constexpr const wchar_t *place_holder_precision(signed short) { return L"%.*hd"; }
          static constexpr const wchar_t *place_holder_precision(unsigned short) { return L"%.*hu"; }
          static constexpr const wchar_t *place_holder_precision(signed int) { return L"%.*d"; }
@@ -210,8 +236,13 @@ namespace utils
          static constexpr const wchar_t *place_holder_precision(long double) { return L"%.*lG"; }
 
          static constexpr const wchar_t *place_holder_width_precision(void *) { return L"%*.*p"; }
+    #ifdef _MSC_VER
          static constexpr const wchar_t *place_holder_width_precision(const char *) { return L"%*.*hs"; }
          static constexpr const wchar_t *place_holder_width_precision(const wchar_t *) { return L"%*.*s"; }
+    #else
+         static constexpr const wchar_t *place_holder_width_precision(const char *) { return L"%*.*s"; }
+         static constexpr const wchar_t *place_holder_width_precision(const wchar_t *) { return L"%*.*ls"; }
+    #endif
          static constexpr const wchar_t *place_holder_width_precision(signed short) { return L"%*.*hd"; }
          static constexpr const wchar_t *place_holder_width_precision(unsigned short) { return L"%*.*hu"; }
          static constexpr const wchar_t *place_holder_width_precision(signed int) { return L"%*.*d"; }
@@ -340,7 +371,7 @@ namespace utils
     template <typename CharType, typename FirstArgVType, typename ... Args>
     size_t _serialize_to_file_impl(FILE *file, FirstArgVType &&firstArg, Args ... args)
     {
-        auto pcount = FormatArg(firstArg).SerializeTo<CharType>(file);
+        auto pcount = FormatArg(firstArg).template SerializeTo<CharType>(file);
         return pcount + _serialize_to_file_impl<CharType>(file, args ...);
     }
 
@@ -353,7 +384,7 @@ namespace utils
     template <typename CharType, typename FirstArgVType, typename ... Args>
     size_t _serialize_to_buffer_impl(const RawBufferInfo<CharType> &buffer, FirstArgVType &&firstArg, Args ... args)
     {
-        auto pcount = FormatArg(firstArg).SerializeTo<CharType>(buffer);
+        auto pcount = FormatArg(firstArg).template SerializeTo<CharType>(buffer);
 
         if (pcount < buffer.count)
             return pcount + _serialize_to_buffer_impl<CharType>(RawBufferInfo<CharType>{ buffer.data + pcount, buffer.count - pcount }, args ...);
