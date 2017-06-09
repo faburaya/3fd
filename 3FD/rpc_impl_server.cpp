@@ -247,7 +247,7 @@ namespace rpc
                                AuthenticationLevel authnLevel)
     {
         CALL_STACK_TRACE;
-        InitializeBaseTemplate([&serviceName, &certInfoX509, authnLevel]()
+        InitializeBaseTemplate([&serviceName, certInfoX509, authnLevel]()
         {
             uniqueObject.reset(
                 new RpcServerImpl(serviceName, certInfoX509, authnLevel)
@@ -735,8 +735,8 @@ namespace rpc
         }
 
         // First release resources for the certificate, than the store:
-        m_schannelCred.release();
-        m_sysCertStore.release();
+        m_schannelCred.reset();
+        m_sysCertStore.reset();
 
         core::Logger::Write("RPC server was successfully shut down", core::Logger::PRIO_NOTICE);
     }
@@ -954,12 +954,8 @@ namespace rpc
         try
         {
             std::lock_guard<std::mutex> lock(singletonAccessMutex);
-
-            if (uniqueObject.get() != nullptr)
-            {
-                uniqueObject.reset(nullptr);
-                return STATUS_OKAY;
-            }
+            uniqueObject.reset(nullptr);
+            return STATUS_OKAY;
         }
         catch (core::IAppException &ex)
         {

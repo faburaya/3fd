@@ -111,7 +111,7 @@
   <!-- The WSDL service element defines a collection of ports, or endpoints, that exposes a particular binding -->
   <wsdl:service name="CalculatorService">
     <wsdl:port name="CalculatorEndpoint" binding="tns:CalculatorBinding">
-      <soap:address location="https://localhost:444/calculator"/>
+      <soap:address location="https://hostname:444/calculator"/>
     </wsdl:port>
   </wsdl:service>
 
