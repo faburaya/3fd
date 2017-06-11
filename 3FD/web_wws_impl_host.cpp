@@ -835,10 +835,10 @@ namespace wws
 
 			// Parse information from the WSDL:
 			ParseEndpointsFromWSD(m_wsdContentBuffer,
-									config,
-                                    m_wsdTargetNs,
-                                    m_serviceName,
-                                    m_endpointsInfo);
+                                  config,
+                                  m_wsdTargetNs,
+                                  m_serviceName,
+                                  m_endpointsInfo);
 
 			/* The content of the loaded WSDL file is kept to serve
 			metadata requests. If MEX is disabled, get rid of it: */
