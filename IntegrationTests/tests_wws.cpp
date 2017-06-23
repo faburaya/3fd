@@ -225,20 +225,21 @@ namespace integration_tests
                 // Create the web service host with default configurations:
                 SvcEndpointsConfig hostCfg;
 
+                ServiceBindings bindings;
+
                 /* Map the binding used for the unsecure endpoint to
                 the corresponding implementations: */
-                hostCfg.MapBinding(
+                bindings.MapBinding(
                     "CalcBindingUnsecure",
-                    &calculator_wsdl.contracts.CalcBindingUnsecure,
-                    &calculator_wsdl.policies.CalcBindingUnsecure,
-                    &funcTableSvc
+                    &funcTableSvc,
+                    &CreateServiceEndpoint<WS_HTTP_BINDING_TEMPLATE, CalcBindingUnsecureFunctionTable, CalcBindingUnsecure_CreateServiceEndpoint>
                 );
                 
                 StartTimeCountWebServiceSetupAndOpen();
 
                 // Create the service host:
                 WebServiceHost host(2048);
-                host.Setup("calculator.wsdl", hostCfg, nullptr, true);
+                host.Setup("calculator.wsdl", hostCfg, bindings, nullptr, true);
                 host.Open(); // start listening
 
                 // Wait client to request service closure:
@@ -253,7 +254,9 @@ namespace integration_tests
         /// <summary>
         /// Tests web service access with SSL over HTTP.
         /// </summary>
-        void TestHostTransportSSL()
+        /// <param name="requireClientCert">if set to <c>true</c>, the host
+        /// will require the client to provide a certificate.</param>
+        void TestHostTransportSSL(bool requireClientCert)
         {
             // Ensures proper initialization/finalization of the framework
             _3fd::core::FrameworkInstance _framework;
@@ -272,20 +275,22 @@ namespace integration_tests
                 // Create the web service host with default configurations:
                 SvcEndpointsConfig hostCfg;
 
+                ServiceBindings bindings;
+
                 /* Map the binding used for the endpoint using SSL over HTTP to
                 the corresponding implementations: */
-                hostCfg.MapBinding(
+                bindings.MapBinding(
                     "CalcBindingSSL",
-                    &calculator_wsdl.contracts.CalcBindingSSL,
-                    &calculator_wsdl.policies.CalcBindingSSL,
-                    &funcTableSvc
+                    &funcTableSvc,
+                    &CreateServiceEndpoint<WS_HTTP_SSL_BINDING_TEMPLATE, CalcBindingSSLFunctionTable, CalcBindingSSL_CreateServiceEndpoint>,
+                    requireClientCert
                 );
 
                 StartTimeCountWebServiceSetupAndOpen();
 
                 // Create the service host:
                 WebServiceHost host(2048);
-                host.Setup("calculator.wsdl", hostCfg, nullptr, true);
+                host.Setup("calculator.wsdl", hostCfg, bindings, nullptr, true);
                 host.Open(); // start listening
 
                 // Wait client to request service closure:
@@ -300,7 +305,9 @@ namespace integration_tests
         /// <summary>
         /// Tests web service access with HTTP header authorization and SSL.
         /// </summary>
-        void TestHostHttpHeaderAuthTransportSSL()
+        /// <param name="requireClientCert">if set to <c>true</c>, the host
+        /// will require the client to provide a certificate.</param>
+        void TestHostHttpHeaderAuthTransportSSL(bool requireClientCert)
         {
             // Ensures proper initialization/finalization of the framework
             _3fd::core::FrameworkInstance _framework;
@@ -319,20 +326,22 @@ namespace integration_tests
                 // Create the web service host with default configurations:
                 SvcEndpointsConfig hostCfg;
 
+                ServiceBindings bindings;
+
                 /* Map the binding used for the endpoint using HTTP header
                 authorization with SSL the corresponding implementations: */
-                hostCfg.MapBinding(
+                bindings.MapBinding(
                     "CalcBindingHeaderAuthSSL",
-                    &calculator_wsdl.contracts.CalcBindingHeaderAuthSSL,
-                    &calculator_wsdl.policies.CalcBindingHeaderAuthSSL,
-                    &funcTableSvc
+                    &funcTableSvc,
+                    &CreateServiceEndpoint<WS_HTTP_SSL_HEADER_AUTH_BINDING_TEMPLATE, CalcBindingHeaderAuthSSLFunctionTable, CalcBindingHeaderAuthSSL_CreateServiceEndpoint>,
+                    requireClientCert
                 );
 
                 StartTimeCountWebServiceSetupAndOpen();
 
                 // Create the service host:
                 WebServiceHost host(2048);
-                host.Setup("calculator.wsdl", hostCfg, &AuthorizeMessage, true);
+                host.Setup("calculator.wsdl", hostCfg, bindings, &AuthorizeMessage, true);
                 host.Open(); // start listening
 
                 // Wait client to request service closure:
@@ -347,7 +356,9 @@ namespace integration_tests
         /// <summary>
         /// Tests SOAP fault transmission by web service.
         /// </summary>
-        void TestHostSoapFaultHandling()
+        /// <param name="requireClientCert">if set to <c>true</c>, the host
+        /// will require the client to provide a certificate.</param>
+        void TestHostSoapFaultHandling(bool requireClientCert)
         {
             // Ensures proper initialization/finalization of the framework
             _3fd::core::FrameworkInstance _framework;
@@ -364,38 +375,39 @@ namespace integration_tests
                 // Create the web service host with default configurations:
                 SvcEndpointsConfig hostCfg;
 
+                ServiceBindings bindings;
+
                 /* Map the binding used for the unsecure endpoint
                 to the corresponding implementations: */
-                hostCfg.MapBinding(
+                bindings.MapBinding(
                     "CalcBindingUnsecure",
-                    &calculator_wsdl.contracts.CalcBindingUnsecure,
-                    &calculator_wsdl.policies.CalcBindingUnsecure,
-                    &funcTableSvcUnsecure
+                    &funcTableSvcUnsecure,
+                    &CreateServiceEndpoint<WS_HTTP_BINDING_TEMPLATE, CalcBindingUnsecureFunctionTable, CalcBindingUnsecure_CreateServiceEndpoint>
                 );
 
                 /* Map the binding used for the endpoint using SSL
                 over HTTP to the corresponding implementations: */
-                hostCfg.MapBinding(
+                bindings.MapBinding(
                     "CalcBindingSSL",
-                    &calculator_wsdl.contracts.CalcBindingSSL,
-                    &calculator_wsdl.policies.CalcBindingSSL,
-                    &funcTableSvcSSL
+                    &funcTableSvcSSL,
+                    &CreateServiceEndpoint<WS_HTTP_SSL_BINDING_TEMPLATE, CalcBindingSSLFunctionTable, CalcBindingSSL_CreateServiceEndpoint>,
+                    requireClientCert
                 );
 
                 /* Map the binding used for the endpoint using HTTP header
                 authorization with SSL the corresponding implementations: */
-                hostCfg.MapBinding(
+                bindings.MapBinding(
                     "CalcBindingHeaderAuthSSL",
-                    &calculator_wsdl.contracts.CalcBindingHeaderAuthSSL,
-                    &calculator_wsdl.policies.CalcBindingHeaderAuthSSL,
-                    &funcTableSvcHeaderAuthSSL
+                    &funcTableSvcHeaderAuthSSL,
+                    &CreateServiceEndpoint<WS_HTTP_SSL_HEADER_AUTH_BINDING_TEMPLATE, CalcBindingHeaderAuthSSLFunctionTable, CalcBindingHeaderAuthSSL_CreateServiceEndpoint>,
+                    requireClientCert
                 );
 
                 StartTimeCountWebServiceSetupAndOpen();
 
                 // Create the service host:
                 WebServiceHost host(3072);
-                host.Setup("calculator.wsdl", hostCfg, nullptr, true);
+                host.Setup("calculator.wsdl", hostCfg, bindings, nullptr, true);
                 host.Open(); // start listening
 
                 // Wait client to request service closure:
@@ -503,7 +515,7 @@ namespace integration_tests
 	/// </summary>
 	TEST_F(Framework_WWS_TestCase, Host_TransportSSL_NoClientCert_SyncTest)
 	{
-        TestHostTransportSSL();
+        TestHostTransportSSL(false);
 	}
 
 	/// <summary>
@@ -512,7 +524,7 @@ namespace integration_tests
 	/// </summary>
 	TEST_F(Framework_WWS_TestCase, Host_TransportSSL_NoClientCert_AsyncTest)
 	{
-        TestHostTransportSSL();
+        TestHostTransportSSL(false);
 	}
 
 	/// <summary>
@@ -521,7 +533,7 @@ namespace integration_tests
 	/// </summary>
 	TEST_F(Framework_WWS_TestCase, Host_TransportSSL_WithClientCert_SyncTest)
 	{
-        TestHostTransportSSL();
+        TestHostTransportSSL(true);
 	}
 
 	/// <summary>
@@ -530,7 +542,7 @@ namespace integration_tests
 	/// </summary>
 	TEST_F(Framework_WWS_TestCase, Host_TransportSSL_WithClientCert_AsyncTest)
 	{
-        TestHostTransportSSL();
+        TestHostTransportSSL(true);
 	}
 
     /// <summary>
@@ -539,7 +551,7 @@ namespace integration_tests
     /// </summary>
     TEST_F(Framework_WWS_TestCase, Host_HeaderAuthTransportSSL_WithClientCert_SyncTest)
     {
-        TestHostHttpHeaderAuthTransportSSL();
+        TestHostHttpHeaderAuthTransportSSL(true);
     }
 
     /// <summary>
@@ -548,7 +560,7 @@ namespace integration_tests
     /// </summary>
     TEST_F(Framework_WWS_TestCase, Host_HeaderAuthTransportSSL_WithClientCert_AsyncTest)
     {
-        TestHostHttpHeaderAuthTransportSSL();
+        TestHostHttpHeaderAuthTransportSSL(true);
     }
 
 	/// <summary>
@@ -556,7 +568,7 @@ namespace integration_tests
 	/// </summary>
 	TEST_F(Framework_WWS_TestCase, Host_SOAP_Fault_SyncTest)
 	{
-        TestHostSoapFaultHandling();
+        TestHostSoapFaultHandling(false);
 	}
 
 	/// <summary>
@@ -564,7 +576,7 @@ namespace integration_tests
 	/// </summary>
 	TEST_F(Framework_WWS_TestCase, Host_SOAP_Fault_AsyncTest)
 	{
-        TestHostSoapFaultHandling();
+        TestHostSoapFaultHandling(false);
 	}
 
 	/// <summary>
@@ -589,18 +601,19 @@ namespace integration_tests
 			// Create the web service host with default configurations:
 			SvcEndpointsConfig hostCfg;
 
+            ServiceBindings bindings;
+
 			/* Map the binding used for the unsecure endpoint to
 			the corresponding implementations: */
-			hostCfg.MapBinding(
+            bindings.MapBinding(
 				"CalcBindingUnsecure",
-                &calculator_wsdl.contracts.CalcBindingUnsecure,
-                &calculator_wsdl.policies.CalcBindingUnsecure,
-                &funcTableSvcUnsecure
+                &funcTableSvcUnsecure,
+                &CreateServiceEndpoint<WS_HTTP_BINDING_TEMPLATE, CalcBindingUnsecureFunctionTable, CalcBindingUnsecure_CreateServiceEndpoint>
 			);
 
 			// Create the service host:
 			WebServiceHost host(2048);
-			host.Setup("calculator.wsdl", hostCfg, nullptr, true);
+			host.Setup("calculator.wsdl", hostCfg, bindings, nullptr, true);
 			host.Open(); // start listening
 
 			// wait for metadata request...

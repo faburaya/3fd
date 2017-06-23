@@ -175,7 +175,7 @@ namespace wws
 			return;
 
 		// Incorrect use of WWS API must trigger an assertion instead of exception:
-		_ASSERTE(hres != E_INVALIDARG && hres != E_HANDLE && hres != E_POINTER);
+		//_ASSERTE(hres != E_INVALIDARG && hres != E_HANDLE && hres != E_POINTER);
 
 		Initialize();
 		auto ex = CreateExceptionApiError(m_wsErrorHandle, hres, funcName, message);
@@ -200,7 +200,7 @@ namespace wws
 			return;
 
 		// Incorrect use of WWS API must trigger an assertion instead of exception:
-		_ASSERTE(hres != E_INVALIDARG && hres != E_HANDLE && hres != E_POINTER);
+		//_ASSERTE(hres != E_INVALIDARG && hres != E_HANDLE && hres != E_POINTER);
 
 		Initialize();
 		auto ex = CreateExceptionApiError(m_wsErrorHandle, hres, funcName, message);
