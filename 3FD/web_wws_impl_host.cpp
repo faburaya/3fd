@@ -92,7 +92,6 @@ namespace wws
     /// using the held implementations.
     /// </summary>
     /// <param name="address">The endpoint URL address.</param>
-    /// <param name="moreChannelProps">Additional channel properties.</param>
     /// <param name="endpointProps">The endpoint properties.</param>
     /// <param name="endpointPropsCount">The counting of endpoint properties.</param>
     /// <param name="authzCallback">The callback for authorization.</param>
@@ -101,7 +100,6 @@ namespace wws
     /// <returns>The handle for the newly created service endpoint.</returns>
     WS_SERVICE_ENDPOINT *
     SvcEndptBindHttpUnsec::CreateWSEndpoint(const string &address,
-                                            WS_CHANNEL_PROPERTIES &moreChannelProps,
                                             WS_SERVICE_ENDPOINT_PROPERTY *endpointProps,
                                             size_t endpointPropsCount,
                                             WS_SERVICE_SECURITY_CALLBACK authzCallback,
@@ -116,7 +114,6 @@ namespace wws
         return m_callbackCreateSvcEndpt(m_bindingTemplate,
                                         address,
                                         m_functionTable,
-                                        moreChannelProps,
                                         authzCallback,
                                         endpointProps,
                                         endpointPropsCount,
@@ -130,7 +127,6 @@ namespace wws
     /// using the held implementations.
     /// </summary>
     /// <param name="address">The endpoint URL address.</param>
-    /// <param name="moreChannelProps">Additional channel properties.</param>
     /// <param name="endpointProps">The endpoint properties.</param>
     /// <param name="endpointPropsCount">The counting of endpoint properties.</param>
     /// <param name="authzCallback">The callback for authorization.</param>
@@ -139,7 +135,6 @@ namespace wws
     /// <returns>The handle for the newly created service endpoint.</returns>
     WS_SERVICE_ENDPOINT *
     SvcEndptBindHttpSsl::CreateWSEndpoint(const string &address,
-                                          WS_CHANNEL_PROPERTIES &moreChannelProps,
                                           WS_SERVICE_ENDPOINT_PROPERTY *endpointProps,
                                           size_t endpointPropsCount,
                                           WS_SERVICE_SECURITY_CALLBACK authzCallback,
@@ -156,15 +151,10 @@ namespace wws
         {
             auto &bindSecProps = m_bindingTemplate->sslTransportSecurityBinding.securityBindingProperties;
 
-            bindSecProps.properties = (WS_SECURITY_BINDING_PROPERTY *)memcpy(
-                heap.Alloc<WS_SECURITY_BINDING_PROPERTY>(bindSecProps.propertyCount),
-                bindSecProps.properties,
-                bindSecProps.propertyCount * sizeof(WS_SECURITY_BINDING_PROPERTY)
-            );
+            bindSecProps.propertyCount = 1;
+            bindSecProps.properties = heap.Alloc<WS_SECURITY_BINDING_PROPERTY>();
 
-            ++bindSecProps.propertyCount;
-
-            bindSecProps.properties[bindSecProps.propertyCount - 1] =
+            bindSecProps.properties[0] =
                 WS_SECURITY_BINDING_PROPERTY{
                     WS_SECURITY_BINDING_PROPERTY_REQUIRE_SSL_CLIENT_CERT,
                     new (heap.Alloc<BOOL>()) BOOL(m_clientCertIsRequired ? TRUE : FALSE),
@@ -175,7 +165,6 @@ namespace wws
         return m_callbackCreateSvcEndpt(m_bindingTemplate,
                                         address,
                                         m_functionTable,
-                                        moreChannelProps,
                                         authzCallback,
                                         endpointProps,
                                         endpointPropsCount,
@@ -189,7 +178,6 @@ namespace wws
     /// using the held implementations.
     /// </summary>
     /// <param name="address">The endpoint URL address.</param>
-    /// <param name="moreChannelProps">Additional channel properties.</param>
     /// <param name="endpointProps">The endpoint properties.</param>
     /// <param name="endpointPropsCount">The counting of endpoint properties.</param>
     /// <param name="authzCallback">The callback for authorization.</param>
@@ -198,7 +186,6 @@ namespace wws
     /// <returns>The handle for the newly created service endpoint.</returns>
     WS_SERVICE_ENDPOINT *
     SvcEndptBindHttpHeaderAuthSsl::CreateWSEndpoint(const string &address,
-                                                    WS_CHANNEL_PROPERTIES &moreChannelProps,
                                                     WS_SERVICE_ENDPOINT_PROPERTY *endpointProps,
                                                     size_t endpointPropsCount,
                                                     WS_SERVICE_SECURITY_CALLBACK authzCallback,
@@ -215,15 +202,10 @@ namespace wws
         {
             auto &bindSecProps = m_bindingTemplate->sslTransportSecurityBinding.securityBindingProperties;
 
-            bindSecProps.properties = (WS_SECURITY_BINDING_PROPERTY *)memcpy(
-                heap.Alloc<WS_SECURITY_BINDING_PROPERTY>(bindSecProps.propertyCount),
-                bindSecProps.properties,
-                bindSecProps.propertyCount * sizeof(WS_SECURITY_BINDING_PROPERTY)
-            );
+            bindSecProps.propertyCount = 1;
+            bindSecProps.properties = heap.Alloc<WS_SECURITY_BINDING_PROPERTY>();
 
-            ++bindSecProps.propertyCount;
-
-            bindSecProps.properties[bindSecProps.propertyCount - 1] =
+            bindSecProps.properties[0] =
                 WS_SECURITY_BINDING_PROPERTY{
                     WS_SECURITY_BINDING_PROPERTY_REQUIRE_SSL_CLIENT_CERT,
                     new (heap.Alloc<BOOL>()) BOOL(m_clientCertIsRequired ? TRUE : FALSE),
@@ -234,7 +216,6 @@ namespace wws
         return m_callbackCreateSvcEndpt(m_bindingTemplate,
                                         address,
                                         m_functionTable,
-                                        moreChannelProps,
                                         authzCallback,
                                         endpointProps,
                                         endpointPropsCount,
@@ -692,42 +673,12 @@ namespace wws
         {
             endpoints.clear(); // if anything goes wrong, do not keep any previous content in the output
 
-            /* Set the channel properties, which are additional to what
-            is already set by the implementation generated by wsutil: */
-
-            WS_CHANNEL_PROPERTIES channelProps;
-            channelProps.propertyCount = 3;
-            channelProps.properties = heap.Alloc<WS_CHANNEL_PROPERTY>(channelProps.propertyCount);
-
-            uint32_t idxProp(0);
-
-            channelProps.properties[idxProp++] = WS_CHANNEL_PROPERTY {
-                WS_CHANNEL_PROPERTY_RESOLVE_TIMEOUT,
-                WS_HEAP_NEW(heap, decltype(config.timeoutDnsResolve), (config.timeoutDnsResolve)),
-                sizeof config.timeoutDnsResolve
-            };
-
-            channelProps.properties[idxProp++] = WS_CHANNEL_PROPERTY {
-                WS_CHANNEL_PROPERTY_SEND_TIMEOUT,
-                WS_HEAP_NEW(heap, decltype(config.timeoutSend), (config.timeoutSend)),
-                sizeof config.timeoutSend
-            };
-
-            channelProps.properties[idxProp++] = WS_CHANNEL_PROPERTY {
-                WS_CHANNEL_PROPERTY_RECEIVE_TIMEOUT,
-                WS_HEAP_NEW(heap, decltype(config.timeoutReceive), (config.timeoutReceive)),
-                sizeof config.timeoutReceive
-            };
-
-            // Check the count of channel properties:
-            _ASSERTE(idxProp == channelProps.propertyCount);
-
 			/* Set the endpoint properties from the settings in the parameters,
 			starting by the ones regarding metadata servicing: */
 
 			WS_SERVICE_ENDPOINT_PROPERTY *endpointProps;
 
-            idxProp = 0;
+            uint32_t idxProp(0);
 			uint32_t endptPropCount(3); // count of properties is later needed
 
             if (enableMEX)
@@ -802,7 +753,6 @@ namespace wws
                 WS_SERVICE_ENDPOINT *endpoint =
                     epnfo.implementations->CreateWSEndpoint(
                         epnfo.address,
-                        channelProps,
 						copyOfEndptProps,
 						endptPropCount,
                         authzCallback,
@@ -1017,6 +967,7 @@ namespace wws
 		}
 	}
 
+
     /// <summary>
     /// Opens the web service host to start receiving requests.
     /// </summary>
@@ -1024,6 +975,7 @@ namespace wws
     {
         m_pimpl->Open();
     }
+
 
 	/// <summary>
 	/// Closes down communication in the service host (but wait sessions to disconnect)
@@ -1095,6 +1047,7 @@ namespace wws
 		}
 	}
 
+
     /// <summary>
     /// Closes down communication in the service host (but wait sessions to disconnect)
     /// and make it ready for possible restart.
@@ -1104,6 +1057,7 @@ namespace wws
     {
         return m_pimpl->Close();
     }
+
 
 	/// <summary>
 	/// Closes down communication with the service host (immediately, drops clients)
@@ -1189,6 +1143,7 @@ namespace wws
 			throw AppException<std::runtime_error>(oss.str());
 		}
 	}
+
 
     /// <summary>
     /// Closes down communication with the service host (immediately, drops clients)

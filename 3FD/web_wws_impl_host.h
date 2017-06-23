@@ -34,7 +34,6 @@ namespace wws
 
         virtual WS_SERVICE_ENDPOINT *CreateWSEndpoint(
             const string &address,
-            WS_CHANNEL_PROPERTIES &moreChannelProps,
             WS_SERVICE_ENDPOINT_PROPERTY *endpointProps,
             size_t endpointPropsCount,
             WS_SERVICE_SECURITY_CALLBACK authzCallback,
@@ -62,6 +61,7 @@ namespace wws
         SvcEndptBindHttpUnsec(const void *functionTable,
                               CallbackCreateServiceEndpoint<WS_HTTP_BINDING_TEMPLATE> callbackCreateSvcEndpt)
             : BaseSvcEndptBinding(functionTable)
+            , m_callbackCreateSvcEndpt(callbackCreateSvcEndpt)
             , m_bindingTemplate(nullptr)
         {}
 
@@ -69,7 +69,6 @@ namespace wws
 
         virtual WS_SERVICE_ENDPOINT *CreateWSEndpoint(
             const string &address,
-            WS_CHANNEL_PROPERTIES &moreChannelProps,
             WS_SERVICE_ENDPOINT_PROPERTY *endpointProps,
             size_t endpointPropsCount,
             WS_SERVICE_SECURITY_CALLBACK authzCallback,
@@ -99,6 +98,7 @@ namespace wws
                             CallbackCreateServiceEndpoint<WS_HTTP_SSL_BINDING_TEMPLATE> callbackCreateSvcEndpt,
                             bool requireClientCert)
             : BaseSvcEndptBinding(functionTable)
+            , m_callbackCreateSvcEndpt(callbackCreateSvcEndpt)
             , m_bindingTemplate(nullptr)
             , m_clientCertIsRequired(requireClientCert)
         {}
@@ -107,7 +107,6 @@ namespace wws
 
         virtual WS_SERVICE_ENDPOINT *CreateWSEndpoint(
             const string &address,
-            WS_CHANNEL_PROPERTIES &moreChannelProps,
             WS_SERVICE_ENDPOINT_PROPERTY *endpointProps,
             size_t endpointPropsCount,
             WS_SERVICE_SECURITY_CALLBACK authzCallback,
@@ -137,6 +136,7 @@ namespace wws
                                       CallbackCreateServiceEndpoint<WS_HTTP_SSL_HEADER_AUTH_BINDING_TEMPLATE> callbackCreateSvcEndpt,
                                       bool requireClientCert)
             : BaseSvcEndptBinding(functionTable)
+            , m_callbackCreateSvcEndpt(callbackCreateSvcEndpt)
             , m_bindingTemplate(nullptr)
             , m_clientCertIsRequired(requireClientCert)
         {}
@@ -145,7 +145,6 @@ namespace wws
 
         virtual WS_SERVICE_ENDPOINT *CreateWSEndpoint(
             const string &address,
-            WS_CHANNEL_PROPERTIES &moreChannelProps,
             WS_SERVICE_ENDPOINT_PROPERTY *endpointProps,
             size_t endpointPropsCount,
             WS_SERVICE_SECURITY_CALLBACK authzCallback,

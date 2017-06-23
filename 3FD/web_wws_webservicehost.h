@@ -34,7 +34,6 @@ namespace wws
         BindingTemplateType *bindingTemplate,
         const string &address,
         const void *functionTable,
-        WS_CHANNEL_PROPERTIES &channelProps,
         WS_SERVICE_SECURITY_CALLBACK authorizationCallback,
         WS_SERVICE_ENDPOINT_PROPERTY *endpointProps,
         size_t endpointPropsCount,
@@ -51,8 +50,6 @@ namespace wws
         wsaddr->length = ucs2address.length();
         wsaddr->chars = heap.Alloc<wchar_t>(ucs2address.length());
         memcpy(wsaddr->chars, ucs2address.data(), ucs2address.length() * sizeof ucs2address[0]);
-
-        bindingTemplate->channelProperties = channelProps;
 
         HRESULT hr = callback(bindingTemplate,
                               wsaddr,
@@ -81,7 +78,6 @@ namespace wws
         BindingTemplateType *,
         const string &,
         const void *,
-        WS_CHANNEL_PROPERTIES &,
         WS_SERVICE_SECURITY_CALLBACK,
         WS_SERVICE_ENDPOINT_PROPERTY *,
         size_t,
@@ -150,11 +146,8 @@ namespace wws
 			maxAcceptingChannels, // specifies the maximum number of concurrent channels service host will have actively accepting new connections for a given endpoint
 			maxConcurrency; // specifies the maximum number of concurrent calls that would be serviced on a session based channel
 
-		unsigned long
-			timeoutSend, // limits the amount of time (in milliseconds) that will be spent sending the HTTP headers and the bytes of the message
-			timeoutReceive, // limits the amount of time (in milliseconds) that will be spent receiving the the bytes of the message
-			timeoutDnsResolve, // limits the amount of time (in milliseconds) that will be spent resolving the DNS name
-			timeoutClose; // limits the amount of time (in milliseconds) a service model will wait after 'Close' is called, and once the timeout expires, the host will abort
+        // limits the amount of time (in milliseconds) a service model will wait after 'Close' is called, and once the timeout expires, the host will abort
+		unsigned long timeoutClose;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="SvcEndpointsConfig"/> struct.
@@ -163,9 +156,6 @@ namespace wws
 		SvcEndpointsConfig() : 
 			maxAcceptingChannels(2),
 			maxConcurrency(1),
-			timeoutSend(15000),
-			timeoutReceive(15000),
-			timeoutDnsResolve(60000),
 			timeoutClose(0)
 		{}
 	};
