@@ -108,10 +108,9 @@ namespace wws
     {
         CALL_STACK_TRACE;
 
-        m_bindingTemplate = heap.Alloc<WS_HTTP_BINDING_TEMPLATE>();
-        memset(m_bindingTemplate, 0, sizeof *m_bindingTemplate);
+        WS_HTTP_BINDING_TEMPLATE bindingTemplate{};
 
-        return m_callbackCreateSvcEndpt(m_bindingTemplate,
+        return m_callbackCreateSvcEndpt(&bindingTemplate,
                                         address,
                                         m_functionTable,
                                         authzCallback,
@@ -143,13 +142,12 @@ namespace wws
     {
         CALL_STACK_TRACE;
 
-        m_bindingTemplate = heap.Alloc<WS_HTTP_SSL_BINDING_TEMPLATE>();
-        memset(m_bindingTemplate, 0, sizeof *m_bindingTemplate);
+        WS_HTTP_SSL_BINDING_TEMPLATE bindingTemplate{};
 
         // Extend security binding properties:
         if (m_clientCertIsRequired)
         {
-            auto &bindSecProps = m_bindingTemplate->sslTransportSecurityBinding.securityBindingProperties;
+            auto &bindSecProps = bindingTemplate.sslTransportSecurityBinding.securityBindingProperties;
 
             bindSecProps.propertyCount = 1;
             bindSecProps.properties = heap.Alloc<WS_SECURITY_BINDING_PROPERTY>();
@@ -162,7 +160,7 @@ namespace wws
                 };
         }
 
-        return m_callbackCreateSvcEndpt(m_bindingTemplate,
+        return m_callbackCreateSvcEndpt(&bindingTemplate,
                                         address,
                                         m_functionTable,
                                         authzCallback,
@@ -194,13 +192,12 @@ namespace wws
     {
         CALL_STACK_TRACE;
 
-        m_bindingTemplate = heap.Alloc<WS_HTTP_SSL_HEADER_AUTH_BINDING_TEMPLATE>();
-        memset(m_bindingTemplate, 0, sizeof *m_bindingTemplate);
+        WS_HTTP_SSL_HEADER_AUTH_BINDING_TEMPLATE bindingTemplate{};
 
         // Extend security binding properties:
         if (m_clientCertIsRequired)
         {
-            auto &bindSecProps = m_bindingTemplate->sslTransportSecurityBinding.securityBindingProperties;
+            auto &bindSecProps = bindingTemplate.sslTransportSecurityBinding.securityBindingProperties;
 
             bindSecProps.propertyCount = 1;
             bindSecProps.properties = heap.Alloc<WS_SECURITY_BINDING_PROPERTY>();
@@ -213,7 +210,7 @@ namespace wws
                 };
         }
 
-        return m_callbackCreateSvcEndpt(m_bindingTemplate,
+        return m_callbackCreateSvcEndpt(&bindingTemplate,
                                         address,
                                         m_functionTable,
                                         authzCallback,

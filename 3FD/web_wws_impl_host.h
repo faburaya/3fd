@@ -51,8 +51,6 @@ namespace wws
     {
     private:
 
-        WS_HTTP_BINDING_TEMPLATE *m_bindingTemplate;
-
         CallbackCreateServiceEndpoint<WS_HTTP_BINDING_TEMPLATE> m_callbackCreateSvcEndpt;
 
     public:
@@ -62,7 +60,6 @@ namespace wws
                               CallbackCreateServiceEndpoint<WS_HTTP_BINDING_TEMPLATE> callbackCreateSvcEndpt)
             : BaseSvcEndptBinding(functionTable)
             , m_callbackCreateSvcEndpt(callbackCreateSvcEndpt)
-            , m_bindingTemplate(nullptr)
         {}
 
         virtual ~SvcEndptBindHttpUnsec() {}
@@ -86,8 +83,6 @@ namespace wws
     {
     private:
 
-        WS_HTTP_SSL_BINDING_TEMPLATE *m_bindingTemplate;
-
         CallbackCreateServiceEndpoint<WS_HTTP_SSL_BINDING_TEMPLATE> m_callbackCreateSvcEndpt;
 
         bool m_clientCertIsRequired;
@@ -99,7 +94,6 @@ namespace wws
                             bool requireClientCert)
             : BaseSvcEndptBinding(functionTable)
             , m_callbackCreateSvcEndpt(callbackCreateSvcEndpt)
-            , m_bindingTemplate(nullptr)
             , m_clientCertIsRequired(requireClientCert)
         {}
 
@@ -124,8 +118,6 @@ namespace wws
     {
     private:
 
-        WS_HTTP_SSL_HEADER_AUTH_BINDING_TEMPLATE *m_bindingTemplate;
-
         CallbackCreateServiceEndpoint<WS_HTTP_SSL_HEADER_AUTH_BINDING_TEMPLATE> m_callbackCreateSvcEndpt;
 
         bool m_clientCertIsRequired;
@@ -137,7 +129,6 @@ namespace wws
                                       bool requireClientCert)
             : BaseSvcEndptBinding(functionTable)
             , m_callbackCreateSvcEndpt(callbackCreateSvcEndpt)
-            , m_bindingTemplate(nullptr)
             , m_clientCertIsRequired(requireClientCert)
         {}
 
