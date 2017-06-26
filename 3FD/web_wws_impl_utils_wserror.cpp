@@ -25,6 +25,7 @@ namespace wws
 	WSError::WSError()
 		: m_wsErrorHandle(nullptr), m_allowRelease(true) {}
 
+
 	/// <summary>
 	/// Initializes the class resources.
 	/// </summary>
@@ -43,6 +44,7 @@ namespace wws
 		}
 	}
 
+
 	/// <summary>
 	/// Gets the error handle.
 	/// Because the 
@@ -59,6 +61,7 @@ namespace wws
 		}
 	}
 
+
 	/// <summary>
 	/// Finalizes an instance of the <see cref="WSError"/> class.
 	/// </summary>
@@ -67,6 +70,7 @@ namespace wws
 		if (m_wsErrorHandle != nullptr && m_allowRelease)
 			WsFreeError(m_wsErrorHandle);
 	}
+
 
 	/// <summary>
 	/// Resets the error object so as to be reused.
@@ -86,6 +90,7 @@ namespace wws
 			}
 		}
 	}
+
 
 	/// <summary>
 	/// Creates an exception for a WWS API error.
@@ -126,7 +131,7 @@ namespace wws
 			}
 
 			if (strCount > 0)
-				oss << " - More: ";
+				oss << "\r\n\r\n";
 
 			std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
 
@@ -136,12 +141,12 @@ namespace wws
 				hr = WsGetErrorString(wsErrorHandle, idx, &str);
 
 				if (hr == S_OK)
-					oss << transcoder.to_bytes(str.chars, str.chars + str.length);
+					oss << "* " << transcoder.to_bytes(str.chars, str.chars + str.length);
 				else
-					oss << "NOT AVAILABLE (WsGetErrorString returned " << WWAPI::GetHResultLabel(hr) << ')';
+					oss << "* NOT AVAILABLE (WsGetErrorString returned " << WWAPI::GetHResultLabel(hr) << ')';
 
 				if (idx + 1 < strCount)
-					oss << " // ";
+					oss << "\r\n";
 			}
 
 			return AppException<std::runtime_error>(message, oss.str());
@@ -157,6 +162,7 @@ namespace wws
 			return AppException<std::runtime_error>(message, oss.str());
 		}
 	}
+
 
 	/// <summary>
 	/// Check the result code from a WWS API call.
@@ -183,6 +189,7 @@ namespace wws
 		throw ex;
 	}
 
+
 	/// <summary>
 	/// Check the result code from a WWS API call.
 	/// When the given result code means "NOT OKAY", log the event
@@ -207,6 +214,7 @@ namespace wws
 		Reset();
 		Logger::Write(ex, Logger::PRIO_ERROR);
 	}
+
 
 	/// <summary>
 	/// Creates an exception from a SOAP fault.
@@ -370,6 +378,7 @@ namespace wws
 		}
 	}
 
+
 	/// <summary>
 	/// Check the result code from a proxy operation.
 	/// When the given result code means "NOT OKAY", populate the object with rich information
@@ -403,6 +412,7 @@ namespace wws
 		}
 	}
 
+
 	///////////////
 	// Helper
 	///////////////
@@ -410,6 +420,7 @@ namespace wws
 	const WS_XML_STRING faultDetailDescElemNamespace = WS_XML_STRING_VALUE("http://3fd.codeplex.com/");
 
 	const WS_XML_STRING faultDetailDescElemLocalName = WS_XML_STRING_VALUE("more");
+
 
 	/// <summary>
 	/// Provides a structure describing what comes inside the

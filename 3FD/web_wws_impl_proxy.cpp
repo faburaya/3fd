@@ -212,7 +212,6 @@ namespace wws
 
         WS_HTTP_SSL_BINDING_TEMPLATE bindingTemplate{};
 		bindingTemplate.channelProperties = PrepareChannelProperties(config, m_heap);
-		bindingTemplate.sslTransportSecurityBinding = WS_SSL_TRANSPORT_SECURITY_BINDING_TEMPLATE{};
 		bindingTemplate.sslTransportSecurityBinding.localCertCredential = &certCredential.credential;
 
 		// Set some properties for the service proxy:
@@ -328,11 +327,8 @@ namespace wws
 
         WS_HTTP_SSL_HEADER_AUTH_BINDING_TEMPLATE bindingTemplate{};
         bindingTemplate.channelProperties = PrepareChannelProperties(config, m_heap);
-        bindingTemplate.sslTransportSecurityBinding = WS_SSL_TRANSPORT_SECURITY_BINDING_TEMPLATE{};
         bindingTemplate.sslTransportSecurityBinding.localCertCredential = &certCredential.credential;
-        bindingTemplate.httpHeaderAuthSecurityBinding = WS_HTTP_HEADER_AUTH_SECURITY_BINDING_TEMPLATE{};
         bindingTemplate.httpHeaderAuthSecurityBinding.clientCredential = &authCredential.credential;
-
 
         // Set some properties for the service proxy:
         ULONG proxyPropCount;
