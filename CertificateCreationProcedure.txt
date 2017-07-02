@@ -4,7 +4,7 @@
 
 (1) In the Visual Studio developer prompt, type:
 
-makecert -pe -n "CN=Certification Authority for Development" -cy authority -ss root -sr LocalMachine -a sha256 -r CertAuth4Dev.cer
+makecert -pe -n "CN=Certification Authority for Development" -cy authority -ss root -sr LocalMachine -r
 
 This creates a certification authority and install it under "Trusted Root Certification Authorities\Certificates" (in management console).
 
@@ -12,11 +12,11 @@ This creates a certification authority and install it under "Trusted Root Certif
 
 [In server machine]
 
-makecert -pe -n "CN=MyComputerName" -ss My -sr LocalMachine -a sha256 -in "Certification Authority for Development" -is root -ir LocalMachine -eku 1.3.6.1.5.5.7.3.1 SignedByCA4Dev.cer
+makecert -pe -n "CN=MyComputerName" -ss My -sr LocalMachine -in "Certification Authority for Development" -is root -ir LocalMachine -eku 1.3.6.1.5.5.7.3.1
 
 [In client machine]
 
-makecert -pe -n "CN=MyComputerName" -ss My -sr LocalMachine -a sha256 -in "Certification Authority for Development" -is root -ir LocalMachine -eku 1.3.6.1.5.5.7.3.2 SignedByCA4Dev.cer
+makecert -pe -n "CN=MyComputerName" -ss My -sr LocalMachine -in "Certification Authority for Development" -is root -ir LocalMachine -eku 1.3.6.1.5.5.7.3.2
 
 (In a development environment confined within a single box, you can choose to have only one certificate for both client and server authentication, hence eliminating the "-eku" option.)
 
@@ -24,9 +24,9 @@ Because both client and server must rely in the same certificate CA, when you cr
 
 (3) SERVER ONLY - In the management console (mmc.exe), use the snap-in for certificate management to look for the certificate you have just created. The thumbprint is the hash you will use in the command below. These commands will assign the new certificate to the endpoints localhost:8888 and localhost:8989:
 
-netsh http add sslcert ipport=0.0.0.0:8888 certhash=8f43288ad272f3103b6fb1428485ea3014c0bcfe appid={04EBD759-F3FF-4992-8D02-C1BFDB027A58} clientcertnegotiation=enable
+netsh http add sslcert ipport=0.0.0.0:8888 certhash=da834158826f2207f9a1bbcce8fed201ad391376 appid={04EBD759-F3FF-4992-8D02-C1BFDB027A58} clientcertnegotiation=enable
 
-netsh http add sslcert ipport=0.0.0.0:8989 certhash=8f43288ad272f3103b6fb1428485ea3014c0bcfe appid={0670F436-50EA-4B8A-B62A-02EF8B39F9C9} clientcertnegotiation=enable
+netsh http add sslcert ipport=0.0.0.0:8989 certhash=da834158826f2207f9a1bbcce8fed201ad391376 appid={0670F436-50EA-4B8A-B62A-02EF8B39F9C9} clientcertnegotiation=enable
 
 (The application ID can be any GUID.)
 

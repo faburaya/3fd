@@ -314,7 +314,7 @@ namespace application
                     "IMFSinkWriter::GetServiceForStream");
             }
 
-            if (FAILED(hr = codec->SetValue(&CODECAPI_AVEncCommonQualityVsSpeed, &CComVariant((UINT32)67))) ||
+            if (FAILED(hr = codec->SetValue(&CODECAPI_AVEncCommonQualityVsSpeed, &CComVariant((UINT32)75))) ||
                 FAILED(hr = codec->SetValue(&CODECAPI_AVEncAdaptiveMode, &CComVariant((ULONG)eAVEncAdaptiveMode_FrameRate))))
             {
                 WWAPI::RaiseHResultException(hr, "Failed to set property for H.264 encoder", "ICodecAPI::SetValue");
