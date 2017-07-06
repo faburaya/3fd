@@ -51,7 +51,7 @@ namespace core
 
         std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
         return transcoder.to_bytes(modNameStr);
-}
+    }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="FrameworkInstance" /> class.
@@ -132,10 +132,12 @@ namespace core
 	{
 		memory::GarbageCollector::Shutdown();
 
+#ifdef _WIN32
         std::ostringstream oss;
         oss << "3FD was shutdown in " << m_moduleName;
 
 		Logger::Write(oss.str(), core::Logger::PRIO_DEBUG);
+#endif
 		Logger::Shutdown();
 
 #ifdef _3FD_PLATFORM_WINRT
