@@ -508,12 +508,12 @@ namespace integration_tests
 	{
         TestHostTransportUnsecure();
 	}
-
+    
 	/// <summary>
 	/// Tests synchronous web service access
 	/// with SSL over HTTP and no client certificate.
 	/// </summary>
-	TEST_F(Framework_WWS_TestCase, Host_TransportSSL_NoClientCert_SyncTest)
+	TEST_F(Framework_WWS_TestCase, DISABLED_Host_TransportSSL_NoClientCert_SyncTest)
 	{
         TestHostTransportSSL(false);
 	}
@@ -522,11 +522,11 @@ namespace integration_tests
 	/// Tests asynchronous web service access with
 	/// SSL over HTTP and no client certificate.
 	/// </summary>
-	TEST_F(Framework_WWS_TestCase, Host_TransportSSL_NoClientCert_AsyncTest)
+	TEST_F(Framework_WWS_TestCase, DISABLED_Host_TransportSSL_NoClientCert_AsyncTest)
 	{
         TestHostTransportSSL(false);
 	}
-
+    
 	/// <summary>
 	/// Tests synchronous web service access, with SSL over HTTP
 	/// and a client certificate.

@@ -127,7 +127,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <GenerateManifest>false</GenerateManifest>
     <IntDir>$(Platform)\$(Configuration)\WinRT.UWP\</IntDir>
-    <TargetName>$(ProjectName)</TargetName>
+    <TargetName>media</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

@@ -15,5 +15,13 @@ namespace utils
         return 0;
     }
 
+#ifdef _3FD_PLATFORM_WINRT
+    
+    SerializableValue<const wchar_t *> FormatArg(Platform::String ^value)
+    {
+        return SerializableValue<const wchar_t *>(value->Data());
+    }
+#endif
+
 }// end of namespace utils
 }// end of namespace _3fd
