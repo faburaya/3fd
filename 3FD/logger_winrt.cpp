@@ -214,7 +214,7 @@ namespace _3fd
 				do
 				{
 					// Wait for queued messages:
-					terminate = m_terminationEvent.WaitFor(250);
+					terminate = m_terminationEvent.WaitFor(100);
 
 					// Write the queued messages in the text log file:
 
@@ -305,7 +305,7 @@ namespace _3fd
 				if (m_logWriterThread.joinable())
 					m_logWriterThread.join();
 
-                _ASSERTE(!m_eventsQueue.ForEach([](const LogEvent &) {}));
+                _ASSERTE(m_eventsQueue.ForEach([](const LogEvent &) {}) == 0);
 			}
 			catch (...)
 			{

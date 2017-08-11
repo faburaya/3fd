@@ -441,7 +441,11 @@ namespace integration_tests
 		using namespace isam;
 			
 		// Ensures proper initialization/finalization of the framework
-		_3fd::core::FrameworkInstance _framework;
+#   ifdef _3FD_PLATFORM_WINRT
+        core::FrameworkInstance _framework("IntegrationTestsApp.WinRT.UWP");
+#   else
+        core::FrameworkInstance _framework;
+#   endif
 
 		CALL_STACK_TRACE;
 
@@ -542,7 +546,11 @@ namespace integration_tests
 		using namespace isam;
 			
 		// Ensures proper initialization/finalization of the framework
-		_3fd::core::FrameworkInstance _framework;
+#   ifdef _3FD_PLATFORM_WINRT
+        core::FrameworkInstance _framework("IntegrationTestsApp.WinRT.UWP");
+#   else
+        core::FrameworkInstance _framework;
+#   endif
 
 		CALL_STACK_TRACE;
 
@@ -689,7 +697,11 @@ namespace integration_tests
 		using namespace isam;
 			
 		// Ensures proper initialization/finalization of the framework
-		_3fd::core::FrameworkInstance _framework;
+#   ifdef _3FD_PLATFORM_WINRT
+        core::FrameworkInstance _framework("IntegrationTestsApp.WinRT.UWP");
+#   else
+        core::FrameworkInstance _framework;
+#   endif
 
 		CALL_STACK_TRACE;
 
@@ -770,7 +782,11 @@ namespace integration_tests
 		using namespace isam;
 
 		// Ensures proper initialization/finalization of the framework
-		_3fd::core::FrameworkInstance _framework;
+#   ifdef _3FD_PLATFORM_WINRT
+        core::FrameworkInstance _framework("IntegrationTestsApp.WinRT.UWP");
+#   else
+        core::FrameworkInstance _framework;
+#   endif
 
 		CALL_STACK_TRACE;
 
@@ -859,7 +875,11 @@ namespace integration_tests
 		using namespace isam;
 
 		// Ensures proper initialization/finalization of the framework
-		_3fd::core::FrameworkInstance _framework;
+#   ifdef _3FD_PLATFORM_WINRT
+        core::FrameworkInstance _framework("IntegrationTestsApp.WinRT.UWP");
+#   else
+        core::FrameworkInstance _framework;
+#   endif
 
 		CALL_STACK_TRACE;
 
@@ -951,7 +971,11 @@ namespace integration_tests
 		using namespace isam;
 			
 		// Ensures proper initialization/finalization of the framework
-		_3fd::core::FrameworkInstance _framework;
+#   ifdef _3FD_PLATFORM_WINRT
+        core::FrameworkInstance _framework("IntegrationTestsApp.WinRT.UWP");
+#   else
+        core::FrameworkInstance _framework;
+#   endif
 
 		CALL_STACK_TRACE;
 
@@ -1118,7 +1142,11 @@ namespace integration_tests
 		using namespace isam;
 			
 		// Ensures proper initialization/finalization of the framework
-		_3fd::core::FrameworkInstance _framework;
+#   ifdef _3FD_PLATFORM_WINRT
+        core::FrameworkInstance _framework("IntegrationTestsApp.WinRT.UWP");
+#   else
+        core::FrameworkInstance _framework;
+#   endif
 
 		CALL_STACK_TRACE;
 
@@ -1284,7 +1312,11 @@ namespace integration_tests
 		using namespace isam;
 			
 		// Ensures proper initialization/finalization of the framework
-		_3fd::core::FrameworkInstance _framework;
+#   ifdef _3FD_PLATFORM_WINRT
+        core::FrameworkInstance _framework("IntegrationTestsApp.WinRT.UWP");
+#   else
+        core::FrameworkInstance _framework;
+#   endif
 
 		CALL_STACK_TRACE;
 
@@ -1339,7 +1371,11 @@ namespace integration_tests
 		using namespace isam;
 
 		// Ensures proper initialization/finalization of the framework
-		_3fd::core::FrameworkInstance _framework;
+#   ifdef _3FD_PLATFORM_WINRT
+        core::FrameworkInstance _framework("IntegrationTestsApp.WinRT.UWP");
+#   else
+        core::FrameworkInstance _framework;
+#   endif
 
 		CALL_STACK_TRACE;
 

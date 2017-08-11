@@ -201,28 +201,28 @@ namespace _3fd
 
 				// Load the configurations in the file
 				AutoPtr<XMLConfiguration> config(new XMLConfiguration(appFilePath + ".3fd.config"));
+                
+				settings.common.log.purgeAge = config->getInt("common.log.entry[@key='purgeAge'][@value]", 30);
+				settings.common.log.purgeCount = config->getInt("common.log.entry[@key='purgeCount'][@value]", 16);
+                settings.common.log.sizeLimit = config->getInt("common.log.entry[@key='sizeLimit'][@value]", 1024);
+				settings.common.log.writeToConsole = config->getBool("common.log.entry[@key='writeToConsole'][@value]", false);
 
-				settings.common.log.purgeAge = config->getInt("common.log.purgeAge", 30);
-				settings.common.log.purgeCount = config->getInt("common.log.purgeCount", 16);
-                settings.common.log.sizeLimit = config->getInt("common.log.sizeLimit", 1024);
-				settings.common.log.writeToConsole = config->getBool("common.log.writeToConsole", false);
-
-				settings.framework.dependencies.opencl = config->getBool("framework.dependencies.opencl", false);
+				settings.framework.dependencies.opencl = config->getBool("framework.dependencies.entry[@key='opencl'][@value]", false);
 
 				settings.framework.stackTracing.stackLogInitialCap = config->getInt("framework.stackTracing.stackLogInitialCap", 32);
 
-				settings.framework.gc.msgLoopSleepTimeoutMilisecs = config->getInt("framework.gc.msgLoopSleepTimeoutMilisecs", 100);
-				settings.framework.gc.memBlocksMemPool.initialSize = config->getInt("framework.gc.memBlocksMemPool.initialSize", 128);
-				settings.framework.gc.memBlocksMemPool.growingFactor = static_cast<float> (config->getDouble("framework.gc.memBlocksMemPool.growingFactor", 1.0));
-				settings.framework.gc.sptrObjectsHashTable.initialSizeLog2 = config->getInt("framework.gc.sptrObjectsHashTable.initialSizeLog2", 8);
-				settings.framework.gc.sptrObjectsHashTable.loadFactorThreshold = static_cast<float> (config->getDouble("framework.gc.sptrObjectsHashTable.loadFactorThreshold", 0.7));
+				settings.framework.gc.msgLoopSleepTimeoutMilisecs = config->getInt("framework.gc.entry[@key='msgLoopSleepTimeoutMillisecs'][@value]", 100);
+				settings.framework.gc.memBlocksMemPool.initialSize = config->getInt("framework.gc.entry[@key='memoryBlocksPoolInitialSize'][@value]", 128);
+				settings.framework.gc.memBlocksMemPool.growingFactor = static_cast<float> (config->getDouble("framework.gc.entry[@key='memoryBlocksPoolGrowingFactor'][@value]", 1.0));
+				settings.framework.gc.sptrObjectsHashTable.initialSizeLog2 = config->getInt("framework.gc.entry[@key='sptrObjsHashTabInitSizeLog2'][@value]", 8);
+				settings.framework.gc.sptrObjectsHashTable.loadFactorThreshold = static_cast<float> (config->getDouble("framework.gc.entry[@key='sptrObjsHashTabLoadFactorThreshold'][@value]", 0.7));
 
 #	ifdef _3FD_OPENCL_SUPPORT
-				settings.framework.opencl.maxSourceCodeLineLength = config->getInt("framework.opencl.maxSourceCodeLineLength", 128);
-				settings.framework.opencl.maxBuildLogSize = config->getInt("framework.opencl.maxBuildLogSize", 5120);
+				settings.framework.opencl.maxSourceCodeLineLength = config->getInt("framework.opencl.entry[@key='maxSourceCodeLineLength'][@value]", 128);
+				settings.framework.opencl.maxBuildLogSize = config->getInt("framework.opencl.entry[@key='maxBuildLogSize'][@value]", 5120);
 #	endif
 #	ifdef _3FD_ESENT_SUPPORT
-				settings.framework.isam.useWindowsFileCache = config->getBool("framework.isam.useWindowsFileCache", true);
+				settings.framework.isam.useWindowsFileCache = config->getBool("framework.isam.entry[@key='useWindowsFileCache'][@value]", true);
 #	endif
 			}
 			catch (std::system_error &ex)
@@ -254,28 +254,71 @@ namespace _3fd
 		/// <param name="nodeSection">The node of the section where to look for the configuration.</param>
 		/// <param name="xpathNodeConfig">The xpath for the configuration, starting from the right section.</param>
 		/// <param name="defaultValue">The default value.</param>
-		/// <returns>The configuration value.</returns>
+		/// <returns>The configuration stored in attribute 'value'.</returns>
 		static string GetString(
 			Windows::Data::Xml::Dom::IXmlNode ^nodeSection,
-			Platform::String ^xpathNodeConfig,
+            const wchar_t *xpathNodeConfig,
 			const string &defaultValue)
 		{
 			if (nodeSection == nullptr)
 				return defaultValue;
 
-			auto nodeConfig = nodeSection->SelectSingleNode(xpathNodeConfig);
+			auto nodeConfig = nodeSection->SelectSingleNode(Platform::StringReference(xpathNodeConfig));
 			if (nodeConfig == nullptr)
 				return defaultValue;
 
-			auto innerText = nodeConfig->InnerText;
-			if (innerText->IsEmpty() == false)
+            auto attribute = nodeConfig->Attributes->GetNamedItem(Platform::StringReference(L"value"));
+            if (attribute == nullptr)
+                return defaultValue;
+
+            auto valAsText = attribute->InnerText;
+
+			if (valAsText->IsEmpty() == false)
 			{
 				std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
-				return converter.to_bytes(innerText->Data());
+				return converter.to_bytes(valAsText->Data());
 			}
 			else
 				return defaultValue;
 		}
+
+        /// <summary>
+        /// Helper function to get a boolean value of configuration inside a DOM node.
+        /// </summary>
+        /// <param name="nodeSection">The node of the section where to look for the configuration.</param>
+        /// <param name="xpathNodeConfig">The xpath for the configuration, starting from the right section.</param>
+        /// <param name="defaultValue">The default value.</param>
+        /// <returns>The configuration stored in attribute 'value'.</returns>
+        static bool GetBoolean(
+            Windows::Data::Xml::Dom::IXmlNode ^nodeSection,
+            const wchar_t *xpathNodeConfig,
+            bool defaultValue)
+        {
+            if (nodeSection == nullptr)
+                return defaultValue;
+
+            auto nodeConfig = nodeSection->SelectSingleNode(Platform::StringReference(xpathNodeConfig));
+            if (nodeConfig == nullptr)
+                return defaultValue;
+
+            auto attribute = nodeConfig->Attributes->GetNamedItem(Platform::StringReference(L"value"));
+            if (attribute == nullptr)
+                return defaultValue;
+
+            auto valAsText = attribute->InnerText;
+
+            if (valAsText->IsEmpty() == false)
+            {
+                if (wcsicmp(valAsText->Data(), L"true") == 0)
+                    return true;
+                else if (wcsicmp(valAsText->Data(), L"false") == 0)
+                    return false;
+                else
+                    return defaultValue;
+            }
+            else
+                return defaultValue;
+        }
 
 		/// <summary>
 		/// Helper function to get an integer value of configuration inside a DOM node.
@@ -283,21 +326,25 @@ namespace _3fd
 		/// <param name="nodeSection">The node of the section where to look for the configuration.</param>
 		/// <param name="xpathNodeConfig">The xpath for the configuration, starting from the right section.</param>
 		/// <param name="defaultValue">The default value.</param>
-		/// <returns>The configuration value.</returns>
+        /// <returns>The configuration stored in attribute 'value'.</returns>
 		static int GetInteger(
 			Windows::Data::Xml::Dom::IXmlNode ^nodeSection,
-			Platform::String ^xpathNodeConfig,
+            const wchar_t *xpathNodeConfig,
 			int defaultValue)
 		{
 			if (nodeSection == nullptr)
 				return defaultValue;
 
-			auto nodeConfig = nodeSection->SelectSingleNode(xpathNodeConfig);
+			auto nodeConfig = nodeSection->SelectSingleNode(Platform::StringReference(xpathNodeConfig));
 			if (nodeConfig == nullptr)
 				return defaultValue;
 
-			auto innerText = nodeConfig->InnerText->Data();
-			long parsedVal = wcstol(innerText, nullptr, 10);
+            auto attribute = nodeConfig->Attributes->GetNamedItem(Platform::StringReference(L"value"));
+            if (attribute == nullptr)
+                return defaultValue;
+
+            auto valAsText = attribute->InnerText->Data();
+			long parsedVal = wcstol(valAsText, nullptr, 10);
 			return static_cast<int> (parsedVal > 0 ? parsedVal : defaultValue);
 		}
 
@@ -307,21 +354,25 @@ namespace _3fd
 		/// <param name="nodeSection">The node of the section where to look for the configuration.</param>
 		/// <param name="xpathNodeConfig">The xpath for the configuration, starting from the right section.</param>
 		/// <param name="defaultValue">The default value.</param>
-		/// <returns>The configuration value.</returns>
+        /// <returns>The configuration stored in attribute 'value'.</returns>
 		static float GetFloat(
 			Windows::Data::Xml::Dom::IXmlNode ^nodeSection,
-			Platform::String ^xpathNodeConfig,
+			const wchar_t *xpathNodeConfig,
 			float defaultValue)
 		{
 			if (nodeSection == nullptr)
 				return defaultValue;
 
-			auto nodeConfig = nodeSection->SelectSingleNode(xpathNodeConfig);
+			auto nodeConfig = nodeSection->SelectSingleNode(Platform::StringReference(xpathNodeConfig));
 			if (nodeConfig == nullptr)
 				return defaultValue;
 
-			auto innerText = nodeConfig->InnerText->Data();
-			float parsedVal = wcstod(innerText, nullptr);
+            auto attribute = nodeConfig->Attributes->GetNamedItem(Platform::StringReference(L"value"));
+            if (attribute == nullptr)
+                return defaultValue;
+            
+			auto valAsText = attribute->InnerText->Data();
+			float parsedVal = wcstod(valAsText, nullptr);
 			return parsedVal > 0.0 ? parsedVal : defaultValue;
 		}
 
@@ -344,26 +395,37 @@ namespace _3fd
 				);
 
 				// Logging options:
-				auto root = config->SelectSingleNode(L"/root");
-				auto node = root->SelectSingleNode(L"./common/log");
-				settings.common.log.sizeLimit = GetInteger(node, L"./sizeLimit", 2048);
+				auto node = config->SelectSingleNode(L"/configuration/common/log");
+				settings.common.log.sizeLimit = GetInteger(node, L"./entry[@key='sizeLimit']", 2048);
 
-				// Stack tracing options:
-				auto framework = root->SelectSingleNode(L"./framework");
-				node = framework->SelectSingleNode(L"./stackTracing");
-				settings.framework.stackTracing.stackLogInitialCap = GetInteger(node, L"./stackLogInitialCap", 32);
+				auto framework = config->SelectSingleNode(L"/configuration/framework");
+
+                // Stack tracing options:
+				settings.framework.stackTracing.stackLogInitialCap =
+                    GetInteger(framework, L"./stackTracing/entry[@key='logInitialCap']", 32);
 
 				// Garbage collector options:
-				auto nodeGC = framework->SelectSingleNode(L"./gc");
-				settings.framework.gc.msgLoopSleepTimeoutMilisecs = GetInteger(nodeGC, L"./msgLoopSleepTimeoutMilisecs", 100);
+				node = framework->SelectSingleNode(L"./gc");
 
-				node = nodeGC->SelectSingleNode(L"./memBlocksMemPool");
-				settings.framework.gc.memBlocksMemPool.initialSize = GetInteger(node, L"./initialSize", 128);
-				settings.framework.gc.memBlocksMemPool.growingFactor = GetFloat(node, L"./growingFactor", 1.0F);
+				settings.framework.gc.msgLoopSleepTimeoutMilisecs =
+                    GetInteger(node, L"./entry[@key='msgLoopSleepTimeoutMillisecs']", 100);
 
-				node = nodeGC->SelectSingleNode(L"./sptrObjectsHashTable");
-				settings.framework.gc.sptrObjectsHashTable.initialSizeLog2 = GetInteger(node, L"./initialSizeLog2", 8);
-				settings.framework.gc.sptrObjectsHashTable.loadFactorThreshold = GetFloat(node, L"./loadFactorThreshold", 0.7F);
+				settings.framework.gc.memBlocksMemPool.initialSize =
+                    GetInteger(node, L"./entry[@key='memoryBlocksPoolInitialSize']", 128);
+
+				settings.framework.gc.memBlocksMemPool.growingFactor =
+                    GetFloat(node, L"./entry[@key='memoryBlocksPoolGrowingFactor']", 1.0F);
+
+				settings.framework.gc.sptrObjectsHashTable.initialSizeLog2 =
+                    GetInteger(node, L"./entry[@key='sptrObjsHashTabInitSizeLog2']", 8);
+
+				settings.framework.gc.sptrObjectsHashTable.loadFactorThreshold =
+                    GetFloat(node, L"./entry[@key='sptrObjsHashTabLoadFactorThreshold']", 0.7F);
+
+                // ISAM options:
+                node = framework->SelectSingleNode(L"./isam");
+                settings.framework.isam.useWindowsFileCache =
+                    GetBoolean(node, L"./entry[@key='useWindowsFileCache']", true);
 			}
             catch (core::IAppException &)
             {
