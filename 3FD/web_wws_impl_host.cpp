@@ -145,20 +145,16 @@ namespace wws
         WS_HTTP_SSL_BINDING_TEMPLATE bindingTemplate{};
 
         // Extend security binding properties:
-        if (m_clientCertIsRequired)
-        {
-            auto &bindSecProps = bindingTemplate.sslTransportSecurityBinding.securityBindingProperties;
+        auto &bindSecProps = bindingTemplate.sslTransportSecurityBinding.securityBindingProperties;
+        bindSecProps.propertyCount = 1;
+        bindSecProps.properties = heap.Alloc<WS_SECURITY_BINDING_PROPERTY>();
 
-            bindSecProps.propertyCount = 1;
-            bindSecProps.properties = heap.Alloc<WS_SECURITY_BINDING_PROPERTY>();
-
-            bindSecProps.properties[0] =
-                WS_SECURITY_BINDING_PROPERTY{
-                    WS_SECURITY_BINDING_PROPERTY_REQUIRE_SSL_CLIENT_CERT,
-                    new (heap.Alloc<BOOL>()) BOOL(m_clientCertIsRequired ? TRUE : FALSE),
-                    sizeof(BOOL)
-                };
-        }
+        bindSecProps.properties[0] =
+            WS_SECURITY_BINDING_PROPERTY{
+                WS_SECURITY_BINDING_PROPERTY_REQUIRE_SSL_CLIENT_CERT,
+                new (heap.Alloc<BOOL>()) BOOL(m_clientCertIsRequired ? TRUE : FALSE),
+                sizeof(BOOL)
+            };
 
         return m_callbackCreateSvcEndpt(&bindingTemplate,
                                         address,
@@ -195,20 +191,16 @@ namespace wws
         WS_HTTP_SSL_HEADER_AUTH_BINDING_TEMPLATE bindingTemplate{};
 
         // Extend security binding properties:
-        if (m_clientCertIsRequired)
-        {
-            auto &bindSecProps = bindingTemplate.sslTransportSecurityBinding.securityBindingProperties;
+        auto &bindSecProps = bindingTemplate.sslTransportSecurityBinding.securityBindingProperties;
+        bindSecProps.propertyCount = 1;
+        bindSecProps.properties = heap.Alloc<WS_SECURITY_BINDING_PROPERTY>();
 
-            bindSecProps.propertyCount = 1;
-            bindSecProps.properties = heap.Alloc<WS_SECURITY_BINDING_PROPERTY>();
-
-            bindSecProps.properties[0] =
-                WS_SECURITY_BINDING_PROPERTY{
-                    WS_SECURITY_BINDING_PROPERTY_REQUIRE_SSL_CLIENT_CERT,
-                    new (heap.Alloc<BOOL>()) BOOL(m_clientCertIsRequired ? TRUE : FALSE),
-                    sizeof(BOOL)
-                };
-        }
+        bindSecProps.properties[0] =
+            WS_SECURITY_BINDING_PROPERTY{
+                WS_SECURITY_BINDING_PROPERTY_REQUIRE_SSL_CLIENT_CERT,
+                new (heap.Alloc<BOOL>()) BOOL(m_clientCertIsRequired ? TRUE : FALSE),
+                sizeof(BOOL)
+            };
 
         return m_callbackCreateSvcEndpt(&bindingTemplate,
                                         address,
@@ -488,7 +480,7 @@ namespace wws
 			// Get /wsdl:definitions
 			auto definitions = static_cast<XML::Element *> (
 				document->getNodeByPathNS("/wsdl:definitions", nsmap)
-				);
+			);
 
 			if (definitions == nullptr)
 			{
