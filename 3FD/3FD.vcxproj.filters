@@ -84,6 +84,7 @@
     <Text Include="..\Acknowledgements.txt">
       <Filter>MORE</Filter>
     </Text>
+    <Text Include="CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="sqlite.h">

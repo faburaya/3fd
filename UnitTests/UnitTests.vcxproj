@@ -227,6 +227,7 @@
     <ClInclude Include="..\3FD\targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <Text Include="CMakeLists.txt" />
     <Text Include="deprecated.txt" />
   </ItemGroup>
   <ItemGroup>
