@@ -11,6 +11,7 @@ namespace broker
 {
     using std::string;
 
+
     /// <summary>
     /// Initializes a new instance of the <see cref="QueueReader"/> class.
     /// </summary>
@@ -26,7 +27,7 @@ namespace broker
                              const string &serviceURL,
                              const MessageTypeSpec &msgTypeSpec)
     try :
-        m_dbSession("ODBC", connString),
+        m_dbSession(GetConnection(connString)),
         m_serviceURL(serviceURL)
     {
         CALL_STACK_TRACE;
@@ -35,9 +36,9 @@ namespace broker
 
         using namespace Poco::Data;
         using namespace Poco::Data::Keywords;
-
+        
         // Create message type, contract, queue, service and message content data type:
-        m_dbSession << R"(
+        CheckConnection(*m_dbSession) << R"(
             if not exists ( select * from sys.service_queues where name = N'%s/v1_0_0/Queue' )
             begin
                 create message type [%s/v1_0_0/Message] validation = %s;
@@ -68,7 +69,7 @@ namespace broker
         // Create stored procedure to read messages from queue:
 
         Poco::Nullable<int> stoProcObjId;
-        m_dbSession <<
+        CheckConnection(*m_dbSession) <<
             "select object_id(N'%s/v1_0_0/ReadMessagesProc', N'P');"
             , serviceURL
             , into(stoProcObjId)
@@ -76,7 +77,7 @@ namespace broker
 
         if (stoProcObjId.isNull())
         {
-            m_dbSession << R"(
+            CheckConnection(*m_dbSession) << R"(
                 create procedure [%s/v1_0_0/ReadMessagesProc] (
                     @recvMsgCountLimit int
 	                ,@recvTimeoutMilisecs int
@@ -176,7 +177,7 @@ namespace broker
                 , now;
         }
 
-        m_dbSession.setFeature("autoCommit", false);
+        CheckConnection(*m_dbSession).setFeature("autoCommit", false);
 
         std::ostringstream oss;
         oss << "Initialized successfully the reader for broker queue '" << serviceURL
@@ -213,6 +214,7 @@ namespace broker
         throw core::AppException<std::runtime_error>(oss.str());
     }
 
+
     /// <summary>
     /// Controls retrieval of results from asynchronous read of queue.
     /// This implementation is NOT THREAD SAFE!
@@ -248,10 +250,9 @@ namespace broker
 
             using namespace Poco::Data::Keywords;
 
-            if (!dbSession.isConnected())
-                dbSession.reconnect();
-
-            m_stoProcExecStmt.reset(new Poco::Data::Statement(dbSession));
+            m_stoProcExecStmt.reset(
+                new Poco::Data::Statement(CheckConnection(dbSession))
+            );
 
             std::ostringstream oss;
             oss << "exec [" << serviceURL << "/v1_0_0/ReadMessagesProc] "
@@ -259,7 +260,7 @@ namespace broker
             
             *m_stoProcExecStmt << oss.str(), into(m_messages);
 
-            dbSession.begin();
+            CheckConnection(dbSession).begin();
 
             m_messages.reserve(msgCountStepLimit);
         }
@@ -291,6 +292,7 @@ namespace broker
             oss << "Generic failure prevented reading from broker queue: " << ex.what();
             throw core::AppException<std::runtime_error>(oss.str());
         }
+
 
         /// <summary>
         /// Finalizes an instance of the <see cref="AsyncReadImpl"/> class.
@@ -597,7 +599,10 @@ namespace broker
         try
         {
             return std::unique_ptr<IAsyncRead>(
-                new AsyncReadImpl(m_dbSession, msgCountStepLimit, msgRecvTimeout, m_serviceURL)
+                new AsyncReadImpl(*m_dbSession,
+                                  msgCountStepLimit,
+                                  msgRecvTimeout,
+                                  m_serviceURL)
             );
         }
         catch (core::IAppException &)

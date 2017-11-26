@@ -60,6 +60,16 @@ static void ImpersonateClientAndCreateFile(handle_t clientBindingHandle)
     }
 }
 
+// Common procedure that inverts the order of a pair of numbers
+void Invert(
+    /* [in] */ handle_t IDL_handle,
+    /* [out][in] */ pair *onePair)
+{
+    auto temp = onePair->left;
+    onePair->left = onePair->right;
+    onePair->right = temp;
+}
+
 // 1st implementation for 'Operate'
 void Operate(
     /* [in] */ handle_t IDL_handle,
@@ -67,8 +77,6 @@ void Operate(
     /* [in] */ double right,
     /* [out] */ double *result)
 {
-    CALL_STACK_TRACE;
-
     *result = left * right;
 }
 
@@ -79,55 +87,41 @@ void Operate2(
     /* [in] */ double right,
     /* [out] */ double *result)
 {
-    CALL_STACK_TRACE;
-
     *result = left + right;
 }
 
 // 1st implementation for 'ChangeCase'
 void ChangeCase(
     /* [in] */ handle_t IDL_handle,
-    /* [in] */ cstring *input,
-    /* [out] */ cstring *output)
+    /* [string][in] */ unsigned char *input,
+    /* [size_is][string][out] */ unsigned char *output)
 {
-    CALL_STACK_TRACE;
-
     /* When the stubs have been generated for OSF compliance, RpcSs/RpcSm procs
     are to be used for dynamic allocation, instead of midl_user_allocate/free. This
     memory gets automatically released once this RPC returns to the caller. */
 
-    output->data = static_cast<unsigned char *> (RpcSsAllocate(input->size));
-    //output->data = static_cast<unsigned char *> (midl_user_allocate(input->size));
-    output->size = input->size;
+    int idx;
+    for (idx = 0; input[idx] != 0; ++idx)
+        output[idx] = toupper(input[idx]);
 
-    const auto length = input->size - 1;
-    for (unsigned short idx = 0; idx < length; ++idx)
-        output->data[idx] = toupper(input->data[idx]);
-
-    output->data[length] = 0;
+    output[idx] = 0;
 }
 
 // 2nd implementation for 'ChangeCase'
 void ChangeCase2(
     /* [in] */ handle_t IDL_handle,
-    /* [in] */ cstring *input,
-    /* [out] */ cstring *output)
+    /* [string][in] */ unsigned char *input,
+    /* [size_is][string][out] */ unsigned char *output)
 {
-    CALL_STACK_TRACE;
-
     /* When the stubs have been generated for OSF compliance, RpcSs/RpcSm procs
     are to be used for dynamic allocation, instead of midl_user_allocate/free. This
     memory gets automatically released once this RPC returns to the caller. */
 
-    output->data = static_cast<unsigned char *> (RpcSsAllocate(input->size));
-    //output->data = static_cast<unsigned char *> (midl_user_allocate(input->size));
-    output->size = input->size;
+    int idx;
+    for (idx = 0; input[idx] != 0; ++idx)
+        output[idx] = tolower(input[idx]);
 
-    const auto length = input->size - 1;
-    for (unsigned short idx = 0; idx < length; ++idx)
-        output->data[idx] = tolower(input->data[idx]);
-
-    output->data[length] = 0;
+    output[idx] = 0;
 }
 
 // Common procedure that writes a file in server storage in order to test impersonation
@@ -283,10 +277,10 @@ namespace integration_tests
             RpcServer::Initialize(ProtocolSequence::Local, "TestClient3FD");
 
             // RPC interface implementation 1:
-            AcmeTesting_v1_0_epv_t intfImplFuncTable1 = { Operate, ChangeCase, WriteOnStorage, Shutdown };
+            AcmeTesting_v1_0_epv_t intfImplFuncTable1 = { Invert, Operate, ChangeCase, WriteOnStorage, Shutdown };
 
             // RPC interface implementation 2:
-            AcmeTesting_v1_0_epv_t intfImplFuncTable2 = { Operate2, ChangeCase2, WriteOnStorage, Shutdown };
+            AcmeTesting_v1_0_epv_t intfImplFuncTable2 = { Invert, Operate2, ChangeCase2, WriteOnStorage, Shutdown };
 
             std::vector<RpcSrvObject> objects;
             objects.reserve(2);
@@ -347,10 +341,10 @@ namespace integration_tests
             RpcServer::Initialize(ProtocolSequence::Local, "TestClient3FD");
 
             // RPC interface implementation 1:
-            AcmeTesting_v1_0_epv_t intfImplFuncTable1 = { Operate, ChangeCase, WriteOnStorage, Shutdown };
+            AcmeTesting_v1_0_epv_t intfImplFuncTable1 = { Invert, Operate, ChangeCase, WriteOnStorage, Shutdown };
 
             // RPC interface implementation 2:
-            AcmeTesting_v1_0_epv_t intfImplFuncTable2 = { Operate2, ChangeCase2, WriteOnStorage, Shutdown };
+            AcmeTesting_v1_0_epv_t intfImplFuncTable2 = { Invert, Operate2, ChangeCase2, WriteOnStorage, Shutdown };
 
             std::vector<RpcSrvObject> objects;
             objects.reserve(2);
@@ -415,10 +409,10 @@ namespace integration_tests
             );
 
             // RPC interface implementation 1:
-            AcmeTesting_v1_0_epv_t intfImplFuncTable1 = { Operate, ChangeCase, WriteOnStorage, Shutdown };
+            AcmeTesting_v1_0_epv_t intfImplFuncTable1 = { Invert, Operate, ChangeCase, WriteOnStorage, Shutdown };
 
             // RPC interface implementation 2:
-            AcmeTesting_v1_0_epv_t intfImplFuncTable2 = { Operate2, ChangeCase2, WriteOnStorage, Shutdown };
+            AcmeTesting_v1_0_epv_t intfImplFuncTable2 = { Invert, Operate2, ChangeCase2, WriteOnStorage, Shutdown };
 
             std::vector<RpcSrvObject> objects;
             objects.reserve(2);
@@ -498,10 +492,10 @@ namespace integration_tests
             );
 
             // RPC interface implementation 1:
-            AcmeTesting_v1_0_epv_t intfImplFuncTable1 = { Operate, ChangeCase, WriteOnStorage, Shutdown };
+            AcmeTesting_v1_0_epv_t intfImplFuncTable1 = { Invert, Operate, ChangeCase, WriteOnStorage, Shutdown };
 
             // RPC interface implementation 2:
-            AcmeTesting_v1_0_epv_t intfImplFuncTable2 = { Operate2, ChangeCase2, WriteOnStorage, Shutdown };
+            AcmeTesting_v1_0_epv_t intfImplFuncTable2 = { Invert, Operate2, ChangeCase2, WriteOnStorage, Shutdown };
 
             std::vector<RpcSrvObject> objects;
             objects.reserve(2);
@@ -596,10 +590,10 @@ namespace integration_tests
             );
 
             // RPC interface implementation 1:
-            AcmeTesting_v1_0_epv_t intfImplFuncTable1 = { Operate, ChangeCase, WriteOnStorage, Shutdown };
+            AcmeTesting_v1_0_epv_t intfImplFuncTable1 = { Invert, Operate, ChangeCase, WriteOnStorage, Shutdown };
 
             // RPC interface implementation 2:
-            AcmeTesting_v1_0_epv_t intfImplFuncTable2 = { Operate2, ChangeCase2, WriteOnStorage, Shutdown };
+            AcmeTesting_v1_0_epv_t intfImplFuncTable2 = { Invert, Operate2, ChangeCase2, WriteOnStorage, Shutdown };
 
             std::vector<RpcSrvObject> objects;
             objects.reserve(2);
@@ -686,10 +680,10 @@ namespace integration_tests
             );
 
             // RPC interface implementation 1:
-            AcmeTesting_v1_0_epv_t intfImplFuncTable1 = { Operate, ChangeCase, WriteOnStorage, Shutdown };
+            AcmeTesting_v1_0_epv_t intfImplFuncTable1 = { Invert, Operate, ChangeCase, WriteOnStorage, Shutdown };
 
             // RPC interface implementation 2:
-            AcmeTesting_v1_0_epv_t intfImplFuncTable2 = { Operate2, ChangeCase2, WriteOnStorage, Shutdown };
+            AcmeTesting_v1_0_epv_t intfImplFuncTable2 = { Invert, Operate2, ChangeCase2, WriteOnStorage, Shutdown };
 
             std::vector<RpcSrvObject> objects;
             objects.reserve(2);

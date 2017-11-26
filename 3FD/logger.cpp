@@ -79,20 +79,21 @@ namespace core
 	/// </summary>
 	void Logger::Shutdown()
 	{
-		if(uniqueObjectPtr != nullptr)
-		{
-			try
-			{
-				std::lock_guard<std::mutex> lock(singleInstanceCreationMutex);
-				delete uniqueObjectPtr;
-				uniqueObjectPtr = nullptr;
-			}
-			catch (std::system_error)
-			{/* DO NOTHING: SWALLOW EXCEPTION
-				This method cannot throw an exception because it could have been originally 
-				invoked by a destructor. When that happens, memory leaks are expected. */
-			}
-		}
+        try
+        {
+            std::lock_guard<std::mutex> lock(singleInstanceCreationMutex);
+
+            if (uniqueObjectPtr != nullptr)
+            {
+                delete uniqueObjectPtr;
+                uniqueObjectPtr = nullptr;
+            }
+        }
+        catch (std::system_error)
+        {/* DO NOTHING: SWALLOW EXCEPTION
+            This method cannot throw an exception because it could have been originally
+            invoked by a destructor. When that happens, memory leaks are expected. */
+        }
 	}
 
 	/// <summary>
@@ -156,7 +157,7 @@ namespace core
 	/// <param name="message">The message to log.</param>
 	/// <param name="prio">The priority of the message.</param>
 	/// <param name="cst">When set to <c>true</c>, append the call stack trace.</param>
-	void Logger::WriteImpl(string &&message, Priority prio, bool cst)
+	void Logger::WriteImpl(string &&message, Priority prio, bool cst) NOEXCEPT
 	{
 		WriteImpl(std::move(message), string(""), prio, cst);
 	}

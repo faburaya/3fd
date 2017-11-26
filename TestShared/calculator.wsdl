@@ -73,14 +73,14 @@
             <xsd:complexType name="EmptyRequest">
             </xsd:complexType>
 
-            <xsd:complexType name="MultipurposeSingleIntegerResponse">
+            <xsd:complexType name="MultipurposeBooleanResponse">
                 <xsd:sequence>
-                    <xsd:element name="result" type="xsd:integer" />
+                    <xsd:element name="result" type="xsd:boolean" />
                 </xsd:sequence>
             </xsd:complexType>
 
             <xsd:element name="CloseServiceRequest" type="tns:EmptyRequest" />
-            <xsd:element name="CloseServiceResponse" type="tns:MultipurposeSingleIntegerResponse" />
+            <xsd:element name="CloseServiceResponse" type="tns:MultipurposeBooleanResponse" />
 
             <xsd:complexType name="BinaryOpRequest">
                 <xsd:sequence>

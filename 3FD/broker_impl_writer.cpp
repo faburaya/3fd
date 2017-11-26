@@ -12,6 +12,7 @@ namespace broker
 {
     using std::string;
 
+
     /// <summary>
     /// Initializes a new instance of the <see cref="QueueWriter"/> class.
     /// </summary>
@@ -27,7 +28,7 @@ namespace broker
                              const string &serviceURL,
                              const MessageTypeSpec &msgTypeSpec)
     try :
-        m_dbSession("ODBC", connString),
+        m_dbSession(GetConnection(connString)),
         m_serviceURL(serviceURL)
     {
         CALL_STACK_TRACE;
@@ -36,9 +37,9 @@ namespace broker
 
         using namespace Poco::Data;
         using namespace Poco::Data::Keywords;
-
+        
         // Create message type, contract, queue, service, message content data type and input stage table:
-        m_dbSession << R"(
+        CheckConnection(*m_dbSession) << R"(
             if not exists ( select * from sys.service_queues where name = N'%s/v1_0_0/Queue' )
             begin
                 create message type [%s/v1_0_0/Message] validation = %s;
@@ -92,7 +93,7 @@ namespace broker
         // Create stored procedure to send messages to service queue:
 
         Poco::Nullable<int> stoProcObjId;
-        m_dbSession <<
+        CheckConnection(*m_dbSession) <<
             "select object_id(N'%s/v1_0_0/SendMessagesProc', N'P');"
             , serviceURL
             , into(stoProcObjId)
@@ -100,7 +101,7 @@ namespace broker
 
         if (stoProcObjId.isNull())
         {
-            m_dbSession << R"(
+            CheckConnection(*m_dbSession) << R"(
                 create procedure [%s/v1_0_0/SendMessagesProc] as
                 begin try
                     begin transaction;
@@ -158,7 +159,7 @@ namespace broker
 
         // Create stored procedure to finish conversations in the initiator endpoint:
 
-        m_dbSession <<
+        CheckConnection(*m_dbSession) <<
             "select object_id(N'%s/v1_0_0/FinishDialogsOnEndptInitProc', N'P');"
             , serviceURL
             , into(stoProcObjId)
@@ -166,7 +167,7 @@ namespace broker
 
         if (stoProcObjId.isNull())
         {
-            m_dbSession << R"(
+            CheckConnection(*m_dbSession) << R"(
                 create procedure [%s/v1_0_0/FinishDialogsOnEndptInitProc] as
                 begin try
                     begin transaction;
@@ -232,7 +233,7 @@ namespace broker
                 , now;
         }
 
-        m_dbSession.setFeature("autoCommit", false);
+        CheckConnection(*m_dbSession).setFeature("autoCommit", false);
 
         std::ostringstream oss;
         oss << "Initialized successfully the writer for broker queue '" << serviceURL
@@ -268,6 +269,7 @@ namespace broker
         oss << "Generic failure prevented creation of broker queue writer: " << ex.what();
         throw core::AppException<std::runtime_error>(oss.str());
     }
+
 
     /// <summary>
     /// Helps synchronizing with an asynchronous write to a broker queue.
@@ -519,6 +521,7 @@ namespace broker
 
     };// end of AsyncWriteImpl class
 
+
     // Synchronously put the messages into the broker queue
     static void PutInQueueImpl(Poco::Data::Session &dbSession,
                                const std::vector<string> &messages,
@@ -530,14 +533,18 @@ namespace broker
 
         try
         {
-            if (!dbSession.isConnected())
-                dbSession.reconnect();
+            CheckConnection(dbSession).begin();
 
-            dbSession.begin();
+            CheckConnection(dbSession)
+                << "insert into [%s/v1_0_0/InputStageTable] (content) values (?);"
+                , serviceURL
+                , useRef(messages)
+                , now;
 
-            dbSession << "insert into [%s/v1_0_0/InputStageTable] (content) values (?);", serviceURL, useRef(messages), now;
-
-            dbSession << "exec [%s/v1_0_0/SendMessagesProc];", serviceURL, now;
+            CheckConnection(dbSession)
+                << "exec [%s/v1_0_0/SendMessagesProc];"
+                , serviceURL
+                , now;
 
             result.set_value();
         }
@@ -550,6 +557,7 @@ namespace broker
             result.set_exception(std::current_exception());
         }
     }
+
 
     /// <summary>
     /// Asychonously writes the messages into the queue.
@@ -565,11 +573,11 @@ namespace broker
             if (m_workerThread && m_workerThread->joinable())
                 m_workerThread->join();
 
-            std::unique_ptr<IAsyncWrite> result(new AsyncWriteImpl(m_dbSession));
+            std::unique_ptr<IAsyncWrite> result(new AsyncWriteImpl(*m_dbSession));
             
             m_workerThread.reset(
                 new std::thread(&PutInQueueImpl,
-                                std::ref(m_dbSession),
+                                std::ref(*m_dbSession),
                                 std::ref(messages),
                                 m_serviceURL,
                                 std::ref(static_cast<AsyncWriteImpl &> (*result)))
@@ -623,6 +631,7 @@ namespace broker
             throw core::AppException<std::runtime_error>(oss.str());
         }
     }
+
 
     /// <summary>
     /// Finalizes an instance of the <see cref="QueueWriter"/> class.

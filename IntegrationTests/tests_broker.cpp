@@ -1,7 +1,10 @@
 #include "stdafx.h"
 #include "runtime.h"
 #include "broker.h"
+#include "configuration.h"
 #include <algorithm>
+
+#define UNDEF_BROKER_DB_CONNSTR "CONNECTION STRING FOR BROKER BACK-END IS NOT DEFINED IN XML CONFIGURATION"
 
 namespace _3fd
 {
@@ -15,9 +18,9 @@ namespace integration_tests
        work with these integration tests. */
 
 #ifdef _WIN32
-    const char *msSqlDbConnString("Driver={SQL Server Native Client 11.0};Server=(localdb)\\MSSQLLocalDB;Database=SvcBrokerTest;Trusted_Connection=yes;");
+    const char *keyForBrokerDbConnStr("testBrokerWindowsMsSqlDbConnString");
 #else
-    const char *msSqlDbConnString("Driver={ODBC Driver 13 for SQL Server};Server=tcp:192.168.1.32,1433;Database=SvcBrokerTest;Uid=tester;Pwd=tester;");
+    const char *keyForBrokerDbConnStr("testBrokerLinuxMsSqlDbConnString");
 #endif
     
     /// <summary>
@@ -36,7 +39,7 @@ namespace integration_tests
 
             QueueReader queueReader(
                 Backend::MsSqlServer,
-                msSqlDbConnString,
+                core::AppConfig::GetSettings().application.GetString(keyForBrokerDbConnStr, UNDEF_BROKER_DB_CONNSTR),
                 "//SvcBrokerTest/IntegrationTestService",
                 MessageTypeSpec { 128UL, MessageContentValidation::None }
             );
@@ -83,7 +86,7 @@ namespace integration_tests
 
             QueueWriter queueWriter(
                 Backend::MsSqlServer,
-                msSqlDbConnString,
+                core::AppConfig::GetSettings().application.GetString(keyForBrokerDbConnStr, UNDEF_BROKER_DB_CONNSTR),
                 "//SvcBrokerTest/IntegrationTestService",
                 MessageTypeSpec{ 128UL, MessageContentValidation::None }
             );
@@ -124,7 +127,7 @@ namespace integration_tests
             // Setup the writer:
             QueueWriter queueWriter(
                 Backend::MsSqlServer,
-                msSqlDbConnString,
+                core::AppConfig::GetSettings().application.GetString(keyForBrokerDbConnStr, UNDEF_BROKER_DB_CONNSTR),
                 "//SvcBrokerTest/IntegrationTestService",
                 MessageTypeSpec{ 128UL, MessageContentValidation::None }
             );
@@ -135,7 +138,7 @@ namespace integration_tests
             // Setup the reader:
             QueueReader queueReader(
                 Backend::MsSqlServer,
-                msSqlDbConnString,
+                core::AppConfig::GetSettings().application.GetString(keyForBrokerDbConnStr, UNDEF_BROKER_DB_CONNSTR),
                 "//SvcBrokerTest/IntegrationTestService",
                 MessageTypeSpec{ 128UL, MessageContentValidation::None }
             );
@@ -286,7 +289,7 @@ namespace integration_tests
             // Setup the writer:
             QueueWriter queueWriter(
                 Backend::MsSqlServer,
-                msSqlDbConnString,
+                core::AppConfig::GetSettings().application.GetString(keyForBrokerDbConnStr, UNDEF_BROKER_DB_CONNSTR),
                 "//SvcBrokerTest/IntegrationTestService",
                 MessageTypeSpec{ 128UL, MessageContentValidation::None }
             );
@@ -297,7 +300,7 @@ namespace integration_tests
             // Setup the reader:
             QueueReader queueReader(
                 Backend::MsSqlServer,
-                msSqlDbConnString,
+                core::AppConfig::GetSettings().application.GetString(keyForBrokerDbConnStr, UNDEF_BROKER_DB_CONNSTR),
                 "//SvcBrokerTest/IntegrationTestService",
                 MessageTypeSpec{ 128UL, MessageContentValidation::None }
             );

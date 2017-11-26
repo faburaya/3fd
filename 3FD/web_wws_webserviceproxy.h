@@ -2,6 +2,8 @@
 #define WEB_WWS_WEBSERVICEPROXY_H
 
 #include "web_wws_utils.h"
+#include <future>
+#include <functional>
 
 namespace _3fd
 {
@@ -129,12 +131,16 @@ namespace wws
 		WSError &
 	);
 
+    typedef std::function<HRESULT(WS_SERVICE_PROXY *, WS_HEAP *, WS_ERROR *)> WsCallWrap;
+
     class WebServiceProxyImpl;
 
     /// <summary>
     /// Represents a proxy for a running web service host.
+    /// This implementation is thread-safe, although
+    /// it is not meant to be used concurrently.
     /// </summary>
-    class WebServiceProxy : notcopiable
+    class WebServiceProxy
     {
     private:
 
@@ -143,6 +149,14 @@ namespace wws
     protected:
 
         WS_SERVICE_PROXY *GetHandle() const;
+
+        void Call(const char *operLabel,
+                  size_t operHeapSize,
+                  const WsCallWrap &operWrap);
+
+        std::future<void> CallAsync(const char *operLabel,
+                                    size_t operHeapSize,
+                                    const WsCallWrap &operWrap);
 
     public:
 
@@ -164,6 +178,8 @@ namespace wws
             CallbackCreateServiceProxyImpl<WS_HTTP_SSL_HEADER_AUTH_BINDING_TEMPLATE> callback
         );
 
+        WebServiceProxy(const WebServiceProxy &) = delete;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="WebServiceProxy"/> class
         /// using move semantics.
@@ -177,9 +193,7 @@ namespace wws
 
         ~WebServiceProxy();
 
-		WSAsyncOper CreateAsyncOperation(size_t heapSize);
-
-        void Open();
+        bool Open();
         bool Close();
         bool Abort();
     };

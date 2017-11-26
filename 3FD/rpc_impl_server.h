@@ -42,7 +42,7 @@ namespace rpc
 
         State m_state;
 
-        void OnStartFailureRollbackIntfReg() noexcept;
+        void OnStartFailureRollbackIntfReg() NOEXCEPT;
 
     public:
 

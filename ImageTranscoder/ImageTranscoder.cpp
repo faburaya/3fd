@@ -113,7 +113,7 @@ int main(int argc, const char *argv[])
 
     auto startTime = clock();
 
-    FrameworkInstance _framework(RO_INIT_MULTITHREADED);
+    FrameworkInstance _framework(FrameworkInstance::ComMultiThreaded);
 
     CALL_STACK_TRACE;
 

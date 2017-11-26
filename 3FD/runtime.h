@@ -6,10 +6,6 @@
 #include "logger.h"
 #include <string>
 
-#ifdef _3FD_PLATFORM_WIN32API
-#   include <roapi.h>
-#endif
-
 namespace _3fd
 {
 namespace core
@@ -32,7 +28,9 @@ namespace core
 
 #ifdef _3FD_PLATFORM_WIN32API
 
-        FrameworkInstance(RO_INIT_TYPE comThreadModel);
+        enum MsComThreadModel { ComSingleThreaded, ComMultiThreaded };
+
+        FrameworkInstance(MsComThreadModel threadModel);
         FrameworkInstance();
 
 #elif defined _3FD_PLATFORM_WINRT

@@ -7,9 +7,13 @@
 #define STDAFX_H
 
 #	ifdef _MSC_VER // Visual Studio:
-#		include <winapifamily.h>
 
-#		if WINAPI_FAMILY == WINAPI_FAMILY_DESKTOP_APP // Windows Desktop App:
+#       ifndef _USING_V110_SDK71_
+#		    include <winapifamily.h>
+#       endif
+
+        // Windows Desktop App:
+#		if WINAPI_FAMILY == WINAPI_FAMILY_DESKTOP_APP || defined _USING_V110_SDK71_
 
 #			ifdef TESTING // Test application:
 #				include "targetver.h"
@@ -40,8 +44,6 @@
 #			endif
 
 #		endif
-
-// TODO: reference additional headers your program requires here
 
 #	else // QtCreator & other IDE's:
 

@@ -5,6 +5,7 @@
 #include "web_wws_impl_utils.h"
 
 #include <mutex>
+#include <atomic>
 #include <vector>
 
 namespace _3fd
@@ -16,7 +17,7 @@ namespace wws
     /// <summary>
     /// Represents a proxy for a running web service host.
     /// </summary>
-    class WebServiceProxyImpl : notcopiable
+    class WebServiceProxyImpl
     {
     private:
 
@@ -25,6 +26,8 @@ namespace wws
         std::wstring m_svcEndptAddr;
 
         std::mutex m_proxyStateMutex;
+
+        std::atomic<bool> m_isOnHold;
 
         WSHeap m_heap;
 
@@ -52,9 +55,9 @@ namespace wws
             CallbackCreateServiceProxyImpl<WS_HTTP_SSL_HEADER_AUTH_BINDING_TEMPLATE> callback
         );
 
-        ~WebServiceProxyImpl();
+        WebServiceProxyImpl(const WebServiceProxyImpl &) = delete;
 
-        WSAsyncOper CreateAsyncOperation(size_t heapSize);
+        ~WebServiceProxyImpl();
 
         /// <summary>
         /// Gets the handle for this web service proxy.
@@ -62,9 +65,13 @@ namespace wws
         /// <returns>A handle for this web service proxy.</returns>
         WS_SERVICE_PROXY *GetHandle() const { return m_wsSvcProxyHandle; }
 
-        void Open();
+        bool Open();
         bool Close();
         bool Abort();
+
+        void Call(const char *operLabel,
+                  size_t operHeapSize,
+                  const WsCallWrap &operWrap);
     };
 
 }// end of namespace wws

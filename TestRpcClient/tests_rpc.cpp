@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "runtime.h"
 #include "callstacktracer.h"
+#include "configuration.h"
 #include "rpc_helpers.h"
 #include "rpc_test_shared.h"
 
@@ -13,13 +14,16 @@
 #include <thread>
 #include <wincrypt.h>
 
+#define UNDEF_SPN     "RPC SERVER SPN IS UNDEFINED"
+#define UNDEF_SRV_LOC "RPC SERVER LOCATION IS UNDEFINED"
+
 // Server Principal Name (normally the FQDN of the user running the RPC server)
-const char *spn = "Felipe@MyDomain.local";
+const char *keyForSPN = "testRpcServerPrincipalName";
 
 #if defined SCENARIO_SINGLE_BOX_LOCAL_SEC || defined SCENARIO_SINGLE_BOX_AD_SEC
-const char *serverLocation = "CASE"; // localhost
+const char *keyForServerLocation = "testRpcServerSingleBox"; // localhost
 #elif defined SCENARIO_REMOTE_WITH_AD_SEC
-const char *serverLocation = "MyVirtualSpare.MyDomain.local"; // FQDN of RPC server
+const char *keyForServerLocation = "testRpcServerWithADSec"; // FQDN of RPC server
 #endif
 
 ////////////////////////////
@@ -43,28 +47,9 @@ namespace integration_tests
     using namespace core;
     using namespace rpc;
 
+
     void HandleException();
 
-    RPC_STATUS OperateImpl(RPC_BINDING_HANDLE handle, double left, double right, double &result)
-    {
-    RpcTryExcept
-        Operate(handle, left, right, &result);
-        return RPC_S_OK;
-    RpcExcept(RpcExceptionFilter(RpcExceptionCode()))
-        return RpcExceptionCode();
-    RpcEndExcept
-    }
-
-    RPC_STATUS ChangeCaseImpl(RPC_BINDING_HANDLE handle, const char *text, cstring &output)
-    {
-    RpcTryExcept
-        cstring input = { strlen(text) + 1, (unsigned char *)text };
-        ChangeCase(handle, &input, &output);
-        return RPC_S_OK;
-    RpcExcept(RpcExceptionFilter(RpcExceptionCode()))
-        return RpcExceptionCode();
-    RpcEndExcept
-    }
 
     /// <summary>
     /// Proxy for AcmeTesting RPC server.
@@ -75,36 +60,65 @@ namespace integration_tests
 
         using RpcClient::RpcClient;
 
+        // RPC Invert
+        void Invert(pair &onePair)
+        {
+            Call("Invert", [&onePair](rpc_binding_handle_t bindHandle)
+            {
+                ::Invert(bindHandle, &onePair);
+            });
+        }
+
+        // RPC Operate
         double Operate(double left, double right)
         {
             double result;
-            auto status = OperateImpl(GetBindingHandle(), left, right, result);
-            ThrowIfError(status, "Failed to invoke RPC client stub routine \'Operate\'");
+
+            Call("Operate", [left, right, &result](rpc_binding_handle_t bindHandle)
+            {
+                ::Operate(bindHandle, left, right, &result);
+            });
+
             return result;
         }
 
+        // RPC ChangeCase
         string ChangeCase(const char *text)
         {
-            /* When the stubs have been generated for OSF compliance
-            the output string parameter must fulfill the memory allocation
-            of the buffer carrying the text:
+            /* When the stubs have been generated for OSF compliance the
+            output string parameter must fulfill the memory allocation
+            of the buffer carrying the text: */
 
-            unsigned char buffer[128];
-            cstring output { sizeof buffer, buffer }; */
-            cstring output;
-            auto status = ChangeCaseImpl(GetBindingHandle(), text, output);
-            ThrowIfError(status, "Failed to invoke RPC client stub routine \'ChangeCase\'");
-            return string(output.data, output.data + output.size - 1);
+            std::array<unsigned char, 256> output;
+            
+            Call("ChangeCase", [text, &output](rpc_binding_handle_t bindHandle)
+            {
+                ::ChangeCase(bindHandle, (unsigned char *)text, output.data());
+            });
+
+            return string((char *)output.data());
         }
 
+        // RPC WriteOnStorage
         void WriteOnStorage()
         {
-            ::WriteOnStorage(GetBindingHandle());
+            Call("WriteOnStorage", [](rpc_binding_handle_t bindHandle)
+            {
+                ::WriteOnStorage(bindHandle);
+            });
         }
 
+        // RPC Shutdown
         uint32_t Shutdown()
         {
-            return ::Shutdown(GetBindingHandle());
+            uint32_t timeout;
+
+            Call("WriteOnStorage", [&timeout](rpc_binding_handle_t bindHandle)
+            {
+                timeout = ::Shutdown(bindHandle);
+            });
+
+            return timeout;
         }
     };
 
@@ -117,7 +131,7 @@ namespace integration_tests
 
         static void SetUpTestCase()
         {
-            system("pause"); // wait until RPC server becomes available
+            //system("pause"); // wait until RPC server becomes available
         }
     };
 
@@ -138,16 +152,21 @@ namespace integration_tests
             AcmeRpcClient client1(
                 ProtocolSequence::Local,
                 objectsUuidsImpl1[5],
-                serverLocation
+                AppConfig::GetSettings().application.GetString(keyForServerLocation, UNDEF_SRV_LOC)
             );
 
+            pair expPair = { 2, 1 };
+            pair myPair = { 1, 2 };
+            client1.Invert(myPair);
+            EXPECT_TRUE(memcmp(&expPair, &myPair, sizeof myPair) == 0);
+            
             EXPECT_EQ(696.0, client1.Operate(6.0, 116.0));
             EXPECT_EQ("SQUIRREL", client1.ChangeCase("squirrel"));
 
             AcmeRpcClient client2(
                 ProtocolSequence::Local,
                 objectsUuidsImpl2[5],
-                serverLocation
+                AppConfig::GetSettings().application.GetString(keyForServerLocation, UNDEF_SRV_LOC)
             );
 
             EXPECT_EQ(696.0, client2.Operate(606.0, 90.0));
@@ -187,7 +206,7 @@ namespace integration_tests
 
         static void SetUpTestCase()
         {
-            system("pause"); // wait until RPC server becomes available
+            //system("pause"); // wait until RPC server becomes available
         }
     };
 
@@ -209,12 +228,17 @@ namespace integration_tests
             AcmeRpcClient client1(
                 GetParam().protocolSequence,
                 GetParam().objectUUID1,
-                serverLocation,
+                AppConfig::GetSettings().application.GetString(keyForServerLocation, UNDEF_SRV_LOC),
                 GetParam().authenticationSecurity,
                 GetParam().authenticationLevel,
                 GetParam().impersonationLevel,
-                spn // not used for NTLM
+                AppConfig::GetSettings().application.GetString(keyForSPN, UNDEF_SPN) // not used for NTLM
             );
+
+            pair expPair = { 2, 1 };
+            pair myPair = { 1, 2 };
+            client1.Invert(myPair);
+            EXPECT_TRUE(memcmp(&expPair, &myPair, sizeof myPair) == 0);
 
             EXPECT_EQ(696.0, client1.Operate(6.0, 116.0));
             EXPECT_EQ("SQUIRREL", client1.ChangeCase("squirrel"));
@@ -222,11 +246,11 @@ namespace integration_tests
             AcmeRpcClient client2(
                 GetParam().protocolSequence,
                 GetParam().objectUUID2,
-                serverLocation,
+                AppConfig::GetSettings().application.GetString(keyForServerLocation, UNDEF_SRV_LOC),
                 GetParam().authenticationSecurity,
                 GetParam().authenticationLevel,
                 GetParam().impersonationLevel,
-                spn // not used for NTLM
+                AppConfig::GetSettings().application.GetString(keyForSPN, UNDEF_SPN) // not used for NTLM
             );
 
             EXPECT_EQ(696.0, client2.Operate(606.0, 90.0));
@@ -288,7 +312,7 @@ namespace integration_tests
 
         static void SetUpTestCase()
         {
-            system("pause"); // wait until RPC server becomes available
+            //system("pause"); // wait until RPC server becomes available
         }
     };
 
@@ -316,17 +340,22 @@ namespace integration_tests
 
             AcmeRpcClient client1(
                 GetParam().objectUUID1,
-                serverLocation,
+                AppConfig::GetSettings().application.GetString(keyForServerLocation, UNDEF_SRV_LOC),
                 certInfo,
                 GetParam().authenticationLevel
             );
+
+            pair expPair = { 2, 1 };
+            pair myPair = { 1, 2 };
+            client1.Invert(myPair);
+            EXPECT_TRUE(memcmp(&expPair, &myPair, sizeof myPair) == 0);
 
             EXPECT_EQ(696.0, client1.Operate(6.0, 116.0));
             EXPECT_EQ("SQUIRREL", client1.ChangeCase("squirrel"));
 
             AcmeRpcClient client2(
                 GetParam().objectUUID2,
-                serverLocation,
+                AppConfig::GetSettings().application.GetString(keyForServerLocation, UNDEF_SRV_LOC),
                 certInfo,
                 GetParam().authenticationLevel
             );

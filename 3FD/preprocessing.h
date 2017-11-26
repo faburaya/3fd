@@ -9,11 +9,10 @@
 #	define	__FUNCTION__ __PRETTY_FUNCTION__
 #endif
 
-#ifdef _MSC_VER
-// Microsoft Visual Studio:
-#   define INTFOPT __declspec(novtable) // CHANGE THIS DEFINITION ACCORDING TO YOUR COMPILER (or leave it blank)
+#ifdef _MSC_VER // Microsoft Visual Studio:
+#   define INTFOPT __declspec(novtable)
 
-#   if _MSC_VER < 19000
+#   if _MSC_VER < 1900
 #       define NOEXCEPT             throw()
 #       define thread_local_decl    __declspec(thread)
 #       define thread_local_def
@@ -23,7 +22,7 @@
 #       define thread_local_def     thread_local
 #   endif
 #else
-// Other Compilers:
+    // Other Compilers:
 #   define INTFOPT
 #   define _ASSERTE             assert
 #   include <cassert>
@@ -34,22 +33,28 @@
 
 // Platform support for particular modules/features/resources:
 #ifdef _WIN32
-#	include <winapifamily.h>
-#   if WINAPI_FAMILY == WINAPI_FAMILY_DESKTOP_APP // Windows Desktop Apps only:
+#   ifndef _USING_V110_SDK71_
+#	    include <winapifamily.h>
+#   endif
+#   if WINAPI_FAMILY == WINAPI_FAMILY_DESKTOP_APP || defined _USING_V110_SDK71_
+        // Windows Desktop Apps only:
 #       define _3FD_PLATFORM_WIN32API
 #   	define _3FD_POCO_SUPPORT
 #       define _3FD_ESENT_SUPPORT
 #   	define _3FD_OPENCL_SUPPORT
 #       define _3FD_CONSOLE_AVAILABLE
 #   elif defined WINAPI_FAMILY_SYSTEM
+        // UWP Apps only:
 #       define _3FD_PLATFORM_WINRT
 #       define _3FD_PLATFORM_WINRT_UWP
 #       define _3FD_ESENT_SUPPORT
-#   elif WINAPI_FAMILY == WINAPI_FAMILY_PC_APP // Windows Store Apps (& UWP) only:
+#   elif WINAPI_FAMILY == WINAPI_FAMILY_PC_APP
+        // Windows Store Apps (& UWP) only:
 #       define _3FD_PLATFORM_WINRT
 #       define _3FD_PLATFORM_WINRT_PC
 #       define _3FD_ESENT_SUPPORT
-#   elif WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP // Windows Phone 8 Store Apps only:
+#   elif WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+        // Windows Phone 8 Store Apps only:
 #       define _3FD_PLATFORM_WINRT
 #       define _3FD_PLATFORM_WINRT_PHONE
 #   endif
@@ -65,7 +70,7 @@
 
 // These instructions have they definition depending on whether this is a release compilation:
 #ifdef NDEBUG
-#   if defined _MSC_VER && _MSC_VER < 19000
+#   if defined _MSC_VER && _MSC_VER < 1900
 #       define NOEXCEPT throw()
 #   else
 #       define NOEXCEPT noexcept
@@ -83,7 +88,6 @@
 #       include <crtdbg.h>
 #   endif
 
-#	define dbgexhnd
 #   define RELEASE_DEBUG_SWITCH(STATEMENT1, STATEMENT2) STATEMENT2
 #	define ONDEBUG(CODE_LINE) CODE_LINE
 #endif

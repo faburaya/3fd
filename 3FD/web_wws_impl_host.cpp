@@ -3,14 +3,14 @@
 
 #include "callstacktracer.h"
 #include "logger.h"
-#include "Poco\AutoPtr.h"
-#include "Poco\DOM\DOMParser.h"
-#include "Poco\DOM\Document.h"
-#include "Poco\DOM\NodeList.h"
-#include "Poco\DOM\NamedNodeMap.h"
-#include "Poco\DOM\Attr.h"
-#include "Poco\SAX\XMLReader.h"
-#include "Poco\SAX\NamespaceSupport.h"
+#include <Poco\AutoPtr.h>
+#include <Poco\DOM\DOMParser.h>
+#include <Poco\DOM\Document.h>
+#include <Poco\DOM\NodeList.h>
+#include <Poco\DOM\NamedNodeMap.h>
+#include <Poco\DOM\Attr.h>
+#include <Poco\SAX\XMLReader.h>
+#include <Poco\SAX\NamespaceSupport.h>
 #include <list>
 #include <array>
 #include <sstream>

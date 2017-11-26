@@ -570,7 +570,7 @@ namespace rpc
     /// Executes the rollback of interfaces registration (in runtime
     /// library and local enpoint-map database) upon failure.
     /// </summary>
-    void RpcServerImpl::OnStartFailureRollbackIntfReg() noexcept
+    void RpcServerImpl::OnStartFailureRollbackIntfReg() NOEXCEPT
     {
         CALL_STACK_TRACE;
 
@@ -947,7 +947,7 @@ namespace rpc
     /// <see cref="STATUS_OKAY"/> whether successful, otherwise,
     /// <see cref="STATUS_FAIL"/> (if the server was not initialized).
     /// </return>
-    bool RpcServer::Finalize() noexcept
+    bool RpcServer::Finalize() NOEXCEPT
     {
         CALL_STACK_TRACE;
 

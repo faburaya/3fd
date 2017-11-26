@@ -1,6 +1,6 @@
 A framework to help C++ programmers to code faster more robust and stable code.
 
-The scope of this project is to provide a modern framework that simplifies common tasks like error handling and logging, ISAM/relational data access and storage, heterogeneous programming and memory management. It was carefully engineered to provide high performance, low memory footprint, verbosity in error report, a simple interface compliant to the new C++11 standard and portability to several platforms: POSIX, Windows Vista/7/8/8.1/Phone 8.1/10/10M.
+The scope of this project is to provide a modern framework that simplifies common tasks like error handling and logging, ISAM/relational data access and storage, heterogeneous programming and memory management. It was carefully engineered to provide high performance, low memory footprint, verbosity in error report, a simple interface compliant to the new C++11 standard and portability to several platforms: POSIX, Windows Vista/7/8/8.1/10/10 UWP.
 
 The provided features are:
 

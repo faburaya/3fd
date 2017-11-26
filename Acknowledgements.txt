@@ -18,7 +18,7 @@ and by any means.
 
 ==============================================================================
 
-POCO C++ Libraries v1.4-6 (http://pocoproject.org/)
+POCO C++ Libraries v1.x (http://pocoproject.org/)
 
 Permission is hereby granted, free of charge, to any person or organization 
 obtaining a copy of the software and accompanying documentation covered by 

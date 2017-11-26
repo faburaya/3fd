@@ -108,19 +108,20 @@ namespace _3fd
 		/// </summary>
 		void GarbageCollector::Shutdown()
 		{
-			if(uniqueObjectPtr != nullptr)
+			try
 			{
-				try
-				{
-					std::lock_guard<std::mutex> lock(singleInstanceCreationMutex);
-					delete uniqueObjectPtr;
-					uniqueObjectPtr = nullptr;
-				}
-				catch (std::system_error &)
-				{/* DO NOTHING: SWALLOW EXCEPTION
-					This method cannot throw an exception because it can be invoked by a destructor.
-					If an exception is thrown, memory leaks are expected. */
-				}
+				std::lock_guard<std::mutex> lock(singleInstanceCreationMutex);
+			    
+                if(uniqueObjectPtr != nullptr)
+			    {
+				    delete uniqueObjectPtr;
+				    uniqueObjectPtr = nullptr;
+			    }
+			}
+			catch (std::system_error &)
+			{/* DO NOTHING: SWALLOW EXCEPTION
+				This method cannot throw an exception because it can be invoked by a destructor.
+				If an exception is thrown, memory leaks are expected. */
 			}
 		}
 

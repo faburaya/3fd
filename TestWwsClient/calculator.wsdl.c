@@ -8,11 +8,11 @@ typedef struct _calculator_wsdlLocalDefinitions
     struct  // global types
     {
         char unused;
-        struct  // MultipurposeSingleIntegerResponse
+        struct  // MultipurposeBooleanResponse
         {
             WS_FIELD_DESCRIPTION result;
-            WS_FIELD_DESCRIPTION* MultipurposeSingleIntegerResponseFields [1]; 
-        } MultipurposeSingleIntegerResponsedescs; // end of MultipurposeSingleIntegerResponse
+            WS_FIELD_DESCRIPTION* MultipurposeBooleanResponseFields [1]; 
+        } MultipurposeBooleanResponsedescs; // end of MultipurposeBooleanResponse
         struct  // BinaryOpRequest
         {
             WS_FIELD_DESCRIPTION first;
@@ -136,8 +136,8 @@ typedef struct _calculator_wsdlLocalDefinitions
         {
             WS_XML_STRING EmptyRequestTypeName;  // EmptyRequest
             WS_XML_STRING EmptyRequestTypeNamespace;  // http://calculator.example.org/
-            WS_XML_STRING MultipurposeSingleIntegerResponseTypeName;  // MultipurposeSingleIntegerResponse
-            WS_XML_STRING MultipurposeSingleIntegerResponseresultLocalName;  // result
+            WS_XML_STRING MultipurposeBooleanResponseTypeName;  // MultipurposeBooleanResponse
+            WS_XML_STRING MultipurposeBooleanResponseresultLocalName;  // result
             WS_XML_STRING BinaryOpRequestTypeName;  // BinaryOpRequest
             WS_XML_STRING BinaryOpRequestfirstLocalName;  // first
             WS_XML_STRING BinaryOpRequestsecondLocalName;  // second
@@ -173,7 +173,7 @@ typedef struct CalcBindingHeaderAuthSSL_MultiplyParamStruct
 
 typedef struct CalcBindingHeaderAuthSSL_CloseServiceParamStruct 
 {
-    __int64* result;
+    BOOL* result;
 } CalcBindingHeaderAuthSSL_CloseServiceParamStruct;
 
 typedef struct CalcBindingSSL_AddParamStruct 
@@ -192,7 +192,7 @@ typedef struct CalcBindingSSL_MultiplyParamStruct
 
 typedef struct CalcBindingSSL_CloseServiceParamStruct 
 {
-    __int64* result;
+    BOOL* result;
 } CalcBindingSSL_CloseServiceParamStruct;
 
 typedef struct CalcBindingUnsecure_AddParamStruct 
@@ -211,28 +211,28 @@ typedef struct CalcBindingUnsecure_MultiplyParamStruct
 
 typedef struct CalcBindingUnsecure_CloseServiceParamStruct 
 {
-    __int64* result;
+    BOOL* result;
 } CalcBindingUnsecure_CloseServiceParamStruct;
 const static _calculator_wsdlLocalDefinitions calculator_wsdlLocalDefinitions =
 {
     { // global types
         0,
-        {  // MultipurposeSingleIntegerResponse
+        {  // MultipurposeBooleanResponse
             {  // field description for result
             WS_ELEMENT_FIELD_MAPPING,
-            (WS_XML_STRING*)&calculator_wsdlLocalDefinitions.dictionary.xmlStrings.MultipurposeSingleIntegerResponseresultLocalName, // result
+            (WS_XML_STRING*)&calculator_wsdlLocalDefinitions.dictionary.xmlStrings.MultipurposeBooleanResponseresultLocalName, // result
             (WS_XML_STRING*)&calculator_wsdlLocalDefinitions.dictionary.xmlStrings.EmptyRequestTypeNamespace, // http://calculator.example.org/
-            WS_INT64_TYPE,
+            WS_BOOL_TYPE,
             0,
-            WsOffsetOf(MultipurposeSingleIntegerResponse, result),
+            WsOffsetOf(MultipurposeBooleanResponse, result),
             0,
             0,
             0xffffffff
             },    // end of field description for result
-            {  // fields description for MultipurposeSingleIntegerResponse
-            (WS_FIELD_DESCRIPTION*)&calculator_wsdlLocalDefinitions.globalTypes.MultipurposeSingleIntegerResponsedescs.result,
+            {  // fields description for MultipurposeBooleanResponse
+            (WS_FIELD_DESCRIPTION*)&calculator_wsdlLocalDefinitions.globalTypes.MultipurposeBooleanResponsedescs.result,
             },
-        },    // MultipurposeSingleIntegerResponse
+        },    // MultipurposeBooleanResponse
         {  // BinaryOpRequest
             {  // field description for first
             WS_ELEMENT_FIELD_MAPPING,
@@ -264,7 +264,7 @@ const static _calculator_wsdlLocalDefinitions calculator_wsdlLocalDefinitions =
         {  // OperationResponse
             {  // field description for result
             WS_ELEMENT_FIELD_MAPPING,
-            (WS_XML_STRING*)&calculator_wsdlLocalDefinitions.dictionary.xmlStrings.MultipurposeSingleIntegerResponseresultLocalName, // result
+            (WS_XML_STRING*)&calculator_wsdlLocalDefinitions.dictionary.xmlStrings.MultipurposeBooleanResponseresultLocalName, // result
             (WS_XML_STRING*)&calculator_wsdlLocalDefinitions.dictionary.xmlStrings.EmptyRequestTypeNamespace, // http://calculator.example.org/
             WS_DOUBLE_TYPE,
             0,
@@ -593,7 +593,7 @@ const static _calculator_wsdlLocalDefinitions calculator_wsdlLocalDefinitions =
         {  // xmlStrings
             WS_XML_STRING_DICTIONARY_VALUE("EmptyRequest",&calculator_wsdlLocalDefinitions.dictionary.dict, 0),
             WS_XML_STRING_DICTIONARY_VALUE("http://calculator.example.org/",&calculator_wsdlLocalDefinitions.dictionary.dict, 1),
-            WS_XML_STRING_DICTIONARY_VALUE("MultipurposeSingleIntegerResponse",&calculator_wsdlLocalDefinitions.dictionary.dict, 2),
+            WS_XML_STRING_DICTIONARY_VALUE("MultipurposeBooleanResponse",&calculator_wsdlLocalDefinitions.dictionary.dict, 2),
             WS_XML_STRING_DICTIONARY_VALUE("result",&calculator_wsdlLocalDefinitions.dictionary.dict, 3),
             WS_XML_STRING_DICTIONARY_VALUE("BinaryOpRequest",&calculator_wsdlLocalDefinitions.dictionary.dict, 4),
             WS_XML_STRING_DICTIONARY_VALUE("first",&calculator_wsdlLocalDefinitions.dictionary.dict, 5),
@@ -681,7 +681,7 @@ HRESULT WINAPI CalcBindingHeaderAuthSSL_Multiply(
 // operation: CalcBindingHeaderAuthSSL_CloseService
 HRESULT WINAPI CalcBindingHeaderAuthSSL_CloseService(
     _In_ WS_SERVICE_PROXY* _serviceProxy,
-    _Out_ __int64* result, 
+    _Out_ BOOL* result, 
     _In_ WS_HEAP* _heap,
     _In_reads_opt_(_callPropertyCount) const WS_CALL_PROPERTY* _callProperties,
     _In_ const ULONG _callPropertyCount,
@@ -755,7 +755,7 @@ HRESULT WINAPI CalcBindingSSL_Multiply(
 // operation: CalcBindingSSL_CloseService
 HRESULT WINAPI CalcBindingSSL_CloseService(
     _In_ WS_SERVICE_PROXY* _serviceProxy,
-    _Out_ __int64* result, 
+    _Out_ BOOL* result, 
     _In_ WS_HEAP* _heap,
     _In_reads_opt_(_callPropertyCount) const WS_CALL_PROPERTY* _callProperties,
     _In_ const ULONG _callPropertyCount,
@@ -829,7 +829,7 @@ HRESULT WINAPI CalcBindingUnsecure_Multiply(
 // operation: CalcBindingUnsecure_CloseService
 HRESULT WINAPI CalcBindingUnsecure_CloseService(
     _In_ WS_SERVICE_PROXY* _serviceProxy,
-    _Out_ __int64* result, 
+    _Out_ BOOL* result, 
     _In_ WS_HEAP* _heap,
     _In_reads_opt_(_callPropertyCount) const WS_CALL_PROPERTY* _callProperties,
     _In_ const ULONG _callPropertyCount,
@@ -866,16 +866,16 @@ const _calculator_wsdl calculator_wsdl =
         0,
         },   // end of struct description for EmptyRequest
         {
-        sizeof(MultipurposeSingleIntegerResponse),
-        __alignof(MultipurposeSingleIntegerResponse),
-        (WS_FIELD_DESCRIPTION**)&calculator_wsdlLocalDefinitions.globalTypes.MultipurposeSingleIntegerResponsedescs.MultipurposeSingleIntegerResponseFields,
-        WsCountOf(calculator_wsdlLocalDefinitions.globalTypes.MultipurposeSingleIntegerResponsedescs.MultipurposeSingleIntegerResponseFields),
-        (WS_XML_STRING*)&calculator_wsdlLocalDefinitions.dictionary.xmlStrings.MultipurposeSingleIntegerResponseTypeName, // MultipurposeSingleIntegerResponse
+        sizeof(MultipurposeBooleanResponse),
+        __alignof(MultipurposeBooleanResponse),
+        (WS_FIELD_DESCRIPTION**)&calculator_wsdlLocalDefinitions.globalTypes.MultipurposeBooleanResponsedescs.MultipurposeBooleanResponseFields,
+        WsCountOf(calculator_wsdlLocalDefinitions.globalTypes.MultipurposeBooleanResponsedescs.MultipurposeBooleanResponseFields),
+        (WS_XML_STRING*)&calculator_wsdlLocalDefinitions.dictionary.xmlStrings.MultipurposeBooleanResponseTypeName, // MultipurposeBooleanResponse
         (WS_XML_STRING*)&calculator_wsdlLocalDefinitions.dictionary.xmlStrings.EmptyRequestTypeNamespace, // http://calculator.example.org/
         0,
         0,
         0,
-        },   // end of struct description for MultipurposeSingleIntegerResponse
+        },   // end of struct description for MultipurposeBooleanResponse
         {
         sizeof(BinaryOpRequest),
         __alignof(BinaryOpRequest),
@@ -910,7 +910,7 @@ const _calculator_wsdl calculator_wsdl =
             (WS_XML_STRING*)&calculator_wsdlLocalDefinitions.dictionary.xmlStrings.CloseServiceResponseTypeName, // CloseServiceResponse
             (WS_XML_STRING*)&calculator_wsdlLocalDefinitions.dictionary.xmlStrings.EmptyRequestTypeNamespace, // http://calculator.example.org/
             WS_STRUCT_TYPE,
-            (void*)&calculator_wsdl.globalTypes.MultipurposeSingleIntegerResponse,
+            (void*)&calculator_wsdl.globalTypes.MultipurposeBooleanResponse,
         },
         {
             (WS_XML_STRING*)&calculator_wsdlLocalDefinitions.dictionary.xmlStrings.AdditionRequestTypeName, // AdditionRequest

@@ -380,9 +380,6 @@
     <ClCompile Include="web_wws_impl_utils.cpp">
       <Filter>Source Files\WWS</Filter>
     </ClCompile>
-    <ClCompile Include="web_wws_impl_utils_wsasyncoper.cpp">
-      <Filter>Source Files\WWS</Filter>
-    </ClCompile>
     <ClCompile Include="cmdline.cpp">
       <Filter>Source Files\core</Filter>
     </ClCompile>
@@ -400,13 +397,13 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Xml Include="config3fd-template.xml">
-      <Filter>Resource Files</Filter>
-    </Xml>
-  </ItemGroup>
-  <ItemGroup>
     <CustomBuild Include="wsdl-example.wsdl">
       <Filter>Resource Files</Filter>
     </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="3fd-config-template.xml">
+      <Filter>Resource Files</Filter>
+    </Xml>
   </ItemGroup>
 </Project>

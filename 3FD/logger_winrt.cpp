@@ -19,7 +19,7 @@ namespace _3fd
 		/// Gets the unique instance of the singleton <see cref="Logger" /> class.
 		/// </summary>
 		/// <returns>A pointer to the singleton.</returns>
-		Logger * Logger::GetInstance()
+		Logger * Logger::GetInstance() noexcept
 		{
 			if (uniqueObjectPtr != nullptr)
 				return uniqueObjectPtr;
@@ -320,7 +320,7 @@ namespace _3fd
 		/// <param name="details">The message details.</param>
 		/// <param name="prio">The priority for the message.</param>
 		/// <param name="cst">When set to <c>true</c>, append the call stack trace.</param>
-		void Logger::WriteImpl(string &&what, string &&details, Priority prio, bool cst)
+		void Logger::WriteImpl(string &&what, string &&details, Priority prio, bool cst) noexcept
 		{
 			if (m_txtLogFile == nullptr)
 				return;

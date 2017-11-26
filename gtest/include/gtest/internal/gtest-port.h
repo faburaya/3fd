@@ -227,7 +227,7 @@
 #endif  // __GNUC__
 
 // Visual Studio:
-#ifdef _MSC_VER
+#if defined _MSC_VER && !defined _USING_V110_SDK71_
 # include <winapifamily.h>
 #endif
 

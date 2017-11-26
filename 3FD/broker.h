@@ -136,7 +136,7 @@ namespace broker
     {
     private:
 
-        Poco::Data::Session m_dbSession;
+        std::unique_ptr<Poco::Data::Session> m_dbSession;
         
         string m_serviceURL;
 
@@ -152,7 +152,6 @@ namespace broker
 
     /// <summary>
     /// Helps synchronizing with an asynchronous write to a broker queue.
-    /// The underlying implementation is NOT THREAD SAFE!
     /// </summary>
     class INTFOPT IAsyncWrite
     {
@@ -207,13 +206,14 @@ namespace broker
     /// <summary>
     /// Represents a queue in the broker, into which
     /// a service can write messages to another.
+    /// The underlying implementation is NOT THREAD SAFE!
     /// </summary>
     /// <seealso cref="notcopiable" />
     class QueueWriter : notcopiable, OdbcClient
     {
     private:
 
-        Poco::Data::Session m_dbSession;
+        std::unique_ptr<Poco::Data::Session> m_dbSession;
 
         string m_serviceURL;
 

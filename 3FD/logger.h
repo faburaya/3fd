@@ -103,7 +103,7 @@ namespace core
 
 		static void CreateInstance(const string &id, bool logToConsole);
 
-		static Logger *GetInstance();
+		static Logger *GetInstance() NOEXCEPT;
 
 		// Private implementations:
 
@@ -112,9 +112,9 @@ namespace core
 #if defined _3FD_PLATFORM_WIN32API || defined _3FD_PLATFORM_WINRT_UWP
         void WriteImpl(HRESULT hr, const char *message, const char *function, Priority prio);
 #endif
-		void WriteImpl(string &&message, Priority prio, bool cst);
+		void WriteImpl(string &&message, Priority prio, bool cst) NOEXCEPT;
 
-		void WriteImpl(string &&what, string &&details, Priority prio, bool cst);
+		void WriteImpl(string &&what, string &&details, Priority prio, bool cst) NOEXCEPT;
 
 	public:
 
@@ -166,7 +166,7 @@ namespace core
 		/// <param name="message">The message to log.</param>
 		/// <param name="prio">The priority of the message.</param>
 		/// <param name="cst">When set to <c>true</c>, append the call stack trace.</param>
-		static void Write(string &&message, Priority prio, bool cst = false)
+		static void Write(string &&message, Priority prio, bool cst = false) NOEXCEPT
 		{
 			Logger * const singleton = GetInstance();
 			if (singleton != nullptr)

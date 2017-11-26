@@ -8,7 +8,7 @@
  */
 /* Compiler settings for TestShared\AcmeTesting.idl:
     Oicf, W1, Zp8, env=Win64 (32b run), target_arch=AMD64 8.01.0620 
-    protocol : dce , robust
+    protocol : dce , ms_ext, c_ext, robust
     error checks: allocation ref bounds_check enum stub_data , use_epv
     VC __declspec() decoration level: 
          __declspec(uuid()), __declspec(selectany), __declspec(novtable)
@@ -52,22 +52,26 @@ extern "C"{
 /* interface AcmeTesting */
 /* [version][uuid] */ 
 
+typedef struct pair
+    {
+    int left;
+    int right;
+    } 	pair;
+
+void Invert( 
+    /* [in] */ handle_t IDL_handle,
+    /* [out][in] */ pair *onePair);
+
 void Operate( 
     /* [in] */ handle_t IDL_handle,
     /* [in] */ double left,
     /* [in] */ double right,
     /* [out] */ double *result);
 
-typedef /* [public][public][public] */ struct __MIDL_AcmeTesting_0001
-    {
-    unsigned short size;
-    /* [size_is][string] */ unsigned char *data;
-    } 	cstring;
-
 void ChangeCase( 
     /* [in] */ handle_t IDL_handle,
-    /* [in] */ cstring *input,
-    /* [out] */ cstring *output);
+    /* [string][in] */ unsigned char *input,
+    /* [size_is][string][out] */ unsigned char *output);
 
 void WriteOnStorage( 
     /* [in] */ handle_t IDL_handle);
@@ -79,6 +83,9 @@ unsigned long Shutdown(
 
 typedef struct _AcmeTesting_v1_0_epv_t
 {
+    void ( *Invert )( 
+        /* [in] */ handle_t IDL_handle,
+        /* [out][in] */ pair *onePair);
     void ( *Operate )( 
         /* [in] */ handle_t IDL_handle,
         /* [in] */ double left,
@@ -86,8 +93,8 @@ typedef struct _AcmeTesting_v1_0_epv_t
         /* [out] */ double *result);
     void ( *ChangeCase )( 
         /* [in] */ handle_t IDL_handle,
-        /* [in] */ cstring *input,
-        /* [out] */ cstring *output);
+        /* [string][in] */ unsigned char *input,
+        /* [size_is][string][out] */ unsigned char *output);
     void ( *WriteOnStorage )( 
         /* [in] */ handle_t IDL_handle);
     unsigned long ( *Shutdown )( 

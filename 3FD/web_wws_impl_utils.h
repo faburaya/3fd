@@ -23,6 +23,7 @@ namespace wws
 
     WS_STRING ToWsString(const string &str, WSHeap &heap);
 
+
     //////////////////////
     // XML Handling
     //////////////////////
@@ -32,6 +33,7 @@ namespace wws
     extern const WS_XML_STRING faultDetailDescElemLocalName;
 
     WS_FAULT_DETAIL_DESCRIPTION GetFaultDetailDescription(WSHeap &heap);
+
 
     /// <summary>
     /// A wrapper for WS_XML_WRITER.
@@ -67,6 +69,7 @@ namespace wws
         void WriteText(const string &content);
     };
 
+
     /// <summary>
     /// A wrapper for WS_XML_READER.
     /// </summary>
@@ -101,12 +104,6 @@ namespace wws
 
         void ReadText(std::vector<char> &utf8text);
     };
-
-    ////////////////////////////
-    // Asynchronous Helper
-    ////////////////////////////
-
-    void CALLBACK AsyncDoneCallback(HRESULT hres, WS_CALLBACK_MODEL model, void *state);
 
 }// end of namespace wws
 }// end of namespace web

@@ -46,11 +46,11 @@ namespace sqlite
 		PrepStatement CreateStatement(const char *query);
 		
 		PrepStatement &CachedStatement(int queryId, 
-										const string &queryCode);
+                                       const string &queryCode);
 
 		PrepStatement &CachedStatement(int queryId, 
-										const char *queryCode = nullptr, 
-										size_t qlen = 0);
+                                       const char *queryCode = nullptr, 
+                                       size_t qlen = 0);
 	};
 
 	/// <summary>

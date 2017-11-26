@@ -1,13 +1,11 @@
 #ifndef WEB_WWS_UTILS_H // header guard
 #define WEB_WWS_UTILS_H
 
-#include "base.h"
 #include "exceptions.h"
 #include <WebServices.h>
 
 #include <vector>
 #include <string>
-#include <future>
 
 #define WS_HEAP_NEW(HEAPOBJ, TYPE, INITIALIZER) (new (HEAPOBJ.Alloc<TYPE>()) TYPE INITIALIZER)
 
@@ -23,7 +21,7 @@ namespace wws
     /// A heap provides precise control over memory allocation when producing or 
     /// consuming messages and when needing to allocate various other API structures.
     /// </summary>
-    class WSHeap : notcopiable
+    class WSHeap
     {
     private:
 
@@ -35,6 +33,8 @@ namespace wws
         WSHeap(WS_HEAP *wsHeapHandle);
 
         WSHeap(size_t nBytes);
+
+        WSHeap(const WSHeap &) = delete;
 
         ~WSHeap();
 
@@ -49,7 +49,7 @@ namespace wws
             ob.m_wsHeapHandle = nullptr;
         }
 
-        void Reset() NOEXCEPT;
+        void Reset();
 
         void *Alloc(size_t qtBytes);
 
@@ -71,10 +71,11 @@ namespace wws
         WS_HEAP *GetHandle() { return m_wsHeapHandle; }
     };
 
+
     /// <summary>
     /// A reusable object model capable to hold rich error information.
     /// </summary>
-    class WSError : notcopiable
+    class WSError
     {
     private:
 
@@ -87,6 +88,8 @@ namespace wws
 
         WSError();
         ~WSError();
+
+        WSError(const WSError &) = delete;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="WSError"/> class
@@ -108,103 +111,22 @@ namespace wws
             ob.m_wsErrorHandle = nullptr;
         }
 
-        void RaiseExceptionApiError(
-            HRESULT hres,
-            const char *funcName,
-            const char *message);
+        void RaiseExceptionApiError(HRESULT hres,
+                                    const char *funcName,
+                                    const char *message);
 
-        void LogApiError(
-            HRESULT hres,
-            const char *funcName,
-            const char *message) NOEXCEPT;
+        void LogApiError(HRESULT hres,
+                         const char *funcName,
+                         const char *message) NOEXCEPT;
 
-        void RaiseExClientNotOK(
-            HRESULT hres,
-            const char *message,
-            WSHeap &heap);
+        void RaiseExClientNotOK(HRESULT hres,
+                                const char *message,
+                                WSHeap &heap);
 
         WS_ERROR *GetHandle();
 
-        void Reset();
+        void Reset() NOEXCEPT;
     };
-
-	/// <summary>
-	/// Helper class for asynchronous operations with WWS API.
-	/// </summary>
-	class WSAsyncOper : notcopiable
-	{
-	private:
-
-		std::promise<HRESULT> *m_promise;
-		std::future<HRESULT> m_future;
-
-		WSHeap m_heap;
-		WSError m_richErrorInfo;
-
-		/// <summary>
-		/// The HRESULT immediately returned by the call meant to be asynchronous.
-		/// </summary>
-		HRESULT m_callReturn;
-
-		void Wait() const;
-
-		HRESULT GetResult();
-
-		// Forbidden operation
-		WSAsyncOper &operator =(const WSAsyncOper &) { return *this; }
-
-	public:
-
-		WSAsyncOper(size_t heapSize, std::promise<HRESULT> *promise);
-
-		/// <summary>
-		/// Finalizes an instance of the <see cref="WSAsyncOper"/> class.
-		/// </summary>
-		WSAsyncOper::~WSAsyncOper() {}
-
-		/// <summary>
-		/// Initializes a new instance of the <see cref="WSAsyncOper"/> class
-		/// using move semantics.
-		/// </summary>
-		/// <param name="ob">The object whose resources will be stolen.</param>
-		WSAsyncOper(WSAsyncOper &&ob) : 
-			m_promise(ob.m_promise),
-			m_future(std::move(ob.m_future)),
-			m_heap(std::move(ob.m_heap)),
-			m_richErrorInfo(std::move(ob.m_richErrorInfo)),
-			m_callReturn(ob.m_callReturn)
-		{}
-
-		WS_ASYNC_CONTEXT GetContext();
-
-		void SetCallReturn(HRESULT hres);
-
-		/// <summary>
-		/// Gets the heap dedicated for this asynchronous operation.
-		/// </summary>
-		/// <returns>The heap handle.</returns>
-		WS_HEAP *GetHeapHandle() { return m_heap.GetHandle(); }
-
-		/// <summary>
-		/// Gets the helper for rich error information
-		/// dedicated to this asynchronous operation.
-		/// </summary>
-		/// <returns>
-		/// The handle for the rich error information helper.
-		/// </returns>
-		WS_ERROR *GetErrHelperHandle() { return m_richErrorInfo.GetHandle(); }
-
-		/// <summary>
-		/// Waits and checks the result code from a proxy asynchronous operation.
-		/// When the given result code means "NOT OKAY", populate the object with rich information
-		/// regarding the error, than raises an exception with such content.
-		/// </summary>
-		/// <param name="message">The base message for the error.</param>
-		void RaiseExClientNotOK(const char *message)
-		{
-			m_richErrorInfo.RaiseExClientNotOK(GetResult(), message, m_heap);
-		}
-	};
 
 }// end of namespace wws
 }// end of namespace web

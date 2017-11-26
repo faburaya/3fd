@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "runtime.h"
 #include "opencl.h"
+#include "configuration.h"
+
 #include <map>
 #include <list>
 #include <array>
@@ -10,6 +12,8 @@
 #include <future>
 #include <random>
 #include <iostream>
+
+#define UNDEF_OCL_SRC_FILE "FILE PATH FOR OPENCL C SOURCE EXAMPLE IS NOT DEFINED IN XML CONFIGURATION"
 
 namespace _3fd
 {
@@ -22,15 +26,18 @@ namespace integration_tests
 
 	void HandleException();
 
+    static cl_device_type GetDeviceType()
+    {
+        return AppConfig::GetSettings().application.GetBool("testOclUseGpuDevice", false) ? CL_DEVICE_TYPE_GPU : CL_DEVICE_TYPE_CPU;
+    }
+
 #ifdef _WIN32
-    static const cl_device_type oclDeviceType = CL_DEVICE_TYPE_GPU;
-    static auto oclWrongExampleFilePath = "..\\..\\opencl-c-example-wrong.txt";
-    static auto oclGoodExampleFilePath = "..\\..\\opencl-c-example.txt";
+    static auto keyForOclWrongExampleFPath = "testOclWindowsWrongExampleFilePath";
+    static auto keyForOclGoodExampleFPath = "testOclWindowsGoodExampleFilePath";
     static auto currentDirectory = ".\\";
 #else
-    static const cl_device_type oclDeviceType = CL_DEVICE_TYPE_CPU;
-    static auto oclWrongExampleFilePath = "../../../opencl-c-example-wrong.txt";
-    static auto oclGoodExampleFilePath = "../../../opencl-c-example.txt";
+    static auto keyForOclWrongExampleFPath = "testOclLinuxWrongExampleFilePath";
+    static auto keyForOclGoodExampleFPath = "testOclLinuxGoodExampleFilePath";
     static auto currentDirectory = "./";
 #endif
 
@@ -66,7 +73,7 @@ namespace integration_tests
 			std::cout << "\tPlatform name: " << &strValue[0] << std::endl;
 
 			// Platform::GetContext
-            auto context = platforms[0].CreateContextFromType(oclDeviceType);
+            auto context = platforms[0].CreateContextFromType(GetDeviceType());
 			ASSERT_GT(context.GetNumDevices(), 0);
 				
 			// Context::GetDevices
@@ -117,12 +124,14 @@ namespace integration_tests
 			Platform::CreatePlatformInstances(platforms);
 			ASSERT_GT(platforms.size(), 0);
 
-            auto context = platforms[0].CreateContextFromType(oclDeviceType);
+            auto context = platforms[0].CreateContextFromType(GetDeviceType());
 
 			try
 			{
 				// Build a wrecked kernel source code
-                context.BuildProgramFromSource(oclWrongExampleFilePath, "");
+                context.BuildProgramFromSource(
+                    AppConfig::GetSettings().application.GetString(keyForOclWrongExampleFPath, UNDEF_OCL_SRC_FILE), ""
+                );
 			}
 			catch(IAppException &ex)
 			{
@@ -130,7 +139,9 @@ namespace integration_tests
 			}
 
 			// Build a correct kernel source code
-            auto program = context.BuildProgramFromSource(oclGoodExampleFilePath, "");
+            auto program = context.BuildProgramFromSource(
+                AppConfig::GetSettings().application.GetString(keyForOclGoodExampleFPath, UNDEF_OCL_SRC_FILE), ""
+            );
 
 			// Save binaries to disk:
             auto manifestFilePath = program->SaveAs("example", currentDirectory);
@@ -167,7 +178,7 @@ namespace integration_tests
 			Platform::CreatePlatformInstances(platforms);
 			ASSERT_GT(platforms.size(), 0);
 
-			auto context = platforms[0].CreateContextFromType(oclDeviceType);
+			auto context = platforms[0].CreateContextFromType(GetDeviceType());
 			ASSERT_GT(context.GetNumDevices(), 0);
 
 			auto device = context.GetDevice(0, GetParam() ? CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE : 0);
@@ -226,7 +237,7 @@ namespace integration_tests
 			Platform::CreatePlatformInstances(platforms);
 			ASSERT_GT(platforms.size(), 0);
 
-			auto context = platforms[0].CreateContextFromType(oclDeviceType);
+			auto context = platforms[0].CreateContextFromType(GetDeviceType());
 			ASSERT_GT(context.GetNumDevices(), 0);
 
 			auto device = context.GetDevice(0, GetParam() ? CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE : 0);
@@ -304,7 +315,7 @@ namespace integration_tests
 			Platform::CreatePlatformInstances(platforms);
 			ASSERT_GT(platforms.size(), 0);
 
-			auto context = platforms[0].CreateContextFromType(oclDeviceType);
+			auto context = platforms[0].CreateContextFromType(GetDeviceType());
 			ASSERT_GT(context.GetNumDevices(), 0);
 
 			auto device = context.GetDevice(0, GetParam() ? CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE : 0);
@@ -371,7 +382,7 @@ namespace integration_tests
 			Platform::CreatePlatformInstances(platforms);
 			ASSERT_GT(platforms.size(), 0);
 
-			auto context = platforms[0].CreateContextFromType(oclDeviceType);
+			auto context = platforms[0].CreateContextFromType(GetDeviceType());
 			ASSERT_GT(context.GetNumDevices(), 0);
 
 			auto device = context.GetDevice(0, GetParam() ? CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE : 0);
@@ -442,7 +453,7 @@ namespace integration_tests
 			Platform::CreatePlatformInstances(platforms);
 			ASSERT_GT(platforms.size(), 0);
 
-            auto context = platforms[0].CreateContextFromType(oclDeviceType);
+            auto context = platforms[0].CreateContextFromType(GetDeviceType());
 			ASSERT_GT(context.GetNumDevices(), 0);
 
 			auto device = context.GetDevice(0, GetParam() ? CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE : 0);
@@ -452,7 +463,10 @@ namespace integration_tests
 			std::unique_ptr<Program> program = context.BuildProgramWithBinaries("ocl_manifest_example.xml", "");
 			if (program.get() == nullptr)
 			{
-				program = context.BuildProgramFromSource(oclGoodExampleFilePath, "");
+				program = context.BuildProgramFromSource(
+                    AppConfig::GetSettings().application.GetString(keyForOclGoodExampleFPath, UNDEF_OCL_SRC_FILE), ""
+                );
+
                 program->SaveAs("example", currentDirectory);
 			}
 				
@@ -467,21 +481,21 @@ namespace integration_tests
 
 			// Device input buffer. Data is copied into it as of creation:
 			auto inputBuffer1 = context.CreateBuffer(commonBufSize,
-														CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR | CL_MEM_HOST_WRITE_ONLY, 
-														hostData1.data());
+													 CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR | CL_MEM_HOST_WRITE_ONLY, 
+													 hostData1.data());
 
 			// Device input buffer. Data is copied into it as of creation:
 			auto inputBuffer2 = context.CreateBuffer(commonBufSize,
-														CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR | CL_MEM_HOST_WRITE_ONLY,
-														hostData2.data());
+                                                     CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR | CL_MEM_HOST_WRITE_ONLY,
+                                                     hostData2.data());
 			// First device output buffer:
 			auto outputBuffer1 = context.CreateBuffer(commonBufSize,
-														CL_MEM_WRITE_ONLY | CL_MEM_HOST_READ_ONLY, 
-														nullptr);
+                                                      CL_MEM_WRITE_ONLY | CL_MEM_HOST_READ_ONLY, 
+                                                      nullptr);
 			// Seconde device output buffer:
 			auto outputBuffer2 = context.CreateBuffer(commonBufSize,
-														CL_MEM_WRITE_ONLY | CL_MEM_HOST_READ_ONLY,
-														nullptr);
+                                                      CL_MEM_WRITE_ONLY | CL_MEM_HOST_READ_ONLY,
+                                                      nullptr);
 
 			// Enqueues the execution of the kernel using the first input and output buffers:
 			std::array<size_t, 1> globalWorkOffset = { 0 };

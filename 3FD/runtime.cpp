@@ -5,6 +5,12 @@
 #include "logger.h"
 #include "gc.h"
 
+#ifdef _USING_V110_SDK71_
+#   include <ObjBase.h>
+#else
+#   include <roapi.h>
+#endif
+
 #ifdef _3FD_PLATFORM_WINRT
 #	include "sqlite3.h"
 #endif
@@ -52,21 +58,66 @@ namespace core
         std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
         return transcoder.to_bytes(modNameStr);
     }
+    
 
     /// <summary>
     /// Initializes a new instance of the <see cref="FrameworkInstance" /> class.
     /// </summary>
-    /// <param name="comThreadModel">The COM thread model.</param>
-    FrameworkInstance::FrameworkInstance(RO_INIT_TYPE comThreadModel)
+    /// <param name="threadModel">The COM thread model.</param>
+    FrameworkInstance::FrameworkInstance(MsComThreadModel threadModel)
         : FrameworkInstance()
     {
-        // Initialize Windows Runtime API for COM usage of Microsoft Media Foundation
-        auto hr = Windows::Foundation::Initialize(comThreadModel);
+        const char *libLabel;
+        bool unsupported(false);
+        HRESULT hr;
 
-        if (FAILED(hr))
+#   ifdef _USING_V110_SDK71_
+
+        libLabel = "COM library";
+
+        // Initialize COM library
+        switch (threadModel)
+        {
+        case ComSingleThreaded:
+            hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+            break;
+        case ComMultiThreaded:
+            hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+            break;
+        default:
+            _ASSERTE(false); // unknown or unsupported COM thread model
+            unsupported = true;
+            break;
+        }
+#   else
+        libLabel = "Windows Runtime API";
+
+        /* Initialize Windows Runtime API for COM library usage in classic
+        desktop apps (for use of libraries like Microsoft Media Foundation) */
+        switch (threadModel)
+        {
+        case ComSingleThreaded:
+            hr = Windows::Foundation::Initialize(RO_INIT_SINGLETHREADED);
+            break;
+        case ComMultiThreaded:
+            hr = Windows::Foundation::Initialize(RO_INIT_MULTITHREADED);
+            break;
+        default:
+            _ASSERTE(false); // unknown or unsupported COM thread model
+            unsupported = true;
+            break;
+        }
+#   endif
+
+        if (FAILED(hr) || unsupported)
         {
             std::ostringstream oss;
-            oss << "Failed to initialize Windows Runtime API! " << core::WWAPI::GetDetailsFromHResult(hr);
+            oss << "Failed to initialize" << libLabel << "! ";
+
+            if (unsupported)
+                oss << "Specified thread model is unknown or unsupported";
+            else
+                oss << core::WWAPI::GetDetailsFromHResult(hr);
 
             Logger::Write(oss.str(), Logger::PRIO_ERROR);
 
@@ -80,6 +131,7 @@ namespace core
 
         m_isComLibInitialized = true;
     }
+
 
     /// <summary>
     /// Initializes a new instance of the <see cref="FrameworkInstance" /> class.
@@ -145,7 +197,13 @@ namespace core
 
 #elif defined _3FD_PLATFORM_WIN32API
         if (m_isComLibInitialized)
+        {
+#   ifdef _USING_V110_SDK71_
+            CoUninitialize();
+#   else
             Windows::Foundation::Uninitialize();
+#   endif
+        }
 #endif
 	}
 

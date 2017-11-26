@@ -4,15 +4,19 @@
 ]
 interface AcmeTesting
 {
+    #define STRBUFSIZE 256
+
+    typedef struct pair
+    {
+        int left;
+        int right;
+    } pair;
+
+    void Invert([in, out] pair *onePair);
+
     void Operate([in] double left, [in] double right, [out] double *result);
 
-    typedef struct
-    {
-        unsigned short size;
-        [string, size_is(size)] char *data;
-    } cstring;
-
-    void ChangeCase([in] cstring *input, [out] cstring *output);
+    void ChangeCase([in, string] char *input, [out, string, size_is(STRBUFSIZE)] char *output);
 
     void WriteOnStorage(void);
 

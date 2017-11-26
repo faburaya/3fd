@@ -2,111 +2,166 @@
 #define CONFIGURATION_H
 
 #include "preprocessing.h"
+#include <cinttypes>
 #include <memory>
 #include <string>
 #include <chrono>
 #include <mutex>
+#include <map>
 
 namespace _3fd
 {
-	using std::string;
-	
-	namespace core
+namespace core
+{
+    using std::string;
+
+
+    /// <summary>
+    /// Holds a flexible and flat set of application settings
+    /// to be loaded from the XML configuration file.
+    /// </summary>
+    class AppFlexSettings
+    {
+    private:
+
+        std::map<string, string> m_settings;
+
+    public:
+
+        void Add(const string &key, const string &value);
+
+        string GetString(const string &key, const char *defValue) const;
+
+        bool GetBool(const string &key, bool defValue) const;
+
+        int32_t GetInt(const string &key, int32_t defValue) const;
+
+        uint32_t GetUInt(const string &key, uint32_t defValue) const;
+
+        float GetFloat(const string &key, float defValue) const;
+    };
+
+
+	/// <summary>
+	/// A singleton that holds the application settings.
+	/// </summary>
+	class AppConfig
 	{
-		/// <summary>
-		/// A singleton that holds the application settings.
-		/// </summary>
-		class AppConfig
+	private:
+
+		struct Tree
 		{
-		private:
-
-			struct Tree
+			// Used by both application and framework:
+			struct
 			{
-				// Used by both application and framework:
 				struct
 				{
-					struct
-					{
 #ifdef _3FD_POCO_SUPPORT // For POCO C++ logging facilities:
-						int purgeAge;
-						int purgeCount;
-						bool writeToConsole;
+					uint32_t purgeAge;
+                    uint32_t purgeCount;
+					bool     writeToConsole;
 #endif
-						int sizeLimit;
-					} log;
-				} common;
+                    uint32_t sizeLimit;
+				} log;
+			} common;
 
-				// Required by the framework and for its exclusive use:
+			// Required by the framework and for its exclusive use:
+			struct
+			{
 				struct
 				{
-					struct
-					{
 #ifdef _3FD_OPENCL_SUPPORT
-						bool opencl;
+					bool opencl;
 #endif
-					} dependencies;
+				} dependencies;
 
+				struct
+				{
+                    uint32_t stackLogInitialCap;
+				} stackTracing;
+
+				struct
+				{
+                    uint32_t msgLoopSleepTimeoutMilisecs;
+						
 					struct
 					{
-						int stackLogInitialCap;
-					} stackTracing;
-
+                        uint32_t initialSize;
+						float    growingFactor;
+					} memBlocksMemPool;
+						
 					struct
 					{
-						int msgLoopSleepTimeoutMilisecs;
-						
-						struct
-						{
-							int initialSize;
-							float growingFactor;
-						} memBlocksMemPool;
-						
-						struct
-						{
-							int initialSizeLog2;
-							float loadFactorThreshold;
-						} sptrObjectsHashTable;
-					} gc;
+                        uint32_t initialSizeLog2;
+						float    loadFactorThreshold;
+					} sptrObjectsHashTable;
+				} gc;
 
 #ifdef _3FD_OPENCL_SUPPORT
-					struct
-					{
-						int maxSourceCodeLineLength;
-						int maxBuildLogSize;
-					} opencl;
+				struct
+				{
+                    uint32_t maxSourceCodeLineLength;
+                    uint32_t maxBuildLogSize;
+				} opencl;
 #endif
 
 #ifdef _3FD_ESENT_SUPPORT
-					struct
-					{
-						bool useWindowsFileCache;
-					} isam;
-#endif
-				} framework;
-
 				struct
 				{
-					/* HERE YOU CAN INSERT YOUR OWN STRUCTURES FOR NEW KEYS IN THE XML CONFIGURATION FILE */
-				} application;
-			} settings;
+					bool useWindowsFileCache;
+				} isam;
+#endif
 
-			string m_applicationId;
+#ifdef _3FD_POCO_SUPPORT
+                struct
+                {
+                    uint32_t dbConnTimeoutSecs;
+                    uint32_t dbConnMaxRetries;
+                } broker;
+#endif
 
-			static std::unique_ptr<AppConfig> uniqueObject;
-			static std::mutex initializationMutex;
+#ifdef _3FD_PLATFORM_WIN32API
+                struct
+                {
+                    uint32_t cliSrvConnectMaxRetries;
+                    uint32_t cliSrvConnRetrySleepSecs;
+                    uint32_t cliCallMaxRetries;
+                    uint32_t cliCallRetrySleepMs;
+                    uint32_t cliCallRetryTimeSlotMs;
+                } rpc;
 
-			static AppConfig &GetInstanceInitialized();
+                struct
+                {
+                    uint32_t proxyConnMaxRetries;
+                    uint32_t proxyCallMaxRetries;
+                    uint32_t proxyRetrySleepSecs;
+                    uint32_t proxyRetryTimeSlotMs;
+                } wws;
+#endif
+			} framework;
 
-			void Initialize();
+            AppFlexSettings application;
 
-			AppConfig() {} // empty private constructor
+		} settings;
 
-		public:
+		string m_applicationId;
 
-			static const string &GetApplicationId();
-			static const Tree &GetSettings();
-		};
-	}
-}
+		static std::unique_ptr<AppConfig> uniqueObject;
+		static std::mutex initializationMutex;
+
+		static AppConfig &GetInstanceInitialized();
+
+		void Initialize();
+
+		AppConfig() {} // empty private constructor
+
+	public:
+
+		static const string &GetApplicationId();
+
+		static const Tree &GetSettings();
+	};
+}// end of namespace core
+}// end of namespace _3fd
 
 #endif // end of header guard

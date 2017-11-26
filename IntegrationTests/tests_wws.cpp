@@ -41,7 +41,7 @@ namespace integration_tests
 
     HRESULT CALLBACK CloseServiceImpl(
         _In_ const WS_OPERATION_CONTEXT *wsContextHandle,
-        _Out_ __int64 *result,
+        _Out_ BOOL *result,
         _In_ const WS_ASYNC_CONTEXT *asyncContext,
         _In_ WS_ERROR *wsErrorHandle
     );
@@ -166,25 +166,6 @@ namespace integration_tests
             Logger::Write(oss.str(), Logger::PRIO_NOTICE);
 
             return true;
-        }
-
-        /// <summary>
-        /// Retrieves the amount of time expected to last
-        /// a full cycle in server of close-setup-open, based
-        /// on the maximum closure time for the web service
-        /// host registered so far.
-        /// </summary>
-        /// <return>
-        /// Retrieves the maximum closure time in milliseconds.
-        /// </return>
-        static uint32_t GetEstimateCycleTime()
-        {
-            /* In practice, measured time must be linearly
-               augmented for adjustment (using field data), because
-               apparently the server takes much longer to be available
-               than what the measures point out. It happens a little
-               after WebServiceHost::Open returns... */
-            return static_cast<uint32_t> (maxTimeSpanForSvcCycle.count() + 50);
         }
 
         /// <summary>
@@ -456,12 +437,12 @@ namespace integration_tests
     // Implementation for the operation "CloseService"
     HRESULT CALLBACK CloseServiceImpl(
         _In_ const WS_OPERATION_CONTEXT *wsContextHandle,
-        _Out_ __int64 *result,
+        _Out_ BOOL *result,
         _In_ const WS_ASYNC_CONTEXT *asyncContext,
         _In_ WS_ERROR *wsErrorHandle)
     {
         Framework_WWS_TestCase::SignalWebServiceClosureEvent();
-        *result = Framework_WWS_TestCase::GetEstimateCycleTime();
+        *result = TRUE;
         return S_OK;
     }
 
@@ -513,7 +494,7 @@ namespace integration_tests
 	/// Tests synchronous web service access
 	/// with SSL over HTTP and no client certificate.
 	/// </summary>
-	TEST_F(Framework_WWS_TestCase, DISABLED_Host_TransportSSL_NoClientCert_SyncTest)
+	TEST_F(Framework_WWS_TestCase, Host_TransportSSL_NoClientCert_SyncTest)
 	{
         TestHostTransportSSL(false);
 	}
@@ -522,7 +503,7 @@ namespace integration_tests
 	/// Tests asynchronous web service access with
 	/// SSL over HTTP and no client certificate.
 	/// </summary>
-	TEST_F(Framework_WWS_TestCase, DISABLED_Host_TransportSSL_NoClientCert_AsyncTest)
+	TEST_F(Framework_WWS_TestCase, Host_TransportSSL_NoClientCert_AsyncTest)
 	{
         TestHostTransportSSL(false);
 	}

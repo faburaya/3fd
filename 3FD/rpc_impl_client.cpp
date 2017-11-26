@@ -1,12 +1,16 @@
 #include "stdafx.h"
 #include "rpc_helpers.h"
 #include "rpc_impl_util.h"
+#include "configuration.h"
 #include "callstacktracer.h"
+#include "utils_io.h"
 #include "logger.h"
 
-#include <codecvt>
 #include <memory>
+#include <codecvt>
 #include <sstream>
+#include <cstdio>
+#include <cmath>
 
 namespace _3fd
 {
@@ -34,6 +38,7 @@ namespace rpc
             core::Logger::Priority::PRIO_CRITICAL);
     }
 
+
     /// <summary>
     /// Initializes a new instance of the <see cref="RpcClient"/> class.
     /// This is a basic constructor that sets everything but security options.
@@ -52,9 +57,15 @@ namespace rpc
                          const string &destination,
                          const string &endpoint)
     try :
-        m_bindingHandle(nullptr)
+        m_bindingHandle(nullptr),
+        m_isOnHold(false)
     {
         CALL_STACK_TRACE;
+
+        std::ostringstream oss;
+        oss << objUUID << '#' << ToString(protSeq) << '@' << destination;
+
+        m_endpoint = oss.str();
 
         // Prepare text parameters encoded in UCS-2
         std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
@@ -113,7 +124,8 @@ namespace rpc
         ThrowIfError(status, "Failed to create binding handle for RPC client");
 
         // Notify establishment of binding with this protocol sequence:
-        std::ostringstream oss;
+
+        oss.str("");
         oss << "RPC client for object " << objUUID << " in " << destination
             << " will use protocol sequence '" << ToString(protSeq) << '\'';
 
@@ -133,6 +145,7 @@ namespace rpc
         oss << "Generic failure when instantiating RPC client: " << ex.what();
         throw core::AppException<std::runtime_error>(oss.str());
     }
+
 
     /// <summary>
     /// Initializes a new instance of the <see cref="RpcClient"/> class
@@ -163,7 +176,7 @@ namespace rpc
                          ImpersonationLevel impLevel,
                          const string &spn,
                          const string &endpoint)
-    : RpcClient(protSeq, objUUID, destination, endpoint)
+        : RpcClient(protSeq, objUUID, destination, endpoint)
     {
         // Invalid arguments:
         _ASSERTE(
@@ -319,6 +332,7 @@ namespace rpc
         }
     }
 
+
     /// <summary>
     /// Initializes a new instance of the <see cref="RpcClient"/> class
     /// for security options of Secure Channel SSP.
@@ -336,10 +350,10 @@ namespace rpc
     /// <remarks>Because Schannel SSP is only compatible with transport
     /// over TCP/IP, that is the implicitly chosen protocol sequence.</remarks>
     RpcClient::RpcClient(const string &objUUID,
-        const string &destination,
-        const CertInfo &certInfoX509,
-        AuthenticationLevel authnLevel,
-        const string &endpoint)
+                         const string &destination,
+                         const CertInfo &certInfoX509,
+                         AuthenticationLevel authnLevel,
+                         const string &endpoint)
         : RpcClient(ProtocolSequence::TCP, objUUID, destination, endpoint)
     {
         CALL_STACK_TRACE;
@@ -401,6 +415,7 @@ namespace rpc
         }
     }
 
+
     /// <summary>
     /// Finalizes an instance of the <see cref="RpcClient"/> class.
     /// </summary>
@@ -409,6 +424,7 @@ namespace rpc
         CALL_STACK_TRACE;
         HelpFreeBindingHandle(&m_bindingHandle);
     }
+
 
     /// <summary>
     /// Removes the endpoint portion of the server address in the binding handle.
@@ -427,6 +443,216 @@ namespace rpc
         ThrowIfError(status, "Failed to reset binding handle of RPC client");
     }
 
+
+    /// <summary>
+    /// Enumerates the recommended actions for RPC errors.
+    /// </summary>
+    enum class RpcErrRecommendedAction : uint8_t
+    {
+        Retry = 0xF0, // just a mask for "retry category"
+        SimpleRetry = 0xF2, // for regular issues: just try again after sleeping a constant amount of time
+        RetryBackoff = 0xF4, // for resource related issues: try again with sleep intervals in exp back-off
+        Reconnect = 0x02, // for connection related issues: attempt reconnection and try RPC again
+        Quit = 0x04 // do not insist, just quit
+    };
+
+
+    /// <summary>
+    /// Tells by the RPC error status returned by stub call
+    /// whether to retry, reconnect & retry or just quit.
+    /// </summary>
+    /// <param name="errCode">The RPC error code (status).</param>
+    static RpcErrRecommendedAction GetRecommendation(RPC_STATUS errCode)
+    {
+        switch (errCode)
+        {
+        case RPC_S_CALL_CANCELLED:
+        case RPC_S_CALL_FAILED_DNE:
+            return RpcErrRecommendedAction::SimpleRetry;
+
+        case RPC_S_SERVER_OUT_OF_MEMORY:
+        case RPC_S_SERVER_TOO_BUSY:
+            return RpcErrRecommendedAction::RetryBackoff;
+
+        case RPC_S_COMM_FAILURE:
+        case RPC_S_NOT_LISTENING:
+        case EPT_S_NOT_REGISTERED:
+        case RPC_S_SERVER_UNAVAILABLE:
+            return RpcErrRecommendedAction::Reconnect;
+
+        default:
+            return RpcErrRecommendedAction::Quit;
+        }
+    }
+
+
+    // Wraps RPC to isolate SEH code
+    static RPC_STATUS CallbackWrapSEH(const std::function<void(rpc_binding_handle_t) NOEXCEPT> &rpc,
+                                 rpc_binding_handle_t bindingHandle)
+    {
+        RPC_STATUS exCode;
+
+        __try // Because RPC uses SEH, only SEH is allowed in this function
+        {
+            rpc(bindingHandle);
+            return RPC_S_OK;
+        }
+        // catch with default exception filter:
+        __except (RpcExceptionFilter(exCode = RpcExceptionCode()))
+        {
+            return exCode;
+        }
+    }
+
+
+    /// <summary>
+    /// Wraps an RPC (with retry loop when appropriate).
+    /// </summary>
+    /// <param name="tag">A tag for the RPC.</param>
+    /// <param name="rpc">The RPC to make.</param>
+    /// <param name="bindingHandle">The RPC binding handle.</param>
+    /// <returns>The status of the RPC.</returns>
+    static RPC_STATUS WrapRpc(const char *tag,
+                              const std::function<void(rpc_binding_handle_t) NOEXCEPT> &rpc,
+                              rpc_binding_handle_t bindingHandle)
+    {
+        int retryCount(0);
+
+        // loop for retries:
+        while (true)
+        {
+            auto status = CallbackWrapSEH(rpc, bindingHandle);
+
+            if (status == RPC_S_OK)
+                break;
+
+            static const auto callMaxRetries =
+                core::AppConfig::GetSettings().framework.rpc.cliCallMaxRetries;
+
+            auto recomAction = GetRecommendation(status);
+
+            bool mustNotRetry =
+                (static_cast<uint8_t> (recomAction)
+                 & static_cast<uint8_t> (RpcErrRecommendedAction::Retry)) == 0;
+
+            // must not try again?
+            if (mustNotRetry || retryCount == callMaxRetries)
+            {
+                if (retryCount > 0)
+                {
+                    std::array<char, 512> bufErrMsg;
+                    utils::SerializeTo(bufErrMsg, "RPC call '", tag, "' failed after ", retryCount, " attempt(s)");
+                    core::Logger::Write(bufErrMsg.data(), core::Logger::PRIO_INFORMATION);
+                }
+                
+                return status;
+            }
+
+            // Wait before retry:
+
+            uint64_t intervalMs;
+
+            if (recomAction == RpcErrRecommendedAction::SimpleRetry)
+            {
+                static const auto callRetrySleepMs =
+                    core::AppConfig::GetSettings().framework.rpc.cliCallRetrySleepMs;
+
+                intervalMs = callRetrySleepMs;
+            }
+            else // with exponential back-off:
+            {
+                static const auto callRetryTimeSlotMs =
+                    core::AppConfig::GetSettings().framework.rpc.cliCallRetryTimeSlotMs;
+
+                intervalMs = static_cast<uint64_t> (
+                    callRetryTimeSlotMs * (pow(2, retryCount) - 1) * rand() / RAND_MAX
+                );
+            }
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(intervalMs));
+
+            ++retryCount;
+
+        }// end of loop
+
+        if (retryCount > 0)
+        {
+            std::array<char, 512> bufErrMsg;
+            utils::SerializeTo(bufErrMsg, "RPC call '", tag, "' had to retry ", retryCount, " time(s) before success");
+            core::Logger::Write(bufErrMsg.data(), core::Logger::PRIO_WARNING);
+        }
+
+        // quit on success
+        return RPC_S_OK;
+    }
+
+
+    /// <summary>
+    /// Invokes an RPC with error handling (and re-try/connect loop when appropriate).
+    /// </summary>
+    /// <param name="tag">A tag for the RPC.</param>
+    /// <param name="rpc">The RPC to make.</param>
+    void RpcClient::Call(const char *tag, const std::function<void(rpc_binding_handle_t) NOEXCEPT> &rpc)
+    {
+        CALL_STACK_TRACE;
+
+        RPC_STATUS status;
+
+        static const auto connectMaxRetries =
+            core::AppConfig::GetSettings().framework.rpc.cliSrvConnectMaxRetries;
+
+        int count;
+
+        // loop for reconnection:
+        for (count = 0; count <= connectMaxRetries; ++count)
+        {
+            status = WrapRpc(tag, rpc, GetBindingHandle());
+
+            if (GetRecommendation(status) != RpcErrRecommendedAction::Reconnect)
+                break;
+
+            /* Reset the bindings and take a nap. Next RPC will
+               attempt to (connect and) bind again to the server: */
+
+            static const auto connRetrySleepSecs =
+                core::AppConfig::GetSettings().framework.rpc.cliSrvConnRetrySleepSecs;
+
+            // warn only once about lost connection:
+            if (!m_isOnHold.exchange(true))
+            {
+                std::array<char, 512> bufErrMsg;
+
+                utils::SerializeTo(bufErrMsg,
+                    "RPC client stub lost connection to ", m_endpoint,
+                    " and will attempt a reconnection every ", connRetrySleepSecs,
+                    " seconds up to ", connectMaxRetries, " time(s)");
+
+                core::Logger::Write(bufErrMsg.data(), core::Logger::PRIO_WARNING);
+            }
+
+            ResetBindings();
+
+            std::this_thread::sleep_for(
+                std::chrono::seconds(connRetrySleepSecs)
+            );
+        }
+
+        ThrowIfError(status, "Failed to invoke RPC client stub routine", tag);
+
+        // notify only once about reconnection:
+        if (m_isOnHold.exchange(false))
+        {
+            std::array<char, 512> bufErrMsg;
+
+            utils::SerializeTo(bufErrMsg,
+                "RPC client stub succesfully reconnected to ",
+                m_endpoint, " after ", count, " attempt(s)");
+
+            core::Logger::Write(bufErrMsg.data(), core::Logger::PRIO_WARNING);
+        }
+    }
+
+
     ////////////////////////////////
     // ScopedImpersonation Class
     ////////////////////////////////
@@ -444,6 +670,7 @@ namespace rpc
         ThrowIfError(status, "Failed to impersonate indentity of RPC client");
     }
 
+
     /// <summary>
     /// Finalizes an instance of the <see cref="ScopedImpersonation"/> class.
     /// </summary>
@@ -454,7 +681,8 @@ namespace rpc
         LogIfError(
             RpcRevertToSelfEx(m_clientBindingHandle),
             "Failed to revert impersonation of RPC client",
-            core::Logger::PRIO_CRITICAL);
+            core::Logger::PRIO_CRITICAL
+        );
     }
 
 }// end of namespace rpc

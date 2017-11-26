@@ -162,11 +162,11 @@ extern "C" {
 // The following types were generated:
 
 //     struct EmptyRequest;
-//     struct MultipurposeSingleIntegerResponse;
+//     struct MultipurposeBooleanResponse;
 //     struct BinaryOpRequest;
 //     struct OperationResponse;
 //     struct EmptyRequest;
-//     struct MultipurposeSingleIntegerResponse;
+//     struct MultipurposeBooleanResponse;
 //     struct BinaryOpRequest;
 //     struct OperationResponse;
 //     struct BinaryOpRequest;
@@ -188,11 +188,11 @@ extern "C" {
 
 typedef struct EmptyRequest EmptyRequest;
 
-// typeDescription: calculator_wsdl.globalTypes.MultipurposeSingleIntegerResponse
-typedef struct MultipurposeSingleIntegerResponse 
+// typeDescription: calculator_wsdl.globalTypes.MultipurposeBooleanResponse
+typedef struct MultipurposeBooleanResponse 
 {
-    __int64 result;
-} MultipurposeSingleIntegerResponse;
+    BOOL result;
+} MultipurposeBooleanResponse;
 
 // typeDescription: calculator_wsdl.globalTypes.BinaryOpRequest
 typedef struct BinaryOpRequest 
@@ -258,7 +258,7 @@ HRESULT WINAPI CalcBindingHeaderAuthSSL_Multiply(
 // operation: CalcBindingHeaderAuthSSL_CloseService
 HRESULT WINAPI CalcBindingHeaderAuthSSL_CloseService(
     _In_ WS_SERVICE_PROXY* _serviceProxy,
-    _Out_ __int64* result, 
+    _Out_ BOOL* result, 
     _In_ WS_HEAP* _heap,
     _In_reads_opt_(_callPropertyCount) const WS_CALL_PROPERTY* _callProperties,
     _In_ const ULONG _callPropertyCount,
@@ -314,7 +314,7 @@ HRESULT WINAPI CalcBindingSSL_Multiply(
 // operation: CalcBindingSSL_CloseService
 HRESULT WINAPI CalcBindingSSL_CloseService(
     _In_ WS_SERVICE_PROXY* _serviceProxy,
-    _Out_ __int64* result, 
+    _Out_ BOOL* result, 
     _In_ WS_HEAP* _heap,
     _In_reads_opt_(_callPropertyCount) const WS_CALL_PROPERTY* _callProperties,
     _In_ const ULONG _callPropertyCount,
@@ -368,7 +368,7 @@ HRESULT WINAPI CalcBindingUnsecure_Multiply(
 // operation: CalcBindingUnsecure_CloseService
 HRESULT WINAPI CalcBindingUnsecure_CloseService(
     _In_ WS_SERVICE_PROXY* _serviceProxy,
-    _Out_ __int64* result, 
+    _Out_ BOOL* result, 
     _In_ WS_HEAP* _heap,
     _In_reads_opt_(_callPropertyCount) const WS_CALL_PROPERTY* _callProperties,
     _In_ const ULONG _callPropertyCount,
@@ -389,11 +389,11 @@ typedef struct _calculator_wsdl
         // typeDescription: calculator_wsdl.globalTypes.EmptyRequest
         WS_STRUCT_DESCRIPTION EmptyRequest;
         
-        // xml type: MultipurposeSingleIntegerResponse ("http://calculator.example.org/")
-        // c type: MultipurposeSingleIntegerResponse
+        // xml type: MultipurposeBooleanResponse ("http://calculator.example.org/")
+        // c type: MultipurposeBooleanResponse
         // WS_TYPE: WS_STRUCT_TYPE
-        // typeDescription: calculator_wsdl.globalTypes.MultipurposeSingleIntegerResponse
-        WS_STRUCT_DESCRIPTION MultipurposeSingleIntegerResponse;
+        // typeDescription: calculator_wsdl.globalTypes.MultipurposeBooleanResponse
+        WS_STRUCT_DESCRIPTION MultipurposeBooleanResponse;
         
         // xml type: BinaryOpRequest ("http://calculator.example.org/")
         // c type: BinaryOpRequest
@@ -416,7 +416,7 @@ typedef struct _calculator_wsdl
         WS_ELEMENT_DESCRIPTION CloseServiceRequest;
         
         // xml element: CloseServiceResponse ("http://calculator.example.org/")
-        // c type: MultipurposeSingleIntegerResponse
+        // c type: MultipurposeBooleanResponse
         // elementDescription: calculator_wsdl.globalElements.CloseServiceResponse
         WS_ELEMENT_DESCRIPTION CloseServiceResponse;
         
@@ -474,7 +474,7 @@ typedef struct _calculator_wsdl
         WS_MESSAGE_DESCRIPTION CloseServiceRequestMessage;
         
         // message: CloseServiceResponseMessage
-        // c type: MultipurposeSingleIntegerResponse
+        // c type: MultipurposeBooleanResponse
         // action: ""
         // messageDescription: calculator_wsdl.messages.CloseServiceResponseMessage
         WS_MESSAGE_DESCRIPTION CloseServiceResponseMessage;

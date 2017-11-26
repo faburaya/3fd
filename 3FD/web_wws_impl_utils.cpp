@@ -1,6 +1,5 @@
 #include "stdafx.h"
 #include "web_wws_impl_utils.h"
-
 #include "callstacktracer.h"
 #include "logger.h"
 
@@ -71,6 +70,7 @@ namespace wws
 		return obj;
 	}
 
+
 	/////////////////////////////
 	// WSHeap Class
 	/////////////////////////////
@@ -130,6 +130,7 @@ namespace wws
 		err.RaiseExceptionApiError(hr, "WsAlloc", "Failed to allocate heap memory");
 		return ptr;
 	}
+
 
     /////////////////////
     // Host Utilities
@@ -289,6 +290,7 @@ namespace wws
         }
     }
 
+
     /// <summary>
     /// Creates a SOAP fault response from an exception (service error)
     /// and record it as rich error information.
@@ -311,6 +313,7 @@ namespace wws
             wsErrorHandle
         );
     }
+
 
     /// <summary>
     /// Helper for HTTP header authorization.

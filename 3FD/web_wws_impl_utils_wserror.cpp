@@ -1,6 +1,5 @@
 #include "stdafx.h"
 #include "web_wws_impl_utils.h"
-
 #include "callstacktracer.h"
 #include "logger.h"
 #include <sstream>
@@ -102,11 +101,10 @@ namespace wws
 	/// <returns>An exception object assembled from the given information.</returns>
 	static
 	AppException<std::runtime_error>
-	CreateExceptionApiError(
-		WS_ERROR *wsErrorHandle,
-		HRESULT hres,
-		const char *funcName,
-		const char *message)
+	CreateExceptionApiError(WS_ERROR *wsErrorHandle,
+                            HRESULT hres,
+                            const char *funcName,
+                            const char *message)
 	{
 		try
 		{
@@ -172,10 +170,9 @@ namespace wws
 	/// <param name="hres">The returned HRESULT code.</param>
 	/// <param name="funcName">Name of the function.</param>
 	/// <param name="message">The error message.</param>
-	void WSError::RaiseExceptionApiError(
-		HRESULT hres,
-		const char *funcName,
-		const char *message)
+	void WSError::RaiseExceptionApiError(HRESULT hres,
+		                                 const char *funcName,
+		                                 const char *message)
 	{
 		if (hres == S_OK || hres == WS_S_ASYNC)
 			return;
@@ -198,10 +195,9 @@ namespace wws
 	/// <param name="hres">The returned HRESULT code.</param>
 	/// <param name="funcName">Name of the function.</param>
 	/// <param name="message">The error message.</param>
-	void WSError::LogApiError(
-		HRESULT hres,
-		const char *funcName,
-		const char *message) NOEXCEPT
+	void WSError::LogApiError(HRESULT hres,
+		                      const char *funcName,
+		                      const char *message) NOEXCEPT
 	{
 		if (hres == S_OK || hres == WS_S_ASYNC)
 			return;
@@ -225,11 +221,10 @@ namespace wws
 	/// <param name="heap">A heap for memory allocation.</param>
 	static
 	AppException<std::runtime_error>
-	CreateExceptionSoapFault(
-		WS_ERROR *wsErrorHandle,
-		HRESULT hres,
-		const char *message,
-		WSHeap &heap)
+	CreateExceptionSoapFault(WS_ERROR *wsErrorHandle,
+		                     HRESULT hres,
+		                     const char *message,
+		                     WSHeap &heap)
 	{
 		try
 		{
@@ -246,7 +241,7 @@ namespace wws
 			if (hr != S_OK)
 			{
 				oss << "Another failure prevented retrieval of information from SOAP fault response "
-						"(WsGetFaultErrorProperty returned " << WWAPI::GetHResultLabel(hr) << ')';
+                       "(WsGetFaultErrorProperty returned " << WWAPI::GetHResultLabel(hr) << ')';
 
 				return AppException<std::runtime_error>(message, oss.str());
 			}
@@ -337,7 +332,7 @@ namespace wws
 				auto what = oss.str();
 				oss.str("");
 				oss << "Another failure prevented retrieval of details from SOAP fault response "
-						"(WsGetFaultErrorDetail returned " << WWAPI::GetHResultLabel(hr) << ')';
+                       "(WsGetFaultErrorDetail returned " << WWAPI::GetHResultLabel(hr) << ')';
 
 				return AppException<std::runtime_error>(what, oss.str());
 			}
@@ -371,8 +366,8 @@ namespace wws
 		catch (std::exception &ex)
 		{
 			std::ostringstream oss;
-			oss << "Another generic failure prevented retrieval of further information "
-					"from SOAP fault response: " << ex.what();
+			oss << "Another generic failure prevented retrieval of further "
+                   "information from SOAP fault response: " << ex.what();
 
 			return AppException<std::runtime_error>(message, oss.str());
 		}
@@ -385,7 +380,7 @@ namespace wws
 	/// regarding the error, than raises an exception with such content.
 	/// </summary>
 	/// <param name="hres">The operation result code.</param>
-	/// <param name="message">The base message for the error.</param>
+	/// <param name="message">A simple error message.</param>
 	/// <param name="heap">A heap for memory allocation.</param>
 	void WSError::RaiseExClientNotOK(HRESULT hres, const char *message, WSHeap &heap)
 	{

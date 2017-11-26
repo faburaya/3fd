@@ -15,6 +15,21 @@ using std::string;
 
 namespace rpc
 {
+    void ThrowIfError(RPC_STATUS status, const char *message);
+
+    void ThrowIfError(RPC_STATUS status,
+                      const char *message,
+                      const string &details);
+
+    void LogIfError(RPC_STATUS status,
+                    const char *message,
+                    core::Logger::Priority prio) NOEXCEPT;
+
+    void LogIfError(RPC_STATUS status,
+                    const char *message,
+                    const string &details,
+                    core::Logger::Priority prio) NOEXCEPT;
+
     const char *ToString(ProtocolSequence protSeq);
 
     const char *ToString(AuthenticationLevel authnLevel);
@@ -24,6 +39,7 @@ namespace rpc
     const char *ConvertAuthnSvcOptToString(unsigned long authnService);
 
     void AppendSecQosOptsDescription(const RPC_SECURITY_QOS &secQOS, std::ostringstream &oss);
+
 
     /// <summary>
     /// RAII for RPC lib C-style strings.
@@ -50,6 +66,7 @@ namespace rpc
         }
     };
 
+
     typedef std::pair<uint32_t, const char*> RpcCodeLabelKVPair;
 
     /// <summary>
@@ -72,12 +89,11 @@ namespace rpc
 
         static
         core::AppException<std::runtime_error>
-        CreateException(
-            RPC_STATUS errCode,
-            const string &message,
-            const string &details
-        );
+        CreateException(RPC_STATUS errCode,
+                        const string &message,
+                        const string &details);
     };
+
 
     const unsigned long UUID_VECTOR_MAX_SIZE(32);
 
@@ -123,8 +139,9 @@ namespace rpc
 
         void Add(const UUID &uuid);
 
-        UUID_VECTOR *CopyTo(UuidVectorFix &vec) noexcept;
+        UUID_VECTOR *CopyTo(UuidVectorFix &vec) NOEXCEPT;
     };
+
 
     /// <summary>
     /// RAII for Directory Service binding handle.
@@ -142,6 +159,7 @@ namespace rpc
                 DsUnBindW(&handle);
         }
     };
+
 
     /// <summary>
     /// RAII for array of SPN's.
@@ -161,7 +179,9 @@ namespace rpc
         }
     };
 
+
     bool DetectActiveDirectoryServices(DirSvcBinding &dirSvcBinding, bool isClient);
+
 
     /// <summary>
     /// Provides access to the system certificate store.
@@ -180,6 +200,7 @@ namespace rpc
 
         PCCERT_CONTEXT FindCertBySubject(const string &certSubject) const;
     };
+
 
     /// <summary>
     /// Wraps a credential for secure channel SSP, containing a X.509

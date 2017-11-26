@@ -6,7 +6,9 @@ cmake_minimum_required(VERSION 2.6)
 
 project(3FD)
 
+#####################
 # Macro definitions:
+
 add_definitions(
     -DENABLE_3FD_CST
     -DENABLE_3FD_ERR_IMPL_DETAILS
@@ -18,17 +20,19 @@ if(buildType STREQUAL release)
     add_definitions(-DNDEBUG)
 endif()
 
-set(POCO_ROOT "/opt/poco-1.7.5")
-set(BOOST_HOME "/opt/boost-1.60")
-
+########################
 # Include directories:
+
 include_directories(
     "${PROJECT_SOURCE_DIR}"
     "${PROJECT_SOURCE_DIR}/../btree"
     "${PROJECT_SOURCE_DIR}/../OpenCL"
-    "${POCO_ROOT}/include"
-    "${BOOST_HOME}/include"
+    "$ENV{POCO_ROOT}/include"
+    "$ENV{BOOST_HOME}/include"
 )
+
+########################
+# Dependency libraries:
 
 # Static library source files:
 add_library(3FD STATIC
@@ -69,3 +73,10 @@ add_library(3FD STATIC
     utils_memorypool.cpp
 )
 
+################
+# Installation:
+
+install(
+    TARGETS 3FD
+    DESTINATION "${PROJECT_SOURCE_DIR}/../build/bin"
+)

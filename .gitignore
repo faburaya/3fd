@@ -85,7 +85,8 @@ ipch/
 *.ncb
 *.opensdf
 *.sdf
-*.db
+*.VC.db
+*.VC.opendb
 *.cachefile
 
 # Visual Studio profiler
@@ -151,7 +152,6 @@ ClientBin/
 *~
 *.dbmdl
 *.[Pp]ublish.xml
-*.pfx
 *.publishsettings
 *.xbf
 

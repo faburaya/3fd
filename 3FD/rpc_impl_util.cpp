@@ -8,6 +8,7 @@
 #include <sstream>
 #include <iomanip>
 #include <codecvt>
+#include <thread>
 #include <algorithm>
 
 namespace _3fd
@@ -15,6 +16,7 @@ namespace _3fd
 namespace rpc
 {
     using std::string;
+
 
     ////////////////////////////
     // Translation of Types
@@ -44,6 +46,7 @@ namespace rpc
         }
     }
 
+
     /// <summary>
     /// Converts an enumerated authentication level option
     /// into a descriptive label for it.
@@ -65,6 +68,7 @@ namespace rpc
             return "UNRECOGNIZED AUTHENTICATION LEVEL";
         }
     }
+
 
     /// <summary>
     /// Converts an enumerated impersonation level option
@@ -94,6 +98,7 @@ namespace rpc
         }
     }
 
+
     /// <summary>
     /// Converts an authentication service option from
     /// Win32 API into a descriptive label for it.
@@ -121,6 +126,7 @@ namespace rpc
             return "UNRECOGNIZED AUTHENTICATION SERVICE";
         }
     }
+
 
     /// <summary>
     /// Gets a structure with security QOS options for Microsoft RPC,
@@ -152,6 +158,7 @@ namespace rpc
         }
     }
 
+
     //////////////////////
     // UUID_VECTOR Fix
     //////////////////////
@@ -177,7 +184,7 @@ namespace rpc
         }
     }
 
-    UUID_VECTOR * VectorOfUuids::CopyTo(UuidVectorFix &vec) noexcept
+    UUID_VECTOR * VectorOfUuids::CopyTo(UuidVectorFix &vec) NOEXCEPT
     {
         _ASSERTE(m_ptrs2Uuids.size() <= UUID_VECTOR_MAX_SIZE);
 
@@ -187,6 +194,7 @@ namespace rpc
         vec.size = m_ptrs2Uuids.size();
         return reinterpret_cast<UUID_VECTOR *> (&vec);
     }
+
 
     /// <summary>
     /// Detects the presence of Microsoft Active Directory services.
@@ -231,6 +239,7 @@ namespace rpc
         }
     }
     
+
     //////////////////////////////////
     // SystemCertificateStore Class
     //////////////////////////////////
@@ -280,6 +289,7 @@ namespace rpc
         throw core::AppException<std::runtime_error>(oss.str());
     }
 
+
     /// <summary>
     /// Finalizes an instance of the <see cref="SystemCertificateStore"/> class.
     /// </summary>
@@ -306,6 +316,7 @@ namespace rpc
             core::Logger::Write(oss.str(), core::Logger::PRIO_CRITICAL, true);
         }
     }
+
 
     /// <summary>
     /// Finds and retrieves from the system store a
@@ -355,6 +366,7 @@ namespace rpc
         }
     }
 
+
     //////////////////////////////////
     // SChannelCredWrapper Class
     //////////////////////////////////
@@ -381,8 +393,10 @@ namespace rpc
 
         if (strongerSec)
         {
-            m_credStructure.dwFlags =
-                SCH_CRED_REVOCATION_CHECK_CHAIN | SCH_USE_STRONG_CRYPTO;
+            m_credStructure.dwFlags = SCH_CRED_REVOCATION_CHECK_CHAIN;
+#   ifndef _USING_V110_SDK71_
+            m_credStructure.dwFlags |= SCH_USE_STRONG_CRYPTO;
+#   endif
         }
     }
     catch (std::exception &ex)
@@ -393,6 +407,7 @@ namespace rpc
 
         throw core::AppException<std::runtime_error>(oss.str());
     }
+
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SChannelCredWrapper"/> class.
@@ -420,8 +435,10 @@ namespace rpc
 
         if (strongerSec)
         {
-            m_credStructure.dwFlags =
-                SCH_CRED_REVOCATION_CHECK_CHAIN | SCH_USE_STRONG_CRYPTO;
+            m_credStructure.dwFlags = SCH_CRED_REVOCATION_CHECK_CHAIN;
+#   ifndef _USING_V110_SDK71_
+            m_credStructure.dwFlags |= SCH_USE_STRONG_CRYPTO;
+#   endif
         }
     }
     catch (std::exception &ex)
@@ -433,6 +450,7 @@ namespace rpc
         throw core::AppException<std::runtime_error>(oss.str());
     }
 
+
     /// <summary>
     /// Finalizes an instance of the <see cref="SChannelCredWrapper"/> class.
     /// </summary>
@@ -441,6 +459,7 @@ namespace rpc
         CertFreeCertificateContext(m_credStructure.paCred[0]);
         delete m_credStructure.paCred;
     }
+
 
     /////////////////////////
     // Error Helpers
@@ -656,6 +675,7 @@ namespace rpc
         RpcCodeLabelKVPair(761, "OSF_BINDING_HANDLE__NegotiateTransferSynta10")
     };
 
+
     /// <summary>
     /// Gets the label for a component, given its code
     /// coming from extended RPC error information.
@@ -670,6 +690,7 @@ namespace rpc
 
         return componentMap[code];
     }
+
 
     /// <summary>
     /// Gets the label for a detection location, given its code
@@ -695,9 +716,10 @@ namespace rpc
             return "???"; // code unknown or out-of-range
     }
 
+
     /* Wraps 'DceErrorInqTextW' in order to make it return pretty text
-    for the provided error code, but does not recursively generates
-    messages for possible failures during this process. */
+       for the provided error code, but does not recursively generates
+       messages for possible failures during this process. */
     static string GetFirstLevelRpcErrorText(
         RPC_STATUS errCode,
         std::wstring_convert<std::codecvt_utf8<wchar_t>> &transcoder,
@@ -716,6 +738,7 @@ namespace rpc
 
         return transcoder.to_bytes(errorMessage);
     }
+
 
     /// <summary>
     /// Creates an exception given the information from parameters.
@@ -800,9 +823,11 @@ namespace rpc
                 if ((errInfoEntry.Flags & EEInfoPreviousRecordsMissing) != 0)
                     oss << "$ *** missing record(s) ***";
 
-                oss << "$ host " << (errInfoEntry.ComputerName != nullptr)
-                                    ? transcoder.to_bytes(errInfoEntry.ComputerName)
-                                    : "---";
+                oss << "$ host " << (
+                    errInfoEntry.ComputerName != nullptr
+                        ? transcoder.to_bytes(errInfoEntry.ComputerName)
+                        : "---"
+                );
 
                 oss << " / PID #" << errInfoEntry.ProcessID;
 
@@ -815,8 +840,8 @@ namespace rpc
                     << errInfoEntry.u.SystemTime.wSecond << ')';
 
                 oss << " [com:" << GetComponentLabel(errInfoEntry.GeneratingComponent)
-                    << "/loc:" << GetDetectionLocationLabel(errInfoEntry.DetectionLocation)
-                    << "/status=" << errInfoEntry.Status << ']';
+                    << "; loc:" << GetDetectionLocationLabel(errInfoEntry.DetectionLocation)
+                    << "; status=" << errInfoEntry.Status << ']';
 
                 oss << " { ";
 
@@ -887,7 +912,8 @@ namespace rpc
             return core::AppException<std::runtime_error>(oss.str());
         }
     }
-        
+
+
     /// <summary>
     /// Throws an exception for a RPC runtime error.
     /// </summary>
@@ -901,16 +927,16 @@ namespace rpc
         throw RpcErrorHelper::CreateException(status, message, "");
     }
 
+
     /// <summary>
     /// Throws an exception for a RPC error.
     /// </summary>
     /// <param name="status">The status returned by the RPC API.</param>
     /// <param name="message">The main message for the error.</param>
     /// <param name="details">The details for the error.</param>
-    void ThrowIfError(
-        RPC_STATUS status,
-        const char *message,
-        const string &details)
+    void ThrowIfError(RPC_STATUS status,
+                      const char *message,
+                      const string &details)
     {
         if (status == RPC_S_OK)
             return;
@@ -918,16 +944,16 @@ namespace rpc
         throw RpcErrorHelper::CreateException(status, message, details);
     }
 
+
     /// <summary>
     /// Logs a RPC error.
     /// </summary>
     /// <param name="status">The status returned by the RPC API.</param>
     /// <param name="message">The main message for the error.</param>
     /// <param name="prio">The priority for event to be logged.</param>
-    void LogIfError(
-        RPC_STATUS status,
-        const char *message,
-        core::Logger::Priority prio) noexcept
+    void LogIfError(RPC_STATUS status,
+                    const char *message,
+                    core::Logger::Priority prio) NOEXCEPT
     {
         if (status == RPC_S_OK)
             return;
@@ -936,6 +962,7 @@ namespace rpc
         core::Logger::Write(ex, prio);
     }
 
+
     /// <summary>
     /// Logs a RPC error.
     /// </summary>
@@ -943,11 +970,10 @@ namespace rpc
     /// <param name="message">The main message for the error.</param>
     /// <param name="details">The details for the error.</param>
     /// <param name="prio">The priority for event to be logged.</param>
-    void LogIfError(
-        RPC_STATUS status,
-        const char *message,
-        const string &details,
-        core::Logger::Priority prio) noexcept
+    void LogIfError(RPC_STATUS status,
+                    const char *message,
+                    const string &details,
+                    core::Logger::Priority prio) NOEXCEPT
     {
         if (status == RPC_S_OK)
             return;

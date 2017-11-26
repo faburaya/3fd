@@ -155,7 +155,7 @@ int main(int argc, const char *argv[])
     using namespace std::chrono;
     using namespace _3fd::core;
 
-    FrameworkInstance frameworkInstance(RO_INIT_MULTITHREADED);
+    FrameworkInstance frameworkInstance(FrameworkInstance::ComMultiThreaded);
 
     CALL_STACK_TRACE;
 

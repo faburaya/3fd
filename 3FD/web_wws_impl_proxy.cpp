@@ -1,10 +1,17 @@
 #include "stdafx.h"
 #include "web_wws_impl_proxy.h"
-
+#include "configuration.h"
 #include "callstacktracer.h"
 #include "logger.h"
+#include "utils_io.h"
+
+#define format utils::FormatArg
+
+#include <cstdlib>
 #include <codecvt>
 #include <sstream>
+#include <thread>
+#include <ctime>
 
 namespace _3fd
 {
@@ -13,6 +20,39 @@ namespace web
 namespace wws
 {
     using namespace _3fd::core;
+
+
+    /// <summary>
+    /// Enumerates the possible recommended measures when a service operation fails.
+    /// </summary>
+    enum class OpErrRecommendedAction { RetryBackoff, Reconnect, Quit };
+
+
+    /// <summary>
+    /// Gets the recommended action for a given error code returned by WWS API.
+    /// </summary>
+    /// <param name="hr">The error code.</param>
+    /// <returns>The recommended action.</returns>
+    static OpErrRecommendedAction GetRecommendation(HRESULT hr)
+    {
+        switch (hr)
+        {
+        case E_OUTOFMEMORY:
+        case WS_E_ENDPOINT_NOT_AVAILABLE:
+        case WS_E_ENDPOINT_TOO_BUSY:
+        case WS_E_OPERATION_TIMED_OUT:
+        case WS_E_QUOTA_EXCEEDED:
+            return OpErrRecommendedAction::RetryBackoff; // retry with exponential back-off
+
+        case WS_E_ENDPOINT_DISCONNECTED:
+        case WS_E_ENDPOINT_NOT_FOUND:
+        case WS_E_ENDPOINT_UNREACHABLE:
+            return OpErrRecommendedAction::Reconnect; // reconnect and try again
+
+        default:
+            return OpErrRecommendedAction::Quit; // not fit for another attempt, just quit
+        }
+    }
 
 
 	// Prepare the service proxy properties from the provided configuration
@@ -100,6 +140,7 @@ namespace wws
 		CallbackWrapperCreateServiceProxy callback)
     try : 
         m_wsSvcProxyHandle(nullptr),
+        m_isOnHold(false),
 		m_heap(config.reservedMemory),
         m_proxyStateMutex()
     {
@@ -451,34 +492,6 @@ namespace wws
     }
 
 
-	/// <summary>
-	/// Creates an object that keeps track of an asynchronous operation.
-	/// </summary>
-	/// <param name="heapSize">
-	/// Size of the heap (in bytes) to provide memory for an asynchronous call in this proxy.
-	/// </param>
-	/// <returns>A <see cref="WSAsyncOper"/> object.</returns>
-	WSAsyncOper WebServiceProxyImpl::CreateAsyncOperation(size_t heapSize)
-	{
-		auto promise = new std::promise<HRESULT>();
-		m_promises.push_back(promise);
-		return WSAsyncOper(heapSize, promise);
-	}
-
-
-    /// <summary>
-    /// Creates an object that keeps track of an asynchronous operation.
-    /// </summary>
-    /// <param name="heapSize">
-    /// Size of the heap (in bytes) to provide memory for an asynchronous call in this proxy.
-    /// </param>
-    /// <returns>A <see cref="WSAsyncOper"/> object.</returns>
-    WSAsyncOper WebServiceProxy::CreateAsyncOperation(size_t heapSize)
-    {
-        return m_pimpl->CreateAsyncOperation(heapSize);
-    }
-
-
     /// <summary>
     /// Gets the handle for this web service proxy.
     /// </summary>
@@ -491,8 +504,11 @@ namespace wws
 
 	/// <summary>
 	/// Opens the service proxy before it can start sending requests.
+    /// If the proxy was already opened, nothing is done. In case of
+    /// failure, retry logic is applied before throwing an exception.
 	/// </summary>
-	void WebServiceProxyImpl::Open()
+    /// <returns>Whether the service proxy was closed or at fault, and the call had to open it.</returns>
+	bool WebServiceProxyImpl::Open()
     {
         CALL_STACK_TRACE;
 
@@ -505,19 +521,102 @@ namespace wws
             as WS_SERVICE_PROXY_STATE_OPENING or WS_SERVICE_PROXY_STATE_CLOSING. */
             std::lock_guard<std::mutex> lock(m_proxyStateMutex);
 
+            WSError err;
+            HRESULT hr;
+
+            // Ask for the proxy current state:
+            WS_SERVICE_PROXY_STATE state;
+            hr = WsGetServiceProxyProperty(
+                m_wsSvcProxyHandle,
+                WS_PROXY_PROPERTY_STATE,
+                &state,
+                sizeof state,
+                err.GetHandle()
+            );
+            err.RaiseExceptionApiError(hr, "WsGetServiceProxyProperty",
+                "Failed to get state of proxy for web service");
+
+            if (state == WS_SERVICE_PROXY_STATE_OPEN)
+                return false;
+
 			WS_ENDPOINT_ADDRESS endpointAddress = { 0 };
 			endpointAddress.url.chars = const_cast<wchar_t *> (m_svcEndptAddr.data());
 			endpointAddress.url.length = m_svcEndptAddr.length();
 
-            WSError err;
-            auto hr = WsOpenServiceProxy(
-                m_wsSvcProxyHandle,
-                &endpointAddress,
-                nullptr,
-                err.GetHandle()
-            );
+            static const auto maxRetries = AppConfig::GetSettings().framework.wws.proxyConnMaxRetries;
+
+            int count(0);
+
+            clock_t startTime = clock();
+
+            while (true)
+            {
+                hr = WsOpenServiceProxy(
+                    m_wsSvcProxyHandle,
+                    &endpointAddress,
+                    nullptr,
+                    err.GetHandle()
+                );
+
+                if (hr == S_OK)
+                    return true;
+
+                OpErrRecommendedAction ra = GetRecommendation(hr);
+
+                if (count == maxRetries || ra == OpErrRecommendedAction::Quit)
+                    break;
+
+                if (count == 0)
+                {
+                    std::array<char, 512> message;
+                    utils::SerializeTo(message,
+                        "Failed to open proxy for web service at '", m_svcEndptAddr,
+                        "': will re-attempt up to ", maxRetries, " time(s)");
+
+                    Logger::Write(message.data(), Logger::PRIO_WARNING);
+                }
+
+                static const auto retryTimeSlotMs = AppConfig::GetSettings().framework.wws.proxyRetryTimeSlotMs;
+                static const auto retrySleepTimeSecs = AppConfig::GetSettings().framework.wws.proxyRetrySleepSecs;
+
+                uint64_t intervalMs;
+
+                if (ra == OpErrRecommendedAction::Reconnect)
+                {
+                    // connectivity related problems cause attempts with constant interval
+                    intervalMs = 1000UL * retrySleepTimeSecs;
+                }
+                else
+                {
+                    // resource related problems cause attempts with intervals in exponential back-off
+                    intervalMs = static_cast<uint32_t> (rand() * (pow(2, count) - 1) / RAND_MAX) * retryTimeSlotMs;
+                }
+
+                std::this_thread::sleep_for(
+                    std::chrono::milliseconds(intervalMs)
+                );
+
+                ++count;
+
+            }// end of loop
+            
             err.RaiseExceptionApiError(hr, "WsOpenServiceProxy",
                 "Failed to open proxy for web service");
+
+            if (count > 0)
+            {
+                auto elapsed = static_cast<double> (clock() - startTime) / CLOCKS_PER_SEC;
+
+                std::array<char, 512> message;
+                utils::SerializeTo(message,
+                    "Proxy for web service at '", m_svcEndptAddr,
+                    "' successfully opened after ", count, " attempt(s) within ",
+                    format(elapsed).precision(3), " second(s)");
+
+                Logger::Write(message.data(), Logger::PRIO_NOTICE);
+            }
+
+            return true;
         }
         catch (IAppException &)
         {
@@ -542,13 +641,17 @@ namespace wws
 
     /// <summary>
     /// Opens the service proxy before it can start sending requests.
+    /// If the proxy was already opened, nothing is done. In case of
+    /// failure, retry logic is applied before throwing an exception.
     /// </summary>
-    void WebServiceProxy::Open()
+    /// <returns>Whether the service proxy was closed or at fault, and the call had to open it.</returns>
+    bool WebServiceProxy::Open()
     {
-        m_pimpl->Open();
+        return m_pimpl->Open();
     }
 
 
+    // Helps closing the proxy
 	static void HelpCloseServiceProxy(WS_SERVICE_PROXY *wsSvcProxyHandle, WSError &err)
 	{
 		auto hr = WsCloseServiceProxy(wsSvcProxyHandle, nullptr, err.GetHandle());
@@ -736,6 +839,151 @@ namespace wws
     {
         return m_pimpl->Abort();
     }
+
+
+    /// <summary>
+    /// Wraps a call to the proxy implementation (generated by wsutil.exe) of a service
+    /// operation, taking responsibility for memory allocation and error handling.
+    /// </summary>
+    /// <param name="operLabel">A label for the service operation.</param>
+    /// <param name="operHeapSize">Size of the heap dedicated for the operation and its error handling.</param>
+    /// <param name="operWrap">A wrap around the proxy implementation for the service operation.</param>
+    void WebServiceProxyImpl::Call(const char *operLabel,
+                                   size_t operHeapSize,
+                                   const WsCallWrap &operWrap)
+    {
+        CALL_STACK_TRACE;
+
+        std::array<char, 256> errMsgBuffer;
+
+        static const auto maxRetries = AppConfig::GetSettings().framework.wws.proxyCallMaxRetries;
+
+        WSHeap heap(operHeapSize);
+        WSError err;
+        HRESULT hr;
+        int count;
+
+        clock_t startTime = clock();
+
+        for (count = 0; true; ++count)
+        {
+            hr = operWrap(GetHandle(), heap.GetHandle(), err.GetHandle());
+
+            if (hr == S_OK)
+            {
+                m_isOnHold.store(false);
+                return;
+            }
+
+            OpErrRecommendedAction ra = GetRecommendation(hr);
+
+            if (count == maxRetries || ra == OpErrRecommendedAction::Quit)
+                break;
+
+            if (!m_isOnHold.exchange(true))
+            {
+                utils::SerializeTo(errMsgBuffer,
+                    "Failed call to operation in web service at '", m_svcEndptAddr,
+                    "', but the proxy will retry up to ", maxRetries, " time(s)");
+
+                Logger::Write(errMsgBuffer.data(), Logger::PRIO_WARNING);
+            }
+
+            static const auto retryTimeSlotMs = AppConfig::GetSettings().framework.wws.proxyRetryTimeSlotMs;
+            static const auto retrySleepTimeSecs = AppConfig::GetSettings().framework.wws.proxyRetrySleepSecs;
+
+            uint64_t intervalMs;
+
+            if (ra == OpErrRecommendedAction::RetryBackoff)
+            {
+                // resource related problems cause attempts with intervals in exponential back-off
+                intervalMs = static_cast<uint32_t> (rand() * (pow(2, count) - 1) / RAND_MAX) * retryTimeSlotMs;
+                std::this_thread::sleep_for(std::chrono::milliseconds(intervalMs));
+            }
+            else if (Open()/* managed to re-open proxy? */)
+            {
+                utils::SerializeTo(errMsgBuffer, "Proxy for web service at '", m_svcEndptAddr, "' was re-opened after loss of connection");
+                Logger::Write(errMsgBuffer.data(), Logger::PRIO_NOTICE);
+            }
+            else // proxy was already opened?
+            {
+                // connectivity related problems cause attempts with constant interval:
+                intervalMs = 1000UL * retrySleepTimeSecs;
+                std::this_thread::sleep_for(std::chrono::milliseconds(intervalMs));
+            }
+        }
+
+        if (count > 0)
+        {
+            auto elapsed = static_cast<double> (clock() - startTime) / CLOCKS_PER_SEC;
+
+            utils::SerializeTo(errMsgBuffer,
+                operLabel, " failed after ", count, " attempt(s) in ",
+                format(elapsed).precision(3), " second(s)");
+        }
+        else
+            utils::SerializeTo(errMsgBuffer, operLabel, " returned an error");
+
+        err.RaiseExClientNotOK(hr, errMsgBuffer.data(), heap);
+    }
+
+
+    /// <summary>
+    /// Wraps a call to the proxy implementation (generated by wsutil.exe) of a service
+    /// operation, taking responsibility for memory allocation and error handling.
+    /// In cases of error due to exhaustion of resources or loss of connection, a
+    /// retry logic is used before throwing an exception.
+    /// </summary>
+    /// <param name="operLabel">A label for the service operation.</param>
+    /// <param name="operHeapSize">Size of the heap dedicated for the operation and its error handling.</param>
+    /// <param name="operWrap">A wrap around the proxy implementation for the service operation.</param>
+    void WebServiceProxy::Call(const char *operLabel,
+                               size_t operHeapSize,
+                               const WsCallWrap &operWrap)
+    {
+        m_pimpl->Call(operLabel, operHeapSize, operWrap);
+    }
+
+
+    /// <summary>
+    /// Wraps a call to the proxy implementation (generated by wsutil.exe) of
+    /// a service operation, starting it asynchronously and taking responsibility
+    /// for memory allocation and error handling.
+    /// In cases of error due to exhaustion of resources or loss of connection, a
+    /// retry logic is used before throwing an exception.
+    /// </summary>
+    /// <param name="operLabel">A label for the service operation.</param>
+    /// <param name="operHeapSize">Size of the heap dedicated for the operation and its error handling.</param>
+    /// <param name="operWrap">A wrap around the proxy implementation for the service operation.</param>
+    /// <returns>A <see cref="std::future&lt;void&gt;"/> object to await for operation completion.</returns>
+    std::future<void> WebServiceProxy::CallAsync(const char *operLabel,
+                                                 size_t operHeapSize,
+                                                 const WsCallWrap &operWrap)
+    {
+        CALL_STACK_TRACE;
+
+        try
+        {
+            return std::async(std::launch::async,
+                [this](const char *operLabel, size_t operHeapSize, const WsCallWrap &operWrap)
+                {
+                    m_pimpl->Call(operLabel, operHeapSize, operWrap);
+                },
+                operLabel,
+                operHeapSize,
+                operWrap
+            );
+        }
+        catch (std::system_error &ex)
+        {
+            std::ostringstream oss;
+            oss << operLabel << " failed to be launched asynchronously"
+                << StdLibExt::GetDetailsFromSystemError(ex);
+
+            throw AppException<std::runtime_error>(oss.str());
+        }
+    }
+
 
 }// namespace wws
 }// namespace web

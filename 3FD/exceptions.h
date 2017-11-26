@@ -150,15 +150,28 @@ namespace core
 #		endif
 		}
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AppException{StdExType}"/>
+        /// class using copy semantics.
+        /// </summary>
+        /// <param name="ob">The object whose resources will be copied.</param>
+        AppException(const AppException &ob)
+            : StdExType(ob)
+            , m_details(ob.m_details)
+            , m_cst(ob.m_cst)
+            , m_innerEx(ob.m_innerEx)
+        {
+        }
+
 		/// <summary>
 		/// Initializes a new instance of the <see cref="AppException{StdExType}"/>
 		/// class using move semantics.
 		/// </summary>
 		/// <param name="ob">The object whose resources will be stolen.</param>
-		AppException(AppException &&ob) :
-			StdExType(std::move(ob.what())),
-			m_details(std::move(ob.m_details)),
-			m_cst(std::move(ob.m_cst))
+		AppException(AppException &&ob)
+            : StdExType(std::move(ob))
+			, m_details(std::move(ob.m_details))
+			, m_cst(std::move(ob.m_cst))
 		{
 			m_innerEx.swap(ob.m_innerEx);
 		}
