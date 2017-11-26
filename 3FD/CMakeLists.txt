@@ -78,5 +78,5 @@ add_library(3FD STATIC
 
 install(
     TARGETS 3FD
-    DESTINATION "${PROJECT_SOURCE_DIR}/../build/bin"
+    DESTINATION "${PROJECT_SOURCE_DIR}/../build/lib"
 )

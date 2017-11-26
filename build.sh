@@ -3,7 +3,7 @@
 { ls build || printf 'Run configure.sh first!'; } &> /dev/null
 
 cd gtest
-make install
+make
 cd ../3FD
 make install
 cd ../UnitTests

@@ -69,7 +69,7 @@ endif()
 # Place the configuration file along with the executable:
 add_custom_command(
    OUTPUT IntegrationTests.3fd.config
-   COMMAND cp ${PROJECT_SOURCE_DIR}/application.config ${CMAKE_CURRENT_BINARY_DIR}/IntegrationTests.3fd.config
+   COMMAND cp ${PROJECT_SOURCE_DIR}/application.config ${PROJECT_SOURCE_DIR}/../build/bin/IntegrationTests.3fd.config
    DEPENDS ${PROJECT_SOURCE_DIR}/application.config
 )
 

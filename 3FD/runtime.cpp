@@ -5,14 +5,16 @@
 #include "logger.h"
 #include "gc.h"
 
-#ifdef _USING_V110_SDK71_
-#   include <ObjBase.h>
-#else
-#   include <roapi.h>
+#ifdef _WIN32
+#    ifdef _USING_V110_SDK71_
+#        include <ObjBase.h>
+#    else
+#        include <roapi.h>
+#    endif
 #endif
 
 #ifdef _3FD_PLATFORM_WINRT
-#	include "sqlite3.h"
+#    include "sqlite3.h"
 #endif
 
 #include <codecvt>

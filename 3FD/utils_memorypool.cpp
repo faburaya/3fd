@@ -3,6 +3,7 @@
 #include "exceptions.h"
 
 #include <sstream>
+#include <cstring>
 #include <cassert>
 
 namespace _3fd

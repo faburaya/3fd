@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <cinttypes>
 #include <cstdio>
+#include <cstring>
 #include <sstream>
 #include <string>
 #include <array>

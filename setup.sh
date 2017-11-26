@@ -8,8 +8,7 @@ AMAZON=$(cat /etc/issue | grep -i "amazon linux ami release" | awk -F" " '{print
 #
 
 if [ -n "$UBUNTU" ] && [ $UBUNTU -gt 14 ]; then
-    apt install -y clang
-    apt install -y cmake
+    apt install -y clang cmake unixodbc unixodbc-dev openssl libssl-dev
 
 elif [ -n "$AMAZON" ] && [ $AMAZON -gt 2017 ]; then
     yum groups install -y development
@@ -58,12 +57,15 @@ rm "$boostLabel.tar.bz2"
 # INSTALL POCO
 #
 pocoLabel='poco-1.7.8p3'
-wget "https://pocoproject.org/releases/poco-1.7.8/$pocoLabel.tar.gz"
-tar -xf "$pocoLabel.tar.gz"
-cd $pocoLabel
-./configure --config=Linux-clang --static --no-tests --no-samples --prefix="/opt/$pocoLabel"
-make -s -j2
+pocoTarFile=$pocoLabel"-all.tar.gz"
+pocoXDir=$pocoLabel"-all"
+wget "https://pocoproject.org/releases/poco-1.7.8/$pocoTarFile"
+tar -xf $pocoTarFile
+cd $pocoXDir
+./configure --omit=Data/MySQL,MongoDB,PageCompiler --config=Linux-clang --static --no-tests --no-samples --prefix="/opt/$pocoLabel"
+make -s -j2 || exit
 make install
 cd ..
-rm -rf $pocoLabel
-rm "$pocoLabel.tar.gz"
+rm -rf $pocoXDir
+rm $pocoTarFile
+

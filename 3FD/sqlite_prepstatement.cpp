@@ -4,6 +4,7 @@
 #include "exceptions.h"
 #include <cassert>
 #include <codecvt>
+#include <locale>
 #include <sstream>
 #include <algorithm>
 
