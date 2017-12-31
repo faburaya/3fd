@@ -179,23 +179,23 @@ namespace core
 
 #endif
 
-	/// <summary>
-	/// Finalizes an instance of the <see cref="FrameworkInstance"/> class.
-	/// </summary>
-	FrameworkInstance::~FrameworkInstance()
-	{
-		memory::GarbageCollector::Shutdown();
+    /// <summary>
+    /// Finalizes an instance of the <see cref="FrameworkInstance"/> class.
+    /// </summary>
+    FrameworkInstance::~FrameworkInstance()
+    {
+        memory::GarbageCollector::Shutdown();
 
 #ifdef _WIN32
         std::ostringstream oss;
         oss << "3FD was shutdown in " << m_moduleName;
 
-		Logger::Write(oss.str(), core::Logger::PRIO_DEBUG);
+        Logger::Write(oss.str(), core::Logger::PRIO_DEBUG);
 #endif
-		Logger::Shutdown();
+        Logger::Shutdown();
 
 #ifdef _3FD_PLATFORM_WINRT
-		sqlite3_free(sqlite3_temp_directory);
+        sqlite3_free(sqlite3_temp_directory);
 
 #elif defined _3FD_PLATFORM_WIN32API
         if (m_isComLibInitialized)
@@ -207,7 +207,7 @@ namespace core
 #   endif
         }
 #endif
-	}
+    }
 
 }// end of namespace core
 }// end of namespace _3fd

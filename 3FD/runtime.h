@@ -10,12 +10,12 @@ namespace _3fd
 {
 namespace core
 {
-	/// <summary>
-	/// An object to be allocated on the stack which is responsible for 
-	/// starting or stopping the framework instance for the current thread.
-	/// </summary>
-	class FrameworkInstance : notcopiable
-	{
+    /// <summary>
+    /// An object to be allocated on the stack which is responsible for 
+    /// starting or stopping the framework instance for the current thread.
+    /// </summary>
+    class FrameworkInstance : notcopiable
+    {
     private:
 
         std::string m_moduleName;
@@ -24,7 +24,7 @@ namespace core
         bool m_isComLibInitialized;
 #endif
         
-	public:
+    public:
 
 #ifdef _3FD_PLATFORM_WIN32API
 
@@ -37,8 +37,8 @@ namespace core
 
         FrameworkInstance(const char *thisComName = "UNKNOWN");
 #endif
-		~FrameworkInstance();
-	};
+        ~FrameworkInstance();
+    };
 
 }// end of namespace core
 }// end of namespace _3fd

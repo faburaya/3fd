@@ -9,6 +9,14 @@ AMAZON=$(cat /etc/issue | grep -i "amazon linux ami release" | awk -F" " '{print
 
 if [ -n "$UBUNTU" ] && [ $UBUNTU -gt 14 ]; then
     apt install -y clang cmake unixodbc unixodbc-dev openssl libssl-dev
+    curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
+    curl https://packages.microsoft.com/config/ubuntu/16.04/prod.list > /etc/apt/sources.list.d/mssql-release.list
+    apt-get update
+    ACCEPT_EULA=Y apt-get install msodbcsql
+    ACCEPT_EULA=Y apt-get install mssql-tools
+    echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bash_profile
+    echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
+    source ~/.bashrc
 
 elif [ -n "$AMAZON" ] && [ $AMAZON -gt 2017 ]; then
     yum groups install -y development
@@ -41,8 +49,8 @@ tar -xf "$boostLabel.tar.bz2"
 cd "$boostLabel/tools/build/"
 ./bootstrap.sh
 cd ../../
-./tools/build/b2 -j 2 variant=debug link=static threading=multi toolset=clang runtime-link=shared --layout=tagged
-./tools/build/b2 -j 2 variant=release link=static threading=multi toolset=clang runtime-link=shared --layout=tagged
+./tools/build/b2 -j 3 variant=debug link=static threading=multi toolset=clang runtime-link=shared --layout=tagged
+./tools/build/b2 -j 3 variant=release link=static threading=multi toolset=clang runtime-link=shared --layout=tagged
 BOOST_HOME="/opt/boost-$boostVersion"
 mkdir $BOOST_HOME
 mkdir $BOOST_HOME/include
@@ -63,7 +71,7 @@ wget "https://pocoproject.org/releases/poco-1.7.8/$pocoTarFile"
 tar -xf $pocoTarFile
 cd $pocoXDir
 ./configure --omit=Data/MySQL,MongoDB,PageCompiler --config=Linux-clang --static --no-tests --no-samples --prefix="/opt/$pocoLabel"
-make -s -j2 || exit
+make -s -j3 || exit
 make install
 cd ..
 rm -rf $pocoXDir

@@ -4,258 +4,258 @@
 
 namespace _3fd
 {
-	namespace memory
-	{
-		using core::AppConfig;
+    namespace memory
+    {
+        using core::AppConfig;
 
-		/// <summary>
-		/// Initializes a new instance of the <see cref="AddressesHashTable"/> class.
-		/// </summary>
-		AddressesHashTable::AddressesHashTable() :
-			m_elementsCount(0),
-			m_outHashSizeInBits(0)
-		{}
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AddressesHashTable"/> class.
+        /// </summary>
+        AddressesHashTable::AddressesHashTable() :
+            m_elementsCount(0),
+            m_outHashSizeInBits(0)
+        {}
 
-		/// <summary>
-		/// Hashes a key using the FNV1a algorithm modified for outputs smaller than 16 bits.
-		/// </summary>
-		/// <param name="key">The key.</param>
-		/// <returns>The hashed key.</returns>
-		size_t AddressesHashTable::Hash(void *key)
-		{
-			uint32_t hash = 2166136261; // use the FNV offset basis for 32 bits hashes
+        /// <summary>
+        /// Hashes a key using the FNV1a algorithm modified for outputs smaller than 16 bits.
+        /// </summary>
+        /// <param name="key">The key.</param>
+        /// <returns>The hashed key.</returns>
+        size_t AddressesHashTable::Hash(void *key)
+        {
+            uint32_t hash = 2166136261; // use the FNV offset basis for 32 bits hashes
 
-			for (int bitsToShift = ((sizeof key) - 1) * 8;
-				 bitsToShift >= 0;
-				 bitsToShift -= 8)
-			{
-				auto octet = (reinterpret_cast<uintptr_t> (key) >> bitsToShift) & 255;
-				hash ^= octet;
-				hash *= 16777619; // use the FNV prime for 32 bits hashes
-			}
+            for (int bitsToShift = ((sizeof key) - 1) * 8;
+                 bitsToShift >= 0;
+                 bitsToShift -= 8)
+            {
+                auto octet = (reinterpret_cast<uintptr_t> (key) >> bitsToShift) & 255;
+                hash ^= octet;
+                hash *= 16777619; // use the FNV prime for 32 bits hashes
+            }
 
-			return hash;
-		}
+            return hash;
+        }
 
-		/// <summary>
-		/// XOR-fold's a hash to adapt to the bucket array size.
-		/// </summary>
-		/// <param name="hash">The hash.</param>
-		/// <param name="outHashSizeInBits">The size of the returned hash in bits.</param>
-		/// <returns>The xor-folded hash.</returns>
-		size_t AddressesHashTable::XorFold(size_t hash, uint32_t outHashSizeInBits)
-		{
-			const uint32_t maskForLowerBits = (1UL << outHashSizeInBits) - 1;
-			return ((hash >> outHashSizeInBits) ^ hash) & maskForLowerBits;
-		}
+        /// <summary>
+        /// XOR-fold's a hash to adapt to the bucket array size.
+        /// </summary>
+        /// <param name="hash">The hash.</param>
+        /// <param name="outHashSizeInBits">The size of the returned hash in bits.</param>
+        /// <returns>The xor-folded hash.</returns>
+        size_t AddressesHashTable::XorFold(size_t hash, uint32_t outHashSizeInBits)
+        {
+            const uint32_t maskForLowerBits = (1UL << outHashSizeInBits) - 1;
+            return ((hash >> outHashSizeInBits) ^ hash) & maskForLowerBits;
+        }
 
-		/// <summary>
-		/// Expands the hash table to twice its size.
-		/// </summary>
-		void AddressesHashTable::ExpandTable()
-		{
-			if (m_bucketArray.empty() == false)
-			{
-				++m_outHashSizeInBits;
-				std::vector<Element> newArray(1 << m_outHashSizeInBits);
+        /// <summary>
+        /// Expands the hash table to twice its size.
+        /// </summary>
+        void AddressesHashTable::ExpandTable()
+        {
+            if (m_bucketArray.empty() == false)
+            {
+                ++m_outHashSizeInBits;
+                std::vector<Element> newArray(1 << m_outHashSizeInBits);
 
-				// Rehash the table to the new array:
-				for (auto &element : m_bucketArray)
-				{
-					if (element.GetSptrObjectAddr() != nullptr)
-					{
-						auto hashedKey = Hash(element.GetSptrObjectAddr());
-						auto idx = XorFold(hashedKey, m_outHashSizeInBits);
+                // Rehash the table to the new array:
+                for (auto &element : m_bucketArray)
+                {
+                    if (element.GetSptrObjectAddr() != nullptr)
+                    {
+                        auto hashedKey = Hash(element.GetSptrObjectAddr());
+                        auto idx = XorFold(hashedKey, m_outHashSizeInBits);
 
-						if (newArray[idx].GetSptrObjectAddr() == nullptr)
-							newArray[idx] = element;
-						else
-						{// Linear probe:
-							do
-							{
-								if (++idx < newArray.size())
-									continue;
-								else
-									idx = 0;
-							}
-							while (newArray[idx].GetSptrObjectAddr() != nullptr);
+                        if (newArray[idx].GetSptrObjectAddr() == nullptr)
+                            newArray[idx] = element;
+                        else
+                        {// Linear probe:
+                            do
+                            {
+                                if (++idx < newArray.size())
+                                    continue;
+                                else
+                                    idx = 0;
+                            }
+                            while (newArray[idx].GetSptrObjectAddr() != nullptr);
 
-							newArray[idx] = element;
-						}
-					}
-				}
+                            newArray[idx] = element;
+                        }
+                    }
+                }
 
-				m_bucketArray.swap(newArray);
-			}
-			else
-			{// Allocate the bucket array for the first time:
-				m_outHashSizeInBits = AppConfig::GetSettings().framework.gc.sptrObjectsHashTable.initialSizeLog2;
-				m_bucketArray.resize(1 << m_outHashSizeInBits);
-			}
-		}
+                m_bucketArray.swap(newArray);
+            }
+            else
+            {// Allocate the bucket array for the first time:
+                m_outHashSizeInBits = AppConfig::GetSettings().framework.gc.sptrObjectsHashTable.initialSizeLog2;
+                m_bucketArray.resize(1 << m_outHashSizeInBits);
+            }
+        }
 
-		/// <summary>
-		/// Shrinks the hash table to half its size.
-		/// </summary>
-		void AddressesHashTable::ShrinkTable()
-		{
-			--m_outHashSizeInBits;
-			const auto newSize = 1 << m_outHashSizeInBits;
-			_ASSERTE(newSize >= m_elementsCount); // Can only shrink the table if the new table can fit all currently stored elements
+        /// <summary>
+        /// Shrinks the hash table to half its size.
+        /// </summary>
+        void AddressesHashTable::ShrinkTable()
+        {
+            --m_outHashSizeInBits;
+            const auto newSize = 1 << m_outHashSizeInBits;
+            _ASSERTE(newSize >= m_elementsCount); // Can only shrink the table if the new table can fit all currently stored elements
 
-			std::vector<Element> newArray(newSize);
+            std::vector<Element> newArray(newSize);
 
-			// Rehash the table to the new array:
-			for (auto &element : m_bucketArray)
-			{
-				if (element.GetSptrObjectAddr() == nullptr)
-					continue;
-				else
-				{
-					auto hashedKey = Hash(element.GetSptrObjectAddr());
-					auto idx = XorFold(hashedKey, m_outHashSizeInBits);
+            // Rehash the table to the new array:
+            for (auto &element : m_bucketArray)
+            {
+                if (element.GetSptrObjectAddr() == nullptr)
+                    continue;
+                else
+                {
+                    auto hashedKey = Hash(element.GetSptrObjectAddr());
+                    auto idx = XorFold(hashedKey, m_outHashSizeInBits);
 
-					if (newArray[idx].GetSptrObjectAddr() == nullptr)
-						newArray[idx] = element;
-					else
-					{// Linear probe:
-						do
-						{
-							if (++idx < newArray.size())
-								continue;
-							else
-								idx = 0;
-						} while (newArray[idx].GetSptrObjectAddr() != nullptr);
+                    if (newArray[idx].GetSptrObjectAddr() == nullptr)
+                        newArray[idx] = element;
+                    else
+                    {// Linear probe:
+                        do
+                        {
+                            if (++idx < newArray.size())
+                                continue;
+                            else
+                                idx = 0;
+                        } while (newArray[idx].GetSptrObjectAddr() != nullptr);
 
-						newArray[idx] = element;
-					}
-				}
-			}
+                        newArray[idx] = element;
+                    }
+                }
+            }
 
-			m_bucketArray.swap(newArray);
-		}
+            m_bucketArray.swap(newArray);
+        }
 
-		/// <summary>
-		/// Inserts a new entry in the hash table, placed according
-		/// the memory address of the <see cref="sptr" /> object.
-		/// </summary>
-		/// <param name="sptrObjectAddr">The <see cref="sptr" /> object address.</param>
-		/// <param name="pointedMemBlock">
-		/// The vertex representing the memory block pointed by this <see cref="sptr" /> object.
-		/// </param>
-		/// <param name="containerMemBlock">
-		/// The vertex representing the memory block that contains this <see cref="sptr" /> object.
-		/// </param>
-		/// <returns>
-		/// A view to the inserted element.
-		/// </returns>
-		AddressesHashTable::Element &
-		AddressesHashTable::Insert(void *sptrObjectAddr, Vertex *pointedMemBlock, Vertex *containerMemBlock)
-		{
-			if (CalculateLoadFactor() > AppConfig::GetSettings().framework.gc.sptrObjectsHashTable.loadFactorThreshold
-				|| m_bucketArray.empty())
-			{
-				ExpandTable();
-			}
+        /// <summary>
+        /// Inserts a new entry in the hash table, placed according
+        /// the memory address of the <see cref="sptr" /> object.
+        /// </summary>
+        /// <param name="sptrObjectAddr">The <see cref="sptr" /> object address.</param>
+        /// <param name="pointedMemBlock">
+        /// The vertex representing the memory block pointed by this <see cref="sptr" /> object.
+        /// </param>
+        /// <param name="containerMemBlock">
+        /// The vertex representing the memory block that contains this <see cref="sptr" /> object.
+        /// </param>
+        /// <returns>
+        /// A view to the inserted element.
+        /// </returns>
+        AddressesHashTable::Element &
+        AddressesHashTable::Insert(void *sptrObjectAddr, Vertex *pointedMemBlock, Vertex *containerMemBlock)
+        {
+            if (CalculateLoadFactor() > AppConfig::GetSettings().framework.gc.sptrObjectsHashTable.loadFactorThreshold
+                || m_bucketArray.empty())
+            {
+                ExpandTable();
+            }
 
-			auto hashedKey = Hash(sptrObjectAddr);
-			auto idx = XorFold(hashedKey, m_outHashSizeInBits);
+            auto hashedKey = Hash(sptrObjectAddr);
+            auto idx = XorFold(hashedKey, m_outHashSizeInBits);
 
-			/* The code below could be simplified, but it will be kept this way so as to prevent
-			misprediction of instructions. However, that should not be a concern if the compiler
-			in use will apply PGO.*/
+            /* The code below could be simplified, but it will be kept this way so as to prevent
+            misprediction of instructions. However, that should not be a concern if the compiler
+            in use will apply PGO.*/
 
-			if (m_bucketArray[idx].GetSptrObjectAddr() == nullptr)
-			{
-				++m_elementsCount;
-				return m_bucketArray[idx] = Element(sptrObjectAddr, pointedMemBlock, containerMemBlock);
-			}
-			else // Linear probe:
-			{
-				auto &element = m_bucketArray[idx];
-				auto displacedElement = element;
+            if (m_bucketArray[idx].GetSptrObjectAddr() == nullptr)
+            {
+                ++m_elementsCount;
+                return m_bucketArray[idx] = Element(sptrObjectAddr, pointedMemBlock, containerMemBlock);
+            }
+            else // Linear probe:
+            {
+                auto &element = m_bucketArray[idx];
+                auto displacedElement = element;
 
-				// Place the new element in the first hashed index
-				element = Element(sptrObjectAddr, pointedMemBlock, containerMemBlock);
-				++m_elementsCount;
+                // Place the new element in the first hashed index
+                element = Element(sptrObjectAddr, pointedMemBlock, containerMemBlock);
+                ++m_elementsCount;
 
-				// And move the displaced element to the first vacant position:
-				do
-				{
-					if (++idx < m_bucketArray.size())
-						continue;
-					else
-						idx = 0;
-				} while (m_bucketArray[idx].GetSptrObjectAddr() != nullptr);
+                // And move the displaced element to the first vacant position:
+                do
+                {
+                    if (++idx < m_bucketArray.size())
+                        continue;
+                    else
+                        idx = 0;
+                } while (m_bucketArray[idx].GetSptrObjectAddr() != nullptr);
 
-				m_bucketArray[idx] = displacedElement;
+                m_bucketArray[idx] = displacedElement;
 
-				// Return a reference inserted element:
-				return element;
-			}
-		}
+                // Return a reference inserted element:
+                return element;
+            }
+        }
 
-		/// <summary>
-		/// Looks up for the specified <see cref="sptr" /> object address.
-		/// </summary>
-		/// <param name="sptrObjectAddr">The <see cref="sptr" /> object address.</param>
-		/// <returns>
-		/// The <see cref="Element" /> object corresponding to the <see cref="sptr" /> object address.
-		/// </returns>
-		AddressesHashTable::Element &
-		AddressesHashTable::Lookup(void *sptrObjectAddr)
-		{
-			auto hashedKey = Hash(sptrObjectAddr);
-			auto idx = XorFold(hashedKey, m_outHashSizeInBits);
+        /// <summary>
+        /// Looks up for the specified <see cref="sptr" /> object address.
+        /// </summary>
+        /// <param name="sptrObjectAddr">The <see cref="sptr" /> object address.</param>
+        /// <returns>
+        /// The <see cref="Element" /> object corresponding to the <see cref="sptr" /> object address.
+        /// </returns>
+        AddressesHashTable::Element &
+        AddressesHashTable::Lookup(void *sptrObjectAddr)
+        {
+            auto hashedKey = Hash(sptrObjectAddr);
+            auto idx = XorFold(hashedKey, m_outHashSizeInBits);
 
-			if (m_bucketArray[idx].GetSptrObjectAddr() == sptrObjectAddr)
-				return m_bucketArray[idx];
-			else
-			{// Linear probe:
-				do
-				{
-					if (++idx < m_bucketArray.size())
-						continue;
-					else
-						idx = 0;
-				} while (m_bucketArray[idx].GetSptrObjectAddr() != sptrObjectAddr);
+            if (m_bucketArray[idx].GetSptrObjectAddr() == sptrObjectAddr)
+                return m_bucketArray[idx];
+            else
+            {// Linear probe:
+                do
+                {
+                    if (++idx < m_bucketArray.size())
+                        continue;
+                    else
+                        idx = 0;
+                } while (m_bucketArray[idx].GetSptrObjectAddr() != sptrObjectAddr);
 
-				return m_bucketArray[idx];
-			}
-		}
+                return m_bucketArray[idx];
+            }
+        }
 
-		/// <summary>
-		/// Removes an element given a reference to it.
-		/// </summary>
-		/// <param name="element">A reference to the element remove.</param>
-		void AddressesHashTable::Remove(Element &element)
-		{
-			// element reference must at least belong to the array of buckets:
-			_ASSERTE(m_elementsCount > 0
-					 && &element >= &m_bucketArray[0]
-					 && &element < &m_bucketArray[0] + m_bucketArray.size());
+        /// <summary>
+        /// Removes an element given a reference to it.
+        /// </summary>
+        /// <param name="element">A reference to the element remove.</param>
+        void AddressesHashTable::Remove(Element &element)
+        {
+            // element reference must at least belong to the array of buckets:
+            _ASSERTE(m_elementsCount > 0
+                     && &element >= &m_bucketArray[0]
+                     && &element < &m_bucketArray[0] + m_bucketArray.size());
 
-			element = Element();
-			--m_elementsCount;
+            element = Element();
+            --m_elementsCount;
 
-			if (m_outHashSizeInBits > AppConfig::GetSettings().framework.gc.sptrObjectsHashTable.initialSizeLog2
-				&& CalculateLoadFactor() < AppConfig::GetSettings().framework.gc.sptrObjectsHashTable.loadFactorThreshold / 3)
-			{
-				ShrinkTable();
-			}
-		}
+            if (m_outHashSizeInBits > AppConfig::GetSettings().framework.gc.sptrObjectsHashTable.initialSizeLog2
+                && CalculateLoadFactor() < AppConfig::GetSettings().framework.gc.sptrObjectsHashTable.loadFactorThreshold / 3)
+            {
+                ShrinkTable();
+            }
+        }
 
-		/// <summary>
-		/// Removes the element corresponding to a <see cref="sptr" /> object address.
-		/// </summary>
-		/// <param name="sptrObjectAddr">
-		/// The specified <see cref="sptr"/> object address.
-		/// </param>
-		void AddressesHashTable::Remove(void *sptrObjectAddr)
-		{
-			auto &element = Lookup(sptrObjectAddr);
-			Remove(element);
-		}
+        /// <summary>
+        /// Removes the element corresponding to a <see cref="sptr" /> object address.
+        /// </summary>
+        /// <param name="sptrObjectAddr">
+        /// The specified <see cref="sptr"/> object address.
+        /// </param>
+        void AddressesHashTable::Remove(void *sptrObjectAddr)
+        {
+            auto &element = Lookup(sptrObjectAddr);
+            Remove(element);
+        }
 
-	}// end of namespace memory
+    }// end of namespace memory
 }// end of namespace _3fd

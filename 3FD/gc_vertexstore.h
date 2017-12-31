@@ -9,46 +9,46 @@
 
 namespace _3fd
 {
-	namespace memory
-	{
-		/// <summary>
-		/// Represents a store of vertices allocated from a pool.
-		/// The vertices represent memory blocks.
-		/// </summary>
-		class VertexStore : notcopiable
-		{
-		private:
+namespace memory
+{
+    /// <summary>
+    /// Represents a store of vertices allocated from a pool.
+    /// The vertices represent memory blocks.
+    /// </summary>
+    class VertexStore : notcopiable
+    {
+    private:
 
-			utils::DynamicMemPool m_memBlocksPool;
+        utils::DynamicMemPool m_memBlocksPool;
 
-			// Compared to a binary tree, a B+Tree can render better cache efficiency
-			typedef stx::btree_set<MemAddrContainer *, LessOperOnVertexRepAddr> SetOfMemBlocks;
+        // Compared to a binary tree, a B+Tree can render better cache efficiency
+        typedef stx::btree_set<MemAddrContainer *, LessOperOnVertexRepAddr> SetOfMemBlocks;
 
-			/// <summary>
-			/// A sorted set of garbage collected pieces of memory,
-			/// ordered by the memory addresses of those pieces.
-			/// </summary>
-			/// <remarks>
-			/// Although a hash table could be faster, it is not sorted, hence cannot be used.
-			/// </remarks>
-			SetOfMemBlocks m_vertices;
+        /// <summary>
+        /// A sorted set of garbage collected pieces of memory,
+        /// ordered by the memory addresses of those pieces.
+        /// </summary>
+        /// <remarks>
+        /// Although a hash table could be faster, it is not sorted, hence cannot be used.
+        /// </remarks>
+        SetOfMemBlocks m_vertices;
 
-		public:
+    public:
 
-			VertexStore();
+        VertexStore();
 
-			void ShrinkPool();
+        void ShrinkPool();
 
-			void AddVertex(void *memAddr, size_t blockSize, FreeMemProc freeMemCallback);
+        void AddVertex(void *memAddr, size_t blockSize, FreeMemProc freeMemCallback);
 
-			void RemoveVertex(Vertex *memBlock);
+        void RemoveVertex(Vertex *memBlock);
 
-			Vertex *GetVertex(void *memAddr) const;
+        Vertex *GetVertex(void *memAddr) const;
 
-			Vertex *GetContainerVertex(void *addr) const;
-		};
+        Vertex *GetContainerVertex(void *addr) const;
+    };
 
-	}// end of namespace memory
+}// end of namespace memory
 }// end of namespace _3fd
 
 #endif // end of header guard

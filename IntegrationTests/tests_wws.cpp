@@ -12,14 +12,14 @@ namespace _3fd
 {
 namespace integration_tests
 {
-	using namespace core;
-	using namespace web::wws;
+    using namespace core;
+    using namespace web::wws;
 
-	void HandleException();
+    void HandleException();
 
-	/////////////////////////////
-	// Web service operations
-	/////////////////////////////
+    /////////////////////////////
+    // Web service operations
+    /////////////////////////////
 
     HRESULT CALLBACK AddImpl(
         _In_ const WS_OPERATION_CONTEXT *wsContextHandle,
@@ -408,31 +408,31 @@ namespace integration_tests
 
     std::chrono::milliseconds Framework_WWS_TestCase::maxTimeSpanForSvcCycle(0);
 
-	// Implementation for the operation "Add"
-	HRESULT CALLBACK AddImpl(
-		_In_ const WS_OPERATION_CONTEXT *wsContextHandle,
-		_In_ double first,
-		_In_ double second,
-		_Out_ double *result,
-		_In_ const WS_ASYNC_CONTEXT* asyncContext,
-		_In_ WS_ERROR *wsErrorHandle)
-	{
-		*result = first + second;
-		return S_OK;
-	}
+    // Implementation for the operation "Add"
+    HRESULT CALLBACK AddImpl(
+        _In_ const WS_OPERATION_CONTEXT *wsContextHandle,
+        _In_ double first,
+        _In_ double second,
+        _Out_ double *result,
+        _In_ const WS_ASYNC_CONTEXT* asyncContext,
+        _In_ WS_ERROR *wsErrorHandle)
+    {
+        *result = first + second;
+        return S_OK;
+    }
 
-	// Implementation for the operation "Multiply"
-	HRESULT CALLBACK MultiplyImpl(
-		_In_ const WS_OPERATION_CONTEXT *wsContextHandle,
-		_In_ double first,
-		_In_ double second,
-		_Out_ double *result,
-		_In_ const WS_ASYNC_CONTEXT *asyncContext,
-		_In_ WS_ERROR *wsErrorHandle)
-	{
-		*result = first * second;
-		return S_OK;
-	}
+    // Implementation for the operation "Multiply"
+    HRESULT CALLBACK MultiplyImpl(
+        _In_ const WS_OPERATION_CONTEXT *wsContextHandle,
+        _In_ double first,
+        _In_ double second,
+        _Out_ double *result,
+        _In_ const WS_ASYNC_CONTEXT *asyncContext,
+        _In_ WS_ERROR *wsErrorHandle)
+    {
+        *result = first * second;
+        return S_OK;
+    }
 
     // Implementation for the operation "CloseService"
     HRESULT CALLBACK CloseServiceImpl(
@@ -446,85 +446,85 @@ namespace integration_tests
         return S_OK;
     }
 
-	// Implementation that generates a SOAP fault
-	HRESULT CALLBACK Fail(
-		_In_ const WS_OPERATION_CONTEXT* wsContextHandle,
-		_In_ double first,
-		_In_ double second,
-		_Out_ double* result,
-		_In_ const WS_ASYNC_CONTEXT* asyncContext,
-		_In_ WS_ERROR* wsErrorHandle)
-	{
-		CALL_STACK_TRACE;
+    // Implementation that generates a SOAP fault
+    HRESULT CALLBACK Fail(
+        _In_ const WS_OPERATION_CONTEXT* wsContextHandle,
+        _In_ double first,
+        _In_ double second,
+        _Out_ double* result,
+        _In_ const WS_ASYNC_CONTEXT* asyncContext,
+        _In_ WS_ERROR* wsErrorHandle)
+    {
+        CALL_STACK_TRACE;
 
-		AppException<std::runtime_error> ex(
-			"Example of web service fault in operation",
-			"Dummy details for fake fault... this message is long on purpose "
-			"so as to test code responsible for reading SOAP fault details "
-			"in chunks from the buffer... "
-			"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum lacinia, "
-			"massa sed efficitur tempor, metus nisl aliquet diam, at lacinia odio est id "
-			"risus. Duis porta mi sit amet dui porta, in congue purus finibus. Mauris "
-			"feugiat justo id vehicula ullamcorper. Praesent cursus diam id ultrices "
-			"scelerisque. Cras tempor neque a augue interdum eleifend. Quisque sed ornare "
-			"lorem. Aenean in dictum augue. Duis condimentum maximus sem et suscipit."
-		);
+        AppException<std::runtime_error> ex(
+            "Example of web service fault in operation",
+            "Dummy details for fake fault... this message is long on purpose "
+            "so as to test code responsible for reading SOAP fault details "
+            "in chunks from the buffer... "
+            "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum lacinia, "
+            "massa sed efficitur tempor, metus nisl aliquet diam, at lacinia odio est id "
+            "risus. Duis porta mi sit amet dui porta, in congue purus finibus. Mauris "
+            "feugiat justo id vehicula ullamcorper. Praesent cursus diam id ultrices "
+            "scelerisque. Cras tempor neque a augue interdum eleifend. Quisque sed ornare "
+            "lorem. Aenean in dictum augue. Duis condimentum maximus sem et suscipit."
+        );
 
-		SetSoapFault(ex, "Whatever", wsContextHandle, wsErrorHandle);
-		return E_FAIL;
-	}
+        SetSoapFault(ex, "Whatever", wsContextHandle, wsErrorHandle);
+        return E_FAIL;
+    }
 
     /// <summary>
     /// Tests synchronous web service access without transport security.
     /// </summary>
-	TEST_F(Framework_WWS_TestCase, Host_TransportUnsecure_SyncTest)
-	{
+    TEST_F(Framework_WWS_TestCase, Host_TransportUnsecure_SyncTest)
+    {
         TestHostTransportUnsecure();
-	}
+    }
 
-	/// <summary>
-	/// Tests asynchronous web service access without transport security.
-	/// </summary>
-	TEST_F(Framework_WWS_TestCase, Host_TransportUnsecure_AsyncTest)
-	{
+    /// <summary>
+    /// Tests asynchronous web service access without transport security.
+    /// </summary>
+    TEST_F(Framework_WWS_TestCase, Host_TransportUnsecure_AsyncTest)
+    {
         TestHostTransportUnsecure();
-	}
+    }
     
-	/// <summary>
-	/// Tests synchronous web service access
-	/// with SSL over HTTP and no client certificate.
-	/// </summary>
-	TEST_F(Framework_WWS_TestCase, Host_TransportSSL_NoClientCert_SyncTest)
-	{
+    /// <summary>
+    /// Tests synchronous web service access
+    /// with SSL over HTTP and no client certificate.
+    /// </summary>
+    TEST_F(Framework_WWS_TestCase, Host_TransportSSL_NoClientCert_SyncTest)
+    {
         TestHostTransportSSL(false);
-	}
+    }
 
-	/// <summary>
-	/// Tests asynchronous web service access with
-	/// SSL over HTTP and no client certificate.
-	/// </summary>
-	TEST_F(Framework_WWS_TestCase, Host_TransportSSL_NoClientCert_AsyncTest)
-	{
+    /// <summary>
+    /// Tests asynchronous web service access with
+    /// SSL over HTTP and no client certificate.
+    /// </summary>
+    TEST_F(Framework_WWS_TestCase, Host_TransportSSL_NoClientCert_AsyncTest)
+    {
         TestHostTransportSSL(false);
-	}
+    }
     
-	/// <summary>
-	/// Tests synchronous web service access, with SSL over HTTP
-	/// and a client certificate.
-	/// </summary>
-	TEST_F(Framework_WWS_TestCase, Host_TransportSSL_WithClientCert_SyncTest)
-	{
+    /// <summary>
+    /// Tests synchronous web service access, with SSL over HTTP
+    /// and a client certificate.
+    /// </summary>
+    TEST_F(Framework_WWS_TestCase, Host_TransportSSL_WithClientCert_SyncTest)
+    {
         TestHostTransportSSL(true);
-	}
+    }
 
-	/// <summary>
-	/// Tests asynchronous web service access, with SSL over HTTP
-	/// and a client certificate.
-	/// </summary>
-	TEST_F(Framework_WWS_TestCase, Host_TransportSSL_WithClientCert_AsyncTest)
-	{
+    /// <summary>
+    /// Tests asynchronous web service access, with SSL over HTTP
+    /// and a client certificate.
+    /// </summary>
+    TEST_F(Framework_WWS_TestCase, Host_TransportSSL_WithClientCert_AsyncTest)
+    {
         TestHostTransportSSL(true);
-	}
+    }
 
     /// <summary>
     /// Tests synchronous web service access, with HTTP header
@@ -544,69 +544,69 @@ namespace integration_tests
         TestHostHttpHeaderAuthTransportSSL(true);
     }
 
-	/// <summary>
-	/// Tests SOAP fault transmission in web service synchronous access.
-	/// </summary>
-	TEST_F(Framework_WWS_TestCase, Host_SOAP_Fault_SyncTest)
-	{
+    /// <summary>
+    /// Tests SOAP fault transmission in web service synchronous access.
+    /// </summary>
+    TEST_F(Framework_WWS_TestCase, Host_SOAP_Fault_SyncTest)
+    {
         TestHostSoapFaultHandling(false);
-	}
+    }
 
-	/// <summary>
-	/// Tests SOAP fault transmission in web service asynchronous access.
-	/// </summary>
-	TEST_F(Framework_WWS_TestCase, Host_SOAP_Fault_AsyncTest)
-	{
+    /// <summary>
+    /// Tests SOAP fault transmission in web service asynchronous access.
+    /// </summary>
+    TEST_F(Framework_WWS_TestCase, Host_SOAP_Fault_AsyncTest)
+    {
         TestHostSoapFaultHandling(false);
-	}
+    }
 
-	/// <summary>
-	/// Tests web service metadata retrieval via WS-MetadataExchange.
-	/// </summary>
-	TEST(Framework_WWS_TestCase, DISABLED_Host_MexRequest_TransportUnsecure_Test)
-	{
-		// Ensures proper initialization/finalization of the framework
-		_3fd::core::FrameworkInstance _framework;
+    /// <summary>
+    /// Tests web service metadata retrieval via WS-MetadataExchange.
+    /// </summary>
+    TEST(Framework_WWS_TestCase, DISABLED_Host_MexRequest_TransportUnsecure_Test)
+    {
+        // Ensures proper initialization/finalization of the framework
+        _3fd::core::FrameworkInstance _framework;
 
-		CALL_STACK_TRACE;
+        CALL_STACK_TRACE;
 
-		try
-		{
-			// Function tables contains the implementations for the operations:
-			CalcBindingUnsecureFunctionTable funcTableSvcUnsecure = {
-				&AddImpl,
-				&MultiplyImpl,
+        try
+        {
+            // Function tables contains the implementations for the operations:
+            CalcBindingUnsecureFunctionTable funcTableSvcUnsecure = {
+                &AddImpl,
+                &MultiplyImpl,
                 &CloseServiceImpl
-			};
+            };
 
-			// Create the web service host with default configurations:
-			SvcEndpointsConfig hostCfg;
+            // Create the web service host with default configurations:
+            SvcEndpointsConfig hostCfg;
 
             ServiceBindings bindings;
 
-			/* Map the binding used for the unsecure endpoint to
-			the corresponding implementations: */
+            /* Map the binding used for the unsecure endpoint to
+            the corresponding implementations: */
             bindings.MapBinding(
-				"CalcBindingUnsecure",
+                "CalcBindingUnsecure",
                 &funcTableSvcUnsecure,
                 &CreateServiceEndpoint<WS_HTTP_BINDING_TEMPLATE, CalcBindingUnsecureFunctionTable, CalcBindingUnsecure_CreateServiceEndpoint>
-			);
+            );
 
-			// Create the service host:
-			WebServiceHost host(2048);
-			host.Setup("calculator.wsdl", hostCfg, bindings, nullptr, true);
-			host.Open(); // start listening
+            // Create the service host:
+            WebServiceHost host(2048);
+            host.Setup("calculator.wsdl", hostCfg, bindings, nullptr, true);
+            host.Open(); // start listening
 
-			// wait for metadata request...
-			std::this_thread::sleep_for(std::chrono::seconds(100));
+            // wait for metadata request...
+            std::this_thread::sleep_for(std::chrono::seconds(100));
 
-			host.Close();
-		}
-		catch (...)
-		{
-			HandleException();
-		}
-	}
+            host.Close();
+        }
+        catch (...)
+        {
+            HandleException();
+        }
+    }
 
 }// end of namespace integration_tests
 }// end of namespace _3fd

@@ -2,7 +2,7 @@
 #
 # Usage:
 #
-# .\build.ps1 -arch {x86|x64|ARM|all} -xp {yes|no} -mode {debug|release} -rebuild {yes|no}
+# .\build.ps1 -arch {x86|x64|ARM|all} -xp {yes|no} -rebuild {yes|no}
 #
 # Builds all the projects in VC++ solution 3FD.sln that are compilable for the given
 # architecture(s). Builds are by default incremental, but can also be complete rebuilds.
@@ -28,7 +28,6 @@
 param (
     [string]$arch = $(Read-Host 'Architecture (x86, x64, ARM, all)'),
     [string]$xp = $(Read-Host 'Use WinXP-compatible toolset? (no/yes)'),
-    [string]$mode = $(Read-Host 'Configuration (Debug, Release)'),
     [string]$rebuild = $(Read-Host 'Rebuild? (no/yes)')
 )
 
@@ -126,7 +125,7 @@ function LoadDotNetAssemblies ()
         
         [string]$resetPowershell = $(Read-Host (
             'Could not load a required assembly because your Powershell installation ' +
-            'is configured to use an old verion of the .NET Framework. ' +
+            'is configured to use an old version of the .NET Framework. ' +
             'Do you wish to have it reconfigured? (no/yes)'
         ));
         
@@ -638,11 +637,6 @@ function InstallCertificates ()
             path = $(pwd).Path + "\UnitTests\WinRT.UWP\UnitTestsApp.WinRT.UWP_TemporaryKey.pfx";
             password = "UnitTestsApp.WinRT.UWP_TemporaryKey.pfx";
             thumbprint = "6A052BC56B5F0F365BF306C65D12A329916DCC3D";
-        },
-        @{
-            path = $(pwd).Path + "\ImageTranscoderApp\ImageTranscoderApp_TemporaryKey.pfx";
-            password = "ImageTranscoderApp_TemporaryKey.pfx";
-            thumbprint = "BD2AD143C750BE18975B98FA70A9678EC55B2811";
         }
     );
 
@@ -666,36 +660,50 @@ function InstallCertificates ()
 #
 function InstallCopyX64 ([bool]$xpToolset)
 {
-    [string]$outputDir;
+    [string]$outReleaseDir;
+    [string]$outDebugDir;
     
     if ($xpToolset -eq $false)
     {
-        $outputDir = 'x64\Release';
+        $outReleaseDir = 'x64\Release';
+        $outDebugDir = 'x64\Debug';
     }
     else
     {
-        $outputDir = 'x64\Release_XP';
+        $outReleaseDir = 'x64\Release_XP';
+        $outDebugDir = 'x64\Debug_XP';
     }
     
-    mkdir -Path build\lib\x64 -Force;
-    mkdir -Path build\bin\x64 -Force;
+    mkdir -Path build\lib\x64\Release -Force;
+    mkdir -Path build\bin\x64\Release -Force;
 
-    if ($(Test-Path "$outputDir\3FD.WinRT.UWP"))
+    if ($(Test-Path "$outReleaseDir\3FD.WinRT.UWP"))
     {
-        copy "$outputDir\3FD.WinRT.UWP\*" build\lib\x64\;
+        copy "$outReleaseDir\3FD.WinRT.UWP\*" build\lib\x64\Release;
     }
 
-    copy "$outputDir\3FD.lib"           build\lib\x64\;
-    copy "$outputDir\*.exe"             build\bin\x64\;
-    copy "$outputDir\*.config"          build\bin\x64\;
-    copy "$outputDir\*.wsdl"            build\bin\x64\;
-    copy "$outputDir\MetadataCopyMap.*" build\bin\x64\;
+    copy "$outReleaseDir\3FD.lib"   build\lib\x64\Release;
+    copy "$outReleaseDir\*.exe"     build\bin\x64\Release;
+    copy "$outReleaseDir\*.config"  build\bin\x64\Release;
+    copy "$outReleaseDir\*.wsdl"    build\bin\x64\Release;
+    
+    mkdir -Path build\bin\x64\Debug -Force;
+    mkdir -Path build\lib\x64\Debug -Force;
 
+    if ($(Test-Path "$outDebugDir\3FD.WinRT.UWP"))
+    {
+        copy "$outDebugDir\3FD.WinRT.UWP\*" build\lib\x64\Debug;
+    }
+    
+    copy "$outDebugDir\3FD.lib"   build\lib\x64\Debug;
+    copy "$outDebugDir\*.exe"     build\bin\x64\Debug;
+    copy "$outDebugDir\*.config"  build\bin\x64\Debug;
+    copy "$outDebugDir\*.wsdl"    build\bin\x64\Debug;
+    
     if ($(Test-Path AppPackages))
     {
         gci AppPackages `
             | gci -Filter *x64* `
-            | Where-Object { -not $_.Name.Contains('Debug') } `
             | ForEach-Object -Process { move $_.FullName build\AppPackages\ -Force };
     }
 }
@@ -706,36 +714,50 @@ function InstallCopyX64 ([bool]$xpToolset)
 #
 function InstallCopyX86 ([bool]$xpToolset)
 {
-    [string]$outputDir;
+    [string]$outReleaseDir;
+    [string]$outDebugDir;
     
     if ($xpToolset -eq $false)
     {
-        $outputDir = 'Win32\Release';
+        $outReleaseDir = 'Win32\Release';
+        $outDebugDir = 'Win32\Debug';
     }
     else
     {
-        $outputDir = 'Win32\Release_XP';
+        $outReleaseDir = 'Win32\Release_XP';
+        $outDebugDir = 'Win32\Debug_XP';
     }
     
-    mkdir -Path build\lib\Win32 -Force;
-    mkdir -Path build\bin\Win32 -Force;
+    mkdir -Path build\lib\Win32\Release -Force;
+    mkdir -Path build\bin\Win32\Release -Force;
 
-    if ($(Test-Path "$outputDir\3FD.WinRT.UWP"))
+    if ($(Test-Path "$outReleaseDir\3FD.WinRT.UWP"))
     {
-        copy "$outputDir\3FD.WinRT.UWP\*" build\lib\Win32\;
+        copy "$outReleaseDir\3FD.WinRT.UWP\*" build\lib\Win32\Release;
     }
 
-    copy "$outputDir\3FD.lib"           build\lib\Win32\;
-    copy "$outputDir\*.exe"             build\bin\Win32\;
-    copy "$outputDir\*.config"          build\bin\Win32\;
-    copy "$outputDir\*.wsdl"            build\bin\Win32\;
-    copy "$outputDir\MetadataCopyMap.*" build\bin\Win32\;
+    copy "$outReleaseDir\3FD.lib"   build\lib\Win32\Release;
+    copy "$outReleaseDir\*.exe"     build\bin\Win32\Release;
+    copy "$outReleaseDir\*.config"  build\bin\Win32\Release;
+    copy "$outReleaseDir\*.wsdl"    build\bin\Win32\Release;
+    
+    mkdir -Path build\lib\Win32\Debug -Force;
+    mkdir -Path build\bin\Win32\Debug -Force;
+
+    if ($(Test-Path "$outDebugDir\3FD.WinRT.UWP"))
+    {
+        copy "$outDebugDir\3FD.WinRT.UWP\*" build\lib\Win32\Debug;
+    }
+
+    copy "$outDebugDir\3FD.lib"   build\lib\Win32\Debug;
+    copy "$outDebugDir\*.exe"     build\bin\Win32\Debug;
+    copy "$outDebugDir\*.config"  build\bin\Win32\Debug;
+    copy "$outDebugDir\*.wsdl"    build\bin\Win32\Debug;
 
     if ($(Test-Path AppPackages))
     {
         gci AppPackages `
             | gci -Filter *Win32* `
-            | Where-Object { -not $_.Name.Contains('Debug') } `
             | ForEach-Object -Process { move $_.FullName build\AppPackages\ -Force };
     }
 }
@@ -748,15 +770,16 @@ function InstallCopyARM ([bool]$xpToolset)
 {
     if ($xpToolset -eq $false)
     {
-        mkdir -Path build\lib\ARM -Force;
+        mkdir -Path build\lib\ARM\Release -Force;
+        mkdir -Path build\lib\ARM\Debug -Force;
 
-        copy ARM\Release\3FD.WinRT.UWP\* build\lib\ARM\;
+        copy ARM\Release\3FD.WinRT.UWP\*  build\lib\ARM\Release;
+        copy ARM\Debug\3FD.WinRT.UWP\*    build\lib\ARM\Debug;
 
         if ($(Test-Path AppPackages))
         {
             gci AppPackages `
                 | gci -Filter *ARM* `
-                | Where-Object { -not $_.Name.Contains('Debug') } `
                 | ForEach-Object -Process { move $_.FullName build\AppPackages\ -Force };
         }
     }
@@ -785,9 +808,11 @@ function Run ()
     ###
     # BUILD:
     
+    [string]$modeSuffix;
+
     if ($xp -eq 'yes')
     {
-        $mode += '_xp';
+        $modeSuffix = '_xp';
     }
     else
     {
@@ -798,60 +823,63 @@ function Run ()
     
     if ($arch.ToLower() -eq 'all')
     {
-        MsBuild -what 3FD.sln -task $task -arch x86 -config $mode;
-        MsBuild -what 3FD.sln -task $task -arch x64 -config $mode;
-        MsBuild -what 3FD.sln -task $task -arch ARM -config $mode;
+        MsBuild -what 3FD.sln -task $task -arch x86 -config ('Debug' + $modeSuffix);
+        MsBuild -what 3FD.sln -task $task -arch x86 -config ('Release' + $modeSuffix);
+
+        MsBuild -what 3FD.sln -task $task -arch x64 -config ('Debug' + $modeSuffix);
+        MsBuild -what 3FD.sln -task $task -arch x64 -config ('Release' + $modeSuffix);
+
+        MsBuild -what 3FD.sln -task $task -arch ARM -config ('Debug' + $modeSuffix);
+        MsBuild -what 3FD.sln -task $task -arch ARM -config ('Release' + $modeSuffix);
     }
     else
     {
-        MsBuild -what 3FD.sln -task $task -arch $arch -config $mode;
+        MsBuild -what 3FD.sln -task $task -arch $arch -config ('Debug' + $modeSuffix);
+        MsBuild -what 3FD.sln -task $task -arch $arch -config ('Release' + $modeSuffix);
     }
     
     ###
     # INSTALL:
 
-    if ($mode.ToLower().StartsWith('release') -eq $true)
-    {
-        WriteConsole 'Installing 3FD...';
+    WriteConsole 'Installing 3FD...';
     
-        if ($(Test-Path build))
-        {
-            ri build -Recurse -Force;
-        }
-
-        mkdir -Path build\AppPackages -Force;
-
-        switch ($arch)
-        {
-            "x64" { InstallCopyX64 ($xp -eq 'yes'); }
-            "x86" { InstallCopyX86 ($xp -eq 'yes'); }
-            "arm" { InstallCopyARM ($xp -eq 'yes'); }
-            "all" {
-                InstallCopyX64 ($xp -eq 'yes');
-                InstallCopyX86 ($xp -eq 'yes');
-                InstallCopyARM ($xp -eq 'yes');
-            }
-            default {
-                WriteConsole ('There is no defined installation procedure for architecture <' + $arch + '>');
-            }
-        }
-
-        copy 3FD\wsdl-example.wsdl       build\
-        copy 3FD\3fd-config-template.xml build\
-        copy opencl-c-example*           build\
-        copy CreateMsSqlSvcBrokerDB.sql  build\
-        copy README                      build\
-        copy LICENSE                     build\
-        copy Acknowledgements.txt        build\
-
-        mkdir -Path .\build\include\3FD -Force;
-
-        copy 3FD\*.h build\include\3FD\;
-        copy btree   build\include\ -Recurse;
-        copy OpenCL  build\include\ -Recurse;
-
-        WriteConsole ('Framework installation directory has been generated in <' + ($pwd).Path + '\build>');
+    if ($(Test-Path build))
+    {
+        ri build -Recurse -Force;
     }
+
+    mkdir -Path build\AppPackages -Force;
+
+    switch ($arch)
+    {
+        "x64" { InstallCopyX64 ($xp -eq 'yes'); }
+        "x86" { InstallCopyX86 ($xp -eq 'yes'); }
+        "arm" { InstallCopyARM ($xp -eq 'yes'); }
+        "all" {
+            InstallCopyX64 ($xp -eq 'yes');
+            InstallCopyX86 ($xp -eq 'yes');
+            InstallCopyARM ($xp -eq 'yes');
+        }
+        default {
+            WriteConsole ('There is no defined installation procedure for architecture <' + $arch + '>');
+        }
+    }
+
+    copy 3FD\wsdl-example.wsdl       build\
+    copy 3FD\3fd-config-template.xml build\
+    copy opencl-c-example*           build\
+    copy CreateMsSqlSvcBrokerDB.sql  build\
+    copy README                      build\
+    copy LICENSE                     build\
+    copy Acknowledgements.txt        build\
+
+    mkdir -Path .\build\include\3FD -Force;
+
+    copy 3FD\*.h build\include\3FD\;
+    copy btree   build\include\ -Recurse;
+    copy OpenCL  build\include\ -Recurse;
+
+    WriteConsole ('Framework installation directory has been generated in <' + ($pwd).Path + '\build>');
 
 }# end of Run
 

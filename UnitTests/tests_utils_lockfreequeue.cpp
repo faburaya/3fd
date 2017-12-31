@@ -45,53 +45,53 @@ namespace unit_tests
 #endif
     }
 
-	/// <summary>
-	/// Generic tests for <see cref="utils::LockFreeQueue{}"/> class.
-	/// </summary>
-	TEST(Framework_Utils_TestCase, LockFreeQueue_InHouse_ParallelProducerTest)
-	{
-		const unsigned long seqLen = 1UL << 18;
+    /// <summary>
+    /// Generic tests for <see cref="utils::LockFreeQueue{}"/> class.
+    /// </summary>
+    TEST(Framework_Utils_TestCase, LockFreeQueue_InHouse_ParallelProducerTest)
+    {
+        const unsigned long seqLen = 1UL << 18;
 
-		utils::LockFreeQueue<unsigned long> queue;
+        utils::LockFreeQueue<unsigned long> queue;
 
-		std::vector<unsigned long> seqOfNums(seqLen);
+        std::vector<unsigned long> seqOfNums(seqLen);
 
-		// Generate a sequence of increasing numbers:
-		unsigned long idx(0);
-		for (idx = 0; idx < seqLen; ++idx)
-			seqOfNums[idx] = idx;
+        // Generate a sequence of increasing numbers:
+        unsigned long idx(0);
+        for (idx = 0; idx < seqLen; ++idx)
+            seqOfNums[idx] = idx;
 
-		// Launch a parallel thread to insert entries in the queue:
-		std::thread producerThread(
-			[seqLen, &queue, &seqOfNums]()
-			{
-				for (auto &num : seqOfNums)
-				{
-					PrintProgressBar((double)num / seqOfNums.back());
-					queue.Add(&num);
-				}
-			}
-		);
+        // Launch a parallel thread to insert entries in the queue:
+        std::thread producerThread(
+            [seqLen, &queue, &seqOfNums]()
+            {
+                for (auto &num : seqOfNums)
+                {
+                    PrintProgressBar((double)num / seqOfNums.back());
+                    queue.Add(&num);
+                }
+            }
+        );
 
-		// Consume the entries being inserted asynchronously in the queue:
+        // Consume the entries being inserted asynchronously in the queue:
 
-		idx = 0;
+        idx = 0;
 
-		do
-		{
-			auto *numPtr = queue.Remove();
-				
-			if (numPtr != nullptr)
-				ASSERT_EQ(idx++, *numPtr);
-			else
-				std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        do
+        {
+            auto *numPtr = queue.Remove();
+                
+            if (numPtr != nullptr)
+                ASSERT_EQ(idx++, *numPtr);
+            else
+                std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
-		} while (idx < seqLen);
+        } while (idx < seqLen);
 
-		// wait for producer thread to finalize
-		if (producerThread.joinable())
-			producerThread.join();
-	}
+        // wait for producer thread to finalize
+        if (producerThread.joinable())
+            producerThread.join();
+    }
 
 #   ifdef _WIN32
     /// <summary>

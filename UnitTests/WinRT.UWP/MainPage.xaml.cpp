@@ -27,7 +27,7 @@ using namespace Windows::UI::Xaml::Navigation;
 
 MainPage::MainPage()
 {
-	InitializeComponent();
+    InitializeComponent();
 }
 
 void MainPage::OnClickRunButton(Object ^sender, RoutedEventArgs ^evArgs)

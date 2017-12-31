@@ -11,76 +11,76 @@ namespace web
 {
 namespace wws
 {
-	/// <summary>
-	/// Holds some configurations for the service proxy.
-	/// </summary>
-	struct SvcProxyConfig
-	{
-		size_t reservedMemory; // The amount of memory to allocate for the proxy setup (in bytes)
+    /// <summary>
+    /// Holds some configurations for the service proxy.
+    /// </summary>
+    struct SvcProxyConfig
+    {
+        size_t reservedMemory; // The amount of memory to allocate for the proxy setup (in bytes)
 
-		unsigned long
-			timeoutDnsResolve, // limits the amount of time (in milliseconds) that will be spent resolving the DNS name
+        unsigned long
+            timeoutDnsResolve, // limits the amount of time (in milliseconds) that will be spent resolving the DNS name
             timeoutConnect, // limits the amount of time (in milliseconds) that will be spent to connect to the HTTP server
-			timeoutSend, // limits the amount of time (in milliseconds) that will be spent sending the HTTP headers and the bytes of the message
-			timeoutReceive, // limits the amount of time (in milliseconds) that will be spent receiving the the bytes of the message
-			timeoutCall, // The maximum amount of time in milliseconds for a call to remain pending.
-			timeoutClose; /* The amount of time in milliseconds the service proxy will wait for the pending
-							 calls to complete. Once the timeout expires, the service proxy will abort itself. */
-		SvcProxyConfig() : 
-			reservedMemory(1024),
-			timeoutDnsResolve(60000),
+            timeoutSend, // limits the amount of time (in milliseconds) that will be spent sending the HTTP headers and the bytes of the message
+            timeoutReceive, // limits the amount of time (in milliseconds) that will be spent receiving the the bytes of the message
+            timeoutCall, // The maximum amount of time in milliseconds for a call to remain pending.
+            timeoutClose; /* The amount of time in milliseconds the service proxy will wait for the pending
+                             calls to complete. Once the timeout expires, the service proxy will abort itself. */
+        SvcProxyConfig() : 
+            reservedMemory(1024),
+            timeoutDnsResolve(60000),
             timeoutConnect(15000),
-			timeoutSend(15000),
-			timeoutReceive(15000),
-			timeoutCall(15000),
-			timeoutClose(5000)
-		{}
-	};
+            timeoutSend(15000),
+            timeoutReceive(15000),
+            timeoutCall(15000),
+            timeoutClose(5000)
+        {}
+    };
 
-	/// <summary>
-	/// Holds information to describe a certificate to use for SSL in the service proxy.
-	/// </summary>
-	struct SvcProxyCertInfo : notcopiable
-	{
-		/// <summary>
-		/// The certificate store location (such as CERT_SYSTEM_STORE_CURRENT_USER
-		/// or CERT_SYSTEM_STORE_LOCAL_MACHINE) that contains the specified certificate.
-		/// See https://msdn.microsoft.com/en-us/library/windows/desktop/aa388136.aspx.
-		/// </summary>
-		unsigned long storeLocation;
+    /// <summary>
+    /// Holds information to describe a certificate to use for SSL in the service proxy.
+    /// </summary>
+    struct SvcProxyCertInfo : notcopiable
+    {
+        /// <summary>
+        /// The certificate store location (such as CERT_SYSTEM_STORE_CURRENT_USER
+        /// or CERT_SYSTEM_STORE_LOCAL_MACHINE) that contains the specified certificate.
+        /// See https://msdn.microsoft.com/en-us/library/windows/desktop/aa388136.aspx.
+        /// </summary>
+        unsigned long storeLocation;
 
-		/// <summary>
-		/// The certificate store name (such as "My")
-		/// that contains the specified certificate.
-		/// </summary>
-		string storeName;
+        /// <summary>
+        /// The certificate store name (such as "My")
+        /// that contains the specified certificate.
+        /// </summary>
+        string storeName;
 
-		/// <summary>
-		/// The SHA-1 thumbprint (such as "c0f89c8d4e4e80f250b58c3fae944a0edee02804")
-		/// of the specified certificate. The supplied value should be a hexadecimal
-		/// string without whitespace characters or a leading 0x.
-		/// </summary>
-		string thumbprint;
+        /// <summary>
+        /// The SHA-1 thumbprint (such as "c0f89c8d4e4e80f250b58c3fae944a0edee02804")
+        /// of the specified certificate. The supplied value should be a hexadecimal
+        /// string without whitespace characters or a leading 0x.
+        /// </summary>
+        string thumbprint;
 
-		/// <summary>
-		/// Initializes a new instance of the <see cref="SvcProxyCertInfo"/> struct.
-		/// </summary>
-		/// <param name="p_storeLocation">The certificate store location.</param>
-		/// <param name="storeName">Name of the store.</param>
-		/// <param name="thumbprint">The certificate thumbprint.</param>
-		SvcProxyCertInfo(unsigned long p_storeLocation,
-					     const string &p_storeName,
-				         const string &p_thumbprint)
-			: storeLocation(p_storeLocation)
-			, storeName(p_storeName)
-			, thumbprint(p_thumbprint)
-		{}
-	};
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SvcProxyCertInfo"/> struct.
+        /// </summary>
+        /// <param name="p_storeLocation">The certificate store location.</param>
+        /// <param name="storeName">Name of the store.</param>
+        /// <param name="thumbprint">The certificate thumbprint.</param>
+        SvcProxyCertInfo(unsigned long p_storeLocation,
+                         const string &p_storeName,
+                         const string &p_thumbprint)
+            : storeLocation(p_storeLocation)
+            , storeName(p_storeName)
+            , thumbprint(p_thumbprint)
+        {}
+    };
 
     /* Callback type that invokes the creation of a web service proxy
     as implemented by code generated by wsutil.exe */
-	template <typename BindingTemplateType>
-	using CallbackCreateServiceProxyImpl = HRESULT(*)(
+    template <typename BindingTemplateType>
+    using CallbackCreateServiceProxyImpl = HRESULT(*)(
         _In_opt_ BindingTemplateType *templateValue,
         _In_reads_opt_(proxyPropertyCount) const WS_PROXY_PROPERTY *proxyProperties,
         _In_ const ULONG proxyPropertyCount,
@@ -120,16 +120,16 @@ namespace wws
         );
     }
 
-	/* Callback type for template function that wraps code
-	automatically generated by wsutil.exe */
-	typedef HRESULT(*CallbackWrapperCreateServiceProxy)(
-		WS_CHANNEL_PROPERTIES,
-		const WS_PROXY_PROPERTY *, // proxy properties
-		size_t, // count of proxy properties
-		WS_SERVICE_PROXY **,
-		WSHeap &,
-		WSError &
-	);
+    /* Callback type for template function that wraps code
+    automatically generated by wsutil.exe */
+    typedef HRESULT(*CallbackWrapperCreateServiceProxy)(
+        WS_CHANNEL_PROPERTIES,
+        const WS_PROXY_PROPERTY *, // proxy properties
+        size_t, // count of proxy properties
+        WS_SERVICE_PROXY **,
+        WSHeap &,
+        WSError &
+    );
 
     typedef std::function<HRESULT(WS_SERVICE_PROXY *, WS_HEAP *, WS_ERROR *)> WsCallWrap;
 
@@ -160,16 +160,16 @@ namespace wws
 
     public:
 
-		WebServiceProxy(const string &svcEndpointAddress,
-						const SvcProxyConfig &config,
-						CallbackWrapperCreateServiceProxy callback);
+        WebServiceProxy(const string &svcEndpointAddress,
+                        const SvcProxyConfig &config,
+                        CallbackWrapperCreateServiceProxy callback);
 
-		WebServiceProxy(
-			const string &svcEndpointAddress,
-			const SvcProxyConfig &config,
-			const SvcProxyCertInfo &certInfo,
-			CallbackCreateServiceProxyImpl<WS_HTTP_SSL_BINDING_TEMPLATE> callback
-		);
+        WebServiceProxy(
+            const string &svcEndpointAddress,
+            const SvcProxyConfig &config,
+            const SvcProxyCertInfo &certInfo,
+            CallbackCreateServiceProxyImpl<WS_HTTP_SSL_BINDING_TEMPLATE> callback
+        );
 
         WebServiceProxy(
             const string &svcEndpointAddress,

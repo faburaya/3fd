@@ -221,5 +221,8 @@
     <ClInclude Include="utils_io.h">
       <Filter>utilities</Filter>
     </ClInclude>
+    <ClInclude Include="utils_algorithms.h">
+      <Filter>utilities</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

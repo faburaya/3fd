@@ -48,3 +48,6 @@ ls CMakeCache.txt &> /dev/null && rm CMakeCache.txt
 ls CMakeFiles &> /dev/null && rm -rf CMakeFiles
 echo Configuring IntegrationTests...
 cmake $CMAKE_OPTIONS
+
+cd ..
+

@@ -179,6 +179,7 @@
       <AdditionalIncludeDirectories>$(SolutionDir)3FD;$(SolutionDir)TestShared;$(SolutionDir)OpenCL;$(SolutionDir)gtest\include;$(SolutionDir)btree;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/D POCO_STATIC /D _VARIADIC_MAX=10 %(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>4244</DisableSpecificWarnings>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -200,6 +201,7 @@ copy "$(SolutionDir)TestShared\calculator.wsdl" "$(TargetDir)"</Command>
       <AdditionalIncludeDirectories>$(SolutionDir)3FD;$(SolutionDir)TestShared;$(SolutionDir)OpenCL;$(SolutionDir)gtest\include;$(SolutionDir)btree;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/D POCO_STATIC /D _VARIADIC_MAX=10 %(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>4244</DisableSpecificWarnings>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -221,6 +223,7 @@ copy "$(SolutionDir)TestShared\calculator.wsdl" "$(TargetDir)"</Command>
       <AdditionalIncludeDirectories>$(SolutionDir)3FD;$(SolutionDir)TestShared;$(SolutionDir)OpenCL;$(SolutionDir)gtest\include;$(SolutionDir)btree;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/D POCO_STATIC /D _VARIADIC_MAX=10 %(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>4244</DisableSpecificWarnings>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -242,6 +245,7 @@ copy "$(SolutionDir)TestShared\calculator.wsdl" "$(TargetDir)"</Command>
       <AdditionalIncludeDirectories>$(SolutionDir)3FD;$(SolutionDir)TestShared;$(SolutionDir)OpenCL;$(SolutionDir)gtest\include;$(SolutionDir)btree;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/D POCO_STATIC /D _VARIADIC_MAX=10 %(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>4244</DisableSpecificWarnings>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -266,6 +270,7 @@ copy "$(SolutionDir)TestShared\calculator.wsdl" "$(TargetDir)"</Command>
       <AdditionalOptions>/D POCO_STATIC $(MSVC_X86_RELEASE_EINSTSET) %(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>4244</DisableSpecificWarnings>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -292,6 +297,7 @@ copy "$(SolutionDir)TestShared\calculator.wsdl" "$(TargetDir)"</Command>
       <AdditionalOptions>/D POCO_STATIC $(MSVC_X86_RELEASE_EINSTSET) %(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>4244</DisableSpecificWarnings>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -318,6 +324,7 @@ copy "$(SolutionDir)TestShared\calculator.wsdl" "$(TargetDir)"</Command>
       <AdditionalOptions>/D POCO_STATIC $(MSVC_X64_RELEASE_EINSTSET) %(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>4244</DisableSpecificWarnings>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -344,6 +351,7 @@ copy "$(SolutionDir)TestShared\calculator.wsdl" "$(TargetDir)"</Command>
       <AdditionalOptions>/D POCO_STATIC $(MSVC_X64_RELEASE_EINSTSET) %(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>4244</DisableSpecificWarnings>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

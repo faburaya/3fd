@@ -48,11 +48,11 @@ namespace broker
             end;
 
             if not exists (
-	            select * from sys.systypes
-		            where name = N'%s/v1_0_0/Message/ContentType'
+                select * from sys.systypes
+                    where name = N'%s/v1_0_0/Message/ContentType'
             )
             begin
-	            create type [%s/v1_0_0/Message/ContentType] from varchar(%u);
+                create type [%s/v1_0_0/Message/ContentType] from varchar(%u);
             end;
             )"
             , serviceURL
@@ -80,7 +80,7 @@ namespace broker
             CheckConnection(*m_dbSession) << R"(
                 create procedure [%s/v1_0_0/ReadMessagesProc] (
                     @recvMsgCountLimit int
-	                ,@recvTimeoutMilisecs int
+                    ,@recvTimeoutMilisecs int
                 ) as
                 begin try
                     begin transaction;
@@ -94,22 +94,22 @@ namespace broker
                             ,message_body        [%s/v1_0_0/Message/ContentType]
                         );
 
-	                    waitfor(
-		                    receive top (@recvMsgCountLimit)
+                        waitfor(
+                            receive top (@recvMsgCountLimit)
                                     queuing_order
                                     ,conversation_handle
-			                        ,message_type_name
-			                        ,message_body
-		                        from [%s/v1_0_0/Queue]
+                                    ,message_type_name
+                                    ,message_body
+                                from [%s/v1_0_0/Queue]
                                 into @ReceivedMessages
-	                    )
-	                    ,timeout @recvTimeoutMilisecs;
+                        )
+                        ,timeout @recvTimeoutMilisecs;
         
-	                    declare @RowsetOut        table (content [%s/v1_0_0/Message/ContentType]);
+                        declare @RowsetOut        table (content [%s/v1_0_0/Message/ContentType]);
                         declare @prevDialogHandle uniqueidentifier;
                         declare @dialogHandle     uniqueidentifier;
-	                    declare @msgTypeName      sysname;
-	                    declare @msgContent       [%s/v1_0_0/Message/ContentType];
+                        declare @msgTypeName      sysname;
+                        declare @msgContent       [%s/v1_0_0/Message/ContentType];
 
                         declare cursorMsg
                             cursor forward_only read_only
@@ -121,24 +121,24 @@ namespace broker
 
                         open cursorMsg;
                         fetch next from cursorMsg into @dialogHandle, @msgTypeName, @msgContent;
-	    
-	                    while @@fetch_status = 0
-	                    begin
+        
+                        while @@fetch_status = 0
+                        begin
                             if @dialogHandle <> @prevDialogHandle and @prevDialogHandle is not null
                                 end conversation @prevDialogHandle;
 
                             if @msgTypeName = '%s/v1_0_0/Message'
-		                        insert into @RowsetOut values (@msgContent);
+                                insert into @RowsetOut values (@msgContent);
 
                             else if @msgTypeName = 'http://schemas.microsoft.com/SQL/ServiceBroker/Error'
-		                        throw 50001, 'There was an error during conversation with service', 1;
+                                throw 50001, 'There was an error during conversation with service', 1;
 
                             else if @msgTypeName <> 'http://schemas.microsoft.com/SQL/ServiceBroker/EndDialog'
-		                        throw 50000, 'Message received in service broker queue had unexpected type', 1;
+                                throw 50000, 'Message received in service broker queue had unexpected type', 1;
             
                             set @prevDialogHandle = @dialogHandle;
-		                    fetch next from cursorMsg into @dialogHandle, @msgTypeName, @msgContent;
-	                    end;
+                            fetch next from cursorMsg into @dialogHandle, @msgTypeName, @msgContent;
+                        end;
 
                         close cursorMsg;
                         deallocate cursorMsg;
@@ -147,16 +147,16 @@ namespace broker
 
                         set @dialogHandle = newid();
 
-		                receive top (1)
+                        receive top (1)
                             @dialogHandle = conversation_handle
-		                    from [%s/v1_0_0/Queue];
+                            from [%s/v1_0_0/Queue];
 
                         rollback transaction doneReceiving;
 
                         if @dialogHandle <> @prevDialogHandle and @prevDialogHandle is not null
                             end conversation @prevDialogHandle;
             
-	                    select content from @RowsetOut;
+                        select content from @RowsetOut;
 
                     commit transaction;
                 end try

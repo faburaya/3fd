@@ -137,44 +137,44 @@ namespace wws
     };
 
 
-	/// <summary>
-	/// Contains several settings for a service endpoint.
-	/// </summary>
-	struct SvcEndpointsConfig : notcopiable
-	{
-		unsigned int
-			maxAcceptingChannels, // specifies the maximum number of concurrent channels service host will have actively accepting new connections for a given endpoint
-			maxConcurrency; // specifies the maximum number of concurrent calls that would be serviced on a session based channel
+    /// <summary>
+    /// Contains several settings for a service endpoint.
+    /// </summary>
+    struct SvcEndpointsConfig : notcopiable
+    {
+        unsigned int
+            maxAcceptingChannels, // specifies the maximum number of concurrent channels service host will have actively accepting new connections for a given endpoint
+            maxConcurrency; // specifies the maximum number of concurrent calls that would be serviced on a session based channel
 
         // limits the amount of time (in milliseconds) a service model will wait after 'Close' is called, and once the timeout expires, the host will abort
-		unsigned long timeoutClose;
+        unsigned long timeoutClose;
 
-		/// <summary>
-		/// Initializes a new instance of the <see cref="SvcEndpointsConfig"/> struct.
-		/// Sets default values for configuration, except mapping of bindings to callbacks.
-		/// </summary>
-		SvcEndpointsConfig() : 
-			maxAcceptingChannels(2),
-			maxConcurrency(1),
-			timeoutClose(0)
-		{}
-	};
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SvcEndpointsConfig"/> struct.
+        /// Sets default values for configuration, except mapping of bindings to callbacks.
+        /// </summary>
+        SvcEndpointsConfig() : 
+            maxAcceptingChannels(2),
+            maxConcurrency(1),
+            timeoutClose(0)
+        {}
+    };
 
 
     class WebServiceHostImpl;
 
-	/// <summary>
-	/// Implements the web service host infrastructure.
-	/// </summary>
-	class WebServiceHost : notcopiable
-	{
-	private:
+    /// <summary>
+    /// Implements the web service host infrastructure.
+    /// </summary>
+    class WebServiceHost : notcopiable
+    {
+    private:
 
         WebServiceHostImpl *m_pimpl;
 
-	public:
+    public:
 
-		WebServiceHost(size_t reservedMemory);
+        WebServiceHost(size_t reservedMemory);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="WebServiceHost"/> class
@@ -187,31 +187,31 @@ namespace wws
             ob.m_pimpl = nullptr;
         }
 
-		~WebServiceHost();
+        ~WebServiceHost();
 
-		void Setup(
-			const string &wsdFilePath,
-			const SvcEndpointsConfig &config,
+        void Setup(
+            const string &wsdFilePath,
+            const SvcEndpointsConfig &config,
             const ServiceBindings &bindings,
             WS_SERVICE_SECURITY_CALLBACK authzCallback,
-			bool enableMEX
+            bool enableMEX
         );
 
-		void Open();
-		bool Close();
-		bool Abort();
-	};
+        void Open();
+        bool Close();
+        bool Abort();
+    };
 
 
-	//////////////////////
-	// Utilities
-	//////////////////////
+    //////////////////////
+    // Utilities
+    //////////////////////
 
-	void SetSoapFault(
-		core::IAppException &ex,
-		const char *action,
-		const WS_OPERATION_CONTEXT *wsOperContextHandle,
-		WS_ERROR *wsErrorHandle
+    void SetSoapFault(
+        core::IAppException &ex,
+        const char *action,
+        const WS_OPERATION_CONTEXT *wsOperContextHandle,
+        WS_ERROR *wsErrorHandle
     );
 
     void SetSoapFault(

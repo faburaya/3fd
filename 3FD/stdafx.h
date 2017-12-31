@@ -6,46 +6,46 @@
 #ifndef STDAFX_H // header guard
 #define STDAFX_H
 
-#	ifdef _MSC_VER // Visual Studio:
+#    ifdef _MSC_VER // Visual Studio:
 
 #       ifndef _USING_V110_SDK71_
-#		    include <winapifamily.h>
+#            include <winapifamily.h>
 #       endif
 
         // Windows Desktop App:
-#		if WINAPI_FAMILY == WINAPI_FAMILY_DESKTOP_APP || defined _USING_V110_SDK71_
+#        if WINAPI_FAMILY == WINAPI_FAMILY_DESKTOP_APP || defined _USING_V110_SDK71_
 
-#			ifdef TESTING // Test application:
-#				include "targetver.h"
-#				include <stdio.h>
-#				include <tchar.h>
-#				define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
-#				include <gtest/gtest.h>
+#            ifdef TESTING // Test application:
+#                include "targetver.h"
+#                include <stdio.h>
+#                include <tchar.h>
+#                define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
+#                include <gtest/gtest.h>
 
-#			else // Static library:
-#				include "targetver.h"
-#				define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
-#			endif
+#            else // Static library:
+#                include "targetver.h"
+#                define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
+#            endif
 
-#		else // Windows Store Apps:
+#        else // Windows Store Apps:
 
-#			ifdef TESTING // Test application:
-#				include <collection.h>
-#				include <ppltasks.h>
-#				include <gtest/gtest.h>
-#				include "App.xaml.h"
+#            ifdef TESTING // Test application:
+#                include <collection.h>
+#                include <ppltasks.h>
+#                include <gtest/gtest.h>
+#                include "App.xaml.h"
 
-#			else // Static library:
-#				include "targetver.h"
-#				ifndef WIN32_LEAN_AND_MEAN
-#					define WIN32_LEAN_AND_MEAN
-#				endif
-#				include <windows.h>
-#			endif
+#            else // Static library:
+#                include "targetver.h"
+#                ifndef WIN32_LEAN_AND_MEAN
+#                    define WIN32_LEAN_AND_MEAN
+#                endif
+#                include <windows.h>
+#            endif
 
-#		endif
+#        endif
 
-#	else // QtCreator & other IDE's:
+#    else // QtCreator & other IDE's:
 
 #       ifdef TESTING // Test application:
 #           include <gtest/gtest.h>

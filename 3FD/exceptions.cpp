@@ -10,53 +10,53 @@
 
 namespace _3fd
 {
-	namespace core
-	{
-		///////////////////////////////////////
-		// StdLibExt Class
-		///////////////////////////////////////
+    namespace core
+    {
+        ///////////////////////////////////////
+        // StdLibExt Class
+        ///////////////////////////////////////
 
-		/// <summary>
-		/// Gets the details from a system error.
-		/// </summary>
-		/// <param name="ex">The system error.</param>
-		/// <returns>A string with a detailed description of the given system error.</returns>
-		string StdLibExt::GetDetailsFromSystemError(std::system_error &ex)
-		{
-			std::ostringstream oss;
-			oss << ex.code().category().name() << " / " << ex.code().message();
-			return oss.str();
-		}
+        /// <summary>
+        /// Gets the details from a system error.
+        /// </summary>
+        /// <param name="ex">The system error.</param>
+        /// <returns>A string with a detailed description of the given system error.</returns>
+        string StdLibExt::GetDetailsFromSystemError(std::system_error &ex)
+        {
+            std::ostringstream oss;
+            oss << ex.code().category().name() << " / " << ex.code().message();
+            return oss.str();
+        }
 
-		/// <summary>
-		/// Gets the details from a future error.
-		/// </summary>
-		/// <param name="ex">The future error.</param>
-		/// <returns>A string with a detailed description of the given future error.</returns>
-		string StdLibExt::GetDetailsFromFutureError(std::future_error &ex)
-		{
-			std::ostringstream oss;
-			oss << ex.code().category().name() << " / " << ex.code().message();
-			return oss.str();
-		}
+        /// <summary>
+        /// Gets the details from a future error.
+        /// </summary>
+        /// <param name="ex">The future error.</param>
+        /// <returns>A string with a detailed description of the given future error.</returns>
+        string StdLibExt::GetDetailsFromFutureError(std::future_error &ex)
+        {
+            std::ostringstream oss;
+            oss << ex.code().category().name() << " / " << ex.code().message();
+            return oss.str();
+        }
 
 #ifdef _WIN32
 
-		///////////////////////////////////////
-		// WWAPI Class
-		///////////////////////////////////////
+        ///////////////////////////////////////
+        // WWAPI Class
+        ///////////////////////////////////////
 
-		/// <summary>
-		/// Get a label for an HRESULT code.
-		/// </summary>
-		/// <param name="errCode">The HRESULT code.</param>
-		/// <returns>A label with the HRESULT code.</returns>
-		string WWAPI::GetHResultLabel(HRESULT errCode)
-		{
-			std::ostringstream oss;
-			oss << "HRESULT error code = 0x" << std::hex << errCode;
-			return oss.str();
-		}
+        /// <summary>
+        /// Get a label for an HRESULT code.
+        /// </summary>
+        /// <param name="errCode">The HRESULT code.</param>
+        /// <returns>A label with the HRESULT code.</returns>
+        string WWAPI::GetHResultLabel(HRESULT errCode)
+        {
+            std::ostringstream oss;
+            oss << "HRESULT error code = 0x" << std::hex << errCode;
+            return oss.str();
+        }
 
         /// <summary>
         /// Get a description for an HRESULT code.
@@ -68,7 +68,7 @@ namespace _3fd
             _ASSERTE(FAILED(errCode));
             std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
 
-#	    ifdef _3FD_PLATFORM_WINRT
+#        ifdef _3FD_PLATFORM_WINRT
             _com_error comErrObj(errCode, nullptr);
 #       else
             _com_error comErrObj(errCode);
@@ -124,15 +124,23 @@ namespace _3fd
         /// <param name="errCode">The error code.</param>
         /// <param name="funcName">Name of the function from Win32 API.</param>
         /// <param name="oss">The string stream where the error message will be appended to.</param>
+        /// <param name="dlibHandle">Optional: a handle for a system library
+        /// containing further information about the API in error.</param>
         void WWAPI::AppendDWordErrorMessage(DWORD errCode,
                                             const char *funcName,
-                                            std::ostringstream &oss)
+                                            std::ostringstream &oss,
+                                            HMODULE dlibHandle)
         {
             wchar_t *wErrMsgPtr;
+
+            DWORD flags = FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS;
+
+            if (dlibHandle != nullptr)
+                flags |= FORMAT_MESSAGE_FROM_HMODULE;
             
             auto rc = FormatMessageW(
-                FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-                nullptr,
+                flags,
+                dlibHandle,
                 errCode,
                 MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
                 (LPWSTR)&wErrMsgPtr, 0,
@@ -158,14 +166,14 @@ namespace _3fd
         }
 #   endif
 
-#	ifdef _3FD_PLATFORM_WINRT // Store Apps only:
-		/// <summary>
-		/// Gets the details from a WinRT exception.
-		/// </summary>
-		/// <param name="ex">The exception handle.</param>
-		/// <returns>The details about the exception.</returns>
-		string WWAPI::GetDetailsFromWinRTEx(Platform::Exception ^ex)
-		{
+#    ifdef _3FD_PLATFORM_WINRT // Store Apps only:
+        /// <summary>
+        /// Gets the details from a WinRT exception.
+        /// </summary>
+        /// <param name="ex">The exception handle.</param>
+        /// <returns>The details about the exception.</returns>
+        string WWAPI::GetDetailsFromWinRTEx(Platform::Exception ^ex)
+        {
             std::wostringstream woss;
             woss << L"HRESULT error code 0x" << std::hex << ex->HResult << L": ";
 
@@ -187,8 +195,8 @@ namespace _3fd
 
             std::wstring_convert<std::codecvt_utf8<wchar_t>> transcoder;
             return transcoder.to_bytes(woss.str());
-		}
-#	endif
+        }
+#    endif
 
 #endif
     }// end of namespace core

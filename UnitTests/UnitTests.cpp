@@ -5,7 +5,7 @@
 #include "preprocessing.h"
 
 #ifdef _3FD_CONSOLE_AVAILABLE
-#	include <iostream>
+#    include <iostream>
 #endif
 
 #ifdef _MSC_VER

@@ -16,38 +16,38 @@ namespace _3fd
 {
 namespace integration_tests
 {
-	using namespace core;
-	using namespace web::wws;
+    using namespace core;
+    using namespace web::wws;
 
-	void HandleException();
+    void HandleException();
 
     const size_t proxyOperHeapSize(4096);
 
-	/////////////////////////////////////
-	// Proxy without transport security
-	/////////////////////////////////////
+    /////////////////////////////////////
+    // Proxy without transport security
+    /////////////////////////////////////
 
-	/// <summary>
-	/// Implements a client for the calculator web service without transport security.
-	/// </summary>
-	class CalcSvcProxyUnsecure : public WebServiceProxy
-	{
-	public:
+    /// <summary>
+    /// Implements a client for the calculator web service without transport security.
+    /// </summary>
+    class CalcSvcProxyUnsecure : public WebServiceProxy
+    {
+    public:
 
-		CalcSvcProxyUnsecure(const SvcProxyConfig &config) :
-			WebServiceProxy(
-				AppConfig::GetSettings().application.GetString("testWwsHostUnsecEndpoint", UNDEF_HOST_UNSEC),
-				config,
-				&CreateWSProxy<WS_HTTP_BINDING_TEMPLATE, CalcBindingUnsecure_CreateServiceProxy>
-			)
-		{}
+        CalcSvcProxyUnsecure(const SvcProxyConfig &config) :
+            WebServiceProxy(
+                AppConfig::GetSettings().application.GetString("testWwsHostUnsecEndpoint", UNDEF_HOST_UNSEC),
+                config,
+                &CreateWSProxy<WS_HTTP_BINDING_TEMPLATE, CalcBindingUnsecure_CreateServiceProxy>
+            )
+        {}
 
-		// Synchronous 'Add' operation
-		double Add(double first, double second)
-		{
-			CALL_STACK_TRACE;
+        // Synchronous 'Add' operation
+        double Add(double first, double second)
+        {
+            CALL_STACK_TRACE;
 
-			double result;
+            double result;
 
             Call("Calculator web service operation 'Add'",
                 proxyOperHeapSize,
@@ -64,12 +64,12 @@ namespace integration_tests
                 });
 
             return result;
-		}
+        }
 
-		// Synchronous 'Multiply' operation
-		double Multiply(double first, double second)
-		{
-			CALL_STACK_TRACE;
+        // Synchronous 'Multiply' operation
+        double Multiply(double first, double second)
+        {
+            CALL_STACK_TRACE;
 
             double result;
 
@@ -88,12 +88,12 @@ namespace integration_tests
                  });
 
             return result;
-		}
+        }
 
-		// Asynchronous 'Multiply' operation
-		std::future<void> MultiplyAsync(double first, double second, double &result)
-		{
-			CALL_STACK_TRACE;
+        // Asynchronous 'Multiply' operation
+        std::future<void> MultiplyAsync(double first, double second, double &result)
+        {
+            CALL_STACK_TRACE;
 
             return CallAsync("Calculator web service operation 'Multiply'",
                              proxyOperHeapSize,
@@ -108,7 +108,7 @@ namespace integration_tests
                                      nullptr,
                                      wsErrorHandle);
                              });
-		}
+        }
 
         // 'CloseService' operation
         bool CloseHostService()
@@ -131,127 +131,127 @@ namespace integration_tests
 
             return (result == TRUE);
         }
-	};
+    };
 
 
-	/// <summary>
-	/// Tests synchronous web service access without transport security.
-	/// </summary>
-	TEST(Framework_WWS_TestCase, Proxy_TransportUnsecure_SyncTest)
-	{
-		// Ensures proper initialization/finalization of the framework
-		_3fd::core::FrameworkInstance _framework;
+    /// <summary>
+    /// Tests synchronous web service access without transport security.
+    /// </summary>
+    TEST(Framework_WWS_TestCase, Proxy_TransportUnsecure_SyncTest)
+    {
+        // Ensures proper initialization/finalization of the framework
+        _3fd::core::FrameworkInstance _framework;
 
-		CALL_STACK_TRACE;
+        CALL_STACK_TRACE;
 
-		try
-		{
-			// Create the proxy (client):
-			SvcProxyConfig proxyCfg;
-			CalcSvcProxyUnsecure client(proxyCfg);
-			client.Open();
+        try
+        {
+            // Create the proxy (client):
+            SvcProxyConfig proxyCfg;
+            CalcSvcProxyUnsecure client(proxyCfg);
+            client.Open();
 
-			for (int count = 0; count < 10; ++count)
-			{
-				EXPECT_EQ(666.0, client.Add(606.0, 60.0));
-				EXPECT_EQ(666.0, client.Multiply(111.0, 6.0));
-			}
+            for (int count = 0; count < 10; ++count)
+            {
+                EXPECT_EQ(666.0, client.Add(606.0, 60.0));
+                EXPECT_EQ(666.0, client.Multiply(111.0, 6.0));
+            }
 
             EXPECT_TRUE(client.CloseHostService());
             client.Close();
-		}
-		catch (...)
-		{
-			HandleException();
-		}
-	}
+        }
+        catch (...)
+        {
+            HandleException();
+        }
+    }
 
 
-	/// <summary>
-	/// Tests asynchronous web service access without transport security.
-	/// </summary>
+    /// <summary>
+    /// Tests asynchronous web service access without transport security.
+    /// </summary>
     TEST(Framework_WWS_TestCase, Proxy_TransportUnsecure_AsyncTest)
-	{
-		// Ensures proper initialization/finalization of the framework
-		_3fd::core::FrameworkInstance _framework;
+    {
+        // Ensures proper initialization/finalization of the framework
+        _3fd::core::FrameworkInstance _framework;
 
-		CALL_STACK_TRACE;
+        CALL_STACK_TRACE;
 
-		try
-		{
-			// Create the proxy (client):
-			SvcProxyConfig proxyCfg;
-			CalcSvcProxyUnsecure client(proxyCfg);
-			client.Open();
+        try
+        {
+            // Create the proxy (client):
+            SvcProxyConfig proxyCfg;
+            CalcSvcProxyUnsecure client(proxyCfg);
+            client.Open();
 
-			const int maxAsyncCalls = 5;
+            const int maxAsyncCalls = 5;
 
-			std::vector<double> results(maxAsyncCalls);
-			std::vector<std::future<void>> asyncOps;
-			asyncOps.reserve(maxAsyncCalls);
+            std::vector<double> results(maxAsyncCalls);
+            std::vector<std::future<void>> asyncOps;
+            asyncOps.reserve(maxAsyncCalls);
 
-			// Fire the asynchronous requests:
-			for (int idx = 0; idx < maxAsyncCalls; ++idx)
-			{
-				asyncOps.push_back(
-					client.MultiplyAsync(111.0, 6.0, results[idx])
-				);
-			}
+            // Fire the asynchronous requests:
+            for (int idx = 0; idx < maxAsyncCalls; ++idx)
+            {
+                asyncOps.push_back(
+                    client.MultiplyAsync(111.0, 6.0, results[idx])
+                );
+            }
 
-			// Get the results and check for errors:
-			while (!asyncOps.empty())
-			{
-				asyncOps.back().get();
-				asyncOps.pop_back();
+            // Get the results and check for errors:
+            while (!asyncOps.empty())
+            {
+                asyncOps.back().get();
+                asyncOps.pop_back();
 
-				EXPECT_EQ(666.0, results.back());
-				results.pop_back();
-			}
+                EXPECT_EQ(666.0, results.back());
+                results.pop_back();
+            }
 
             EXPECT_TRUE(client.CloseHostService());
             client.Close();
-		}
-		catch (...)
-		{
-			HandleException();
-		}
-	}
+        }
+        catch (...)
+        {
+            HandleException();
+        }
+    }
 
 
-	////////////////////////////////
-	// Proxy with SSL over HTTP
-	////////////////////////////////
+    ////////////////////////////////
+    // Proxy with SSL over HTTP
+    ////////////////////////////////
 
-	/// <summary>
-	/// Implements a client for the calculator web service with SSL security.
-	/// </summary>
-	class CalcSvcProxySSL : public WebServiceProxy
-	{
-	public:
+    /// <summary>
+    /// Implements a client for the calculator web service with SSL security.
+    /// </summary>
+    class CalcSvcProxySSL : public WebServiceProxy
+    {
+    public:
 
-		// Ctor for proxy without client certificate
-		CalcSvcProxySSL(const SvcProxyConfig &config) :
-			WebServiceProxy(
+        // Ctor for proxy without client certificate
+        CalcSvcProxySSL(const SvcProxyConfig &config) :
+            WebServiceProxy(
                 AppConfig::GetSettings().application.GetString("testWwsHostSslEndpoint", UNDEF_HOST_SSL),
-				config,
-				&CreateWSProxy<WS_HTTP_SSL_BINDING_TEMPLATE, CalcBindingSSL_CreateServiceProxy>
-			)
-		{}
+                config,
+                &CreateWSProxy<WS_HTTP_SSL_BINDING_TEMPLATE, CalcBindingSSL_CreateServiceProxy>
+            )
+        {}
 
-		// Ctor for proxy using a client certificate
-		CalcSvcProxySSL(const SvcProxyConfig &config, const SvcProxyCertInfo &certInfo) :
-			WebServiceProxy(
+        // Ctor for proxy using a client certificate
+        CalcSvcProxySSL(const SvcProxyConfig &config, const SvcProxyCertInfo &certInfo) :
+            WebServiceProxy(
                 AppConfig::GetSettings().application.GetString("testWwsHostSslEndpoint", UNDEF_HOST_SSL),
-				config,
-				certInfo,
-				CalcBindingSSL_CreateServiceProxy
-			)
-		{}
+                config,
+                certInfo,
+                CalcBindingSSL_CreateServiceProxy
+            )
+        {}
 
         // Synchronous 'Add' operation
-		double Add(double first, double second)
-		{
-			CALL_STACK_TRACE;
+        double Add(double first, double second)
+        {
+            CALL_STACK_TRACE;
 
             double result;
 
@@ -270,12 +270,12 @@ namespace integration_tests
                  });
 
             return result;
-		}
+        }
 
         // Synchronous 'Multiply' operation
-		double Multiply(double first, double second)
-		{
-			CALL_STACK_TRACE;
+        double Multiply(double first, double second)
+        {
+            CALL_STACK_TRACE;
 
             double result;
 
@@ -294,12 +294,12 @@ namespace integration_tests
                  });
 
             return result;
-		}
+        }
 
-		// Asynchronous 'Multiply' operation
+        // Asynchronous 'Multiply' operation
         std::future<void> MultiplyAsync(double first, double second, double &result)
-		{
-			CALL_STACK_TRACE;
+        {
+            CALL_STACK_TRACE;
 
             return CallAsync("Calculator web service operation 'Multiply'",
                              proxyOperHeapSize,
@@ -314,7 +314,7 @@ namespace integration_tests
                                                                 nullptr,
                                                                 wsErrorHandle);
                              });
-		}
+        }
 
         // Synchronous 'CloseService' operation
         bool CloseHostService()
@@ -337,194 +337,194 @@ namespace integration_tests
 
             return (result == TRUE);
         }
-	};
+    };
 
-	// Thumbprint of client side certificate for transport security
+    // Thumbprint of client side certificate for transport security
     const char *keyForCliCertThumbprint("testWwsCliCertThumbprint");
 
-	/// <summary>
-	/// Tests synchronous web service access
-	/// with SSL over HTTP and no client certificate.
-	/// </summary>
+    /// <summary>
+    /// Tests synchronous web service access
+    /// with SSL over HTTP and no client certificate.
+    /// </summary>
     TEST(Framework_WWS_TestCase, Proxy_TransportSSL_NoClientCert_SyncTest)
-	{
-		// Ensures proper initialization/finalization of the framework
-		_3fd::core::FrameworkInstance _framework;
+    {
+        // Ensures proper initialization/finalization of the framework
+        _3fd::core::FrameworkInstance _framework;
 
-		CALL_STACK_TRACE;
+        CALL_STACK_TRACE;
 
-		try
-		{
-			// Create the proxy (client):
-			SvcProxyConfig proxyCfg;
-			CalcSvcProxySSL client(proxyCfg);
-			client.Open();
+        try
+        {
+            // Create the proxy (client):
+            SvcProxyConfig proxyCfg;
+            CalcSvcProxySSL client(proxyCfg);
+            client.Open();
 
-			for (int count = 0; count < 10; ++count)
-			{
-				EXPECT_EQ(666.0, client.Add(606.0, 60.0));
-				EXPECT_EQ(666.0, client.Multiply(111.0, 6.0));
-			}
+            for (int count = 0; count < 10; ++count)
+            {
+                EXPECT_EQ(666.0, client.Add(606.0, 60.0));
+                EXPECT_EQ(666.0, client.Multiply(111.0, 6.0));
+            }
 
             EXPECT_TRUE(client.CloseHostService());
             client.Close();
-		}
-		catch (...)
-		{
-			HandleException();
-		}
-	}
+        }
+        catch (...)
+        {
+            HandleException();
+        }
+    }
 
-	/// <summary>
-	/// Tests asynchronous web service access with
-	/// SSL over HTTP and no client certificate.
-	/// </summary>
+    /// <summary>
+    /// Tests asynchronous web service access with
+    /// SSL over HTTP and no client certificate.
+    /// </summary>
     TEST(Framework_WWS_TestCase, Proxy_TransportSSL_NoClientCert_AsyncTest)
-	{
-		// Ensures proper initialization/finalization of the framework
-		_3fd::core::FrameworkInstance _framework;
+    {
+        // Ensures proper initialization/finalization of the framework
+        _3fd::core::FrameworkInstance _framework;
 
-		CALL_STACK_TRACE;
+        CALL_STACK_TRACE;
 
-		try
-		{
-			// Create the proxy (client):
-			SvcProxyConfig proxyCfg;
-			CalcSvcProxySSL client(proxyCfg);
-			client.Open();
+        try
+        {
+            // Create the proxy (client):
+            SvcProxyConfig proxyCfg;
+            CalcSvcProxySSL client(proxyCfg);
+            client.Open();
 
-			const int maxAsyncCalls = 5;
+            const int maxAsyncCalls = 5;
 
-			std::vector<double> results(maxAsyncCalls);
-			std::vector<std::future<void>> asyncOps;
-			asyncOps.reserve(maxAsyncCalls);
+            std::vector<double> results(maxAsyncCalls);
+            std::vector<std::future<void>> asyncOps;
+            asyncOps.reserve(maxAsyncCalls);
 
-			// Fire the asynchronous requests:
-			for (int idx = 0; idx < maxAsyncCalls; ++idx)
-			{
-				asyncOps.push_back(
-					client.MultiplyAsync(111.0, 6.0, results[idx])
-				);
-			}
+            // Fire the asynchronous requests:
+            for (int idx = 0; idx < maxAsyncCalls; ++idx)
+            {
+                asyncOps.push_back(
+                    client.MultiplyAsync(111.0, 6.0, results[idx])
+                );
+            }
 
-			// Get the results and check for errors:
-			while (!asyncOps.empty())
-			{
+            // Get the results and check for errors:
+            while (!asyncOps.empty())
+            {
                 asyncOps.back().get();
-				asyncOps.pop_back();
+                asyncOps.pop_back();
 
-				EXPECT_EQ(666.0, results.back());
-				results.pop_back();
-			}
+                EXPECT_EQ(666.0, results.back());
+                results.pop_back();
+            }
 
             EXPECT_TRUE(client.CloseHostService());
             client.Close();
-		}
-		catch (...)
-		{
-			HandleException();
-		}
-	}
+        }
+        catch (...)
+        {
+            HandleException();
+        }
+    }
 
-	/// <summary>
-	/// Tests synchronous web service access, with
-	/// SSL over HTTP and a client certificate.
-	/// </summary>
+    /// <summary>
+    /// Tests synchronous web service access, with
+    /// SSL over HTTP and a client certificate.
+    /// </summary>
     TEST(Framework_WWS_TestCase, Proxy_TransportSSL_WithClientCert_SyncTest)
-	{
-		// Ensures proper initialization/finalization of the framework
-		_3fd::core::FrameworkInstance _framework;
+    {
+        // Ensures proper initialization/finalization of the framework
+        _3fd::core::FrameworkInstance _framework;
 
-		CALL_STACK_TRACE;
+        CALL_STACK_TRACE;
 
-		try
-		{
-			/* Insert here the information describing the client side
-			certificate to use in your test environment: */
-			SvcProxyCertInfo proxyCertInfo(
-				CERT_SYSTEM_STORE_LOCAL_MACHINE,
-				"My",
-				AppConfig::GetSettings().application.GetString(keyForCliCertThumbprint, UNDEF_CLIENT_CERT)
-			);
-
-			// Create the proxy (client):
-			SvcProxyConfig proxyCfg;
-			CalcSvcProxySSL client(proxyCfg, proxyCertInfo);
-			client.Open();
-
-			for (int count = 0; count < 10; ++count)
-			{
-				EXPECT_EQ(666.0, client.Add(606.0, 60.0));
-				EXPECT_EQ(666.0, client.Multiply(111.0, 6.0));
-			}
-
-            EXPECT_TRUE(client.CloseHostService());
-            client.Close();
-		}
-		catch (...)
-		{
-			HandleException();
-		}
-	}
-
-	/// <summary>
-	/// Tests asynchronous web service access, with
-	/// SSL over HTTP and a client certificate.
-	/// </summary>
-    TEST(Framework_WWS_TestCase, Proxy_TransportSSL_WithClientCert_AsyncTest)
-	{
-		// Ensures proper initialization/finalization of the framework
-		_3fd::core::FrameworkInstance _framework;
-
-		CALL_STACK_TRACE;
-
-		try
-		{
-			/* Insert here the information describing the client side
-			certificate to use in your test environment: */
-			SvcProxyCertInfo proxyCertInfo(
-				CERT_SYSTEM_STORE_LOCAL_MACHINE,
-				"My",
+        try
+        {
+            /* Insert here the information describing the client side
+            certificate to use in your test environment: */
+            SvcProxyCertInfo proxyCertInfo(
+                CERT_SYSTEM_STORE_LOCAL_MACHINE,
+                "My",
                 AppConfig::GetSettings().application.GetString(keyForCliCertThumbprint, UNDEF_CLIENT_CERT)
-			);
+            );
 
-			// Create the proxy (client):
-			SvcProxyConfig proxyCfg;
-			CalcSvcProxySSL client(proxyCfg, proxyCertInfo);
-			client.Open();
+            // Create the proxy (client):
+            SvcProxyConfig proxyCfg;
+            CalcSvcProxySSL client(proxyCfg, proxyCertInfo);
+            client.Open();
 
-			const int maxAsyncCalls = 5;
-
-			std::vector<double> results(maxAsyncCalls);
-			std::vector<std::future<void>> asyncOps;
-			asyncOps.reserve(maxAsyncCalls);
-
-			// Fire the asynchronous requests:
-			for (int idx = 0; idx < maxAsyncCalls; ++idx)
-			{
-				asyncOps.push_back(
-					client.MultiplyAsync(111.0, 6.0, results[idx])
-				);
-			}
-
-			// Get the results and check for errors:
-			while (!asyncOps.empty())
-			{
-                asyncOps.back().get();
-				asyncOps.pop_back();
-
-				EXPECT_EQ(666.0, results.back());
-				results.pop_back();
-			}
+            for (int count = 0; count < 10; ++count)
+            {
+                EXPECT_EQ(666.0, client.Add(606.0, 60.0));
+                EXPECT_EQ(666.0, client.Multiply(111.0, 6.0));
+            }
 
             EXPECT_TRUE(client.CloseHostService());
             client.Close();
-		}
-		catch (...)
-		{
-			HandleException();
-		}
-	}
+        }
+        catch (...)
+        {
+            HandleException();
+        }
+    }
+
+    /// <summary>
+    /// Tests asynchronous web service access, with
+    /// SSL over HTTP and a client certificate.
+    /// </summary>
+    TEST(Framework_WWS_TestCase, Proxy_TransportSSL_WithClientCert_AsyncTest)
+    {
+        // Ensures proper initialization/finalization of the framework
+        _3fd::core::FrameworkInstance _framework;
+
+        CALL_STACK_TRACE;
+
+        try
+        {
+            /* Insert here the information describing the client side
+            certificate to use in your test environment: */
+            SvcProxyCertInfo proxyCertInfo(
+                CERT_SYSTEM_STORE_LOCAL_MACHINE,
+                "My",
+                AppConfig::GetSettings().application.GetString(keyForCliCertThumbprint, UNDEF_CLIENT_CERT)
+            );
+
+            // Create the proxy (client):
+            SvcProxyConfig proxyCfg;
+            CalcSvcProxySSL client(proxyCfg, proxyCertInfo);
+            client.Open();
+
+            const int maxAsyncCalls = 5;
+
+            std::vector<double> results(maxAsyncCalls);
+            std::vector<std::future<void>> asyncOps;
+            asyncOps.reserve(maxAsyncCalls);
+
+            // Fire the asynchronous requests:
+            for (int idx = 0; idx < maxAsyncCalls; ++idx)
+            {
+                asyncOps.push_back(
+                    client.MultiplyAsync(111.0, 6.0, results[idx])
+                );
+            }
+
+            // Get the results and check for errors:
+            while (!asyncOps.empty())
+            {
+                asyncOps.back().get();
+                asyncOps.pop_back();
+
+                EXPECT_EQ(666.0, results.back());
+                results.pop_back();
+            }
+
+            EXPECT_TRUE(client.CloseHostService());
+            client.Close();
+        }
+        catch (...)
+        {
+            HandleException();
+        }
+    }
 
     /// <summary>
     /// Implements a client for the calculator web service with SSL security.
@@ -736,57 +736,57 @@ namespace integration_tests
         }
     }
 
-	/// <summary>
-	/// Tests SOAP fault transmission in web service synchronous access.
-	/// </summary>
+    /// <summary>
+    /// Tests SOAP fault transmission in web service synchronous access.
+    /// </summary>
     TEST(Framework_WWS_TestCase, Proxy_SoapFault_SyncTest)
-	{
-		// Ensures proper initialization/finalization of the framework
-		_3fd::core::FrameworkInstance _framework;
+    {
+        // Ensures proper initialization/finalization of the framework
+        _3fd::core::FrameworkInstance _framework;
 
-		CALL_STACK_TRACE;
+        CALL_STACK_TRACE;
 
-		try
-		{
-			SvcProxyConfig proxyCfg; // proxy configuration with default values
+        try
+        {
+            SvcProxyConfig proxyCfg; // proxy configuration with default values
 
             // Create a proxy (client) without transport security:
             CalcSvcProxyUnsecure unsecureClient(proxyCfg);
             unsecureClient.Open();
 
-			try
-			{
-				// This request should generate a SOAP fault, hence throwing an exception
-				unsecureClient.Add(606.0, 60.0);
-			}
-			catch (IAppException &ex)
-			{// Log the fault:
-				Logger::Write(ex, Logger::PRIO_ERROR);
-			}
+            try
+            {
+                // This request should generate a SOAP fault, hence throwing an exception
+                unsecureClient.Add(606.0, 60.0);
+            }
+            catch (IAppException &ex)
+            {// Log the fault:
+                Logger::Write(ex, Logger::PRIO_ERROR);
+            }
 
             unsecureClient.Close();
 
-			/* Insert here the information describing the client
-			side certificate to use in your test environment: */
-			SvcProxyCertInfo proxyCertInfo(
-				CERT_SYSTEM_STORE_LOCAL_MACHINE,
-				"My",
+            /* Insert here the information describing the client
+            side certificate to use in your test environment: */
+            SvcProxyCertInfo proxyCertInfo(
+                CERT_SYSTEM_STORE_LOCAL_MACHINE,
+                "My",
                 AppConfig::GetSettings().application.GetString(keyForCliCertThumbprint, UNDEF_CLIENT_CERT)
-			);
+            );
 
             // Create a secure proxy (client):
             CalcSvcProxySSL sslClient(proxyCfg, proxyCertInfo);
             sslClient.Open();
 
-			try
-			{
-				// This request should generate a SOAP fault, hence throwing an exception
-				sslClient.Multiply(111.0, 6.0);
-			}
-			catch (IAppException &ex)
-			{// Log the fault:
-				Logger::Write(ex, Logger::PRIO_ERROR);
-			}
+            try
+            {
+                // This request should generate a SOAP fault, hence throwing an exception
+                sslClient.Multiply(111.0, 6.0);
+            }
+            catch (IAppException &ex)
+            {// Log the fault:
+                Logger::Write(ex, Logger::PRIO_ERROR);
+            }
 
             sslClient.Close();
 
@@ -806,76 +806,76 @@ namespace integration_tests
 
             EXPECT_TRUE(headerAuthSslClient.CloseHostService());
             headerAuthSslClient.Close();
-		}
-		catch (...)
-		{
-			HandleException();
-		}
-	}
+        }
+        catch (...)
+        {
+            HandleException();
+        }
+    }
 
-	/// <summary>
-	/// Tests SOAP fault transmission in web service asynchronous access.
-	/// </summary>
+    /// <summary>
+    /// Tests SOAP fault transmission in web service asynchronous access.
+    /// </summary>
     TEST(Framework_WWS_TestCase, Proxy_SoapFault_AsyncTest)
-	{
-		// Ensures proper initialization/finalization of the framework
-		_3fd::core::FrameworkInstance _framework;
+    {
+        // Ensures proper initialization/finalization of the framework
+        _3fd::core::FrameworkInstance _framework;
 
-		CALL_STACK_TRACE;
+        CALL_STACK_TRACE;
 
-		try
-		{
-			SvcProxyConfig proxyCfg; // proxy configuration with default values
+        try
+        {
+            SvcProxyConfig proxyCfg; // proxy configuration with default values
 
             // Create a proxy without transport security:
             CalcSvcProxyUnsecure unsecureClient(proxyCfg);
             unsecureClient.Open();
 
-			try
-			{
-				// Start an asynchronous request:
-				double result;
-				auto asyncOp = unsecureClient.MultiplyAsync(606.0, 60.0, result);
+            try
+            {
+                // Start an asynchronous request:
+                double result;
+                auto asyncOp = unsecureClient.MultiplyAsync(606.0, 60.0, result);
 
-				/* The request generates a SOAP fault. This will wait for its
-				completion, then it throws an exception made from the deserialized
-				SOAP fault response: */
-				asyncOp.get();
-			}
-			catch (IAppException &ex)
-			{// Log the fault:
-				Logger::Write(ex, Logger::PRIO_ERROR);
-			}
+                /* The request generates a SOAP fault. This will wait for its
+                completion, then it throws an exception made from the deserialized
+                SOAP fault response: */
+                asyncOp.get();
+            }
+            catch (IAppException &ex)
+            {// Log the fault:
+                Logger::Write(ex, Logger::PRIO_ERROR);
+            }
 
             unsecureClient.Close();
 
-			/* Insert here the information describing the client side
-			certificate to use in your test environment: */
-			SvcProxyCertInfo proxyCertInfo(
-				CERT_SYSTEM_STORE_LOCAL_MACHINE,
-				"My",
+            /* Insert here the information describing the client side
+            certificate to use in your test environment: */
+            SvcProxyCertInfo proxyCertInfo(
+                CERT_SYSTEM_STORE_LOCAL_MACHINE,
+                "My",
                 AppConfig::GetSettings().application.GetString(keyForCliCertThumbprint, UNDEF_CLIENT_CERT)
-			);
+            );
 
             // Create a secure proxy (client):
             CalcSvcProxySSL sslClient(proxyCfg, proxyCertInfo);
             sslClient.Open();
 
-			try
-			{
-				// This request should generate a SOAP fault, hence throwing an exception
-				double result;
-				auto asyncOp = sslClient.MultiplyAsync(111.0, 6.0, result);
+            try
+            {
+                // This request should generate a SOAP fault, hence throwing an exception
+                double result;
+                auto asyncOp = sslClient.MultiplyAsync(111.0, 6.0, result);
 
-				/* The request generates a SOAP fault. This will wait for its
-				completion, then it throws an exception made from the deserialized
-				SOAP fault response: */
-				asyncOp.get();
-			}
-			catch (IAppException &ex)
-			{// Log the fault:
-				Logger::Write(ex, Logger::PRIO_ERROR);
-			}
+                /* The request generates a SOAP fault. This will wait for its
+                completion, then it throws an exception made from the deserialized
+                SOAP fault response: */
+                asyncOp.get();
+            }
+            catch (IAppException &ex)
+            {// Log the fault:
+                Logger::Write(ex, Logger::PRIO_ERROR);
+            }
 
             sslClient.Close();
 
@@ -901,12 +901,12 @@ namespace integration_tests
 
             EXPECT_TRUE(headerAuthSslClient.CloseHostService());
             headerAuthSslClient.Close();
-		}
-		catch (...)
-		{
-			HandleException();
-		}
-	}
+        }
+        catch (...)
+        {
+            HandleException();
+        }
+    }
 
 }// end of namespace integration_tests
 }// end of namespace _3fd

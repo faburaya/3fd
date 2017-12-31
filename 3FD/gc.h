@@ -18,72 +18,72 @@
 */
 namespace _3fd
 {
-	namespace memory
-	{
-		/// <summary>
-		/// The interface that all GC messages must implement.
-		/// </summary>
-		class INTFOPT IMessage
-		{
-		public:
+namespace memory
+{
+    /// <summary>
+    /// The interface that all GC messages must implement.
+    /// </summary>
+    class INTFOPT IMessage
+    {
+    public:
 
-            virtual ~IMessage() {}
+        virtual ~IMessage() {}
 
-			virtual void Execute(MemoryDigraph &graph) = 0;
-		};
+        virtual void Execute(MemoryDigraph &graph) = 0;
+    };
 
-		/// <summary>
-		/// Implements the garbage collector engine.
-		/// </summary>
-		class GarbageCollector : notcopiable 
-		{
-		private:
+    /// <summary>
+    /// Implements the garbage collector engine.
+    /// </summary>
+    class GarbageCollector : notcopiable 
+    {
+    private:
 
-			std::thread						m_thread;
-			std::exception_ptr				m_error;
-			MemoryDigraph					m_memoryDigraph;
-            utils::LockFreeQueue<IMessage>	m_messagesQueue;
-			utils::Event					m_terminationEvent;
+        std::thread                        m_thread;
+        std::exception_ptr                m_error;
+        MemoryDigraph                    m_memoryDigraph;
+        utils::LockFreeQueue<IMessage>    m_messagesQueue;
+        utils::Event                    m_terminationEvent;
 
-			GarbageCollector();
+        GarbageCollector();
 
-			void GCThreadProc();
+        void GCThreadProc();
 
-			// Singleton needs:
+        // Singleton needs:
 
-			static std::mutex		singleInstanceCreationMutex;
-			static GarbageCollector	*uniqueObjectPtr;
-			static GarbageCollector *CreateInstance();
+        static std::mutex        singleInstanceCreationMutex;
+        static GarbageCollector    *uniqueObjectPtr;
+        static GarbageCollector *CreateInstance();
 
-		public:
+    public:
 
-			static GarbageCollector &GetInstance();
+        static GarbageCollector &GetInstance();
 
-			static void Shutdown();
+        static void Shutdown();
 
-			~GarbageCollector();
+        ~GarbageCollector();
 
-			void RegisterNewObject(
-				void *sptrObjAddr,
-				void *pointedAddr,
-				size_t blockSize,
-				FreeMemProc freeMemCallback
-			);
+        void RegisterNewObject(
+            void *sptrObjAddr,
+            void *pointedAddr,
+            size_t blockSize,
+            FreeMemProc freeMemCallback
+        );
 
-			void UpdateReference(void *leftSptrObjAddr, void *rightSptrObjAddr);
+        void UpdateReference(void *leftSptrObjAddr, void *rightSptrObjAddr);
 
-			void ReleaseReference(void *sptrObjAddr);
+        void ReleaseReference(void *sptrObjAddr);
 
-			void UnregisterAbortedObject(void *sptrObjAddr);
+        void UnregisterAbortedObject(void *sptrObjAddr);
 
-			void RegisterSptr(void *sptrObjAddr, void *pointedAddr);
+        void RegisterSptr(void *sptrObjAddr, void *pointedAddr);
 
-			void RegisterSptrCopy(void *leftSptrObjAddr, void *rightSptrObjAddr);
+        void RegisterSptrCopy(void *leftSptrObjAddr, void *rightSptrObjAddr);
 
-			void UnregisterSptr(void *sptrObjAddr);
-		};
+        void UnregisterSptr(void *sptrObjAddr);
+    };
 
-	}// end of namespace memory
+}// end of namespace memory
 }// end of namespace _3fd
 
 #endif // end of header guard

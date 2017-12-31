@@ -58,11 +58,11 @@ namespace unit_tests
         }
     }
 
-	/// <summary>
-	/// Tests the binary search for sub-range.
-	/// </summary>
-	TEST(Framework_Utils_TestCase, BinSearchSubRange_Test)
-	{
+    /// <summary>
+    /// Tests the binary search for sub-range.
+    /// </summary>
+    TEST(Framework_Utils_TestCase, BinSearchSubRange_Test)
+    {
         const uint32_t numEntries(1UL << 12);
 
         std::vector<Object> list;
@@ -110,7 +110,7 @@ namespace unit_tests
             EXPECT_FALSE(utils::BinSearchSubRange(key, subRangeBegin, subRangeEnd));
             EXPECT_EQ(subRangeBegin, subRangeEnd);
         }
-	}
+    }
 
 }// end of namespace unit_tests
 }// end of namespace _3fd

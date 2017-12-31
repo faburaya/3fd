@@ -6,70 +6,70 @@
 #include <functional>
 
 /*
-	The convention here is
+    The convention here is
 
-	+ Regular vertices are passed as 'Vertex *'
-	+ Root vertices are passed as 'void *'
-	+ Memory addresses in general are handled as 'void *'
+    + Regular vertices are passed as 'Vertex *'
+    + Root vertices are passed as 'void *'
+    + Memory addresses in general are handled as 'void *'
 */
 namespace _3fd
 {
-	namespace memory
-	{
-		class Vertex;
+namespace memory
+{
+    class Vertex;
 
-		/// <summary>
-		/// A dinamically resizable array of edges,
-		/// for implementation of directed graphs.
-		/// </summary>
-		class ArrayOfEdges : notcopiable
-		{
-		private:
+    /// <summary>
+    /// A dinamically resizable array of edges,
+    /// for implementation of directed graphs.
+    /// </summary>
+    class ArrayOfEdges : notcopiable
+    {
+    private:
 
-			/// <summary>
-			/// Holds pointers to all vertices, that represent receiving edges.
-			/// </summary>
-			void **m_array;
+        /// <summary>
+        /// Holds pointers to all vertices, that represent receiving edges.
+        /// </summary>
+        void **m_array;
 
-			uint32_t m_arraySize;
+        uint32_t m_arraySize;
 
-			uint32_t m_arrayCapacity;
+        uint32_t m_arrayCapacity;
 
-			/// <summary>
-			/// Counting of how many root vertices are in the array.
-			/// </summary>
-			uint32_t m_rootCount;
+        /// <summary>
+        /// Counting of how many root vertices are in the array.
+        /// </summary>
+        uint32_t m_rootCount;
 
-			void CreateEdgeImpl(void *vtx);
+        void CreateEdgeImpl(void *vtx);
 
-			void RemoveEdgeImpl(void *vtx);
+        void RemoveEdgeImpl(void *vtx);
 
-			void EvaluateShrinkCapacity();
+        void EvaluateShrinkCapacity();
 
-		public:
+    public:
 
-			ArrayOfEdges();
+        ArrayOfEdges();
 
-			~ArrayOfEdges();
+        ~ArrayOfEdges();
 
-			void AddEdge(void *vtxRoot);
+        void AddEdge(void *vtxRoot);
 
-			void AddEdge(Vertex *vtxRegular);
+        void AddEdge(Vertex *vtxRegular);
 
-			void RemoveEdge(void *vtxRoot);
+        void RemoveEdge(void *vtxRoot);
 
-			void RemoveEdge(Vertex *vtxRegular);
+        void RemoveEdge(Vertex *vtxRegular);
 
-			void Clear();
+        void Clear();
 
-			uint32_t Size() const;
+        uint32_t Size() const;
 
-			bool HasRootEdges() const;
+        bool HasRootEdges() const;
 
-			void ForEachRegular(const std::function<bool(Vertex *)> &callback);
-		};
+        void ForEachRegular(const std::function<bool(Vertex *)> &callback);
+    };
 
-	}// end of namespace memory
+}// end of namespace memory
 }// end of namespace _3fd
 
 #endif // end of header guard

@@ -42,74 +42,74 @@ namespace core
     };
 
 
-	/// <summary>
-	/// A singleton that holds the application settings.
-	/// </summary>
-	class AppConfig
-	{
-	private:
+    /// <summary>
+    /// A singleton that holds the application settings.
+    /// </summary>
+    class AppConfig
+    {
+    private:
 
-		struct Tree
-		{
-			// Used by both application and framework:
-			struct
-			{
-				struct
-				{
+        struct Tree
+        {
+            // Used by both application and framework:
+            struct
+            {
+                struct
+                {
 #ifdef _3FD_POCO_SUPPORT // For POCO C++ logging facilities:
-					uint32_t purgeAge;
+                    uint32_t purgeAge;
                     uint32_t purgeCount;
-					bool     writeToConsole;
+                    bool     writeToConsole;
 #endif
                     uint32_t sizeLimit;
-				} log;
-			} common;
+                } log;
+            } common;
 
-			// Required by the framework and for its exclusive use:
-			struct
-			{
-				struct
-				{
+            // Required by the framework and for its exclusive use:
+            struct
+            {
+                struct
+                {
 #ifdef _3FD_OPENCL_SUPPORT
-					bool opencl;
+                    bool opencl;
 #endif
-				} dependencies;
+                } dependencies;
 
-				struct
-				{
+                struct
+                {
                     uint32_t stackLogInitialCap;
-				} stackTracing;
+                } stackTracing;
 
-				struct
-				{
+                struct
+                {
                     uint32_t msgLoopSleepTimeoutMilisecs;
-						
-					struct
-					{
+                        
+                    struct
+                    {
                         uint32_t initialSize;
-						float    growingFactor;
-					} memBlocksMemPool;
-						
-					struct
-					{
+                        float    growingFactor;
+                    } memBlocksMemPool;
+                        
+                    struct
+                    {
                         uint32_t initialSizeLog2;
-						float    loadFactorThreshold;
-					} sptrObjectsHashTable;
-				} gc;
+                        float    loadFactorThreshold;
+                    } sptrObjectsHashTable;
+                } gc;
 
 #ifdef _3FD_OPENCL_SUPPORT
-				struct
-				{
+                struct
+                {
                     uint32_t maxSourceCodeLineLength;
                     uint32_t maxBuildLogSize;
-				} opencl;
+                } opencl;
 #endif
 
 #ifdef _3FD_ESENT_SUPPORT
-				struct
-				{
-					bool useWindowsFileCache;
-				} isam;
+                struct
+                {
+                    bool useWindowsFileCache;
+                } isam;
 #endif
 
 #ifdef _3FD_POCO_SUPPORT
@@ -138,29 +138,30 @@ namespace core
                     uint32_t proxyRetryTimeSlotMs;
                 } wws;
 #endif
-			} framework;
+            } framework;
 
             AppFlexSettings application;
 
-		} settings;
+        } settings;
 
-		string m_applicationId;
+        string m_applicationId;
 
-		static std::unique_ptr<AppConfig> uniqueObject;
-		static std::mutex initializationMutex;
+        static std::unique_ptr<AppConfig> uniqueObject;
+        static std::mutex initializationMutex;
 
-		static AppConfig &GetInstanceInitialized();
+        static AppConfig &GetInstanceInitialized();
 
-		void Initialize();
+        void Initialize();
 
-		AppConfig() {} // empty private constructor
+        AppConfig() {} // empty private constructor
 
-	public:
+    public:
 
-		static const string &GetApplicationId();
+        static const string &GetApplicationId();
 
-		static const Tree &GetSettings();
-	};
+        static const Tree &GetSettings();
+    };
+
 }// end of namespace core
 }// end of namespace _3fd
 

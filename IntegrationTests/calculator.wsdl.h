@@ -64,10 +64,10 @@
 // structure:
 //    typedef struct ContactInfo 
 //    {
-//			WCHAR*  name;
-//			WCHAR*  email;
-//			__int64 contactID;
-//	  } ContactInfo;
+//            WCHAR*  name;
+//            WCHAR*  email;
+//            __int64 contactID;
+//      } ContactInfo;
 //
 // This structure corresponds to the following complex type defined in the WSDL file:
 //    <s:complexType name="ContactInfo">

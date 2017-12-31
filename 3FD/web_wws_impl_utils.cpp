@@ -11,125 +11,125 @@ namespace web
 {
 namespace wws
 {
-	using namespace _3fd::core;
+    using namespace _3fd::core;
 
-	/// <summary>
-	/// Creates from a std::string a WS_XML_STRING structure.
-	/// </summary>
-	/// <param name="str">The original std::string object.</param>
-	/// <returns>
-	/// A WS_XML_STRING structure referencing the data in the original std::string object.
-	/// </returns>
-	WS_XML_STRING ToWsXmlString(const string &str)
-	{
-		return WS_XML_STRING
-		{
-			static_cast<ULONG> (str.length()),
-			(BYTE *)str.data(),
-			nullptr,
-			0
-		};
-	}
+    /// <summary>
+    /// Creates from a std::string a WS_XML_STRING structure.
+    /// </summary>
+    /// <param name="str">The original std::string object.</param>
+    /// <returns>
+    /// A WS_XML_STRING structure referencing the data in the original std::string object.
+    /// </returns>
+    WS_XML_STRING ToWsXmlString(const string &str)
+    {
+        return WS_XML_STRING
+        {
+            static_cast<ULONG> (str.length()),
+            (BYTE *)str.data(),
+            nullptr,
+            0
+        };
+    }
 
-	/// <summary>
-	/// Creates from a std::string a heap allocated WS_XML_STRING structure.
-	/// </summary>
-	/// <param name="str">The original std::string object.</param>
-	/// <param name="heap">The heap to allocate memory from.</param>
-	/// <returns>
-	/// A pointer to a heap allocated WS_XML_STRING structure referencing
-	/// the data in the original std::string object.
-	/// </returns>
-	WS_XML_STRING *ToWsXmlString(const string &str, WSHeap &heap)
-	{
-		void *ptr = heap.Alloc<WS_XML_STRING>();
-		return new (ptr) WS_XML_STRING
-		{
-			static_cast<ULONG> (str.length()),
-			(BYTE *)str.data(),
-			nullptr,
-			0
-		};
-	}
+    /// <summary>
+    /// Creates from a std::string a heap allocated WS_XML_STRING structure.
+    /// </summary>
+    /// <param name="str">The original std::string object.</param>
+    /// <param name="heap">The heap to allocate memory from.</param>
+    /// <returns>
+    /// A pointer to a heap allocated WS_XML_STRING structure referencing
+    /// the data in the original std::string object.
+    /// </returns>
+    WS_XML_STRING *ToWsXmlString(const string &str, WSHeap &heap)
+    {
+        void *ptr = heap.Alloc<WS_XML_STRING>();
+        return new (ptr) WS_XML_STRING
+        {
+            static_cast<ULONG> (str.length()),
+            (BYTE *)str.data(),
+            nullptr,
+            0
+        };
+    }
 
-	/// <summary>
-	/// Creates from a std::string a heap allocated WS_STRING structure.
-	/// </summary>
-	/// <param name="str">The original std::string object.</param>
-	/// <param name="heap">The heap to allocate memory from.</param>
-	/// <returns>
-	/// A pointer to a heap allocated WS_STRING structure referencing
-	/// the data in the original std::string object.
-	/// </returns>
-	WS_STRING ToWsString(const string &str, WSHeap &heap)
-	{
-		WS_STRING obj;
-		obj.length = mbstowcs(nullptr, str.data(), str.length());
-		obj.chars = heap.Alloc<wchar_t>(obj.length);
-		mbstowcs(obj.chars, str.data(), str.length());
-		return obj;
-	}
+    /// <summary>
+    /// Creates from a std::string a heap allocated WS_STRING structure.
+    /// </summary>
+    /// <param name="str">The original std::string object.</param>
+    /// <param name="heap">The heap to allocate memory from.</param>
+    /// <returns>
+    /// A pointer to a heap allocated WS_STRING structure referencing
+    /// the data in the original std::string object.
+    /// </returns>
+    WS_STRING ToWsString(const string &str, WSHeap &heap)
+    {
+        WS_STRING obj;
+        obj.length = mbstowcs(nullptr, str.data(), str.length());
+        obj.chars = heap.Alloc<wchar_t>(obj.length);
+        mbstowcs(obj.chars, str.data(), str.length());
+        return obj;
+    }
 
 
-	/////////////////////////////
-	// WSHeap Class
-	/////////////////////////////
+    /////////////////////////////
+    // WSHeap Class
+    /////////////////////////////
 
-	/// <summary>
-	/// Initializes a new instance of the <see cref="WSHeap"/> class.
-	/// </summary>
-	/// <param name="wsHeapHandle">The heap opaque object handle.</param>
-	WSHeap::WSHeap(WS_HEAP *wsHeapHandle)
-		: m_wsHeapHandle(wsHeapHandle), m_allowRelease(false) {}
+    /// <summary>
+    /// Initializes a new instance of the <see cref="WSHeap"/> class.
+    /// </summary>
+    /// <param name="wsHeapHandle">The heap opaque object handle.</param>
+    WSHeap::WSHeap(WS_HEAP *wsHeapHandle)
+        : m_wsHeapHandle(wsHeapHandle), m_allowRelease(false) {}
 
-	/// <summary>
-	/// Initializes a new instance of the <see cref="WSHeap" /> class.
-	/// </summary>
-	/// <param name="nBytes">The amount of bytes to allocate.</param>
-	WSHeap::WSHeap(size_t nBytes) :
-		m_wsHeapHandle(nullptr),
-		m_allowRelease(true)
-	{
-		CALL_STACK_TRACE;
-		WSError err;
-		auto hr = WsCreateHeap(nBytes, 0, nullptr, 0, &m_wsHeapHandle, err.GetHandle());
-		err.RaiseExceptionApiError(hr, "WsCreateHeap", "Failed to create heap");
-	}
+    /// <summary>
+    /// Initializes a new instance of the <see cref="WSHeap" /> class.
+    /// </summary>
+    /// <param name="nBytes">The amount of bytes to allocate.</param>
+    WSHeap::WSHeap(size_t nBytes) :
+        m_wsHeapHandle(nullptr),
+        m_allowRelease(true)
+    {
+        CALL_STACK_TRACE;
+        WSError err;
+        auto hr = WsCreateHeap(nBytes, 0, nullptr, 0, &m_wsHeapHandle, err.GetHandle());
+        err.RaiseExceptionApiError(hr, "WsCreateHeap", "Failed to create heap");
+    }
 
-	/// <summary>
-	/// Finalizes an instance of the <see cref="WSHeap"/> class.
-	/// </summary>
-	WSHeap::~WSHeap()
-	{
-		if (m_allowRelease && m_wsHeapHandle != nullptr)
-			WsFreeHeap(m_wsHeapHandle);
-	}
+    /// <summary>
+    /// Finalizes an instance of the <see cref="WSHeap"/> class.
+    /// </summary>
+    WSHeap::~WSHeap()
+    {
+        if (m_allowRelease && m_wsHeapHandle != nullptr)
+            WsFreeHeap(m_wsHeapHandle);
+    }
 
-	/// <summary>
-	/// Resets this instance.
-	/// </summary>
-	void WSHeap::Reset()
-	{
-		CALL_STACK_TRACE;
-		WSError err;
-		auto hr = WsResetHeap(m_wsHeapHandle, err.GetHandle());
-		err.RaiseExceptionApiError(hr, "WsResetHeap", "Failed to release heap allocations");
-	}
+    /// <summary>
+    /// Resets this instance.
+    /// </summary>
+    void WSHeap::Reset()
+    {
+        CALL_STACK_TRACE;
+        WSError err;
+        auto hr = WsResetHeap(m_wsHeapHandle, err.GetHandle());
+        err.RaiseExceptionApiError(hr, "WsResetHeap", "Failed to release heap allocations");
+    }
 
-	/// <summary>
-	/// Allocates some memory.
-	/// </summary>
-	/// <param name="qtBytes">The amount of bytes to allocate.</param>
-	/// <returns>A pointer to the allocated amount of memory.</returns>
-	void * WSHeap::Alloc(size_t qtBytes)
-	{
-		CALL_STACK_TRACE;
-		WSError err;
-		void *ptr;
-		auto hr = WsAlloc(m_wsHeapHandle, qtBytes, &ptr, err.GetHandle());
-		err.RaiseExceptionApiError(hr, "WsAlloc", "Failed to allocate heap memory");
-		return ptr;
-	}
+    /// <summary>
+    /// Allocates some memory.
+    /// </summary>
+    /// <param name="qtBytes">The amount of bytes to allocate.</param>
+    /// <returns>A pointer to the allocated amount of memory.</returns>
+    void * WSHeap::Alloc(size_t qtBytes)
+    {
+        CALL_STACK_TRACE;
+        WSError err;
+        void *ptr;
+        auto hr = WsAlloc(m_wsHeapHandle, qtBytes, &ptr, err.GetHandle());
+        err.RaiseExceptionApiError(hr, "WsAlloc", "Failed to allocate heap memory");
+        return ptr;
+    }
 
 
     /////////////////////

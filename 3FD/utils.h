@@ -32,80 +32,80 @@ namespace utils
     /////////////////////////////////
 
 #ifdef _MSC_VER
-	_ALLOCATOR_DECL(CACHE_CHUNKLIST, stdext::allocators::sync_none, unsafe_pool_allocator);
+    _ALLOCATOR_DECL(CACHE_CHUNKLIST, stdext::allocators::sync_none, unsafe_pool_allocator);
 #endif
 
-	/// <summary>
-	/// Provides uninitialized and contiguous memory.
-	/// There is a limit 4 GB, which is far more than enough.
-	/// The pool was designed for single-thread access.
-	/// </summary>
-	class MemoryPool : notcopiable
-	{
-	private:
+    /// <summary>
+    /// Provides uninitialized and contiguous memory.
+    /// There is a limit 4 GB, which is far more than enough.
+    /// The pool was designed for single-thread access.
+    /// </summary>
+    class MemoryPool : notcopiable
+    {
+    private:
 
-		void	*m_baseAddr,
-				*m_nextAddr,
-				*m_end;
+        void    *m_baseAddr,
+                *m_nextAddr,
+                *m_end;
 
-		const uint32_t m_blockSize;
+        const uint32_t m_blockSize;
 
-		/// <summary>
-		/// Keeps available memory blocks as offset integers to the base address.
-		/// Because the offset is a 32 bit integer, this imposes the practical limit of 4 GB to the pool.
-		/// </summary>
-		std::stack<uint32_t> m_availableAddrsAsOffset;
+        /// <summary>
+        /// Keeps available memory blocks as offset integers to the base address.
+        /// Because the offset is a 32 bit integer, this imposes the practical limit of 4 GB to the pool.
+        /// </summary>
+        std::stack<uint32_t> m_availableAddrsAsOffset;
 
-	public:
+    public:
 
-		MemoryPool(uint32_t numBlocks, uint32_t blockSize);
+        MemoryPool(uint32_t numBlocks, uint32_t blockSize);
 
-		MemoryPool(MemoryPool &&ob);
+        MemoryPool(MemoryPool &&ob);
 
-		~MemoryPool();
+        ~MemoryPool();
 
-		size_t GetNumBlocks() const NOEXCEPT;
+        size_t GetNumBlocks() const NOEXCEPT;
 
-		void *GetBaseAddress() const NOEXCEPT;
+        void *GetBaseAddress() const NOEXCEPT;
 
-		bool Contains(void *addr) const NOEXCEPT;
+        bool Contains(void *addr) const NOEXCEPT;
 
-		bool IsFull() const NOEXCEPT;
+        bool IsFull() const NOEXCEPT;
 
-		bool IsEmpty() const NOEXCEPT;
+        bool IsEmpty() const NOEXCEPT;
 
-		void *GetFreeBlock() NOEXCEPT;
+        void *GetFreeBlock() NOEXCEPT;
 
-		void ReturnBlock(void *addr);
-	};
+        void ReturnBlock(void *addr);
+    };
 
-	/// <summary>
-	/// A template class for a memory pool that expands dynamically.
-	/// The pool was designed for single-thread access.
-	/// </summary>
-	class DynamicMemPool : notcopiable
-	{
-	private:
+    /// <summary>
+    /// A template class for a memory pool that expands dynamically.
+    /// The pool was designed for single-thread access.
+    /// </summary>
+    class DynamicMemPool : notcopiable
+    {
+    private:
 
-		const float		m_increasingFactor;
-		const size_t	m_initialSize,
-						m_blockSize;
+        const float        m_increasingFactor;
+        const size_t    m_initialSize,
+                        m_blockSize;
 
-		std::map<void *, MemoryPool>	m_memPools;
-		std::queue<MemoryPool *>		m_availableMemPools;
+        std::map<void *, MemoryPool>    m_memPools;
+        std::queue<MemoryPool *>        m_availableMemPools;
 
-	public:
+    public:
 
-		DynamicMemPool(size_t initialSize,
-			size_t blockSize,
-			float increasingFactor);
+        DynamicMemPool(size_t initialSize,
+            size_t blockSize,
+            float increasingFactor);
 
-		void *GetFreeBlock();
+        void *GetFreeBlock();
 
-		void ReturnBlock(void *object);
+        void ReturnBlock(void *object);
 
-		void Shrink();
-	};
+        void Shrink();
+    };
 
     ////////////////////////////////////////////////
     // Multi-thread and Synchronization Utilities
@@ -120,7 +120,7 @@ namespace utils
     private:
 
         std::mutex m_mutex;
-        std::condition_variable	m_condition;
+        std::condition_variable    m_condition;
         bool m_flag;
 
     public:

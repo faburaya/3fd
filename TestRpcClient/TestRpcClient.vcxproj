@@ -181,6 +181,7 @@
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(SolutionDir)3FD;$(SolutionDir)TestShared;$(SolutionDir)gtest\include</AdditionalIncludeDirectories>
       <AdditionalOptions>/D POCO_STATIC %(AdditionalOptions)</AdditionalOptions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -199,6 +200,7 @@
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(SolutionDir)3FD;$(SolutionDir)TestShared;$(SolutionDir)gtest\include</AdditionalIncludeDirectories>
       <AdditionalOptions>/D POCO_STATIC %(AdditionalOptions)</AdditionalOptions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -218,6 +220,7 @@
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(SolutionDir)3FD;$(SolutionDir)TestShared;$(SolutionDir)gtest\include</AdditionalIncludeDirectories>
       <AdditionalOptions>/D POCO_STATIC %(AdditionalOptions)</AdditionalOptions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -236,6 +239,7 @@
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(SolutionDir)3FD;$(SolutionDir)TestShared;$(SolutionDir)gtest\include</AdditionalIncludeDirectories>
       <AdditionalOptions>/D POCO_STATIC %(AdditionalOptions)</AdditionalOptions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -258,6 +262,7 @@
       <AdditionalIncludeDirectories>$(SolutionDir)3FD;$(SolutionDir)TestShared;$(SolutionDir)gtest\include</AdditionalIncludeDirectories>
       <AdditionalOptions>/D POCO_STATIC $(MSVC_X86_RELEASE_EINSTSET) %(AdditionalOptions)</AdditionalOptions>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -281,6 +286,7 @@
       <AdditionalIncludeDirectories>$(SolutionDir)3FD;$(SolutionDir)TestShared;$(SolutionDir)gtest\include</AdditionalIncludeDirectories>
       <AdditionalOptions>/D POCO_STATIC $(MSVC_X86_RELEASE_EINSTSET) %(AdditionalOptions)</AdditionalOptions>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -305,6 +311,7 @@
       <AdditionalIncludeDirectories>$(SolutionDir)3FD;$(SolutionDir)TestShared;$(SolutionDir)gtest\include</AdditionalIncludeDirectories>
       <AdditionalOptions>/D POCO_STATIC $(MSVC_X64_RELEASE_EINSTSET) %(AdditionalOptions)</AdditionalOptions>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -328,6 +335,7 @@
       <AdditionalIncludeDirectories>$(SolutionDir)3FD;$(SolutionDir)TestShared;$(SolutionDir)gtest\include</AdditionalIncludeDirectories>
       <AdditionalOptions>/D POCO_STATIC $(MSVC_X64_RELEASE_EINSTSET) %(AdditionalOptions)</AdditionalOptions>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

@@ -55,16 +55,16 @@ namespace broker
             end;
 
             if not exists (
-	            select * from sys.systypes
-		            where name = N'%s/v1_0_0/Message/ContentType'
+                select * from sys.systypes
+                    where name = N'%s/v1_0_0/Message/ContentType'
             )
             begin
-	            create type [%s/v1_0_0/Message/ContentType] from varchar(%u);
+                create type [%s/v1_0_0/Message/ContentType] from varchar(%u);
             end;
 
             if not exists (
-	            select * from sys.tables
-		            where name = N'%s/v1_0_0/InputStageTable'
+                select * from sys.tables
+                    where name = N'%s/v1_0_0/InputStageTable'
             )
             begin
                 create table [%s/v1_0_0/InputStageTable] (content [%s/v1_0_0/Message/ContentType]);
@@ -119,7 +119,7 @@ namespace broker
                         declare @msgContent [%s/v1_0_0/Message/ContentType];
 
                         declare cursorMsg cursor for (
-	                        select * from [%s/v1_0_0/InputStageTable]
+                            select * from [%s/v1_0_0/InputStageTable]
                         );
 
                         open cursorMsg;
@@ -127,10 +127,10 @@ namespace broker
 
                         while @@fetch_status = 0
                         begin
-	                        send on conversation @dialogHandle
-		                        message type [%s/v1_0_0/Message] (@msgContent);
+                            send on conversation @dialogHandle
+                                message type [%s/v1_0_0/Message] (@msgContent);
 
-	                        fetch next from cursorMsg into @msgContent;
+                            fetch next from cursorMsg into @msgContent;
                         end;
 
                         close cursorMsg;
@@ -179,13 +179,13 @@ namespace broker
                             ,message_type_name   sysname
                         );
 
-	                    receive conversation_handle
+                        receive conversation_handle
                                 ,message_type_name
-		                    from [%s/v1_0_0/ResponseQueue]
+                            from [%s/v1_0_0/ResponseQueue]
                             into @ReceivedMessages;
         
                         declare @dialogHandle  uniqueidentifier;
-	                    declare @msgTypeName   sysname;
+                        declare @msgTypeName   sysname;
         
                         declare cursorMsg
                             cursor forward_only read_only for
@@ -196,13 +196,13 @@ namespace broker
                         open cursorMsg;
                         fetch next from cursorMsg into @dialogHandle, @msgTypeName;
 
-	                    while @@fetch_status = 0
-	                    begin
+                        while @@fetch_status = 0
+                        begin
                             if @msgTypeName = 'http://schemas.microsoft.com/SQL/ServiceBroker/EndDialog'
                                 end conversation @dialogHandle;
 
-		                    fetch next from cursorMsg into @dialogHandle, @msgTypeName;
-	                    end;
+                            fetch next from cursorMsg into @dialogHandle, @msgTypeName;
+                        end;
 
                         close cursorMsg;
                         deallocate cursorMsg;

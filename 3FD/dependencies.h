@@ -10,34 +10,34 @@
 
 namespace _3fd
 {
-	namespace core
-	{
-		/// <summary>
-		/// Takes care of the framework's DLL dependencies.
-		/// </summary>
-		class Dependencies : notcopiable
-		{
-		private:
-			
-			static std::unique_ptr<Dependencies>	singleInstancePtr;
-			static std::mutex						singleInstanceCreationMutex;
+namespace core
+{
+    /// <summary>
+    /// Takes care of the framework's DLL dependencies.
+    /// </summary>
+    class Dependencies : notcopiable
+    {
+    private:
+            
+        static std::unique_ptr<Dependencies>    singleInstancePtr;
+        static std::mutex                        singleInstanceCreationMutex;
 
-			Dependencies();
+        Dependencies();
 
-		public:
+    public:
 
-			~Dependencies(); // must be public so the 'unique_ptr<>' holding the single object can destroy it
+        ~Dependencies(); // must be public so the 'unique_ptr<>' holding the single object can destroy it
 
-			// Get the singleton instance.
-			static Dependencies &Get();
+        // Get the singleton instance.
+        static Dependencies &Get();
 
 #ifdef _3FD_OPENCL_SUPPORT
-		private:
-			HINSTANCE m_openclDllHandle;
+    private:
+        HINSTANCE m_openclDllHandle;
 
-		public:
-			HINSTANCE &OpenCLDllHandle;
+    public:
+        HINSTANCE &OpenCLDllHandle;
 #endif
-		};
-	}
+    };
+}
 }
