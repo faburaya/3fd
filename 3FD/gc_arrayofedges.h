@@ -1,7 +1,6 @@
 #ifndef GC_ARRAYOFEDGES_H // header guard
 #define GC_ARRAYOFEDGES_H
 
-#include "base.h"
 #include <cinttypes>
 #include <functional>
 
@@ -22,7 +21,7 @@ namespace memory
     /// A dinamically resizable array of edges,
     /// for implementation of directed graphs.
     /// </summary>
-    class ArrayOfEdges : notcopiable
+    class ArrayOfEdges
     {
     private:
 
@@ -49,6 +48,8 @@ namespace memory
     public:
 
         ArrayOfEdges();
+
+		ArrayOfEdges(const ArrayOfEdges &) = delete;
 
         ~ArrayOfEdges();
 

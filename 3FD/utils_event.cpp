@@ -32,16 +32,19 @@ namespace _3fd
 
         /// <summary>
         /// Sets the event.
+        /// This will wake only a single listener!
         /// </summary>
         void Event::Signalize()
         {
-            std::unique_lock<std::mutex> lock(m_mutex);
-            m_condition.notify_all();
-            m_flag = true;
+            {// sets a flag that is later checked for signal confirmation
+                std::lock_guard<std::mutex> lock(m_mutex);
+                m_flag = true;
+            }
+            m_condition.notify_one();
         }
 
         /// <summary>
-        /// Wait for the event to be set along with a approval from the predicate.
+        /// Wait for the event to be set along with an approval from the predicate.
         /// The predicate might not approve the context if, for example, the event was set before the 
         /// callee starts to wait, and by the time the callee is made aware of the previous notification, 
         /// the context has already changed and this previous notification is no longer valid.
@@ -58,7 +61,7 @@ namespace _3fd
                     m_flag = false;
                     return predicate();
                 }
-                else
+                else // spurius wake-up?
                     return false;
             });
         }
@@ -72,9 +75,19 @@ namespace _3fd
         {
             std::unique_lock<std::mutex> lock(m_mutex);
 
-            return m_flag || m_condition.wait_for(lock, 
-                                                  std::chrono::milliseconds(millisecs), 
-                                                  [this]() { return m_flag; });
+            return m_flag ||
+                m_condition.wait_for(lock, 
+                    std::chrono::milliseconds(millisecs), 
+                    [this]()
+                    {
+                        if (m_flag)
+                        {
+                            m_flag = false;
+                            return true;
+                        }
+
+                        return false;
+                    });
         }
 
     } // end of namespace utils

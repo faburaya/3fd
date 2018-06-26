@@ -437,7 +437,14 @@ void ::XamlTypeInfo::InfoProvider::XamlUserType::RunInitializer()
 
 ::Platform::Object^ ::XamlTypeInfo::InfoProvider::XamlUserType::CreateFromString(::Platform::String^ input)
 {
-    return FromStringConverter(this, input);
+    if (CreateFromStringMethod != nullptr)
+    {
+        return (*CreateFromStringMethod)(input);
+    }
+    else
+    {
+        return FromStringConverter(this, input);
+    }
 }
 
 void ::XamlTypeInfo::InfoProvider::XamlUserType::AddMemberName(::Platform::String^ shortName)

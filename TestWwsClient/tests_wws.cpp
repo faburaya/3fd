@@ -4,8 +4,9 @@
 #include "web_wws_webserviceproxy.h"
 #include "calculator.wsdl.h"
 
-#include <vector>
+#include <chrono>
 #include <thread>
+#include <vector>
 
 #define UNDEF_HOST_UNSEC     "WEB SERVICE HOST UNSECURE ENDPOINT IS NOT DEFINED"
 #define UNDEF_HOST_SSL       "WEB SERVICE HOST SSL ENDPOINT IS NOT DEFINED"
@@ -22,6 +23,20 @@ namespace integration_tests
     void HandleException();
 
     const size_t proxyOperHeapSize(4096);
+
+    /// <summary>
+    /// Stalls the client application a little before firing requests.
+    /// </summary>
+    /// <remarks>   
+    /// This client application switches from one test to another faster than the server side,
+    /// so we need to stall a little.Otherwise this test might end up being serviced by the endpoint
+    /// of the previous test which is still open.The consequence is that when the right endpoint come
+    /// online late, it never receives any request, never closes, times out and fails in the server side.
+    /// </remarks>
+    static void Stall()
+    {
+        std::this_thread::sleep_for(std::chrono::milliseconds(32));
+    }
 
     /////////////////////////////////////
     // Proxy without transport security
@@ -100,13 +115,13 @@ namespace integration_tests
                              [=, &result](WS_SERVICE_PROXY *wsProxyHandle, WS_HEAP *wsHeapHandle, WS_ERROR *wsErrorHandle)
                              {
                                  return CalcBindingUnsecure_Multiply(wsProxyHandle,
-                                     first,
-                                     second,
-                                     &result,
-                                     wsHeapHandle,
-                                     nullptr, 0,
-                                     nullptr,
-                                     wsErrorHandle);
+                                                                     first,
+                                                                     second,
+                                                                     &result,
+                                                                     wsHeapHandle,
+                                                                     nullptr, 0,
+                                                                     nullptr,
+                                                                     wsErrorHandle);
                              });
         }
 
@@ -115,19 +130,19 @@ namespace integration_tests
         {
             CALL_STACK_TRACE;
 
-            BOOL result;
+            BOOL result(FALSE);
 
             Call("Calculator web service operation 'CloseService'",
-                proxyOperHeapSize,
-                [&result](WS_SERVICE_PROXY *wsProxyHandle, WS_HEAP *wsHeapHandle, WS_ERROR *wsErrorHandle)
-                {
-                    return CalcBindingUnsecure_CloseService(wsProxyHandle,
-                                                            &result,
-                                                            wsHeapHandle,
-                                                            nullptr, 0,
-                                                            nullptr,
-                                                            wsErrorHandle);
-                });
+                 proxyOperHeapSize,
+                 [&result](WS_SERVICE_PROXY *wsProxyHandle, WS_HEAP *wsHeapHandle, WS_ERROR *wsErrorHandle)
+                 {
+                     return CalcBindingUnsecure_CloseService(wsProxyHandle,
+                                                             &result,
+                                                             wsHeapHandle,
+                                                             nullptr, 0,
+                                                             nullptr,
+                                                             wsErrorHandle);
+                 });
 
             return (result == TRUE);
         }
@@ -179,6 +194,8 @@ namespace integration_tests
 
         try
         {
+            Stall();
+
             // Create the proxy (client):
             SvcProxyConfig proxyCfg;
             CalcSvcProxyUnsecure client(proxyCfg);
@@ -199,13 +216,10 @@ namespace integration_tests
             }
 
             // Get the results and check for errors:
-            while (!asyncOps.empty())
+            for (int idx = 0; idx < maxAsyncCalls; ++idx)
             {
-                asyncOps.back().get();
-                asyncOps.pop_back();
-
-                EXPECT_EQ(666.0, results.back());
-                results.pop_back();
+                asyncOps[idx].get();
+                EXPECT_EQ(666.0, results[idx]);
             }
 
             EXPECT_TRUE(client.CloseHostService());
@@ -388,6 +402,8 @@ namespace integration_tests
 
         try
         {
+            Stall();
+
             // Create the proxy (client):
             SvcProxyConfig proxyCfg;
             CalcSvcProxySSL client(proxyCfg);
@@ -408,13 +424,10 @@ namespace integration_tests
             }
 
             // Get the results and check for errors:
-            while (!asyncOps.empty())
+            for (int idx = 0; idx < maxAsyncCalls; ++idx)
             {
-                asyncOps.back().get();
-                asyncOps.pop_back();
-
-                EXPECT_EQ(666.0, results.back());
-                results.pop_back();
+                asyncOps[idx].get();
+                EXPECT_EQ(666.0, results[idx]);
             }
 
             EXPECT_TRUE(client.CloseHostService());
@@ -480,6 +493,8 @@ namespace integration_tests
 
         try
         {
+            Stall();
+
             /* Insert here the information describing the client side
             certificate to use in your test environment: */
             SvcProxyCertInfo proxyCertInfo(
@@ -508,13 +523,10 @@ namespace integration_tests
             }
 
             // Get the results and check for errors:
-            while (!asyncOps.empty())
+            for (int idx = 0; idx < maxAsyncCalls; ++idx)
             {
-                asyncOps.back().get();
-                asyncOps.pop_back();
-
-                EXPECT_EQ(666.0, results.back());
-                results.pop_back();
+                asyncOps[idx].get();
+                EXPECT_EQ(666.0, results[idx]);
             }
 
             EXPECT_TRUE(client.CloseHostService());
@@ -690,6 +702,8 @@ namespace integration_tests
 
         try
         {
+            Stall();
+
             /* Insert here the information describing the client side
             certificate to use in your test environment: */
             SvcProxyCertInfo proxyCertInfo(
@@ -718,13 +732,10 @@ namespace integration_tests
             }
 
             // Get the results and check for errors:
-            while (!asyncOps.empty())
+            for (int idx = 0; idx < maxAsyncCalls; ++idx)
             {
-                asyncOps.back().get();
-                asyncOps.pop_back();
-
-                EXPECT_EQ(666.0, results.back());
-                results.pop_back();
+                asyncOps[idx].get();
+                EXPECT_EQ(666.0, results[idx]);
             }
 
             EXPECT_TRUE(client.CloseHostService());
@@ -825,6 +836,8 @@ namespace integration_tests
 
         try
         {
+            Stall();
+
             SvcProxyConfig proxyCfg; // proxy configuration with default values
 
             // Create a proxy without transport security:

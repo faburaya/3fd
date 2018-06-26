@@ -21,7 +21,7 @@ namespace _3fd
         /// <param name="dbFilePath">The database file path.</param>
         DbConnPool::DbConnPool(const string &dbFilePath)
         try : 
-            m_availableConnections(64), 
+            m_availableConnections(), 
             m_dbFilePath(dbFilePath),
             m_numConns(0) 
         {
@@ -48,9 +48,9 @@ namespace _3fd
         /// <returns>A wrapped SQLite connection.</returns>
         DbConnWrapper DbConnPool::AcquireSQLiteConn()
         {
-            DatabaseConn *conn;
+            DatabaseConn *conn = m_availableConnections.Remove();
 
-            if(m_availableConnections.pop(conn))
+            if(conn != nullptr)
                 return DbConnWrapper(*this, conn);
             else
             {
@@ -67,7 +67,7 @@ namespace _3fd
         void DbConnPool::ReleaseSQLiteConn(DatabaseConn *conn)
         {
             _ASSERTE(conn != nullptr); // Must not return an invalid context
-            m_availableConnections.push(conn);
+            m_availableConnections.Add(conn);
         }
 
         /// <summary>
@@ -76,9 +76,8 @@ namespace _3fd
         void DbConnPool::CloseAll()
         {
             size_t numClosedConns(0);
-            DatabaseConn *conn(nullptr);
-            
-            while(m_availableConnections.unsynchronized_pop(conn))
+            DatabaseConn *conn;
+            while((conn = m_availableConnections.Remove()) != nullptr)
             {
                 delete conn;
                 ++numClosedConns;

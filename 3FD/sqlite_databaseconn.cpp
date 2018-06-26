@@ -31,7 +31,10 @@ namespace _3fd
             and if it doesn't exist, create it. */
             int status = sqlite3_open_v2(dbFilePath.c_str(), 
                                          &m_dbHandle, 
-                                         SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_SHAREDCACHE | (fullMutex ? SQLITE_OPEN_FULLMUTEX : SQLITE_OPEN_NOMUTEX), 
+                                         SQLITE_OPEN_READWRITE
+                                            | SQLITE_OPEN_CREATE
+                                            | SQLITE_OPEN_SHAREDCACHE
+                                            | (fullMutex ? SQLITE_OPEN_FULLMUTEX : SQLITE_OPEN_NOMUTEX),
                                          nullptr);
             if(status != SQLITE_OK)
             {

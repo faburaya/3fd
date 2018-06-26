@@ -18,7 +18,7 @@ namespace memory
     private:
 
         void *m_sptrObjectAddr,
-            *m_pointedAddr;
+             *m_pointedAddr;
 
         size_t m_blockSize;
 
@@ -50,7 +50,7 @@ namespace memory
     private:
 
         void *m_leftSptrObjAddr,
-                *m_rightSptrObjAddr;
+             *m_rightSptrObjAddr;
 
     public:
 
@@ -133,7 +133,7 @@ namespace memory
     private:
 
         void *m_sptrObjAddr,
-                *m_pointedAddr;
+             *m_pointedAddr;
 
     public:
 
@@ -154,7 +154,7 @@ namespace memory
     private:
 
         void *m_leftSptrObjAddr,
-                *m_rightSptrObjAddr;
+             *m_rightSptrObjAddr;
 
     public:
 

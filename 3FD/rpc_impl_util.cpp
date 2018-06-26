@@ -861,13 +861,13 @@ namespace rpc
                         oss << '\"' << transcoder.to_bytes(value.UnicodeString) << '\"';
                         break;
                     case eeptLongVal:
-                        oss << std::dec << value.LVal;
+                        oss << value.LVal;
                         break;
                     case eeptShortVal:
-                        oss << std::dec << value.SVal;
+                        oss << value.SVal;
                         break;
                     case eeptPointerVal:
-                        oss << std::hex << value.PVal;
+                        oss << std::hex << value.PVal << std::dec;
                         break;
                     case eeptBinary:
                         break; // skip (for RPC runtime use only)

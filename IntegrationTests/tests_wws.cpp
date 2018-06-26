@@ -4,9 +4,9 @@
 #include "web_wws_webservicehost.h"
 #include "calculator.wsdl.h"
 
+#include <chrono>
 #include <sstream>
 #include <vector>
-#include <chrono>
 
 namespace _3fd
 {
@@ -121,8 +121,7 @@ namespace integration_tests
         /// Stop counting time for web service setup and open, then wait for
         /// signal to close the web service host.
         /// Once the signal is received, close it and measure how long that takes.
-        /// The maximum cycle time (setup, open & close) is kept to respond web clients that
-        /// need to know how long to wait before the web service host of the next test is available.
+        /// The maximum cycle time (setup, open & close) is kept.
         /// </summary>
         /// <param name="svc">The web service host object.</param>
         /// <returns>
@@ -136,7 +135,9 @@ namespace integration_tests
             auto stopTimeSvcSetupAndOpen = system_clock().now();
 
             if (!closeServiceRequestEvent->WaitFor(15000))
+            {
                 return false;
+            }
 
             /* Wait a little for the client to close its proxy. Otherwise, tests
             have shown that the proxy will fail due to a connection "abnormally
@@ -144,7 +145,9 @@ namespace integration_tests
             std::this_thread::sleep_for(std::chrono::milliseconds(8));
 
             if (!svc.Close())
+            {
                 return false;
+            }
 
             auto closureTimeSpan = duration_cast<milliseconds>(
                 system_clock().now() - timeCloseSvcSignalEmission

@@ -1,0 +1,253 @@
+    /// <summary>
+    /// RAII for LDAP session handle.
+    /// </summary>
+    class LdapSession
+    {
+    private:
+
+        LDAP *m_sessionHandle;
+        string m_url;
+
+    public:
+
+        /// Initializes a new instance of the <see cref="LdapSession"/> class.
+        /// </summary>
+        /// <param name="url">The LDAP URI schema (https://tools.ietf.org/html/rfc4516).
+        /// If not specified (empty string), then the runtime will search for a domain
+        /// in which the current computer is a member when attempting to connect. </param>
+        LdapSession::LdapSession(const string &url)
+            : m_sessionHandle(nullptr) {}
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LdapSession"/> class.
+        /// </summary>
+        /// <param name="url">The LDAP URI schema (https://tools.ietf.org/html/rfc4516).
+        /// If not specified (null pointer), then the runtime will search for a domain
+        /// in which the current computer is a member when attempting to connect. </param>
+        LdapSession::LdapSession(const char *url = nullptr)
+            : m_sessionHandle(nullptr), m_url(url != nullptr ? url : nullptr) {}
+
+        ~LdapSession();
+
+        bool TryBinding();
+    };
+
+    bool DetectLdapKerberosAvailability(bool isClient);
+
+    /////////////////////////
+    // LDAP
+    /////////////////////////
+
+    static
+    core::AppException<std::runtime_error>
+    CreateExceptionLDAP(
+        LDAP *ldapSessionHandle,
+        int errCode,
+        const char *message,
+        const char *funcName)
+    {
+        _ASSERTE(errCode != 0);
+
+        try
+        {
+            std::ostringstream oss;
+            oss << "OpenLDAP API - " << funcName << " returned error code "
+                << errCode << ": " << ldap_err2string(errCode);
+
+            if (ldapSessionHandle == nullptr)
+                return core::AppException<std::runtime_error>(message, oss.str());
+
+            oss << " - ";
+
+            int resultCode;
+            auto status = ldap_get_option(ldapSessionHandle, LDAP_OPT_RESULT_CODE, &resultCode);
+
+            if (status != LDAP_OPT_SUCCESS)
+            {
+                oss << "Secondary failure prevented retrieval of further information "
+                       "for this error (" << ldap_err2string(status) << ")";
+
+                return core::AppException<std::runtime_error>(message, oss.str());
+            }
+
+            char *diagnosticMessage;
+            status = ldap_get_option(ldapSessionHandle, LDAP_OPT_DIAGNOSTIC_MESSAGE, &diagnosticMessage);
+
+            if (status != LDAP_OPT_SUCCESS)
+            {
+                oss << "Secondary failure prevented retrieval of further information "
+                       "for session result code " << resultCode
+                    << " (" << ldap_err2string(status) << ")";
+
+                return core::AppException<std::runtime_error>(message, oss.str());
+            }
+
+            oss << diagnosticMessage;
+            ldap_memfree(diagnosticMessage);
+
+            return core::AppException<std::runtime_error>(message, oss.str());
+        }
+        catch (std::exception &ex)
+        {
+            std::ostringstream oss;
+            oss << message << " - OpenLDAP library reported an error, but a generic "
+                   "failure prevented the retrieval of more information: " << ex.what();
+
+            return core::AppException<std::runtime_error>(oss.str());
+        }
+    }
+
+    /// <summary>
+    /// Throws an exception for a LDAP error.
+    /// </summary>
+    /// <param name="ldapSessionHandle">The LDAP session handle. May be null (when no session
+    /// has been established), but then limited error details will be retrieved.</param>
+    /// <param name="errCode">The numeric code for the error reported by OpenLDAP library.</param>
+    /// <param name="message">The main message for the error.</param>
+    /// <param name="funcName">The name of the function from OpenLDAP API that reported the error.</param>
+    void ThrowIfLdapError(
+        LDAP *ldapSessionHandle,
+        int errCode,
+        const char *message,
+        const char *funcName)
+    {
+        if (errCode == 0)
+            return;
+
+        throw CreateExceptionLDAP(ldapSessionHandle, errCode, message, funcName);
+    }
+
+    /// <summary>
+    /// Logs a LDAP error.
+    /// </summary>
+    /// <param name="ldapSessionHandle">The LDAP session handle. May be null (when no session
+    /// has been established), but then limited error details will be retrieved.</param>
+    /// <param name="errCode">The numeric code for the error reported by OpenLDAP library.</param>
+    /// <param name="message">The main message for the error.</param>
+    /// <param name="funcName">The name of the function from OpenLDAP library that reported the error.</param>
+    /// <param name="prio">The priority for event to be logged.</param>
+    void LogIfLdapError(
+        LDAP *ldapSessionHandle,
+        int errCode,
+        const char *message,
+        const char *funcName,
+        core::Logger::Priority prio) noexcept
+    {
+        if (errCode == 0)
+            return;
+
+        auto ex = CreateExceptionLDAP(ldapSessionHandle, errCode, message, funcName);
+        core::Logger::Write(ex, prio);
+    }
+
+    /// <summary>
+    /// Finalizes an instance of the <see cref="LdapSession"/> class.
+    /// </summary>
+    LdapSession::~LdapSession()
+    {
+        if (m_sessionHandle == nullptr)
+            return;
+
+        CALL_STACK_TRACE;
+
+        auto status = ldap_unbind_ext_s(m_sessionHandle, nullptr, nullptr);
+
+        LogIfLdapError(
+            m_sessionHandle,
+            status,
+            "Could not finalize LDAP session",
+            "ldap_unbind_ext_s",
+            core::Logger::PRIO_NOTICE
+        );
+    }
+
+    /// <summary>
+    /// Tries to create a session and bind to the LDAP server.
+    /// </summary>
+    /// <returns><c>STATUS_OKAY</c> if successfull, otherwise, <c>STATUS_FAIL</c></returns>
+    bool LdapSession::TryBinding()
+    {
+        CALL_STACK_TRACE;
+
+        _ASSERTE(m_sessionHandle == nullptr);
+
+        try
+        {
+            auto status = ldap_initialize(&m_sessionHandle, m_url.empty() ? nullptr : m_url.c_str());
+
+            ThrowIfLdapError(
+                m_sessionHandle,
+                status,
+                "Could not initialize LDAP session",
+                "ldap_initialize"
+            );
+
+            int protVersion = LDAP_VERSION3;
+            status = ldap_set_option(m_sessionHandle, LDAP_OPT_PROTOCOL_VERSION, &protVersion);
+
+            ThrowIfLdapError(
+                m_sessionHandle,
+                status,
+                "Could not set protocol version to LDAP session",
+                "ldap_set_option"
+            );
+
+            berval *serverCreds;
+            status = ldap_sasl_bind_s(
+                m_sessionHandle,
+                nullptr,
+                "GSSAPI",
+                nullptr, // use credentials from context
+                nullptr,
+                nullptr,
+                &serverCreds
+            );
+
+            ThrowIfLdapError(
+                m_sessionHandle,
+                status,
+                "Failed to perform SASL binding to LDAP server with mechanism GSSAPI",
+                "ldap_sasl_bind_s"
+            );
+
+            return STATUS_OKAY;
+        }
+        catch (core::IAppException &ex)
+        {
+            core::Logger::Write(ex, core::Logger::PRIO_NOTICE);
+            return STATUS_FAIL;
+        }
+    }
+
+    /// <summary>
+    /// Detects the availability of Kerberos authentication service via LDAP API.
+    /// </summary>
+    /// <param name="isClient">if set to <c>true</c>, the current call is made by RPC client.</param>
+    /// <returns><c>true</c> if Kerberos is available, otherwise, <c>false</c>.</returns>
+    bool DetectLdapKerberosAvailability(bool isClient)
+    {
+        CALL_STACK_TRACE;
+
+        std::ostringstream oss;
+
+        LdapSession ldap;
+
+        if (ldap.TryBinding())
+        {
+            oss << "Binding to LDAP server with GSSAPI mechanism was successfull and RPC "
+                << (isClient ? "client " : "server ")
+                << "will attempt to use Kerberos authentication";
+
+            core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
+            return true;
+        }
+        else
+        {
+            oss << "Because of a failure to bind to the LDAP server, the RPC "
+                << (isClient ? "client " : "server ")
+                << "will assume Kerberos authentication unavailable";
+
+            core::Logger::Write(oss.str(), core::Logger::PRIO_NOTICE);
+            return false;
+        }
+    }

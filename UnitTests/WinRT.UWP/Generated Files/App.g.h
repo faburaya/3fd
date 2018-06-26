@@ -15,7 +15,7 @@ namespace UnitTestsApp_WinRT_UWP
     {
     public:
         void InitializeComponent();
-        [Windows::Foundation::Metadata::DefaultOverload]
+        [::Windows::Foundation::Metadata::DefaultOverload]
         virtual ::Windows::UI::Xaml::Markup::IXamlType^ GetXamlType(::Windows::UI::Xaml::Interop::TypeName type);
         virtual ::Windows::UI::Xaml::Markup::IXamlType^ GetXamlType(::Platform::String^ fullName);
         virtual ::Platform::Array<::Windows::UI::Xaml::Markup::XmlnsDefinition>^ GetXmlnsDefinitions();

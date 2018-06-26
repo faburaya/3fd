@@ -72,7 +72,7 @@ DEALINGS IN THE SOFTWARE.
 
 ==============================================================================
 
-googletest v1.7 (http://code.google.com/p/googletest/)
+googletest v1.8 (http://code.google.com/p/googletest/)
 
 Copyright 2008, Google Inc.
 All rights reserved.

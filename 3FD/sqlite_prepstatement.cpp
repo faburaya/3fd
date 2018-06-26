@@ -1,7 +1,8 @@
 #include "stdafx.h"
 #include "sqlite.h"
-#include "logger.h"
 #include "exceptions.h"
+#include "logger.h"
+#include "utils_algorithms.h"
 #include <cassert>
 #include <codecvt>
 #include <locale>
@@ -47,12 +48,9 @@ namespace _3fd
                 // Query preparation might fail if a shared lock could not be acquired:
                 else if (primErrCode == SQLITE_BUSY || primErrCode == SQLITE_LOCKED)
                 {
-                    if (attempts == 1)
-                        srand(static_cast<uint32_t> (time(nullptr)));
-
                     // Wait a little for an opportunity of acquiring a lock:
                     std::this_thread::sleep_for(
-                        std::chrono::milliseconds(rand() % std::min(3*attempts, 50) + 1)
+                        utils::CalcExponentialBackOff(attempts, std::chrono::milliseconds(5))
                     );
                 }
                 else // However, if it fails for any other reason:
@@ -401,12 +399,9 @@ namespace _3fd
                 // Failed because it could not get a lock:
                 else if (primErrCode == SQLITE_BUSY || primErrCode == SQLITE_LOCKED)
                 {
-                    if (attempts == 1)
-                        srand(static_cast<uint32_t> (time(nullptr)));
-
                     // Wait a little before retrying the lock:
                     std::this_thread::sleep_for(
-                        std::chrono::milliseconds(rand() % std::min(3*attempts, 50) + 1)
+                        utils::CalcExponentialBackOff(attempts, std::chrono::milliseconds(5))
                     );
                 }
                 else // However, when it fails for any other reason:

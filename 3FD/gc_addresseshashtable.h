@@ -1,7 +1,6 @@
 #ifndef GC_ADDRESSESHASHTABLE_H // header guard
 #define GC_ADDRESSESHASHTABLE_H
 
-#include "base.h"
 #include "gc_vertex.h"
 #include <vector>
 #include <cstdint>
@@ -17,7 +16,7 @@ namespace memory
     /// is to save memory. If you find yourself wishing to change its model to make it more OOP compliant, remember it 
     /// was designed that way so as to save something around 8 or 16 bytes per element added to the table.
     /// </summary>
-    class AddressesHashTable : notcopiable
+    class AddressesHashTable
     {
     public:
 
@@ -110,6 +109,8 @@ namespace memory
     public:
 
         AddressesHashTable();
+
+		AddressesHashTable(const AddressesHashTable &) = delete;
 
         Element &Insert(void *sptrObjectAddr,
                         Vertex *pointedMemBlock,

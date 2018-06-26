@@ -2,7 +2,7 @@
 #include "configuration.h"
 #include "exceptions.h"
 #include "utils_io.h"
-#include "rapidxml.hpp"
+#include <rapidxml.hpp>
 
 #ifdef _3FD_PLATFORM_WINRT
 #    include "utils_winrt.h"

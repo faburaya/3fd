@@ -2,7 +2,6 @@
 #define UTILS_LOCKFREEQUEUE_H
 
 #include "preprocessing.h"
-#include "base.h"
 
 #include <functional>
 #include <memory>
@@ -56,6 +55,8 @@ namespace utils
             m_tail.store(emptyElem, std::memory_order_relaxed);
             m_head.store(emptyElem, std::memory_order_release);
         }
+
+		LockFreeQueue(const LockFreeQueue &) = delete;
 
         /// <summary>
         /// Finalizes an instance of the <see cref="LockFreeQueue{Type}"/> class.
@@ -161,6 +162,8 @@ namespace utils
         /// </summary>
         LockedQueue() {}
 
+		LockedQueue(const LockedQueue &) = delete;
+
         /// <summary>
         /// Finalizes an instance of the <see cref="LockedQueue{Type}"/> class.
         /// </summary>
@@ -205,7 +208,7 @@ namespace utils
         /// This is an alternative to the lock-free queue from Boost,
         /// which appears not to work in ARM architecture (Windows Phone hardware).
         /// </summary>
-        template <typename ItemType> class LockFreeQueue : notcopiable
+        template <typename ItemType> class LockFreeQueue
         {
         private:
 
@@ -265,6 +268,9 @@ namespace utils
 
                 InitializeSListHead(m_front);
             }
+
+			// copy operation is forbidden
+			LockFreeQueue(const LockFreeQueue &) = delete;
 
             /// <summary>
             /// Finalizes an instance of the <see cref="LockFreeQueue"/> class.

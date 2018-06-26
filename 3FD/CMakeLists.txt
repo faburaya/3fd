@@ -6,6 +6,12 @@ cmake_minimum_required(VERSION 2.6)
 
 project(3FD)
 
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdiagnostics-show-template-tree -fno-elide-type")
+endif()
+
 #####################
 # Macro definitions:
 
@@ -27,8 +33,7 @@ include_directories(
     "${PROJECT_SOURCE_DIR}"
     "${PROJECT_SOURCE_DIR}/../btree"
     "${PROJECT_SOURCE_DIR}/../OpenCL"
-    "$ENV{POCO_ROOT}/include"
-    "$ENV{BOOST_HOME}/include"
+    "${PROJECT_SOURCE_DIR}/../build/include"
 )
 
 ########################
@@ -61,7 +66,6 @@ add_library(3FD STATIC
     opencl_impl_program.cpp
     opencl_impl_programmanifest.cpp
     runtime.cpp
-    sqlite3.c
     sqlite_databaseconn.cpp
     sqlite_dbconnpool.cpp
     sqlite_prepstatement.cpp

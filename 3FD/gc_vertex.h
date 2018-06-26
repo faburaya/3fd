@@ -46,14 +46,14 @@ namespace memory
     /// Represents a vertex in the directed graph of memory pieces
     /// (and a memory block region managed by the GC).
     /// </summary>
-    class Vertex : notcopiable, public MemAddrContainer
+    class Vertex : public MemAddrContainer
     {
     private:
 
-        ArrayOfEdges    m_incomingEdges;
-        FreeMemProc        m_freeMemCallback;
-        uint32_t        m_blockSize;
-        uint32_t        m_outEdgeCount;
+        ArrayOfEdges m_incomingEdges;
+        FreeMemProc  m_freeMemCallback;
+        uint32_t     m_blockSize;
+        uint32_t     m_outEdgeCount;
 
         static utils::DynamicMemPool *dynMemPool;
 
@@ -66,6 +66,8 @@ namespace memory
         void operator delete(void *ptr);
 
         Vertex(void *memAddr, size_t blockSize, FreeMemProc freeMemCallback);
+
+		Vertex(const Vertex &) = delete;
 
         ~Vertex();
 

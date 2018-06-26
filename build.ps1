@@ -1,25 +1,21 @@
-﻿# Script written by Felipe Vieira Aburaya (last update: October 12th 2017)
+﻿# Script written by Felipe Vieira Aburaya (last update: April 2nd 2018)
 #
 # Usage:
 #
-# .\build.ps1 -arch {x86|x64|ARM|all} -xp {yes|no} -rebuild {yes|no}
+# .\build.ps1 -arch {x86|x64|ARM|all} -rebuild {yes|no}
 #
 # Builds all the projects in VC++ solution 3FD.sln that are compilable for the given
 # architecture(s). Builds are by default incremental, but can also be complete rebuilds.
 # Projects of UWP apps produce packages that are easy to deploy with a click. All of
-# this goes to the generated build directory in the solution root directory, along with
-# headers, libraries, templates, samples and test applications.
-#
-# There is the option of downloading and building from source the dependency libraries
-# Boost and POCO C++. They are set to the specific release with which 3FD projects are 
-# tested and configured to work. They are installed into a version specific directory
-# in a location specified by the enviroment variables BOOST_HOME and POCO_ROOT, those
-# MUST BE set prior to script execution.
+# them go to the generated build directory in the solution root directory, along with
+# test applications.
 #
 # In order to build the projects, MSBuild is employed. The script looks for MSBuild.exe
-# (32 bits) executable first in %PROGRAMFILES(x86)%\MSBuild, then in "Visual Studio 1X"
-# directories, giving priority to the latest release.
+# (32 bits) executable first in "Microsoft Visual Studio" installation directory, then
+# in %PROGRAMFILES(x86)%\MSBuild, giving priority to the latest release.
 #
+# Support for Windows XP is currently disabled because VCPKG does not currently support
+# targetting the XP compatible toolset
 
 # =============================================
 #           PARAMETERS & ENVIRONMENT
@@ -27,15 +23,15 @@
 
 param (
     [string]$arch = $(Read-Host 'Architecture (x86, x64, ARM, all)'),
-    [string]$xp = $(Read-Host 'Use WinXP-compatible toolset? (no/yes)'),
+#   [string]$xp = $(Read-Host 'Use WinXP-compatible toolset? (no/yes)'),
     [string]$rebuild = $(Read-Host 'Rebuild? (no/yes)')
 )
 
-if (($arch.ToLower() -eq 'arm') -and ($xp -eq 'yes'))
-{
-    Write-Host 'Nothing to build for ARM with WinXP-compatible toolset!' -ForegroundColor yellow;
-    exit;
-}
+# if (($arch.ToLower() -eq 'arm') -and ($xp -eq 'yes'))
+# {
+#     Write-Host 'Nothing to build for ARM with WinXP-compatible toolset!' -ForegroundColor yellow;
+#     exit;
+# }
 
 [string]$task;
 
@@ -63,7 +59,6 @@ function AppendFile ([string]$file, [string] $line)
              -Append;
 }
 
-
 # # # # #
 # displays a message in the console but also in the log
 function WriteConsole ([string] $message)
@@ -80,7 +75,6 @@ function WriteConsole ([string] $message)
              -Append;
 }
 
-
 # # # # #
 # displays an error message only
 function DisplayError ([string] $message)
@@ -96,7 +90,6 @@ function DisplayError ([string] $message)
              -Encoding ASCII `
              -Append;
 }
-
 
 # # # # #
 # displays an error messages and terminates script execution
@@ -166,39 +159,95 @@ function LoadDotNetAssemblies ()
     }
 }
 
+# # # # #
+# find most recent visual studio 2017+ installation directory
+function FindVisualStudioInstallation ()
+{
+    if (-not $global:vsdir)
+    {
+        $global:vsdir = [Environment]::GetEnvironmentVariable("PROGRAMFILES(X86)") + '\Microsoft Visual Studio';
+        
+        if ($(Test-Path $global:vsdir))
+        {
+            $global:vsdir = @(gci $global:vsdir `
+                | Where-Object { $_.Name.StartsWith('20') } `
+                | Sort-Object @{ Expression="Name"; Descending=$true })[0];
+        }
+        else
+        {
+            RaiseError ('Visual Studio installation not found in ' + $global:vsdir);
+        }
+    }
 
-[string]$msBuildPath;
+    if (-not $global:VCTarget)
+    {
+        $global:VCTarget = @(gci $global:vsdir.FullName -Recurse `
+            | Where-Object { $_.Name -eq 'VCTargets' }
+        )[0];
+    }
+
+    if (-not $global:VCTarget)
+    {
+        RaiseError ('Visual C++ targets not found in ' + $global:vsdir.FullName);
+    }
+
+    if (-not $global:vcvarsall)
+    {
+        $global:vcvarsall = @(gci -Recurse $global:vsdir.FullName `
+            | Where-Object { ($_.Name -eq 'vcvarsall.bat') }
+        )[0];
+    }
+
+    if (-not $global:vcvarsall)
+    {
+        RaiseError 'vcvarsall.bat not found!';
+    }
+}
 
 # # # # #
 # build solution for a given configuration
 #
 function MsBuild (
-    [string]$what,   # solution or project to build
-    [string]$task,   # build|rebuild
-    [string]$arch,   # x86|x64|ARM
-    [string]$config, # debug|release
-    [string]$toolset # (optional) ex: v140_xp
+    [string]$what,    # solution or project to build
+    [string]$task,    # build|rebuild
+    [string]$arch,    # x86|x64|ARM
+    [string]$config,  # debug|release
+    [string]$sdk,     # (optional) Windows SDK version
+    [string]$toolset, # (optional) ex: v141_xp
+    [boolean]$legacy  # (optional) must run in legacy prompt
 )
 {
+    [string]$global:msBuildPath;
+
+    FindVisualStudioInstallation;
+    
     ###
     # single initialization:
 
     if (-not $global:msBuildPath)
     {
-        $msBuildInstalls = @(gci $([Environment]::GetEnvironmentVariable("PROGRAMFILES(X86)")) `
-            | Where-Object { $_.Name.Contains('Visual Studio 1') -or $_.Name.Contains('MSBuild')  } `
-            | Sort-Object @{ Expression="Name"; Descending=$true });
+        $msBuildInstalls = @(
+            $global:vsdir,
+            @(gci $([Environment]::GetEnvironmentVariable("PROGRAMFILES(X86)")) `
+              | Where-Object { $_.Name.Contains('MSBuild') } `
+              | Sort-Object @{ Expression="FullName"; Descending=$true })[0]
+        );
 
-        if ($msBuildInstalls.Length -eq 0)
+        #$msBuildInstalls = $msBuildInstalls | Sort-Object @{ Expression="Name"; };
+
+        for ([int]$idx = 0; $idx -lt $msBuildInstalls.Length; ++$idx)
         {
-            RaiseError 'Could not find a MSBuild installation!';
+            $msBuildExecs = @(gci -Recurse ($msBuildInstalls[$idx].FullName) `
+                | Where-Object { ($_.Name -eq 'MSBuild.exe') -and (-not $_.FullName.Contains('amd64')) } `
+                | Sort-Object @{ Expression="FullName"; Descending=$true });
+
+            if ($msBuildExecs.Length -gt 0)
+            {
+                break;
+            }
         }
 
-        $msBuildExecs = @(gci -Recurse ($msBuildInstalls[0].FullName) `
-            | Where-Object { ($_.Name -eq 'MSBuild.exe') -and (-not $_.FullName.Contains('amd64')) } `
-            | Sort-Object @{ Expression="FullName"; Descending=$true });
-
-        if ($msBuildExecs -eq 0)
+        if ($msBuildExecs.Length -eq 0)
         {
             RaiseError 'MSBuild.exe (32 bits) not found!';
         }
@@ -214,7 +263,7 @@ function MsBuild (
     ###
     # assemble command:
 
-    [string]$command = '. "' + $global:msBuildPath + '" "' + $what + '" /verbosity:minimal /m';
+    [string]$command = '"' + $global:msBuildPath + '" "' + $what + '" /verbosity:minimal /m';
 
     $task = $task.ToLower();
     
@@ -240,49 +289,96 @@ function MsBuild (
     }
 
     $command += ' /p:Configuration=' + $config;
+
+    # Override Windows SDK version?
+    if ($sdk -and ($sdk -ne ''))
+    {
+        $command += ' /p:WindowsTargetPlatformVersion=' + $sdk;
+    }
     
-    # Use custom toolset?
+    # Use non-default toolset?
     if ($toolset -and ($toolset -ne ''))
     {
         $command += ' /p:PlatformToolset=' + $toolset;
     }
+
+    ###
+    # invoke command / append to file:
     
     Write-Host '';
     Write-Host $command -ForegroundColor Cyan;
     Write-Host '';
 
-    Invoke-Expression -Command $command;
-
-    if ($lastexitcode -ne 0)
+    if ($legacy -ne $true)
     {
-        DisplayError ('Failed to build <' + $what + '>');
+        Invoke-Expression -Command ". $command";
+
+        if ($lastexitcode -ne 0)
+        {
+            DisplayError ('Failed to build <' + $what + '>');
+        }
+    }
+    else
+    {
+        [string]$msbuildScriptFPath = 'msbuild.bat';
+
+        if ($(Test-Path $msbuildScriptFPath))
+        {
+            ri $msbuildScriptFPath;
+        }
+        
+        switch ($arch)
+        {
+            "x64" {
+                AppendFile -file $msbuildScriptFPath -line ('call "' + $global:vcvarsall.FullName + '" x86_amd64');
+            }
+            "x86" {
+                AppendFile -file $msbuildScriptFPath -line ('call "' + $global:vcvarsall.FullName + '" x86');
+            }
+            "arm" {
+                AppendFile -file $msbuildScriptFPath -line ('call "' + $global:vcvarsall.FullName + '" x86_arm');
+            }
+            default {
+                RaiseError ('Architecture <' + $arch + '> is unknown!');
+            }
+        }
+
+        AppendFile -file $msbuildScriptFPath -line $command;
+
+        AppendFile -file $msbuildScriptFPath -line 'exit %errorlevel%';
+
+        WriteConsole 'Building in legacy prompt...';
+
+        cmd.exe /C $msbuildScriptFPath;
     }
 }
 
 
 ###
 # Check BOOST_HOME:
+#
+# This section is currently disabled because now VCPKG
+# is responsible for the build of dependency libraries
 
-[string]$boostVersion = '1.65.1';
-[string]$boostZipLabel = 'boost_1_65_1';
-[string]$boostHomePathExpSuffix = 'Boost\v' + $boostVersion + '\';
+# [string]$boostVersion = '1.66.0';
+# [string]$boostZipLabel = 'boost_1_66_0';
+# [string]$boostHomePathExpSuffix = 'Boost\v' + $boostVersion + '\';
+# 
+# [string]$envVarBoostHome = [Environment]::GetEnvironmentVariable("BOOST_HOME");
+# 
+# if (
+#      (-not $envVarBoostHome) -or
+#      ( (-not $envVarBoostHome.ToLower().EndsWith($boostHomePathExpSuffix.ToLower())) -and
+#        (-not ($envVarBoostHome + '\').ToLower().EndsWith($boostHomePathExpSuffix.ToLower())) )
+#    )
+# {
+#     RaiseError(
+#         'The enviroment variable BOOST_HOME must be set! ' +
+#         'This build depends of Boost version ' + $boostVersion +
+#         ', so you should set BOOST_HOME = path_of_your_choice\' + $boostHomePathExpSuffix
+#     );
+# }
 
-[string]$envVarBoostHome = [Environment]::GetEnvironmentVariable("BOOST_HOME");
-
-if (
-     (-not $envVarBoostHome) -or
-     ( (-not $envVarBoostHome.ToLower().EndsWith($boostHomePathExpSuffix.ToLower())) -and
-       (-not ($envVarBoostHome + '\').ToLower().EndsWith($boostHomePathExpSuffix.ToLower())) )
-   )
-{
-    RaiseError(
-        'The enviroment variable BOOST_HOME must be set! ' +
-        'This build depends of Boost version ' + $boostVersion +
-        ', so you should set BOOST_HOME = path_of_your_choice\' + $boostHomePathExpSuffix
-    );
-}
-
-[string]$vcvarsall;
 
 # # # # #
 # Build boost libraries
@@ -291,24 +387,8 @@ function BuildBoostLibs ()
 {
     LoadDotNetAssemblies;
     
-    ###
-    # single initialization:
-
-    if (-not $global:vcvarsall)
-    {
-        $global:vcvarsall = $(gci -Recurse `
-            $($(gci $([Environment]::GetEnvironmentVariable("PROGRAMFILES(X86)")) `
-                    | Where-Object { $_.Name.Contains('Visual Studio 1') } `
-                    | Sort-Object @{ Expression="Name"; Descending=$true })[0].FullName + '\VC') `
-            | Where-Object { ($_.Name -eq 'vcvarsall.bat') }
-        ).FullName;
-    }
-
-    if (-not $global:vcvarsall)
-    {
-        RaiseError 'vcvarsall.bat not found!';
-    }
-
+    FindVisualStudioInstallation;
+    
     ###
     # files & directories:
     
@@ -387,7 +467,7 @@ function BuildBoostLibs ()
         ri $boostBuildBatchScriptFPath;
     }
 
-    AppendFile -file $boostBuildBatchScriptFPath -line ('call "' + $global:vcvarsall + '" x86_amd64');
+    AppendFile -file $boostBuildBatchScriptFPath -line ('call "' + $global:vcvarsall.FullName + '" x86_amd64');
     AppendFile -file $boostBuildBatchScriptFPath -line ('cd "' + $boostSourceDir + '\tools\build"');
     AppendFile -file $boostBuildBatchScriptFPath -line ('call bootstrap.bat');
     AppendFile -file $boostBuildBatchScriptFPath -line ('cd ..\..\');
@@ -409,10 +489,10 @@ function BuildBoostLibs ()
     # For XP toolset:
     if ($xp -eq 'yes')
     {
-        $buildCmdDbgX64 += ' toolset=msvc-14.0_xp';
-        $buildCmdRelX64 += ' toolset=msvc-14.0_xp';
-        $buildCmdDbgX86 += ' toolset=msvc-14.0_xp';
-        $buildCmdRelX86 += ' toolset=msvc-14.0_xp';
+        $buildCmdDbgX64 += ' toolset=msvc-14.1_xp';
+        $buildCmdRelX64 += ' toolset=msvc-14.1_xp';
+        $buildCmdDbgX86 += ' toolset=msvc-14.1_xp';
+        $buildCmdRelX86 += ' toolset=msvc-14.1_xp';
     }
     
     AppendFile -file $boostBuildBatchScriptFPath -line $buildCmdDbgX64;
@@ -454,24 +534,27 @@ function BuildBoostLibs ()
 
 ###
 # Check POCO C++ availability:
+#
+# This section is currently disabled because now VCPKG
+# is responsible for the build of dependency libraries
 
-[string]$pocoVersion = '1.7.9';
-[string]$pocoRootPathExpSuffix = 'POCO\v' + $pocoVersion + '\';
-
-[string]$envVarPocoRoot = [Environment]::GetEnvironmentVariable("POCO_ROOT");
-
-if (
-     (-not $envVarPocoRoot) -or
-     ( (-not $envVarPocoRoot.ToLower().EndsWith($pocoRootPathExpSuffix.ToLower())) -and
-       (-not ($envVarPocoRoot + '\').ToLower().EndsWith($pocoRootPathExpSuffix.ToLower())) )
-   )
-{
-    RaiseError(
-        'The enviroment variable POCO_ROOT must be set! ' +
-        'This build depends on POCO C++ version ' + $pocoVersion +
-        ', so you should set POCO_ROOT = path_of_your_choice\' + $pocoRootPathExpSuffix
-    );
-}
+# [string]$pocoVersion = '1.9.0';
+# [string]$pocoRootPathExpSuffix = 'POCO\v' + $pocoVersion + '\';
+# 
+# [string]$envVarPocoRoot = [Environment]::GetEnvironmentVariable("POCO_ROOT");
+# 
+# if (
+#      (-not $envVarPocoRoot) -or
+#      ( (-not $envVarPocoRoot.ToLower().EndsWith($pocoRootPathExpSuffix.ToLower())) -and
+#        (-not ($envVarPocoRoot + '\').ToLower().EndsWith($pocoRootPathExpSuffix.ToLower())) )
+#    )
+# {
+#     RaiseError(
+#         'The enviroment variable POCO_ROOT must be set! ' +
+#         'This build depends on POCO C++ version ' + $pocoVersion +
+#         ', so you should set POCO_ROOT = path_of_your_choice\' + $pocoRootPathExpSuffix
+#     );
+# }
 
 # # # # #
 # Build POCO C++ libraries
@@ -549,58 +632,60 @@ function BuildPocoLibs ()
     [string]$customToolset;
     if ($xp -eq 'yes')
     {
-        $customToolset = 'v140_xp';
+        $customToolset = 'v141_xp';
     }
+
+    [string]$winsdk = '10.0.14393.0'; # retarget POCO projects to use Win10 SDK
 
     WriteConsole 'Building POCO C++ Foundation x86...';
 
-    MsBuild -what ($pocoInstallDir + '\Foundation\Foundation_vs140.vcxproj') -task build -arch x86 -config debug_static_md -toolset $customToolset
-    MsBuild -what ($pocoInstallDir + '\Foundation\Foundation_vs140.vcxproj') -task build -arch x86 -config release_static_md -toolset $customToolset
+    MsBuild -what ($pocoInstallDir + '\Foundation\Foundation_vs150.vcxproj') -task build -arch x86 -config debug_static_md -sdk $winsdk -toolset $customToolset
+    MsBuild -what ($pocoInstallDir + '\Foundation\Foundation_vs150.vcxproj') -task build -arch x86 -config release_static_md -sdk $winsdk -toolset $customToolset
     
     WriteConsole 'Building POCO C++ Foundation x64...';
 
-    MsBuild -what ($pocoInstallDir + '\Foundation\Foundation_x64_vs140.vcxproj') -task build -arch x64 -config debug_static_md -toolset $customToolset
-    MsBuild -what ($pocoInstallDir + '\Foundation\Foundation_x64_vs140.vcxproj') -task build -arch x64 -config release_static_md -toolset $customToolset
+    MsBuild -what ($pocoInstallDir + '\Foundation\Foundation_x64_vs150.vcxproj') -task build -arch x64 -config debug_static_md -sdk $winsdk -toolset $customToolset
+    MsBuild -what ($pocoInstallDir + '\Foundation\Foundation_x64_vs150.vcxproj') -task build -arch x64 -config release_static_md -sdk $winsdk -toolset $customToolset
     
     WriteConsole 'Building POCO C++ XML x86...';
 
-    MsBuild -what ($pocoInstallDir + '\XML\XML_vs140.vcxproj') -task build -arch x86 -config debug_static_md -toolset $customToolset
-    MsBuild -what ($pocoInstallDir + '\XML\XML_vs140.vcxproj') -task build -arch x86 -config release_static_md -toolset $customToolset
+    MsBuild -what ($pocoInstallDir + '\XML\XML_vs150.vcxproj') -task build -arch x86 -config debug_static_md -sdk $winsdk -toolset $customToolset
+    MsBuild -what ($pocoInstallDir + '\XML\XML_vs150.vcxproj') -task build -arch x86 -config release_static_md -sdk $winsdk -toolset $customToolset
     
     WriteConsole 'Building POCO C++ XML x64...';
 
-    MsBuild -what ($pocoInstallDir + '\XML\XML_x64_vs140.vcxproj') -task build -arch x64 -config debug_static_md -toolset $customToolset
-    MsBuild -what ($pocoInstallDir + '\XML\XML_x64_vs140.vcxproj') -task build -arch x64 -config release_static_md -toolset $customToolset
+    MsBuild -what ($pocoInstallDir + '\XML\XML_x64_vs150.vcxproj') -task build -arch x64 -config debug_static_md -sdk $winsdk -toolset $customToolset
+    MsBuild -what ($pocoInstallDir + '\XML\XML_x64_vs150.vcxproj') -task build -arch x64 -config release_static_md -sdk $winsdk -toolset $customToolset
     
     WriteConsole 'Building POCO C++ Util x86...';
 
-    MsBuild -what ($pocoInstallDir + '\Util\Util_vs140.vcxproj') -task build -arch x86 -config debug_static_md -toolset $customToolset
-    MsBuild -what ($pocoInstallDir + '\Util\Util_vs140.vcxproj') -task build -arch x86 -config release_static_md -toolset $customToolset
+    MsBuild -what ($pocoInstallDir + '\Util\Util_vs150.vcxproj') -task build -arch x86 -config debug_static_md -sdk $winsdk -toolset $customToolset
+    MsBuild -what ($pocoInstallDir + '\Util\Util_vs150.vcxproj') -task build -arch x86 -config release_static_md -sdk $winsdk -toolset $customToolset
     
     WriteConsole 'Building POCO C++ Util x64...';
 
-    MsBuild -what ($pocoInstallDir + '\Util\Util_x64_vs140.vcxproj') -task build -arch x64 -config debug_static_md -toolset $customToolset
-    MsBuild -what ($pocoInstallDir + '\Util\Util_x64_vs140.vcxproj') -task build -arch x64 -config release_static_md -toolset $customToolset
+    MsBuild -what ($pocoInstallDir + '\Util\Util_x64_vs150.vcxproj') -task build -arch x64 -config debug_static_md -sdk $winsdk -toolset $customToolset
+    MsBuild -what ($pocoInstallDir + '\Util\Util_x64_vs150.vcxproj') -task build -arch x64 -config release_static_md -sdk $winsdk -toolset $customToolset
     
     WriteConsole 'Building POCO C++ Data x86...';
 
-    MsBuild -what ($pocoInstallDir + '\Data\Data_vs140.vcxproj') -task build -arch x86 -config debug_static_md -toolset $customToolset
-    MsBuild -what ($pocoInstallDir + '\Data\Data_vs140.vcxproj') -task build -arch x86 -config release_static_md -toolset $customToolset
+    MsBuild -what ($pocoInstallDir + '\Data\Data_vs150.vcxproj') -task build -arch x86 -config debug_static_md -sdk $winsdk -toolset $customToolset
+    MsBuild -what ($pocoInstallDir + '\Data\Data_vs150.vcxproj') -task build -arch x86 -config release_static_md -sdk $winsdk -toolset $customToolset
     
     WriteConsole 'Building POCO C++ Data x64...';
 
-    MsBuild -what ($pocoInstallDir + '\Data\Data_x64_vs140.vcxproj') -task build -arch x64 -config debug_static_md -toolset $customToolset
-    MsBuild -what ($pocoInstallDir + '\Data\Data_x64_vs140.vcxproj') -task build -arch x64 -config release_static_md -toolset $customToolset
+    MsBuild -what ($pocoInstallDir + '\Data\Data_x64_vs150.vcxproj') -task build -arch x64 -config debug_static_md -sdk $winsdk -toolset $customToolset
+    MsBuild -what ($pocoInstallDir + '\Data\Data_x64_vs150.vcxproj') -task build -arch x64 -config release_static_md -sdk $winsdk -toolset $customToolset
     
     WriteConsole 'Building POCO C++ Data\ODBC x86...';
 
-    MsBuild -what ($pocoInstallDir + '\Data\ODBC\ODBC_vs140.vcxproj') -task build -arch x86 -config debug_static_md -toolset $customToolset
-    MsBuild -what ($pocoInstallDir + '\Data\ODBC\ODBC_vs140.vcxproj') -task build -arch x86 -config release_static_md -toolset $customToolset
+    MsBuild -what ($pocoInstallDir + '\Data\ODBC\ODBC_vs150.vcxproj') -task build -arch x86 -config debug_static_md -sdk $winsdk -toolset $customToolset
+    MsBuild -what ($pocoInstallDir + '\Data\ODBC\ODBC_vs150.vcxproj') -task build -arch x86 -config release_static_m -sdk $winsdkd -toolset $customToolset
     
     WriteConsole 'Building POCO C++ Data\ODBC x64...';
 
-    MsBuild -what ($pocoInstallDir + '\Data\ODBC\ODBC_x64_vs140.vcxproj') -task build -arch x64 -config debug_static_md -toolset $customToolset
-    MsBuild -what ($pocoInstallDir + '\Data\ODBC\ODBC_x64_vs140.vcxproj') -task build -arch x64 -config release_static_md -toolset $customToolset
+    MsBuild -what ($pocoInstallDir + '\Data\ODBC\ODBC_x64_vs150.vcxproj') -task build -arch x64 -config debug_static_md -sdk $winsdk -toolset $customToolset
+    MsBuild -what ($pocoInstallDir + '\Data\ODBC\ODBC_x64_vs150.vcxproj') -task build -arch x64 -config release_static_md -sdk $winsdk -toolset $customToolset
     
     ###
     # clean-up:
@@ -792,18 +877,18 @@ function InstallCopyARM ([bool]$xpToolset)
 
 function Run ()
 {
-    [string]$mustBuildBoost = $(Read-Host 'Build Boost libraries? (no/yes)');
-    [string]$mustBuildPoco = $(Read-Host 'Build POCO C++ libraries? (no/yes)');
+#   [string]$mustBuildBoost = $(Read-Host 'Build Boost libraries? (no/yes)');
+#   [string]$mustBuildPoco = $(Read-Host 'Build POCO C++ libraries? (no/yes)');
     
-    if ($mustBuildBoost -eq 'yes')
-    {
-        BuildBoostLibs;
-    }
-
-    if ($mustBuildPoco -eq 'yes')
-    {
-        BuildPocoLibs;
-    }
+#   if ($mustBuildBoost -eq 'yes')
+#   {
+#       BuildBoostLibs;
+#   }
+#
+#   if ($mustBuildPoco -eq 'yes')
+#   {
+#       BuildPocoLibs;
+#   }
 
     ###
     # BUILD:
@@ -818,23 +903,23 @@ function Run ()
     {
         InstallCertificates;
     }
-    
+
     WriteConsole 'Building 3FD...';
     
     if ($arch.ToLower() -eq 'all')
     {
-        MsBuild -what 3FD.sln -task $task -arch x86 -config ('Debug' + $modeSuffix);
+        MsBuild -what 3FD.sln -task $task -arch x86 -config ('Debug'   + $modeSuffix);
         MsBuild -what 3FD.sln -task $task -arch x86 -config ('Release' + $modeSuffix);
 
-        MsBuild -what 3FD.sln -task $task -arch x64 -config ('Debug' + $modeSuffix);
+        MsBuild -what 3FD.sln -task $task -arch x64 -config ('Debug'   + $modeSuffix);
         MsBuild -what 3FD.sln -task $task -arch x64 -config ('Release' + $modeSuffix);
 
-        MsBuild -what 3FD.sln -task $task -arch ARM -config ('Debug' + $modeSuffix);
+        MsBuild -what 3FD.sln -task $task -arch ARM -config ('Debug'   + $modeSuffix);
         MsBuild -what 3FD.sln -task $task -arch ARM -config ('Release' + $modeSuffix);
     }
     else
     {
-        MsBuild -what 3FD.sln -task $task -arch $arch -config ('Debug' + $modeSuffix);
+        MsBuild -what 3FD.sln -task $task -arch $arch -config ('Debug'   + $modeSuffix);
         MsBuild -what 3FD.sln -task $task -arch $arch -config ('Release' + $modeSuffix);
     }
     

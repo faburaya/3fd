@@ -24,6 +24,7 @@ namespace XamlBindingInfo
         virtual void ResetTemplate() = 0;
         virtual int ProcessBindings(::Windows::UI::Xaml::Controls::ContainerContentChangingEventArgs^ args) = 0;
         virtual void SubscribeForDataContextChanged(::Windows::UI::Xaml::FrameworkElement^ object, ::XamlBindingInfo::XamlBindings^ handler) = 0;
+        virtual void DisconnectUnloadedObject(int connectionId) = 0;
     };
 
     ref class XamlBindings sealed : 
@@ -48,6 +49,7 @@ namespace XamlBindingInfo
         virtual int ProcessBindings(::Windows::UI::Xaml::Controls::ContainerContentChangingEventArgs^ args);
         virtual void ResetTemplate();
 
+        virtual void DisconnectUnloadedObject(int connectionId);
     private:
         ~XamlBindings();
 

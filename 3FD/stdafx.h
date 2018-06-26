@@ -20,6 +20,7 @@
 #                include <stdio.h>
 #                include <tchar.h>
 #                define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
+#				 define _SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING
 #                include <gtest/gtest.h>
 
 #            else // Static library:
@@ -32,6 +33,7 @@
 #            ifdef TESTING // Test application:
 #                include <collection.h>
 #                include <ppltasks.h>
+#				 define _SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING
 #                include <gtest/gtest.h>
 #                include "App.xaml.h"
 

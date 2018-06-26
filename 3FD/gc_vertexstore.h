@@ -4,7 +4,6 @@
 #include "utils.h"
 #include "gc_common.h"
 #include "gc_vertex.h"
-
 #include "stx/btree_set.h"
 
 namespace _3fd
@@ -15,7 +14,7 @@ namespace memory
     /// Represents a store of vertices allocated from a pool.
     /// The vertices represent memory blocks.
     /// </summary>
-    class VertexStore : notcopiable
+    class VertexStore
     {
     private:
 
@@ -36,6 +35,8 @@ namespace memory
     public:
 
         VertexStore();
+
+		VertexStore(const VertexStore &) = delete;
 
         void ShrinkPool();
 

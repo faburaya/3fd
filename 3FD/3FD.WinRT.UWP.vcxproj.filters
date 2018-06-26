@@ -13,9 +13,6 @@
     <Filter Include="SQLite">
       <UniqueIdentifier>{ce26fe85-a19e-4a84-a0f2-673923402439}</UniqueIdentifier>
     </Filter>
-    <Filter Include="SQLite\sqlite3">
-      <UniqueIdentifier>{86475f07-dd93-4583-9234-ac573fbba25b}</UniqueIdentifier>
-    </Filter>
     <Filter Include="core">
       <UniqueIdentifier>{b29871ca-4a34-4ffb-b08b-6e857241f398}</UniqueIdentifier>
     </Filter>
@@ -56,9 +53,6 @@
     </ClCompile>
     <ClCompile Include="sqlite_transaction.cpp">
       <Filter>SQLite</Filter>
-    </ClCompile>
-    <ClCompile Include="sqlite3.c">
-      <Filter>SQLite\sqlite3</Filter>
     </ClCompile>
     <ClCompile Include="utils_asynchronous.cpp">
       <Filter>utilities</Filter>
@@ -169,9 +163,6 @@
     </ClInclude>
     <ClInclude Include="sqlite.h">
       <Filter>SQLite</Filter>
-    </ClInclude>
-    <ClInclude Include="sqlite3.h">
-      <Filter>SQLite\sqlite3</Filter>
     </ClInclude>
     <ClInclude Include="utils.h">
       <Filter>utilities</Filter>

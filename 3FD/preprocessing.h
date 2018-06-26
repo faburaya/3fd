@@ -17,6 +17,7 @@
 #       define thread_local_decl    __declspec(thread)
 #       define thread_local_def
 #   else
+#       define _3FD_HAS_STLOPTIMALLOC
 #       define NOEXCEPT             noexcept
 #       define thread_local_decl    thread_local
 #       define thread_local_def     thread_local
@@ -43,16 +44,19 @@
 #       define _3FD_ESENT_SUPPORT
 #       define _3FD_OPENCL_SUPPORT
 #       define _3FD_CONSOLE_AVAILABLE
+
 #   elif defined WINAPI_FAMILY_SYSTEM
         // UWP Apps only:
 #       define _3FD_PLATFORM_WINRT
 #       define _3FD_PLATFORM_WINRT_UWP
 #       define _3FD_ESENT_SUPPORT
+
 #   elif WINAPI_FAMILY == WINAPI_FAMILY_PC_APP
         // Windows Store Apps (& UWP) only:
 #       define _3FD_PLATFORM_WINRT
 #       define _3FD_PLATFORM_WINRT_PC
 #       define _3FD_ESENT_SUPPORT
+
 #   elif WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
         // Windows Phone 8 Store Apps only:
 #       define _3FD_PLATFORM_WINRT
@@ -63,6 +67,7 @@
 #    define _3FD_POCO_SUPPORT
 #    define _3FD_OPENCL_SUPPORT
 #    define _3FD_CONSOLE_AVAILABLE
+
 #elif defined __unix__ // Unix only:
 #    define _3FD_POCO_SUPPORT
 #    define _3FD_CONSOLE_AVAILABLE
@@ -70,26 +75,17 @@
 
 // These instructions have they definition depending on whether this is a release compilation:
 #ifdef NDEBUG
-#   if defined _MSC_VER && _MSC_VER < 1900
-#       define NOEXCEPT throw()
-#   else
-#       define NOEXCEPT noexcept
-#   endif
-
 #   define RELEASE_DEBUG_SWITCH(STATEMENT1, STATEMENT2) STATEMENT1
-#    define ONDEBUG(CODE_LINE)    ;
+#   define ONDEBUG(CODE_LINE) ;
 #else
-#   ifdef _3FD_PLATFORM_WIN32API
-#       include <vld.h> // Visual Leak Detector
-
-#   elif defined _3FD_PLATFORM_WINRT
+#   ifdef _3FD_PLATFORM_WINRT
 #       define _CRTDBG_MAP_ALLOC
 #       include <stdlib.h>
 #       include <crtdbg.h>
 #   endif
 
 #   define RELEASE_DEBUG_SWITCH(STATEMENT1, STATEMENT2) STATEMENT2
-#    define ONDEBUG(CODE_LINE) CODE_LINE
+#   define ONDEBUG(CODE_LINE) CODE_LINE
 #endif
 
 // Some few useful "keywords":

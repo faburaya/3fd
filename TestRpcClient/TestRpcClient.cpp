@@ -6,6 +6,7 @@
 #include "logger.h"
 #include <exception>
 #include <iostream>
+#include <vld.h>
 
 int wmain(int argc, wchar_t *argv[])
 {

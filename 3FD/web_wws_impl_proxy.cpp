@@ -1,9 +1,10 @@
 #include "stdafx.h"
 #include "web_wws_impl_proxy.h"
-#include "configuration.h"
 #include "callstacktracer.h"
+#include "configuration.h"
 #include "logger.h"
 #include "utils_io.h"
+#include "utils_algorithms.h"
 
 #define format utils::FormatArg
 
@@ -579,22 +580,20 @@ namespace wws
                 static const auto retryTimeSlotMs = AppConfig::GetSettings().framework.wws.proxyRetryTimeSlotMs;
                 static const auto retrySleepTimeSecs = AppConfig::GetSettings().framework.wws.proxyRetrySleepSecs;
 
-                uint64_t intervalMs;
+                std::chrono::milliseconds intervalMs;
 
                 if (ra == OpErrRecommendedAction::Reconnect)
                 {
                     // connectivity related problems cause attempts with constant interval
-                    intervalMs = 1000UL * retrySleepTimeSecs;
+                    intervalMs = std::chrono::milliseconds(1000UL * retrySleepTimeSecs);
                 }
                 else
                 {
                     // resource related problems cause attempts with intervals in exponential back-off
-                    intervalMs = static_cast<uint32_t> (rand() * (pow(2, count) - 1) / RAND_MAX) * retryTimeSlotMs;
+                    intervalMs = utils::CalcExponentialBackOff(count, std::chrono::milliseconds(retryTimeSlotMs));
                 }
 
-                std::this_thread::sleep_for(
-                    std::chrono::milliseconds(intervalMs)
-                );
+                std::this_thread::sleep_for(intervalMs);
 
                 ++count;
 
@@ -892,13 +891,12 @@ namespace wws
             static const auto retryTimeSlotMs = AppConfig::GetSettings().framework.wws.proxyRetryTimeSlotMs;
             static const auto retrySleepTimeSecs = AppConfig::GetSettings().framework.wws.proxyRetrySleepSecs;
 
-            uint64_t intervalMs;
-
             if (ra == OpErrRecommendedAction::RetryBackoff)
             {
                 // resource related problems cause attempts with intervals in exponential back-off
-                intervalMs = static_cast<uint32_t> (rand() * (pow(2, count) - 1) / RAND_MAX) * retryTimeSlotMs;
-                std::this_thread::sleep_for(std::chrono::milliseconds(intervalMs));
+                std::this_thread::sleep_for(
+                    utils::CalcExponentialBackOff(count, std::chrono::milliseconds(retryTimeSlotMs))
+                );
             }
             else if (Open()/* managed to re-open proxy? */)
             {
@@ -908,8 +906,7 @@ namespace wws
             else // proxy was already opened?
             {
                 // connectivity related problems cause attempts with constant interval:
-                intervalMs = 1000UL * retrySleepTimeSecs;
-                std::this_thread::sleep_for(std::chrono::milliseconds(intervalMs));
+                std::this_thread::sleep_for(std::chrono::seconds(retrySleepTimeSecs));
             }
         }
 

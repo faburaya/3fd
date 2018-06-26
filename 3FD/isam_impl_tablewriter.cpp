@@ -1,8 +1,9 @@
 #include "stdafx.h"
 #include "isam_impl.h"
+#include "utils_algorithms.h"
 #include <thread>
-#include <codecvt>
 #include <cassert>
+#include <codecvt>
 #include <cstdlib>
 #include <ctime>
 
@@ -84,12 +85,9 @@ namespace isam
         {
             if(rcode == JET_errWriteConflict)
             {
-                if(attempts == 1)
-                    srand(static_cast<uint32_t> (time(nullptr)));
-
                 // Wait a little to acquire lock in the row:
                 std::this_thread::sleep_for(
-                    std::chrono::milliseconds(rand() % std::min(3 * attempts, 50) + 1)
+                    utils::CalcExponentialBackOff(attempts, std::chrono::milliseconds(5))
                 );
             }
             else

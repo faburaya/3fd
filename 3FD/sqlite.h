@@ -2,11 +2,11 @@
 #define SQLITE_H
 
 #include "base.h"
-#include <boost/lockfree/queue.hpp>
 #include <string>
 #include <atomic>
 #include <map>
-#include "sqlite3.h"
+#include <sqlite3.h>
+#include "utils_lockfreequeue.h"
 
 namespace _3fd
 {
@@ -130,7 +130,7 @@ namespace sqlite
         /// <summary>
         /// A lock free queue that holds the database connections.
         /// </summary>
-        boost::lockfree::queue<DatabaseConn *> m_availableConnections;
+        utils::LockFreeQueue<DatabaseConn> m_availableConnections;
 
         std::atomic<uint32_t> m_numConns;
         string m_dbFilePath;

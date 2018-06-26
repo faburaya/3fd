@@ -25,7 +25,7 @@ namespace memory
     /// Directed graph representing the connections made by safe pointers
     /// between pieces of memory managed by the GC.
     /// </summary>
-    class MemoryDigraph : notcopiable
+    class MemoryDigraph
     {
     private:
 
@@ -47,6 +47,10 @@ namespace memory
         void UnmakeReference(AddressesHashTable::Element &sptrObjHashTableElem, bool allowDestruction);
 
     public:
+
+		MemoryDigraph() {}
+
+		MemoryDigraph(const MemoryDigraph &) = delete;
 
         void ShrinkVertexPool();
 

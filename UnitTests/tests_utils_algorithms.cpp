@@ -16,8 +16,6 @@ namespace unit_tests
     {
         int key;
         int val;
-
-        uint64_t GetKey() { return key; }
     };
 
     /// <summary>
@@ -37,22 +35,28 @@ namespace unit_tests
         srand(time(nullptr));
 
         // Search it a few times (match):
-        for (int idx = 0; idx < 10; ++idx)
+        for (int idx = 0; idx < 100; ++idx)
         {
             int key = abs(rand()) % numEntries;
 
-            auto iter = utils::BinarySearch(key, list.begin(), list.end());
+            auto iter = utils::BinarySearch(list.cbegin(), list.cend(),
+                key, [](const Object &x) NOEXCEPT { return x.key; }, std::less<int>());
 
             EXPECT_NE(list.end(), iter);
-            EXPECT_EQ(key, iter->key);
+
+            if (iter != list.end())
+            {
+                EXPECT_EQ(key, iter->key);
+            }
         }
 
         // Search it a few times (NO match):
-        for (int idx = 0; idx < 10; ++idx)
+        for (int idx = 0; idx < 100; ++idx)
         {
             int key = (abs(rand()) % 69) + numEntries;
 
-            auto iter = utils::BinarySearch(key, list.begin(), list.end());
+            auto iter = utils::BinarySearch(list.cbegin(), list.cend(),
+                key, [](const Object &x) NOEXCEPT { return x.key; }, std::less<int>());
 
             EXPECT_EQ(list.end(), iter);
         }
@@ -68,7 +72,7 @@ namespace unit_tests
         std::vector<Object> list;
         list.reserve(numEntries);
 
-        // Fill the vector:
+        // Fill the vector with a pattern 1 2 2 3 3 3 4 4 4 4 ...
 
         int val(0);
         do
@@ -83,15 +87,24 @@ namespace unit_tests
         srand(time(nullptr));
 
         // Search it a few times (match):
-        for (int idx = 0; idx < 4; ++idx)
+        for (int idx = 0; idx < 100; ++idx)
         {
-            int key = abs(rand()) % (list.back().key + 1);
+            int key = 1 + abs(rand()) % list.back().key;
 
-            auto subRangeBegin = list.begin();
-            auto subRangeEnd = list.end();
+            auto subRangeBegin = list.cbegin();
+            auto subRangeEnd = list.cend();
 
-            EXPECT_TRUE(utils::BinSearchSubRange(key, subRangeBegin, subRangeEnd));
-            EXPECT_NE(subRangeBegin, subRangeEnd);
+            EXPECT_TRUE(
+                utils::BinSearchSubRange(subRangeBegin, subRangeEnd,
+                    key, [](const Object &x) NOEXCEPT { return x.key; }, std::less<int>())
+            );
+
+            EXPECT_NE(subRangeBegin, subRangeEnd) << "Could not find key " << key;
+
+            if (subRangeEnd != list.end())
+            {
+                EXPECT_EQ(key, std::distance(subRangeBegin, subRangeEnd)) << "Incomplete range for key " << key;
+            }
 
             std::for_each(subRangeBegin, subRangeEnd, [key](const Object &obj)
             {
@@ -100,15 +113,19 @@ namespace unit_tests
         }
 
         // Search it a few times (NO match):
-        for (int idx = 0; idx < 4; ++idx)
+        for (int idx = 0; idx < 100; ++idx)
         {
             int key = (abs(rand()) % 69) + list.back().key + 1;
 
-            auto subRangeBegin = list.begin();
-            auto subRangeEnd = list.end();
+            auto subRangeBegin = list.cbegin();
+            auto subRangeEnd = list.cend();
 
-            EXPECT_FALSE(utils::BinSearchSubRange(key, subRangeBegin, subRangeEnd));
-            EXPECT_EQ(subRangeBegin, subRangeEnd);
+            EXPECT_FALSE(
+                utils::BinSearchSubRange(subRangeBegin, subRangeEnd,
+                    key, [](const Object &x) NOEXCEPT { return x.key; }, std::less<int>())
+            );
+
+            EXPECT_EQ(subRangeBegin, subRangeEnd) << "Not supposed to find key " << key;
         }
     }
 

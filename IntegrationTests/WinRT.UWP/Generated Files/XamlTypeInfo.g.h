@@ -244,6 +244,7 @@ namespace XamlTypeInfo
             property ActivatorFn Activator;
             property AddToCollectionFn CollectionAdd;
             property AddToDictionaryFn DictionaryAdd;
+            property std::function<::Platform::Object^(::Platform::String^)>* CreateFromStringMethod;
             property ::Windows::UI::Xaml::Interop::TypeKind KindOfType;
             property StringConverterFn FromStringConverter;
 

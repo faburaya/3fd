@@ -50,6 +50,7 @@ struct TypeInfo
     int     baseTypeIndex;
     int     firstMemberIndex;
     int     firstEnumValueIndex;
+    int     createFromStringIndex;
     ::Windows::UI::Xaml::Interop::TypeKind kindofType;
     bool    isLocalType;
     bool    isSystemType;
@@ -57,35 +58,41 @@ struct TypeInfo
     bool    isBindable;
 };
 
-TypeInfo TypeInfos[] = 
+
+std::function<::Platform::Object^(::Platform::String^)> CreateFromStringMethods[] =
+{
+    nullptr //Last entry is for padding
+};
+
+const TypeInfo TypeInfos[] = 
 {
     //   0
     L"Windows.UI.Xaml.Controls.Page", L"",
     nullptr, nullptr, nullptr, nullptr,
     -1,
-    0, 0, ::Windows::UI::Xaml::Interop::TypeKind::Metadata,
+    0, 0, -1, ::Windows::UI::Xaml::Interop::TypeKind::Metadata,
     false, true,  false, false,
     //   1
     L"Windows.UI.Xaml.Controls.UserControl", L"",
     nullptr, nullptr, nullptr, nullptr,
     -1,
-    0, 0, ::Windows::UI::Xaml::Interop::TypeKind::Metadata,
+    0, 0, -1, ::Windows::UI::Xaml::Interop::TypeKind::Metadata,
     false, true,  false, false,
     //   2
     L"IntegrationTestsApp_WinRT_UWP.MainPage", L"",
     &ActivateType<::IntegrationTestsApp_WinRT_UWP::MainPage>, nullptr, nullptr, nullptr,
     0, // Windows.UI.Xaml.Controls.Page
-    0, 0, ::Windows::UI::Xaml::Interop::TypeKind::Custom,
+    0, 0, -1, ::Windows::UI::Xaml::Interop::TypeKind::Custom,
     true,  false, false, false,
     //  Last type here is for padding
     L"", L"",
     nullptr, nullptr, nullptr, nullptr,
     -1, 
-    0, 0,::Windows::UI::Xaml::Interop::TypeKind::Custom,
+    0, 0, -1, ::Windows::UI::Xaml::Interop::TypeKind::Custom,
     false, false, false, false,
 };
 
-UINT TypeInfoLookup[] = { 
+const UINT TypeInfoLookup[] = { 
       0,   //   0
       0,   //   1
       0,   //   2
@@ -128,7 +135,7 @@ UINT TypeInfoLookup[] = {
       3,   //  39
 };
 
-TypeInfo* GetTypeInfo(::Platform::String^ typeName)
+const TypeInfo* GetTypeInfo(::Platform::String^ typeName)
 {
     int typeNameLength = typeName->Length();
     if (typeNameLength < _countof(TypeInfoLookup) - 1)
@@ -156,8 +163,8 @@ TypeInfo* GetTypeInfo(::Platform::String^ typeName)
 
 ::Windows::UI::Xaml::Markup::IXamlType^ ::XamlTypeInfo::InfoProvider::XamlTypeInfoProvider::CreateXamlType(::Platform::String^ typeName)
 {
-    TypeInfo* pTypeInfo = GetTypeInfo(typeName);
-    TypeInfo* pNextTypeInfo = pTypeInfo + 1;
+    const TypeInfo* pTypeInfo = GetTypeInfo(typeName);
+    const TypeInfo* pNextTypeInfo = pTypeInfo + 1;
     if (pTypeInfo == nullptr || pNextTypeInfo == nullptr)
     {
         return nullptr;
@@ -181,6 +188,11 @@ TypeInfo* GetTypeInfo(::Platform::String^ typeName)
         userType->IsLocalType = pTypeInfo->isLocalType;
         userType->IsReturnTypeStub = pTypeInfo->isReturnTypeStub;
         userType->IsBindable = pTypeInfo->isBindable;
+        userType->CreateFromStringMethod = nullptr;
+        if (pTypeInfo->createFromStringIndex != -1)
+        {
+            userType->CreateFromStringMethod = &(CreateFromStringMethods[pTypeInfo->createFromStringIndex]);
+        }
         return userType;
     }
 }

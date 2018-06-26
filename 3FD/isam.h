@@ -839,7 +839,7 @@ namespace isam
     private:
 
         Instance        &m_instance;
-        SessionImpl        *m_pimplSession;
+        SessionImpl     *m_pimplSession;
         DatabaseImpl    *m_pimplDatabase;
         const int        m_code;
 

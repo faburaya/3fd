@@ -11,6 +11,6 @@
 #include <tchar.h>
 
 
-
 // TODO: reference additional headers your program requires here
+#define _SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING
 #include <gtest/gtest.h>

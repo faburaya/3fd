@@ -5,21 +5,24 @@
 #include <iostream>
 
 #ifndef _3FD_PLATFORM_WINRT
-#    ifdef _MSC_VER
+#   ifdef _MSC_VER
+#   include <vld.h>
+
     int wmain(int argc, wchar_t *argv[])
     {
         std::cout << "Running main() from \'IntegrationTests.cpp\'\n";
         testing::InitGoogleTest(&argc, argv);
         return RUN_ALL_TESTS();
     }
-#    else
+#   else
+
     int main(int argc, char *argv[])
     {
         std::cout << "Running main() from \'IntegrationTests.cpp\'\n";
         testing::InitGoogleTest(&argc, argv);
         return RUN_ALL_TESTS();
     }
-#    endif
+#   endif
 #endif
 
 namespace _3fd

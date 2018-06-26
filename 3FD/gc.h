@@ -1,7 +1,6 @@
 #ifndef GC_H
 #define GC_H
 
-#include "base.h"
 #include "utils.h"
 #include "gc_memorydigraph.h"
 #include "utils_lockfreequeue.h"
@@ -35,14 +34,14 @@ namespace memory
     /// <summary>
     /// Implements the garbage collector engine.
     /// </summary>
-    class GarbageCollector : notcopiable 
+    class GarbageCollector 
     {
     private:
 
-        std::thread                        m_thread;
-        std::exception_ptr                m_error;
-        MemoryDigraph                    m_memoryDigraph;
-        utils::LockFreeQueue<IMessage>    m_messagesQueue;
+        std::thread                     m_thread;
+        std::exception_ptr              m_error;
+        MemoryDigraph                   m_memoryDigraph;
+        utils::LockFreeQueue<IMessage>  m_messagesQueue;
         utils::Event                    m_terminationEvent;
 
         GarbageCollector();
@@ -52,7 +51,7 @@ namespace memory
         // Singleton needs:
 
         static std::mutex        singleInstanceCreationMutex;
-        static GarbageCollector    *uniqueObjectPtr;
+        static GarbageCollector *uniqueObjectPtr;
         static GarbageCollector *CreateInstance();
 
     public:
@@ -60,6 +59,8 @@ namespace memory
         static GarbageCollector &GetInstance();
 
         static void Shutdown();
+
+		GarbageCollector(const GarbageCollector &) = delete;
 
         ~GarbageCollector();
 

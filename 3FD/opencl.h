@@ -4,6 +4,7 @@
 #include "base.h"
 #include "configuration.h"
 #include "logger.h"
+#include "CL/cl.h"
 #include <set>
 #include <map>
 #include <deque>
@@ -13,7 +14,6 @@
 #include <memory>
 #include <cstdint>
 #include <mutex>
-#include <CL/cl.h>
 
 namespace _3fd
 {
@@ -71,7 +71,7 @@ namespace _3fd
         {
         private:
 
-            cl_platform_id    m_platform;
+            cl_platform_id m_platform;
 
             /// <summary>
             /// Prevents a default instance of the <see cref="Platform"/> class from being created.
@@ -96,7 +96,7 @@ namespace _3fd
         /// </summary>
         struct DeviceInfo : notcopiable
         {
-            size_t    hashCode;
+            size_t  hashCode;
             cl_uint vendorId;
             string  vendorName,
                     deviceName,
@@ -388,10 +388,10 @@ namespace _3fd
         {
         private:
 
-            const bool            m_oooExecEnabled;
-            cl_device_id        m_device;
-            cl_context            m_context;
-            cl_command_queue    m_commandQueue;
+            const bool       m_oooExecEnabled;
+            cl_device_id     m_device;
+            cl_context       m_context;
+            cl_command_queue m_commandQueue;
 
             /// <summary>
             /// Blocking operations in OpenCL do not lock access to the blocked memory addresses in
@@ -531,9 +531,9 @@ namespace _3fd
         {
         private:
 
-            size_t        m_nBytes;
-            cl_mem        m_buffer, 
-                        m_mainBuffer;
+            size_t m_nBytes;
+            cl_mem m_buffer, 
+                   m_mainBuffer;
 
             void SetMemObjectDtorCallback(void (CL_CALLBACK *memObjectDestructorCallback)(cl_mem, void *), 
                                           void *userData);
@@ -589,7 +589,7 @@ namespace _3fd
         {
         private:
 
-            cl_program    m_program;
+            cl_program m_program;
 
             void GetProgramInfo(cl_program_info programInfo, GenericParam &param) const;
 
@@ -635,8 +635,8 @@ namespace _3fd
 
             typedef std::map<cl_uint, Argument> ArgsMap;
 
-            cl_kernel    m_kernel;
-            ArgsMap        m_arguments;
+            cl_kernel m_kernel;
+            ArgsMap   m_arguments;
 
         public:
 
