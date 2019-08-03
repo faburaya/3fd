@@ -185,7 +185,7 @@ namespace wws
         /// using move semantics.
         /// </summary>
         /// <param name="ob">The ob.</param>
-        WebServiceProxy(WebServiceProxy &&ob)
+        WebServiceProxy(WebServiceProxy &&ob) noexcept
             : m_pimpl(ob.m_pimpl)
         {
             ob.m_pimpl = nullptr;

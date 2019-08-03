@@ -47,7 +47,7 @@ namespace opencl
     /// <summary>
     /// Represents an OpenCL program manifest.
     /// </summary>
-    class ProgramManifest : notcopiable
+    class ProgramManifest
     {
     public:
 
@@ -73,9 +73,9 @@ namespace opencl
             /// Initializes a new instance of the <see cref="DeviceProgramInfo"/> struct using move semantics.
             /// </summary>
             /// <param name="ob">The object whose resources will be stolen.</param>
-            DeviceProgramInfo(DeviceProgramInfo &&ob) : 
-                fileName(std::move(ob.fileName)), 
-                deviceInfo(std::move(ob.deviceInfo)) 
+            DeviceProgramInfo(DeviceProgramInfo &&ob) noexcept
+                : fileName(std::move(ob.fileName))
+                , deviceInfo(std::move(ob.deviceInfo)) 
             {}
         };
 
@@ -96,10 +96,12 @@ namespace opencl
         /// Initializes a new instance of the <see cref="ProgramManifest"/> class using move semantics.
         /// </summary>
         /// <param name="ob">The object whose resources will be stolen.</param>
-        ProgramManifest(ProgramManifest &&ob) :
-            m_programName(std::move(ob.m_programName)),
-            m_devicesInfo(std::move(ob.m_devicesInfo))
+        ProgramManifest(ProgramManifest &&ob) noexcept
+            : m_programName(std::move(ob.m_programName))
+            , m_devicesInfo(std::move(ob.m_devicesInfo))
         {}
+
+        ProgramManifest(const ProgramManifest &) = delete;
 
         static ProgramManifest CreateObject(const string &programName, const std::vector<cl_device_id> &devices);
 

@@ -40,9 +40,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution", "Solution", "{60
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "POSIX", "POSIX", "{7F50EEA8-C82B-46E6-931B-9D2339A47419}"
 	ProjectSection(SolutionItems) = preProject
-		bootstrap.sh = bootstrap.sh
-		build.sh = build.sh
+		build_all.sh = build_all.sh
 		configure.sh = configure.sh
+		install_dependencies.sh = install_dependencies.sh
+		install_vsrbdeps.sh = install_vsrbdeps.sh
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "vcpkg", "vcpkg", "{470B7859-6C5B-45FB-8FC7-E4D5806B9ABE}"
@@ -243,7 +244,7 @@ Global
 		{470B7859-6C5B-45FB-8FC7-E4D5806B9ABE} = {60F3AE6C-C6A3-4C8B-A98A-9044DE809838}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		VisualSVNWorkingCopyRoot = .
 		SolutionGuid = {3FB930DD-93C4-4123-8373-DCB40B20A7CA}
+		VisualSVNWorkingCopyRoot = .
 	EndGlobalSection
 EndGlobal

@@ -229,14 +229,15 @@ namespace isam
     /// <summary>
     /// A transaction within the session that uses RAII.
     /// </summary>
-    class Transaction : notcopiable
+    class Transaction
     {
     private:
 
         TransactionImpl *m_pimpl;
 
-        // forbiden op:
-        Transaction &operator =(Transaction &&ob) {}
+		Transaction(const Transaction &) = delete;
+
+		Transaction &operator =(Transaction &&) = delete;
 
     public:
 
@@ -251,8 +252,8 @@ namespace isam
         /// Initializes a new instance of the <see cref="Transaction"/> class using move semantics.
         /// </summary>
         /// <param name="ob">The ob.</param>
-        Transaction(Transaction &&ob) : 
-            m_pimpl(ob.m_pimpl) 
+        Transaction(Transaction &&ob) noexcept
+            : m_pimpl(ob.m_pimpl) 
         {
             if(this != &ob)
                 ob.m_pimpl = nullptr;
@@ -451,8 +452,8 @@ namespace isam
         /// Initializes a new instance of the <see cref="TableWriter"/> class using move semantics.
         /// </summary>
         /// <param name="ob">The objects whose resources will be stolen.</param>
-        TableWriter(TableWriter &&ob) : 
-            m_pimpl(ob.m_pimpl) 
+        TableWriter(TableWriter &&ob) noexcept
+            : m_pimpl(ob.m_pimpl) 
         {
             if(this != &ob)
                 ob.m_pimpl = nullptr;
@@ -658,8 +659,8 @@ namespace isam
         /// Initializes a new instance of the <see cref="TableCursor"/> class using move semantics.
         /// </summary>
         /// <param name="ob">The object whose resources will be stolen.</param>
-        TableCursor(TableCursor &&ob) : 
-            m_pimplTableCursor(ob.m_pimplTableCursor) 
+        TableCursor(TableCursor &&ob) noexcept
+            : m_pimplTableCursor(ob.m_pimplTableCursor) 
         {
             if(this != &ob)
                 ob.m_pimplTableCursor = nullptr;
@@ -853,17 +854,21 @@ namespace isam
         /// <param name="database">The private implementation for a database.</param>
         /// <param name="code">The numeric code attributed to this database connection.</param>
         DatabaseConn(Instance &instance, SessionImpl *session, DatabaseImpl *database, int code)
-            : m_instance(instance), m_pimplSession(session), m_pimplDatabase(database), m_code(code) {}
+            : m_instance(instance)
+			, m_pimplSession(session)
+			, m_pimplDatabase(database)
+			, m_code(code)
+		{}
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DatabaseConn"/> class using move semantics.
         /// </summary>
         /// <param name="ob">The object whose resources will be stolen.</param>
-        DatabaseConn(DatabaseConn &&ob) : 
-            m_instance(ob.m_instance), 
-            m_pimplSession(ob.m_pimplSession), 
-            m_pimplDatabase(ob.m_pimplDatabase), 
-            m_code(ob.m_code) 
+        DatabaseConn(DatabaseConn &&ob) noexcept
+            : m_instance(ob.m_instance)
+            , m_pimplSession(ob.m_pimplSession)
+            , m_pimplDatabase(ob.m_pimplDatabase)
+            , m_code(ob.m_code)
         {
             if(this != &ob)
             {

@@ -184,7 +184,7 @@ namespace rpc
         }
     }
 
-    UUID_VECTOR * VectorOfUuids::CopyTo(UuidVectorFix &vec) NOEXCEPT
+    UUID_VECTOR * VectorOfUuids::CopyTo(UuidVectorFix &vec) noexcept
     {
         _ASSERTE(m_ptrs2Uuids.size() <= UUID_VECTOR_MAX_SIZE);
 

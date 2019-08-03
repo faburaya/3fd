@@ -1,14 +1,9 @@
 #include "stdafx.h"
 #include "opencl_impl.h"
 #include "callstacktracer.h"
-#include "logger.h"
+#include "xml.h"
 
-#include <fstream>
-#include "Poco/AutoPtr.h"
-#include "Poco/SAX/InputSource.h"
-#include "Poco/DOM/DOMParser.h"
-#include "Poco/DOM/Document.h"
-#include "Poco/DOM/NodeList.h"
+#define SKIP_LINE "\r\n"
 
 namespace _3fd
 {
@@ -160,97 +155,71 @@ namespace opencl
 
         try
         {
+            std::vector<char> buffer;
+            rapidxml::xml_document<char> xmlDocObj;
+
+            auto rootNode = xml::ParseXmlFromFile(filePath, buffer, xmlDocObj, "manifest");
+            if (rootNode == nullptr)
+            {
+                throw core::AppException<std::runtime_error>("Manifest file has unexpected format",
+                                                             "Root node 'manifest' is missing");
+            }
+
             ProgramManifest manifest;
 
-            // Open the manifest file:
-            std::ifstream ifs(filePath, std::ios::binary);
-            if (ifs.is_open() == false)
-                throw core::AppException<std::runtime_error>("Could not open manifest file", filePath);
+            const rapidxml::xml_node<char> *elementDevice(nullptr);
 
-            using Poco::XML::InputSource;
+            auto query = xml::QueryElement("manifest", xml::Required, {
+                xml::QueryElement("program", xml::Required, {
+                    xml::QueryAttribute("name", xml::Required, xml::parse_into(manifest.m_programName)),
+                    xml::QueryElement("device", xml::Required, {}, &elementDevice)
+                })
+            });
 
-            // Parse the XML content:
-            Poco::XML::DOMParser parser;
-            std::unique_ptr<InputSource> xmlInput(new InputSource(ifs));
-            Poco::AutoPtr<Poco::XML::Document> dom = parser.parse(xmlInput.get());
-
-            auto node = dom->getNodeByPath("manifest/program");
-            if (node == nullptr)
-                throw core::AppException<std::runtime_error>("Manifest file has unexpected format", "Node \'program\' is missing");
-
-            auto attr = node->getNodeByPath("[@name]");
-            if (attr != nullptr)
-                manifest.m_programName = attr->getNodeValue();
-            else
-                throw core::AppException<std::runtime_error>("Manifest file has unexpected format", "Node \'program\' is missing attribute \'name\'");
+            if (!query->Execute(rootNode, xml::QueryStrategy::TestsOnlyGivenElement))
+            {
+                std::ostringstream oss;
+                oss << "Could not match XML query looking for" SKIP_LINE SKIP_LINE;
+                query->SerializeTo(2, oss);
+                throw core::AppException<std::runtime_error>("XML manifest of OpenCL program is not compliant", oss.str());
+            }
 
             // Iterate through the nodes 'device':
-            for (auto iter = node->firstChild(); iter != nullptr; iter = iter->nextSibling())
+            do
             {
-                if (iter->nodeName() != "device")
-                    continue;
-
                 manifest.m_devicesInfo.emplace_back();
                 auto &info = manifest.m_devicesInfo.back();
 
-                // Device name:
-                attr = iter->getNodeByPath("[@name]");
-                if (attr != nullptr)
-                    info.deviceInfo.deviceName = attr->getNodeValue();
-                else
-                    throw core::AppException<std::runtime_error>("Manifest file has unexpected format", "Node \'device\' is missing attribute \'name\'");
+                query = xml::QueryElement("device", xml::Required, {
+                    xml::QueryAttribute("name", xml::Required, xml::parse_into(info.deviceInfo.deviceName)),
+                    xml::QueryElement("driver", xml::Required, xml::parse_into(info.deviceInfo.driverVersion)),
+                    xml::QueryElement("file", xml::Required, xml::parse_into(info.fileName)),
+                    xml::QueryElement("vendor", xml::Required, xml::parse_into(info.deviceInfo.vendorName), xml::NoFormat(), {
+                        xml::QueryAttribute("id", xml::Required, xml::parse_into(info.deviceInfo.vendorId))
+                    })
+                });
 
-                // Vendor name:
-                node = iter->getNodeByPath("/vendor");
-                if (node != nullptr)
-                    info.deviceInfo.vendorName = node->innerText();
-                else
-                    throw core::AppException<std::runtime_error>("Manifest file has unexpected format", "Node \'device\' is missing child \'vendor\'");
-
-                // Vendor ID:
-                attr = node->getNodeByPath("[@id]");
-                if (attr == nullptr)
-                    throw core::AppException<std::runtime_error>("Manifest file has unexpected format", "Node \'vendor\' is missing attribute \'id\'");
-                else
+                if (!query->Execute(elementDevice, xml::QueryStrategy::TestsOnlyGivenElement))
                 {
-                    auto &id = attr->getNodeValue();
-                    info.deviceInfo.vendorId = strtoul(id.c_str(), nullptr, 10);
+                    std::ostringstream oss;
+                    oss << "Could not load invalid definition of OpenCL device for program '" << manifest.m_programName
+                        << "' from manifest." SKIP_LINE "Failed to match XML query looking for" SKIP_LINE SKIP_LINE;
 
-                    if (info.deviceInfo.vendorId == 0)
-                        throw core::AppException<std::runtime_error>("Program manifest has invalid value", "Node \'vendor\' has invalid value in attribute \'id\'");
+                    query->SerializeTo(2, oss);
+                    throw core::AppException<std::runtime_error>("XML manifest for OpenCL proram has unexpected format", oss.str());
                 }
 
-                // Driver version:
-                node = iter->getNodeByPath("/driver");
-                if (node != nullptr)
-                    info.deviceInfo.driverVersion = node->innerText();
-                else
-                    throw core::AppException<std::runtime_error>("Manifest file has unexpected format", "Node \'device\' is missing child \'driver\'");
-
-                // Binary program file name:
-                node = iter->getNodeByPath("/file");
-                if (node != nullptr)
-                    info.fileName = node->innerText();
-                else
-                    throw core::AppException<std::runtime_error>("Manifest file has unexpected format", "Node \'device\' is missing child \'file\'");
-
                 info.deviceInfo.UpdateHashCode();
-            }
 
-            if (manifest.m_devicesInfo.empty() == false)
-                return std::move(manifest);
-            else
-                throw core::AppException<std::runtime_error>("Manifest file has unexpected format", "Node \'program\' has no devices");
+                elementDevice = xml::GetNextSiblingOf(elementDevice, xml::xstr("device"));
+
+            } while (elementDevice != nullptr);
+
+            return std::move(manifest);
         }
         catch (core::IAppException &)
         {
             throw; // just forward exceptions known to have been previously handled
-        }
-        catch (Poco::Exception &ex)
-        {
-            std::ostringstream oss;
-            oss << "POCO C++ library reported: " << ex.message();
-            throw core::AppException<std::runtime_error>("Failed to parse XML content in manifest", oss.str());
         }
         catch (std::exception &ex)
         {

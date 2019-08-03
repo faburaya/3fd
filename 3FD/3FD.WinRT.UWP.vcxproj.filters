@@ -129,6 +129,9 @@
     <ClCompile Include="utils_io.cpp">
       <Filter>utilities</Filter>
     </ClCompile>
+    <ClCompile Include="xml.cpp">
+      <Filter>core</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="gc.h">
@@ -214,6 +217,9 @@
     </ClInclude>
     <ClInclude Include="utils_algorithms.h">
       <Filter>utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="xml.h">
+      <Filter>core</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

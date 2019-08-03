@@ -107,19 +107,19 @@ namespace _3fd
             /// <summary>
             /// Initializes a new instance of the <see cref="DeviceInfo"/> struct.
             /// </summary>
-            DeviceInfo()
+            DeviceInfo() noexcept
                 : hashCode(0), vendorId(0) {}
 
             /// <summary>
             /// Initializes a new instance of the <see cref="DeviceInfo"/> struct using move semantics.
             /// </summary>
             /// <param name="ob">The object whose resources will be stolen.</param>
-            DeviceInfo(DeviceInfo &&ob) : 
-                hashCode(ob.hashCode),
-                vendorId(ob.vendorId),
-                vendorName(std::move(ob.vendorName)),
-                deviceName(std::move(ob.deviceName)),
-                driverVersion(std::move(ob.driverVersion))
+            DeviceInfo(DeviceInfo &&ob) noexcept
+                : hashCode(ob.hashCode)
+                , vendorId(ob.vendorId)
+                , vendorName(std::move(ob.vendorName))
+                , deviceName(std::move(ob.deviceName))
+                , driverVersion(std::move(ob.driverVersion))
             {
                 ob.hashCode = 0;
                 ob.vendorId = 0;
@@ -162,8 +162,9 @@ namespace _3fd
                 /// Initializes a new instance of the <see cref="DeviceInfo2"/> struct using move semantics.
                 /// </summary>
                 /// <param name="ob">The object whose resources will be stolen.</param>
-                DeviceInfo2(DeviceInfo2 &&ob)
-                    : id(ob.id), info(std::move(ob.info))
+                DeviceInfo2(DeviceInfo2 &&ob) noexcept
+                    : id(ob.id)
+					, info(std::move(ob.info))
                 {
                     ob.id = nullptr;
                 }
@@ -191,9 +192,9 @@ namespace _3fd
             /// Initializes a new instance of the <see cref="Context"/> class using move semantics.
             /// </summary>
             /// <param name="ob">The object whose resources will be stolen.</param>
-            Context(Context &&ob) : 
-                m_context(ob.m_context), 
-                m_devices(std::move(ob.m_devices))
+            Context(Context &&ob) noexcept
+                : m_context(ob.m_context)
+                , m_devices(std::move(ob.m_devices))
             {
                 ob.m_context = nullptr;
             }
@@ -255,7 +256,7 @@ namespace _3fd
             /// Initializes a new instance of the <see cref="Event"/> class using move semantics.
             /// </summary>
             /// <param name="ob">The object whose resouces will be stolen.</param>
-            CommandEvent(CommandEvent &&ob)
+            CommandEvent(CommandEvent &&ob) noexcept
                 : m_event(ob.m_event)
             {
                 ob.m_event = nullptr;
@@ -345,7 +346,7 @@ namespace _3fd
             /// Initializes a new instance of the <see cref="AsyncAction"/> class using move semantics.
             /// </summary>
             /// <param name="ob">The object whose resources will be stolen.</param>
-            AsyncAction(AsyncAction &&ob)
+            AsyncAction(AsyncAction &&ob) noexcept
                 : m_eventHandle(ob.m_eventHandle)
             {
                 ob.m_eventHandle = nullptr;
@@ -356,7 +357,7 @@ namespace _3fd
             /// </summary>
             /// <param name="ob">The object whose resources will be stole from.</param>
             /// <returns>A reference to this object.</returns>
-            AsyncAction &operator =(AsyncAction &&ob)
+            AsyncAction &operator =(AsyncAction &&ob) noexcept
             {
                 if (&ob != this)
                 {
@@ -552,10 +553,10 @@ namespace _3fd
             /// Initializes a new instance of the <see cref="Buffer"/> class using move semantics.
             /// </summary>
             /// <param name="ob">The object whose resources will be stolen.</param>
-            Buffer(Buffer &&ob) : 
-                m_nBytes(ob.m_nBytes), 
-                m_buffer(ob.m_buffer), 
-                m_mainBuffer(ob.m_mainBuffer) 
+            Buffer(Buffer &&ob) noexcept
+                : m_nBytes(ob.m_nBytes)
+                , m_buffer(ob.m_buffer)
+                , m_mainBuffer(ob.m_mainBuffer) 
             {
                 ob.m_nBytes = 0;
                 ob.m_buffer = nullptr;
@@ -651,9 +652,9 @@ namespace _3fd
             /// Initializes a new instance of the <see cref="Kernel"/> class using move semantics.
             /// </summary>
             /// <param name="ob">The object whose resources will be stolen.</param>
-            Kernel(Kernel &&ob) : 
-                m_kernel(ob.m_kernel), 
-                m_arguments(std::move(ob.m_arguments)) 
+            Kernel(Kernel &&ob) noexcept
+                : m_kernel(ob.m_kernel)
+                , m_arguments(std::move(ob.m_arguments)) 
             {
                 ob.m_kernel = nullptr;
             }

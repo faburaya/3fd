@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 2.6)
 
 project(3FD)
 
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wno-deprecated")
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdiagnostics-show-template-tree -fno-elide-type")
@@ -33,7 +33,7 @@ include_directories(
     "${PROJECT_SOURCE_DIR}"
     "${PROJECT_SOURCE_DIR}/../btree"
     "${PROJECT_SOURCE_DIR}/../OpenCL"
-    "${PROJECT_SOURCE_DIR}/../build/include"
+    "$ENV{LIB_DEPS_DIR}/include"
 )
 
 ########################
@@ -75,6 +75,7 @@ add_library(3FD STATIC
     utils_event.cpp
     utils_io.cpp
     utils_memorypool.cpp
+    xml.cpp
 )
 
 ################
@@ -82,5 +83,5 @@ add_library(3FD STATIC
 
 install(
     TARGETS 3FD
-    DESTINATION "${PROJECT_SOURCE_DIR}/../build/lib"
+    DESTINATION "$ENV{BUILD_DIR}/lib"
 )

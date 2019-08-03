@@ -49,17 +49,17 @@ namespace utils
     /// <param name="numBlocks">The number blocks.</param>
     /// <param name="blockSize">Size of the block.</param>
     MemoryPool::MemoryPool(uint16_t numBlocks, uint16_t blockSize)
-    try :
-        m_baseAddr(nullptr),
-        m_nextAddr(nullptr),
-        m_end(nullptr),
-        m_blockSize(blockSize),
-        m_availAddrsAsBlockIndex()
+    try
+        : m_baseAddr(nullptr)
+        , m_nextAddr(nullptr)
+        , m_end(nullptr)
+        , m_blockSize(blockSize)
+        , m_availAddrsAsBlockIndex()
     {
         _ASSERTE(numBlocks * blockSize > 0); // Cannot handle a null value as the amount of memory
 
         /* Allocation aligned in 4 bytes guarantees the addresses will always have
-        the 2 least significant bit unused. This is explored in the GC implementation. */
+           the 2 least significant bit unused. This is explored in the GC implementation. */
         m_baseAddr = aligned_calloc(4, numBlocks, blockSize);
         m_end = reinterpret_cast<void *> (reinterpret_cast<size_t> (m_baseAddr) + numBlocks * blockSize);
         m_nextAddr = m_baseAddr;
@@ -79,12 +79,12 @@ namespace utils
     /// Initializes a new instance of the <see cref="MemoryPool"/> class.
     /// </summary>
     /// <param name="ob">The object whose resource will be stolen.</param>
-    MemoryPool::MemoryPool(MemoryPool &&ob) :
-        m_baseAddr(ob.m_baseAddr),
-        m_nextAddr(ob.m_nextAddr),
-        m_end(ob.m_end),
-        m_blockSize(ob.m_blockSize),
-        m_availAddrsAsBlockIndex(std::move(ob.m_availAddrsAsBlockIndex))
+    MemoryPool::MemoryPool(MemoryPool &&ob) noexcept
+        : m_baseAddr(ob.m_baseAddr)
+        , m_nextAddr(ob.m_nextAddr)
+        , m_end(ob.m_end)
+        , m_blockSize(ob.m_blockSize)
+        , m_availAddrsAsBlockIndex(std::move(ob.m_availAddrsAsBlockIndex))
     {
         ob.m_baseAddr = ob.m_nextAddr = ob.m_end = nullptr;
     }
@@ -111,7 +111,7 @@ namespace utils
     /// Gets the number of memory blocks in the pool.
     /// </summary>
     /// <returns>How many memory blocks, with the size set in pool construction, are there in the pool.</returns>
-    size_t MemoryPool::GetNumBlocks() const NOEXCEPT
+    size_t MemoryPool::GetNumBlocks() const noexcept
     {
         return (reinterpret_cast<uintptr_t> (m_end) - reinterpret_cast<uintptr_t> (m_baseAddr)) / m_blockSize;
     }
@@ -120,7 +120,7 @@ namespace utils
     /// Gets the base memory address of the pool.
     /// </summary>
     /// <returns>The memory address of the chunk allocated by this pool.</returns>
-    void * MemoryPool::GetBaseAddress() const NOEXCEPT
+    void * MemoryPool::GetBaseAddress() const noexcept
     {
         return m_baseAddr;
     }
@@ -132,7 +132,7 @@ namespace utils
     /// <returns>
     /// <c>true</c> if the given address belongs to the memory chunk in the pool, otherwise, <c>false</c>.
     /// </returns>
-    bool MemoryPool::Contains(void *addr) const NOEXCEPT
+    bool MemoryPool::Contains(void *addr) const noexcept
     {
         return addr >= m_baseAddr && addr < m_end;
     }
@@ -141,7 +141,7 @@ namespace utils
     /// Determines whether the pool is full.
     /// </summary>
     /// <returns><c>true</c> if all the memory is available, otherwise, <c>false</c>.</returns>
-    bool MemoryPool::IsFull() const NOEXCEPT
+    bool MemoryPool::IsFull() const noexcept
     {
         return m_availAddrsAsBlockIndex.size() == GetNumBlocks() || m_nextAddr == m_baseAddr;
     }
@@ -150,7 +150,7 @@ namespace utils
     /// Determines whether the pool is empty.
     /// </summary>
     /// <returns><c>true</c> if the pool has no memory available, otherwise, <c>false</c>.</returns>
-    bool MemoryPool::IsEmpty() const NOEXCEPT
+    bool MemoryPool::IsEmpty() const noexcept
     {
         return m_nextAddr == m_end && m_availAddrsAsBlockIndex.empty();
     }
@@ -159,7 +159,7 @@ namespace utils
     /// Gets a free block of memory.
     /// </summary>
     /// <returns></returns>
-    void * MemoryPool::GetFreeBlock() NOEXCEPT
+    void * MemoryPool::GetFreeBlock() noexcept
     {
         if (!m_availAddrsAsBlockIndex.empty())
         {

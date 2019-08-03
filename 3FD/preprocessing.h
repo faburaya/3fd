@@ -6,21 +6,17 @@
 
 // If using a GCC compiler:
 #ifdef __GNUG__
-#    define    __FUNCTION__ __PRETTY_FUNCTION__
+#    define __FUNCTION__ __PRETTY_FUNCTION__
 #endif
 
 #ifdef _MSC_VER // Microsoft Visual Studio:
 #   define INTFOPT __declspec(novtable)
+#   define NOEXCEPT           noexcept
+#   define thread_local_decl  thread_local
+#   define thread_local_def   thread_local
 
-#   if _MSC_VER < 1900
-#       define NOEXCEPT             throw()
-#       define thread_local_decl    __declspec(thread)
-#       define thread_local_def
-#   else
+#   if _MSC_VER >= 1900
 #       define _3FD_HAS_STLOPTIMALLOC
-#       define NOEXCEPT             noexcept
-#       define thread_local_decl    thread_local
-#       define thread_local_def     thread_local
 #   endif
 #else
     // Other Compilers:

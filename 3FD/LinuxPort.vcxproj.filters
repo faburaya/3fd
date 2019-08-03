@@ -1,0 +1,73 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="broker_impl.cpp" />
+    <ClCompile Include="broker_impl_reader.cpp" />
+    <ClCompile Include="broker_impl_writer.cpp" />
+    <ClCompile Include="callstacktracer.cpp" />
+    <ClCompile Include="cmdline.cpp" />
+    <ClCompile Include="configuration.cpp" />
+    <ClCompile Include="dependencies.cpp" />
+    <ClCompile Include="exceptions.cpp" />
+    <ClCompile Include="gc_addresseshashtable.cpp" />
+    <ClCompile Include="gc_arrayofedges.cpp" />
+    <ClCompile Include="gc_garbagecollector.cpp" />
+    <ClCompile Include="gc_memorydigraph.cpp" />
+    <ClCompile Include="gc_messages.cpp" />
+    <ClCompile Include="gc_vertex.cpp" />
+    <ClCompile Include="gc_vertexstore.cpp" />
+    <ClCompile Include="logger.cpp" />
+    <ClCompile Include="logger_poco.cpp" />
+    <ClCompile Include="opencl_impl.cpp" />
+    <ClCompile Include="opencl_impl_commandtracker.cpp" />
+    <ClCompile Include="opencl_impl_context.cpp" />
+    <ClCompile Include="opencl_impl_device.cpp" />
+    <ClCompile Include="opencl_impl_platform.cpp" />
+    <ClCompile Include="opencl_impl_program.cpp" />
+    <ClCompile Include="opencl_impl_programmanifest.cpp" />
+    <ClCompile Include="runtime.cpp" />
+    <ClCompile Include="sqlite_databaseconn.cpp" />
+    <ClCompile Include="sqlite_dbconnpool.cpp" />
+    <ClCompile Include="sqlite_prepstatement.cpp" />
+    <ClCompile Include="sqlite_transaction.cpp" />
+    <ClCompile Include="stdafx.cpp" />
+    <ClCompile Include="utils_asynchronous.cpp" />
+    <ClCompile Include="utils_dynmempool.cpp" />
+    <ClCompile Include="utils_event.cpp" />
+    <ClCompile Include="utils_io.cpp" />
+    <ClCompile Include="utils_memorypool.cpp" />
+    <ClCompile Include="xml.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="base.h" />
+    <ClInclude Include="broker.h" />
+    <ClInclude Include="broker_impl.h" />
+    <ClInclude Include="callstacktracer.h" />
+    <ClInclude Include="cmdline.h" />
+    <ClInclude Include="configuration.h" />
+    <ClInclude Include="dependencies.h" />
+    <ClInclude Include="exceptions.h" />
+    <ClInclude Include="gc.h" />
+    <ClInclude Include="gc_addresseshashtable.h" />
+    <ClInclude Include="gc_arrayofedges.h" />
+    <ClInclude Include="gc_common.h" />
+    <ClInclude Include="gc_memaddress.h" />
+    <ClInclude Include="gc_memorydigraph.h" />
+    <ClInclude Include="gc_messages.h" />
+    <ClInclude Include="gc_vertex.h" />
+    <ClInclude Include="gc_vertexstore.h" />
+    <ClInclude Include="logger.h" />
+    <ClInclude Include="opencl.h" />
+    <ClInclude Include="opencl_impl.h" />
+    <ClInclude Include="preprocessing.h" />
+    <ClInclude Include="runtime.h" />
+    <ClInclude Include="sptr.h" />
+    <ClInclude Include="sqlite.h" />
+    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="utils.h" />
+    <ClInclude Include="utils_algorithms.h" />
+    <ClInclude Include="utils_io.h" />
+    <ClInclude Include="utils_lockfreequeue.h" />
+    <ClInclude Include="xml.h" />
+  </ItemGroup>
+</Project>

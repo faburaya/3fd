@@ -140,11 +140,11 @@ namespace _3fd
         /// Initializes a new instance of the <see cref="PrepStatement"/> class.
         /// </summary>
         /// <param name="ob">The object whose resources will be moved.</param>
-        PrepStatement::PrepStatement(PrepStatement &&ob) : 
-            m_stmtHandle(ob.m_stmtHandle), 
-            m_database(ob.m_database), 
-            m_columnIndexes(std::move(ob.m_columnIndexes)), 
-            m_stepping(ob.m_stepping) 
+        PrepStatement::PrepStatement(PrepStatement &&ob) noexcept
+            : m_stmtHandle(ob.m_stmtHandle)
+            , m_database(ob.m_database)
+            , m_columnIndexes(std::move(ob.m_columnIndexes))
+            , m_stepping(ob.m_stepping) 
         {
             ob.m_stmtHandle = nullptr;
         }

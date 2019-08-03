@@ -11,8 +11,55 @@
 #include "XamlTypeInfo.g.h"
 
 
+// XamlMetaDataProvider
+namespace UnitTestsApp_WinRT_UWP
+{
+    namespace UnitTestsApp_WinRT_UWP_XamlTypeInfo
+    {
+        [Windows::Foundation::Metadata::WebHostHidden]
+        public ref class XamlMetaDataProvider sealed : public ::Windows::UI::Xaml::Markup::IXamlMetadataProvider
+        {
+        public:
+            [::Windows::Foundation::Metadata::DefaultOverload]
+            virtual ::Windows::UI::Xaml::Markup::IXamlType^ GetXamlType(::Windows::UI::Xaml::Interop::TypeName type);
+            virtual ::Windows::UI::Xaml::Markup::IXamlType^ GetXamlType(::Platform::String^ fullName);
+            virtual ::Platform::Array<::Windows::UI::Xaml::Markup::XmlnsDefinition>^ GetXmlnsDefinitions();
+            
+        private:
+            ::XamlTypeInfo::InfoProvider::XamlTypeInfoProvider^ _provider;
+            property ::XamlTypeInfo::InfoProvider::XamlTypeInfoProvider^ Provider
+            {
+                ::XamlTypeInfo::InfoProvider::XamlTypeInfoProvider^ get();
+            }
+        };
+    }
+}
 
-// XamlTypeInfoProvider
+[::Windows::Foundation::Metadata::DefaultOverload]
+::Windows::UI::Xaml::Markup::IXamlType^ ::UnitTestsApp_WinRT_UWP::UnitTestsApp_WinRT_UWP_XamlTypeInfo::XamlMetaDataProvider::GetXamlType(::Windows::UI::Xaml::Interop::TypeName type)
+{
+    return Provider->GetXamlTypeByType(type);
+}
+
+::Windows::UI::Xaml::Markup::IXamlType^ ::UnitTestsApp_WinRT_UWP::UnitTestsApp_WinRT_UWP_XamlTypeInfo::XamlMetaDataProvider::GetXamlType(Platform::String^ fullName)
+{
+    return Provider->GetXamlTypeByName(fullName);
+}
+
+Platform::Array<::Windows::UI::Xaml::Markup::XmlnsDefinition>^ ::UnitTestsApp_WinRT_UWP::UnitTestsApp_WinRT_UWP_XamlTypeInfo::XamlMetaDataProvider::GetXmlnsDefinitions()
+{
+    return ref new Platform::Array<::Windows::UI::Xaml::Markup::XmlnsDefinition>(0);
+}
+
+::XamlTypeInfo::InfoProvider::XamlTypeInfoProvider^ ::UnitTestsApp_WinRT_UWP::UnitTestsApp_WinRT_UWP_XamlTypeInfo::XamlMetaDataProvider::Provider::get()
+{
+    if (_provider == nullptr)
+    {
+        _provider = ref new XamlTypeInfo::InfoProvider::XamlTypeInfoProvider();
+    }
+    return _provider;
+}
+
 ::Windows::UI::Xaml::Markup::IXamlType^ ::XamlTypeInfo::InfoProvider::XamlTypeInfoProvider::GetXamlTypeByType(::Windows::UI::Xaml::Interop::TypeName type)
 {
     auto xamlType = GetXamlTypeByName(type.Name);
@@ -28,7 +75,7 @@
             }
         }
     }
-            return xamlType;
+    return xamlType;
 }
 
 ::Windows::UI::Xaml::Markup::IXamlType^ ::XamlTypeInfo::InfoProvider::XamlTypeInfoProvider::GetXamlTypeByName(::Platform::String^ typeName)
@@ -38,6 +85,7 @@
         return nullptr;
     }
 
+    auto lock = _xamlTypesCriticalSection.Lock();
     auto val = _xamlTypes.find(typeName);
     ::Windows::UI::Xaml::Markup::IXamlType^ xamlType = nullptr;
     if (val != _xamlTypes.end())
@@ -63,7 +111,6 @@
         }
     }
 
-
     if (xamlType != nullptr)
     {
         Platform::WeakReference wr(xamlType);
@@ -79,6 +126,7 @@
         return nullptr;
     }
 
+    auto lock = _xamlMembersCriticalSection.Lock();
     auto val = _xamlMembers.find(longMemberName);
     if (val != _xamlMembers.end())
     {
@@ -86,7 +134,6 @@
     }
 
     auto xamlMember = CreateXamlMember(longMemberName);
-
     if (xamlMember != nullptr)
     {
         _xamlMembers[longMemberName] = xamlMember;
@@ -405,6 +452,11 @@ void ::XamlTypeInfo::InfoProvider::XamlUserType::KeyTypeName::set(::Platform::St
     _keyTypeName = value;
 }
 
+::Windows::UI::Xaml::Markup::IXamlType^ ::XamlTypeInfo::InfoProvider::XamlUserType::BoxedType::get()
+{
+    return _boxedType;
+}
+
 ::Windows::UI::Xaml::Markup::IXamlMember^ ::XamlTypeInfo::InfoProvider::XamlUserType::GetMember(::Platform::String^ name)
 {
     auto val = _memberNames.find(name);
@@ -437,6 +489,12 @@ void ::XamlTypeInfo::InfoProvider::XamlUserType::RunInitializer()
 
 ::Platform::Object^ ::XamlTypeInfo::InfoProvider::XamlUserType::CreateFromString(::Platform::String^ input)
 {
+    // For boxed types, run the boxed type's CreateFromString method and boxing
+    if (BoxedType != nullptr)
+    {
+        return BoxedType->CreateFromString(input);
+    }
+
     if (CreateFromStringMethod != nullptr)
     {
         return (*CreateFromStringMethod)(input);
@@ -445,6 +503,11 @@ void ::XamlTypeInfo::InfoProvider::XamlUserType::RunInitializer()
     {
         return FromStringConverter(this, input);
     }
+}
+
+void ::XamlTypeInfo::InfoProvider::XamlUserType::SetBoxedType(::Windows::UI::Xaml::Markup::IXamlType^ boxedType)
+{
+    _boxedType = boxedType;
 }
 
 void ::XamlTypeInfo::InfoProvider::XamlUserType::AddMemberName(::Platform::String^ shortName)

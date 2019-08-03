@@ -71,9 +71,9 @@ namespace _3fd
         /// Initializes a new instance of the <see cref="DatabaseConn"/> class using move semantics.
         /// </summary>
         /// <param name="ob">The object whose resources will be stolen.</param>
-        DatabaseConn::DatabaseConn(DatabaseConn &&ob) : 
-            m_dbHandle(ob.m_dbHandle), 
-            m_preparedStatements(std::move(ob.m_preparedStatements)) 
+        DatabaseConn::DatabaseConn(DatabaseConn &&ob) noexcept
+            : m_dbHandle(ob.m_dbHandle)
+            , m_preparedStatements(std::move(ob.m_preparedStatements)) 
         {
             ob.m_dbHandle = nullptr;
         }

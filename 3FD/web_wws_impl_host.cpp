@@ -3,19 +3,14 @@
 
 #include "callstacktracer.h"
 #include "logger.h"
-#include <Poco\AutoPtr.h>
-#include <Poco\DOM\DOMParser.h>
-#include <Poco\DOM\Document.h>
-#include <Poco\DOM\NodeList.h>
-#include <Poco\DOM\NamedNodeMap.h>
-#include <Poco\DOM\Attr.h>
-#include <Poco\SAX\XMLReader.h>
-#include <Poco\SAX\NamespaceSupport.h>
+#include "xml.h"
 #include <list>
 #include <array>
 #include <sstream>
 #include <fstream>
 #include <functional>
+
+#define SKIP_LINE "\r\n"
 
 namespace _3fd
 {
@@ -24,64 +19,6 @@ namespace web
 namespace wws
 {
     using namespace _3fd::core;
-
-
-    /// <summary>
-    /// Reads a file to a buffer.
-    /// </summary>
-    /// <param name="path">The file path.</param>
-    /// <param name="buffer">The buffer.</param>
-    static void ReadFile(const string &path, std::vector<char> &buffer)
-    {
-        CALL_STACK_TRACE;
-
-        try
-        {
-            buffer.clear(); // if something goes wrong, do not keep any previous content in the buffer
-
-            std::ifstream inputStream(path, std::ios::in | std::ios::binary); // open file
-
-            if (inputStream.is_open() == false)
-            {
-                std::ostringstream oss;
-                oss << "Failed to open file \'" << path << "\' in read mode";
-                throw AppException<std::runtime_error>(oss.str());
-            }
-
-            const auto fileSizeBytes = inputStream.seekg(0, std::ios::end).tellg().seekpos(); // move cursor to the end to get the zize
-
-            // File is not trunked:
-            if (fileSizeBytes > 0)
-            {
-                inputStream.seekg(0, std::ios::beg); // rewind
-
-                // Read the file contents to the buffer:
-                buffer.resize(fileSizeBytes);
-                inputStream.read(buffer.data(), buffer.size());
-                _ASSERTE(inputStream.gcount() == buffer.size());
-
-                if (inputStream.bad())
-                {
-                    std::ostringstream oss;
-                    oss << "Failed to read from file \'" << path << '\'';
-                    throw AppException<std::runtime_error>(oss.str());
-                }
-
-                inputStream.close(); // release the file
-            }
-        }
-        catch (IAppException &)
-        {
-            throw; // just forward exceptions regarding errors known to have been previously handled
-        }
-        catch (std::exception &ex)
-        {
-            std::ostringstream oss;
-            oss << "Generic failure when reading file \'" << path << "\'. Reason: " << ex.what();
-            throw AppException<std::runtime_error>(oss.str());
-        }
-    }
-
 
     /////////////////////////////////////////////
     // BaseSvcEndptBinding & Derived Classes
@@ -434,7 +371,7 @@ namespace wws
     /// <summary>
     /// Parses information about endpoints from a WSDL document.
     /// </summary>
-    /// <param name="wsdContent">Web service definition content previously loaded from a file.</param>
+    /// <param name="wsdRootNode">Root node of the web service definition loaded from a file.</param>
     /// <param name="bindings">The bindings assigned to the endpoints.</param>
     /// <param name="targetNamespace">Where to save the target namespace.</param>
     /// <param name="serviceName">Where to save the service name.</param>
@@ -443,10 +380,9 @@ namespace wws
     /// Assumes the usage of HTTP & SOAP, but does not check if the document is thoroughly
     /// well formed. Because this library is meant to integrate with wsutil.exe generated code,
     /// the WSDL document is expected to follow the specification in http://www.w3.org/TR/wsdl.
-    /// Also, the bindings MUST BE declared in the target namespace using the prefix 'tns'.
     /// </remarks>
     static void ParseEndpointsFromWSD(
-        const std::vector<char> &wsdContent,
+        const rapidxml::xml_node<char> *wsdRootNode,
         const ServiceBindings &bindings,
         string &targetNamespace,
         string &serviceName,
@@ -464,115 +400,81 @@ namespace wws
             endpointsInfo.clear();
 
             // Fundamental namespaces URI's:
-            static const string wsdlNs("http://schemas.xmlsoap.org/wsdl/"),
-                                soapNs("http://schemas.xmlsoap.org/wsdl/soap/");
+            xml::NamespaceResolver nsResolver;
+            nsResolver.LoadNamespacesFrom(wsdRootNode);
+            nsResolver.AddAliasForNsPrefix("wsdl", "http://schemas.xmlsoap.org/wsdl/");
 
-            XML::NamespaceSupport nsmap;
-            nsmap.declarePrefix("wsdl", wsdlNs);
-            nsmap.declarePrefix("soap", soapNs);
+            const rapidxml::xml_node<char> *elementPort(nullptr);
 
-            // Parse XML from memory:
-            XML::DOMParser parser;
-            parser.setFeature(XML::SAXParser::FEATURE_NAMESPACE_PREFIXES, true);
-            parser.setFeature(XML::SAXParser::FEATURE_NAMESPACES, true);
-            AutoPtr<XML::Document> document = parser.parseMemory(wsdContent.data(), wsdContent.size());
+            auto query = xml::QueryElement("wsdl:definitions", xml::Required, {
+                xml::QueryAttribute("targetNamespace", xml::Required, xml::parse_into(targetNamespace)),
+                xml::QueryElement("wsdl:service", xml::Required, {
+                    xml::QueryAttribute("name", xml::Required, xml::parse_into(serviceName)),
+                    xml::QueryElement("wsdl:port", xml::Required, {}, &elementPort)
+                })
+            });
 
-            // Get /wsdl:definitions
-            auto definitions = static_cast<XML::Element *> (
-                document->getNodeByPathNS("/wsdl:definitions", nsmap)
-            );
-
-            if (definitions == nullptr)
+            if (!query->Execute(wsdRootNode,
+                                xml::QueryStrategy::TestsOnlyGivenElement,
+                                &nsResolver))
             {
-                throw AppException<std::runtime_error>(
-                    "Web service definition is not compliant",
-                    "The WSDL definitions element is missing"
-                );
+                std::ostringstream oss;
+                oss << "Could not match XML query looking for" SKIP_LINE SKIP_LINE;
+                query->SerializeTo(2, oss);
+                oss << SKIP_LINE "where:" SKIP_LINE;
+                nsResolver.SerializeTo(0, oss);
+
+                throw AppException<std::runtime_error>("Web service definition is not compliant", oss.str());
             }
 
-            // Get /wsdl:definitions[@targetNamespace]
-            auto attr = definitions->getAttributeNode("targetNamespace");
-            if (attr != nullptr)
+            // find SOAP version:
+            for (auto soapVersion : { "http://schemas.xmlsoap.org/wsdl/soap12/",
+                                      "http://schemas.xmlsoap.org/wsdl/soap11/",
+                                      "http://schemas.xmlsoap.org/wsdl/soap/" })
             {
-                targetNamespace = attr->nodeValue();
-                nsmap.declarePrefix("tns", targetNamespace);
-            }
-            else
-            {
-                throw AppException<std::runtime_error>(
-                    "Web service definition is not compliant",
-                    "The target namespace is missing from WSDL document"
-                );
+                if (nsResolver.Has(soapVersion))
+                {
+                    nsResolver.AddAliasForNsPrefix("soap", soapVersion);
+                    break;
+                }
             }
 
-            // Get /wsdl:definitions/wsdl:service
-            auto svcElement = definitions->getChildElementNS(wsdlNs, "service");
-            if (svcElement == nullptr)
-            {
-                throw AppException<std::runtime_error>(
-                    "Web service definition is not compliant",
-                    "The WSDL service element is missing from document"
-                );
-            }
+            SvcEndpointInfo endpoint;
 
-            // Get /wsdl:definitions/wsdl:service[@name]
-            attr = svcElement->getAttributeNode("name");
-            if (attr != nullptr)
-                serviceName = attr->nodeValue();
-            else
-            {
-                throw AppException<std::runtime_error>(
-                    "Web service definition is not compliant",
-                    "The attribute \'name\' was missing from the WSDL service element"
-                );
-            }
+            std::string qualBindName;
 
-            // Get the /wsdl:definitions/wsdl:service/wsdl:port' elements:
-            AutoPtr<XML::NodeList> portNodes = svcElement->getElementsByTagNameNS(wsdlNs, "port");
-
-            if (portNodes->length() == 0)
-            {
-                throw AppException<std::runtime_error>(
-                    "Web service definition is not compliant",
-                    "No valid specification for endpoint has been found"
-                );
-            }
+            query = xml::QueryElement("wsdl:port", xml::Required, {
+                xml::QueryAttribute("name", xml::Required, xml::parse_into(endpoint.portName)),
+                xml::QueryAttribute("binding", xml::Required, xml::parse_into(qualBindName)),
+                xml::QueryElement("soap:address", xml::Required, {
+                    xml::QueryAttribute("location", xml::Required, xml::parse_into(endpoint.address))
+                })
+            });
 
             // Iterate over each endpoint specification:
-            for (unsigned long idx = 0; idx < portNodes->length(); ++idx)
+            do
             {
-                SvcEndpointInfo endpoint;
-
-                auto portElement = static_cast<XML::Element *> (portNodes->item(idx));
-
-                // Get /wsdl:definitions/wsdl:service/wsdl:port[@name]
-                attr = portElement->getAttributeNode("name");
-                if (attr != nullptr)
-                    endpoint.portName = attr->nodeValue();
-                else
+                if (!query->Execute(elementPort,
+                                    xml::QueryStrategy::TestsOnlyGivenElement,
+                                    &nsResolver))
                 {
                     std::ostringstream oss;
-                    oss << "Attribute \'name\' is missing from WSDL port element in service \'" << serviceName << '\'';
-                    throw AppException<std::runtime_error>("Web service definition is not compliant", oss.str());
-                }
-
-                // Get /wsdl:definitions/wsdl:service/wsdl:port[@binding]
-                attr = portElement->getAttributeNode("binding");
-                if (attr == nullptr)
-                {
-                    std::ostringstream oss;
-                    oss << "Attribute \'binding\' is missing from WSDL port \'" << endpoint.portName
-                        << "\' in service \'" << serviceName << '\'';
+                    oss << "Port for service '" << serviceName
+                        << "' could not match XML query looking for" SKIP_LINE SKIP_LINE;
+                    query->SerializeTo(2, oss);
+                    oss << SKIP_LINE "where:" SKIP_LINE;
+                    nsResolver.SerializeTo(0, oss);
 
                     throw AppException<std::runtime_error>("Web service definition is not compliant", oss.str());
                 }
 
-                if (nsmap.processName(attr->nodeValue(), endpoint.bindingNs, endpoint.bindingName, false) == false)
+                if (!nsResolver.ParseQualifiedName(qualBindName,
+                                                   endpoint.bindingNs,
+                                                   endpoint.bindingName))
                 {
                     std::ostringstream oss;
-                    oss << "Could not resolve WSDL binding \'" << attr->nodeValue()
-                        << "\' of port \'" << endpoint.portName
-                        << "\' in service \'" << serviceName << '\'';
+                    oss << "Could not resolve WSDL binding '" << qualBindName
+                        << "' for port in service '" << serviceName << '\'';
 
                     throw AppException<std::runtime_error>("Web service definition is not compliant", oss.str());
                 }
@@ -581,53 +483,37 @@ namespace wws
                 auto svcForBind = bindings.GetImplementation(endpoint.bindingName);
 
                 if (svcForBind.get() != nullptr)
+                {
                     endpoint.implementations.swap(svcForBind);
+                    endpointsInfo.push_back(std::move(endpoint));
+                }
                 else
                 {// If no implementation has been found for the endpoint binding:
                     std::ostringstream oss;
                     oss << "The implementation sets provided for endpoint bindings "
-                            "had no match for port \'" << endpoint.portName
-                        << "\' with assigned binding \'" << endpoint.bindingName
-                        << "\' in service \'" << serviceName
-                        << "\', hence this endpoint cannot be created";
+                            "had no match for port '" << endpoint.portName
+                        << "' with assigned binding '" << endpoint.bindingName
+                        << "' in service '" << serviceName
+                        << "', hence this endpoint cannot be created";
 
                     Logger::Write(oss.str(), Logger::PRIO_NOTICE);
-                    continue; // skip to the next endpoint
                 }
 
-                // Get /wsdl:definitions/wsdl:service/wsdl:port/soap:address[@location]
-                attr = static_cast<XML::Attr *> (portElement->getNodeByPath("/soap:address[@location]"));
-                if (attr != nullptr)
-                    endpoint.address = attr->nodeValue();
-                else
-                {
-                    std::ostringstream oss;
-                    oss << "Endpoint soap address not found for WSDL port \'" << endpoint.portName
-                        << "\' in service \'" << serviceName << '\'';
-
-                    throw AppException<std::runtime_error>("Web service definition is not compliant", oss.str());
-                }
-
-                endpointsInfo.push_back(std::move(endpoint));
-            }// for loop end
+                elementPort = xml::GetNextSiblingOf(elementPort,
+                                                    xml::xstr("wsdl:port"),
+                                                    &nsResolver);
+            } while (elementPort != nullptr);
 
             if (endpointsInfo.empty())
             {
                 throw AppException<std::runtime_error>(
                     "No endpoints could be created from the provided WSDL "
-                    "and mapped implementations for bindings"
-                );
+                    "and mapped implementations for bindings");
             }
         }
         catch (IAppException &)
         {
             throw; // just forward exceptions regarding errors known to have been previously handled
-        }
-        catch (Poco::Exception &ex)
-        {
-            std::ostringstream oss;
-            oss << "POCO C++ library reported: " << ex.message();
-            throw AppException<std::runtime_error>("Failed to parse web service definition", oss.str());
         }
         catch (std::exception &ex)
         {
@@ -791,18 +677,28 @@ namespace wws
             // First acquire lock to manage service host
             std::lock_guard<std::mutex> lock(m_hostStateMutex);
 
-            // Read web service definition from file
-            ReadFile(wsdFilePath, m_wsdContentBuffer);
+            rapidxml::xml_document<char> wsdXmlDoc;
+            const auto wsdRootNode =
+                xml::ParseXmlFromFile(wsdFilePath,
+                                      m_wsdContentBuffer,
+                                      wsdXmlDoc,
+                                      "wsdl:definitions");
 
-            // Parse information from the WSDL:
-            ParseEndpointsFromWSD(m_wsdContentBuffer,
+            if (wsdRootNode == nullptr)
+            {
+                throw AppException<std::runtime_error>("Web service definition is not compliant: "
+                                                       "element 'wsdl:definitions' is missing!",
+                                                       wsdFilePath);
+            }
+
+            ParseEndpointsFromWSD(wsdRootNode,
                                   bindings,
                                   m_wsdTargetNs,
                                   m_serviceName,
                                   m_endpointsInfo);
 
             /* The content of the loaded WSDL file is kept to serve
-            metadata requests. If MEX is disabled, get rid of it: */
+               metadata requests. If MEX is disabled, get rid of it: */
             if (!enableMEX)
             {
                 m_wsdContentBuffer.clear();

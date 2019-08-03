@@ -20,8 +20,12 @@ namespace IntegrationTestsApp_WinRT_UWP
         virtual ::Windows::UI::Xaml::Markup::IXamlType^ GetXamlType(::Platform::String^ fullName);
         virtual ::Platform::Array<::Windows::UI::Xaml::Markup::XmlnsDefinition>^ GetXmlnsDefinitions();
     private:
-        ::XamlTypeInfo::InfoProvider::XamlTypeInfoProvider^ _provider;
+        ::XamlTypeInfo::InfoProvider::XamlTypeInfoProvider^ __provider; 
         bool _contentLoaded;
+        property ::XamlTypeInfo::InfoProvider::XamlTypeInfoProvider^ _AppProvider
+        {
+            ::XamlTypeInfo::InfoProvider::XamlTypeInfoProvider^ get();
+        }
     };
 }
 

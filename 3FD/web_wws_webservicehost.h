@@ -109,9 +109,8 @@ namespace wws
         /// Initializes a new instance of the <see cref="ServiceBindings"/> struct using move semantics.
         /// </summary>
         /// <param name="ob">The object whose resources will be stolen.</param>
-        ServiceBindings(ServiceBindings &&ob) :
-            m_bindNameToImpl(std::move(m_bindNameToImpl))
-        {}
+        ServiceBindings(ServiceBindings &&ob) noexcept
+			: m_bindNameToImpl(std::move(m_bindNameToImpl)) {}
 
         std::shared_ptr<BaseSvcEndptBinding> GetImplementation(const string &bindName) const;
 
@@ -181,7 +180,7 @@ namespace wws
         /// using move semantics.
         /// </summary>
         /// <param name="ob">The object whose resources will be stolen.</param>
-        WebServiceHost(WebServiceHost &&ob)
+        WebServiceHost(WebServiceHost &&ob) noexcept
             : m_pimpl(ob.m_pimpl)
         {
             ob.m_pimpl = nullptr;

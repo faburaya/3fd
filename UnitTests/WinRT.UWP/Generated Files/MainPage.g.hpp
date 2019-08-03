@@ -30,54 +30,54 @@ void ::UnitTestsApp_WinRT_UWP::MainPage::Connect(int __connectionId, ::Platform:
 {
     switch (__connectionId)
     {
-    case 1:
+    case 2:
         {
             this->wideState = safe_cast<::Windows::UI::Xaml::VisualState^>(__target);
         }
         break;
-    case 2:
+    case 3:
         {
             this->narrowState = safe_cast<::Windows::UI::Xaml::VisualState^>(__target);
         }
         break;
-    case 3:
+    case 4:
         {
             this->LayoutRoot = safe_cast<::Windows::UI::Xaml::Controls::Grid^>(__target);
         }
         break;
-    case 4:
+    case 5:
         {
             this->titlePanel = safe_cast<::Windows::UI::Xaml::Controls::StackPanel^>(__target);
         }
         break;
-    case 5:
+    case 6:
         {
             this->ContentRoot = safe_cast<::Windows::UI::Xaml::Controls::Grid^>(__target);
         }
         break;
-    case 6:
+    case 7:
         {
             this->waitingRing = safe_cast<::Windows::UI::Xaml::Controls::ProgressRing^>(__target);
         }
         break;
-    case 7:
+    case 8:
         {
             this->runButton = safe_cast<::Windows::UI::Xaml::Controls::Button^>(__target);
             (safe_cast<::Windows::UI::Xaml::Controls::Button^>(this->runButton))->Click += ref new ::Windows::UI::Xaml::RoutedEventHandler(this, (void (::UnitTestsApp_WinRT_UWP::MainPage::*)
                 (::Platform::Object^, ::Windows::UI::Xaml::RoutedEventArgs^))&MainPage::OnClickRunButton);
         }
         break;
-    case 8:
+    case 9:
         {
             this->mainTextBlock = safe_cast<::Windows::UI::Xaml::Controls::TextBlock^>(__target);
         }
         break;
-    case 9:
+    case 10:
         {
             this->titleTxtBlock1 = safe_cast<::Windows::UI::Xaml::Controls::TextBlock^>(__target);
         }
         break;
-    case 10:
+    case 11:
         {
             this->titleTxtBlock2 = safe_cast<::Windows::UI::Xaml::Controls::TextBlock^>(__target);
         }

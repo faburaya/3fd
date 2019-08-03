@@ -169,7 +169,7 @@ namespace core
         /// class using move semantics.
         /// </summary>
         /// <param name="ob">The object whose resources will be stolen.</param>
-        AppException(AppException &&ob)
+        AppException(AppException &&ob) noexcept
             : StdExType(std::move(ob))
             , m_details(std::move(ob.m_details))
             , m_cst(std::move(ob.m_cst))

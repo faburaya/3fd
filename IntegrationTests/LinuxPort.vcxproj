@@ -1,0 +1,145 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="application.config">
+      <RemoteCopyFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</RemoteCopyFile>
+      <RemoteCopyFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</RemoteCopyFile>
+      <SubType>Designer</SubType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="tests_broker.cpp" />
+    <ClCompile Include="tests_core.cpp" />
+    <ClCompile Include="tests_gc.cpp" />
+    <ClCompile Include="tests_opencl.cpp" />
+    <ClCompile Include="tests_sqlite.cpp" />
+    <ClCompile Include="IntegrationTests.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\3FD\LinuxPort.vcxproj">
+      <Project>{d1d312a9-5537-44d4-bf9f-565186b28fa8}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="opencl-c-example-wrong.txt">
+      <RemoteCopyFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</RemoteCopyFile>
+      <RemoteCopyFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</RemoteCopyFile>
+    </Text>
+    <Text Include="opencl-c-example.txt">
+      <RemoteCopyFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</RemoteCopyFile>
+      <RemoteCopyFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</RemoteCopyFile>
+    </Text>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{4e2a49f4-6493-4250-aba2-e09f63dd4862}</ProjectGuid>
+    <Keyword>Linux</Keyword>
+    <RootNamespace>IntegrationTests</RootNamespace>
+    <MinimumVisualStudioVersion>15.0</MinimumVisualStudioVersion>
+    <ApplicationType>Linux</ApplicationType>
+    <ApplicationTypeRevision>1.0</ApplicationTypeRevision>
+    <TargetLinuxPlatform>Generic</TargetLinuxPlatform>
+    <LinuxProjectType>{FC1A4D80-50E9-41DA-9192-61C0DBAA00D2}</LinuxProjectType>
+    <ProjectName>IntegrationTests</ProjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <ConfigurationType>Application</ConfigurationType>
+    <RemoteRootDir>~/msvc/3fd</RemoteRootDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <ConfigurationType>Application</ConfigurationType>
+    <RemoteRootDir>~/msvc/3fd</RemoteRootDir>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings" />
+  <ImportGroup Label="Shared" />
+  <ImportGroup Label="PropertySheets" />
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <RemoteOutDir>$(RemoteRootDir)/linux/$(Configuration)_$(Platform)/bin/</RemoteOutDir>
+    <RemoteProjectDir>$(RemoteRootDir)/$(ProjectName)</RemoteProjectDir>
+    <BuildCommandLine>
+    </BuildCommandLine>
+    <LocalRemoteCopySources>true</LocalRemoteCopySources>
+    <OutDir>$(SolutionDir)linux\$(Configuration)_$(Platform)\bin\</OutDir>
+    <IntDir>$(SolutionDir)linux\$(Configuration)_$(Platform)\obj\$(ProjectName)\</IntDir>
+    <IncludePath>/opt/3fd/include</IncludePath>
+    <LibraryPath>
+    </LibraryPath>
+    <ProjectPublicIncludePath>$(SolutionDir)3FD;$(SolutionDir)btree;$(SolutionDir)OpenCL</ProjectPublicIncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <RemoteOutDir>$(RemoteRootDir)/linux/$(Configuration)_$(Platform)/bin/</RemoteOutDir>
+    <RemoteProjectDir>$(RemoteRootDir)/$(ProjectName)</RemoteProjectDir>
+    <BuildCommandLine>
+    </BuildCommandLine>
+    <LocalRemoteCopySources>true</LocalRemoteCopySources>
+    <OutDir>$(SolutionDir)linux\$(Configuration)_$(Platform)\bin\</OutDir>
+    <IntDir>$(SolutionDir)linux\$(Configuration)_$(Platform)\obj\$(ProjectName)\</IntDir>
+    <IncludePath>/opt/3fd/include</IncludePath>
+    <LibraryPath>
+    </LibraryPath>
+    <ProjectPublicIncludePath>$(SolutionDir)3FD;$(SolutionDir)btree;$(SolutionDir)OpenCL</ProjectPublicIncludePath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <RemotePreBuildEvent>
+      <Command>
+      </Command>
+      <Message>
+      </Message>
+    </RemotePreBuildEvent>
+    <ClCompile>
+      <CAdditionalWarning>switch;no-deprecated-declarations;empty-body;no-conversion;no-sign-compare;no-reorder;return-type;parentheses;no-pointer-sign;no-format;uninitialized;unreachable-code;unused-function;unused-value;unused-variable</CAdditionalWarning>
+    </ClCompile>
+    <ClCompile>
+      <CppAdditionalWarning>switch;no-deprecated-declarations;empty-body;no-conversion;no-sign-compare;no-reorder;return-type;parentheses;no-format;uninitialized;unreachable-code;unused-function;unused-value;unused-variable</CppAdditionalWarning>
+      <PreprocessorDefinitions>TESTING;ENABLE_3FD_CST;ENABLE_3FD_ERR_IMPL_DETAILS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <CppLanguageStandard>c++14</CppLanguageStandard>
+    </ClCompile>
+    <Link>
+      <LibraryDependencies>gtestd;sqlite3;pthread;dl;boost_system-mt-d;boost_thread-mt-d;PocoDataODBCd;PocoDatad;PocoFoundationd;odbc</LibraryDependencies>
+      <AdditionalLibraryDirectories>/opt/3fd/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+    <RemotePostBuildEvent>
+      <Command>cp $(RemoteProjectDir)/application.config $(RemoteOutDir)/$(TargetFileName).3fd.config; cp $(RemoteProjectDir)/opencl-c-example*.txt $(RemoteOutDir)/</Command>
+    </RemotePostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <RemotePreBuildEvent>
+      <Command>
+      </Command>
+      <Message>
+      </Message>
+    </RemotePreBuildEvent>
+    <ClCompile>
+      <CAdditionalWarning>switch;no-deprecated-declarations;empty-body;no-conversion;no-sign-compare;no-reorder;return-type;parentheses;no-pointer-sign;no-format;uninitialized;unreachable-code;unused-function;unused-value;unused-variable</CAdditionalWarning>
+    </ClCompile>
+    <ClCompile>
+      <CppAdditionalWarning>switch;no-deprecated-declarations;empty-body;no-conversion;no-sign-compare;no-reorder;return-type;parentheses;no-format;uninitialized;unreachable-code;unused-function;unused-value;unused-variable</CppAdditionalWarning>
+      <LinkTimeOptimization>true</LinkTimeOptimization>
+      <PreprocessorDefinitions>TESTING;ENABLE_3FD_CST;ENABLE_3FD_ERR_IMPL_DETAILS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <CppLanguageStandard>c++14</CppLanguageStandard>
+    </ClCompile>
+    <Link>
+      <LibraryDependencies>gtest;sqlite3;pthread;dl;boost_system-mt;boost_thread-mt;PocoDataODBC;PocoData;PocoFoundation;odbc</LibraryDependencies>
+      <AdditionalLibraryDirectories>/opt/3fd/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+    <RemotePostBuildEvent>
+      <Command>cp $(RemoteProjectDir)/application.config $(RemoteOutDir)/$(TargetFileName).3fd.config; cp $(RemoteProjectDir)/opencl-c-example*.txt $(RemoteOutDir)/</Command>
+    </RemotePostBuildEvent>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets" />
+</Project>

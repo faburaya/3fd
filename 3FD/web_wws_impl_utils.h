@@ -54,8 +54,8 @@ namespace wws
         /// Initializes a new instance of the <see cref="WSXmlWriter"/> class using move semantics.
         /// </summary>
         /// <param name="ob">The object whose resources will be stolen from.</param>
-        WSXmlWriter(WSXmlWriter &&ob) :
-            m_wsXmlWriterHandle(ob.m_wsXmlWriterHandle)
+        WSXmlWriter(WSXmlWriter &&ob) noexcept
+            : m_wsXmlWriterHandle(ob.m_wsXmlWriterHandle)
         {
             ob.m_wsXmlWriterHandle = nullptr;
         }
@@ -90,8 +90,8 @@ namespace wws
         /// using move semantics.
         /// </summary>
         /// <param name="ob">The object whose resources will be stolen.</param>
-        WSXmlReader(WSXmlReader &&ob) :
-            m_wsXmlReaderHandle(ob.m_wsXmlReaderHandle)
+        WSXmlReader(WSXmlReader &&ob) noexcept
+            : m_wsXmlReaderHandle(ob.m_wsXmlReaderHandle)
         {
             ob.m_wsXmlReaderHandle = nullptr;
         }

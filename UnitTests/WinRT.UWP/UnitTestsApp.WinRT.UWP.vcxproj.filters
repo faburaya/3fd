@@ -46,6 +46,9 @@
     <ClCompile Include="..\tests_utils_pool.cpp">
       <Filter>Ported</Filter>
     </ClCompile>
+    <ClCompile Include="..\tests_xml.cpp">
+      <Filter>Ported</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.xaml.h" />

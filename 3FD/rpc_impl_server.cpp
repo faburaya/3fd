@@ -85,10 +85,11 @@ namespace rpc
     RpcServerImpl::RpcServerImpl(ProtocolSequence protSeq,
                                  const string &serviceName,
                                  bool hasAuthnSec)
-    try :
-        m_bindings(nullptr),
-        m_state(State::NotInitialized),
-        m_hasAuthnSec(hasAuthnSec)
+    try
+        : m_bindings(nullptr)
+        , m_state(State::NotInitialized)
+        , m_hasAuthnSec(hasAuthnSec)
+		, m_cliReqAuthnLevel(AuthenticationLevel::Integrity)
     {
         CALL_STACK_TRACE;
 

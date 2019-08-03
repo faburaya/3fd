@@ -2,11 +2,11 @@
 # CMake build script for UnitTests
 #
 
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 3.0)
 
 project(UnitTests)
 
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wno-deprecated")
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdiagnostics-show-template-tree -fno-elide-type")
@@ -27,17 +27,17 @@ add_definitions(
 include_directories(
     "${PROJECT_SOURCE_DIR}/../3FD"
     "${PROJECT_SOURCE_DIR}/../btree"
-    "${PROJECT_SOURCE_DIR}/../build/include"
+    "$ENV{LIB_DEPS_DIR}/include"
 )
 
 ########################
 # Dependency libraries:
 
+add_subdirectory("${PROJECT_SOURCE_DIR}/../3FD"
+                 "${PROJECT_SOURCE_DIR}/../3FD")
+
 # How and what libs to link:
-add_library(3FD            STATIC IMPORTED)
 add_library(gtest          STATIC IMPORTED)
-add_library(PocoUtil       STATIC IMPORTED)
-add_library(PocoXML        STATIC IMPORTED)
 add_library(PocoFoundation STATIC IMPORTED)
 
 # Where the lib binaries are:
@@ -45,22 +45,18 @@ string(TOLOWER ${CMAKE_BUILD_TYPE} buildType)
 if(buildType STREQUAL release)
     add_definitions(-DNDEBUG)
     set_target_properties(3FD            PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_BINARY_DIR}/../3FD/lib3FD.a")
-    set_target_properties(gtest          PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_BINARY_DIR}/../build/lib/libgtest.a")
-    set_target_properties(PocoUtil       PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_BINARY_DIR}/../build/lib/libPocoUtil.a")
-    set_target_properties(PocoXML        PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_BINARY_DIR}/../build/lib/libPocoXML.a")
-    set_target_properties(PocoFoundation PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_BINARY_DIR}/../build/lib/libPocoFoundation.a")
+    set_target_properties(gtest          PROPERTIES IMPORTED_LOCATION "$ENV{LIB_DEPS_DIR}/lib/libgtest.a")
+    set_target_properties(PocoFoundation PROPERTIES IMPORTED_LOCATION "$ENV{LIB_DEPS_DIR}/lib/libPocoFoundation.a")
 elseif(buildType STREQUAL debug)
     set_target_properties(3FD            PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_BINARY_DIR}/../3FD/lib3FDd.a")
-    set_target_properties(gtest          PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_BINARY_DIR}/../build/lib/libgtestd.a")
-    set_target_properties(PocoUtil       PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_BINARY_DIR}/../build/lib/libPocoUtild.a")
-    set_target_properties(PocoXML        PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_BINARY_DIR}/../build/lib/libPocoXMLd.a")
-    set_target_properties(PocoFoundation PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_BINARY_DIR}/../build/lib/libPocoFoundationd.a")
+    set_target_properties(gtest          PROPERTIES IMPORTED_LOCATION "$ENV{LIB_DEPS_DIR}/lib/libgtestd.a")
+    set_target_properties(PocoFoundation PROPERTIES IMPORTED_LOCATION "$ENV{LIB_DEPS_DIR}/lib/libPocoFoundationd.a")
 endif()
 
 # Place the configuration file along with the executable:
 add_custom_command(
    OUTPUT UnitTests.3fd.config
-   COMMAND cp ${PROJECT_SOURCE_DIR}/application.config ${PROJECT_SOURCE_DIR}/../build/bin/UnitTests.3fd.config
+   COMMAND cp ${PROJECT_SOURCE_DIR}/application.config $ENV{BUILD_DIR}/bin/UnitTests.3fd.config
    DEPENDS ${PROJECT_SOURCE_DIR}/application.config
 )
 
@@ -74,6 +70,7 @@ add_executable(UnitTests
     tests_utils_io.cpp
     tests_utils_pool.cpp
     tests_utils_lockfreequeue.cpp
+    tests_xml.cpp
     UnitTests.3fd.config
 )
 
@@ -82,7 +79,7 @@ target_link_libraries(UnitTests
     gtest
     3FD
     pthread
-    PocoUtil PocoXML PocoFoundation
+    PocoFoundation
 )
 
 ################
@@ -90,5 +87,5 @@ target_link_libraries(UnitTests
 
 install(
     TARGETS UnitTests
-    DESTINATION "${PROJECT_SOURCE_DIR}/../build/bin"
+    DESTINATION "$ENV{BUILD_DIR}/bin"
 )

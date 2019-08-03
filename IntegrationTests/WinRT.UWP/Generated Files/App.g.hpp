@@ -58,28 +58,28 @@ void ::IntegrationTestsApp_WinRT_UWP::App::InitializeComponent()
 #endif
 }
 
-
 ::Windows::UI::Xaml::Markup::IXamlType^ ::IntegrationTestsApp_WinRT_UWP::App::GetXamlType(::Windows::UI::Xaml::Interop::TypeName type)
 {
-    if(_provider == nullptr)
-    {
-        _provider = ref new XamlTypeInfo::InfoProvider::XamlTypeInfoProvider();
-    }
-    return _provider->GetXamlTypeByType(type);
+    return _AppProvider->GetXamlTypeByType(type);
 }
 
 ::Windows::UI::Xaml::Markup::IXamlType^ ::IntegrationTestsApp_WinRT_UWP::App::GetXamlType(::Platform::String^ fullName)
 {
-    if(_provider == nullptr)
-    {
-        _provider = ref new XamlTypeInfo::InfoProvider::XamlTypeInfoProvider();
-    }
-    return _provider->GetXamlTypeByName(fullName);
+    return _AppProvider->GetXamlTypeByName(fullName);
 }
 
 ::Platform::Array<::Windows::UI::Xaml::Markup::XmlnsDefinition>^ ::IntegrationTestsApp_WinRT_UWP::App::GetXmlnsDefinitions()
 {
     return ref new ::Platform::Array<::Windows::UI::Xaml::Markup::XmlnsDefinition>(0);
+}
+
+::XamlTypeInfo::InfoProvider::XamlTypeInfoProvider^ ::IntegrationTestsApp_WinRT_UWP::App::_AppProvider::get()
+{
+    if (__provider == nullptr)
+    {
+        __provider = ref new ::XamlTypeInfo::InfoProvider::XamlTypeInfoProvider();
+    }
+    return __provider;
 }
 
 #ifndef DISABLE_XAML_GENERATED_MAIN

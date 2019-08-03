@@ -3,7 +3,9 @@
 
 #include "exceptions.h"
 
+#include <array>
 #include <cinttypes>
+#include <cstring>
 #include <condition_variable>
 #include <functional>
 #include <future>
@@ -48,7 +50,7 @@ namespace utils
     /// Creates a unique STL memory pool (thread-safe) for each template instantiation.
     /// </summary>
     template <typename Type, size_t t_maxBlocksPerChunk, size_t t_bkSizeBytesThresholdHint>
-    std::pmr::memory_resource &GetStlOptimizedSyncMemPool() NOEXCEPT
+    std::pmr::memory_resource &GetStlOptimizedSyncMemPool() noexcept
     {
         static std::pmr::synchronized_pool_resource memoryPool{
             std::pmr::pool_options{ t_maxBlocksPerChunk, t_bkSizeBytesThresholdHint }
@@ -61,7 +63,7 @@ namespace utils
     /// Creates a unique STL memory pool (NOT thread-safe, faster) for each template instantiation.
     /// </summary>
     template <typename Type, size_t t_maxBlocksPerChunk, size_t t_bkSizeBytesThresholdHint>
-    std::pmr::memory_resource &GetStlOptimizedUnsyncMemPool() NOEXCEPT
+    std::pmr::memory_resource &GetStlOptimizedUnsyncMemPool() noexcept
     {
         static std::pmr::unsynchronized_pool_resource memoryPool{
             std::pmr::pool_options{ t_maxBlocksPerChunk, t_bkSizeBytesThresholdHint }
@@ -89,7 +91,7 @@ namespace utils
         }
 
         // Gets the memory pools that serves this allocator
-        std::pmr::memory_resource &GetMemoryPool() const NOEXCEPT
+        std::pmr::memory_resource &GetMemoryPool() const noexcept
         {
             constexpr auto numBlocksPerChunk = GuessNumMemBlocksPerChunk(sizeof(Type));
             constexpr auto blockSizeThresholdHint = sizeof(Type);
@@ -107,7 +109,7 @@ namespace utils
     public:
 
         template<typename OtherType>
-        bool IsEqualTo(const StlOptimizedAllocatorBase<OtherType, t_threadSafe> &ob) const NOEXCEPT
+        bool IsEqualTo(const StlOptimizedAllocatorBase<OtherType, t_threadSafe> &ob) const noexcept
         {
             // instances might not be equivalent!
             return &(this->GetMemoryPool()) == &(ob.GetMemoryPool());
@@ -127,7 +129,7 @@ namespace utils
         }
 
         // deallocates blocks of memory
-        void deallocate(Type * const ptr, size_t numBlocks) const NOEXCEPT
+        void deallocate(Type * const ptr, size_t numBlocks) const noexcept
         {
             GetMemoryPool().deallocate(ptr, numBlocks * sizeof(Type));
         }
@@ -144,20 +146,20 @@ namespace utils
         typedef Type value_type;
 
         // ctor not required by STL
-        StlOptimizedUnsafeAllocator() NOEXCEPT {}
+        StlOptimizedUnsafeAllocator() noexcept {}
 
         // converting copy constructor (no-op because nothing is copied)
         template<typename OtherType>
-        StlOptimizedUnsafeAllocator(const StlOptimizedUnsafeAllocator<OtherType> &) NOEXCEPT {}
+        StlOptimizedUnsafeAllocator(const StlOptimizedUnsafeAllocator<OtherType> &) noexcept {}
 
         template<typename OtherType>
-        bool operator==(const StlOptimizedUnsafeAllocator<OtherType> &that) const NOEXCEPT
+        bool operator==(const StlOptimizedUnsafeAllocator<OtherType> &that) const noexcept
         {
             return this->IsEqualTo(that);
         }
 
         template<typename OtherType>
-        bool operator!=(const StlOptimizedUnsafeAllocator<OtherType> &that) const NOEXCEPT
+        bool operator!=(const StlOptimizedUnsafeAllocator<OtherType> &that) const noexcept
         {
             return !(*this == that);
         }
@@ -174,20 +176,20 @@ namespace utils
         typedef Type value_type;
 
         // ctor not required by STL
-        StlOptimizedAllocator() NOEXCEPT {}
+        StlOptimizedAllocator() noexcept {}
 
         // converting copy constructor (no-op because nothing is copied)
         template<typename OtherType>
-        StlOptimizedAllocator(const StlOptimizedAllocator<OtherType> &) NOEXCEPT {}
+        StlOptimizedAllocator(const StlOptimizedAllocator<OtherType> &) noexcept {}
 
         template<typename OtherType>
-        bool operator==(const StlOptimizedAllocator<OtherType> &that) const NOEXCEPT
+        bool operator==(const StlOptimizedAllocator<OtherType> &that) const noexcept
         {
             return this->IsEqualTo(that);
         }
 
         template<typename OtherType>
-        bool operator!=(const StlOptimizedAllocator<OtherType> &that) const NOEXCEPT
+        bool operator!=(const StlOptimizedAllocator<OtherType> &that) const noexcept
         {
             return !(*this == that);
         }
@@ -223,21 +225,21 @@ namespace utils
 
         MemoryPool(const MemoryPool &) = delete;
 
-        MemoryPool(MemoryPool &&ob);
+        MemoryPool(MemoryPool &&ob) noexcept;
 
         ~MemoryPool();
 
-        size_t GetNumBlocks() const NOEXCEPT;
+        size_t GetNumBlocks() const noexcept;
 
-        void *GetBaseAddress() const NOEXCEPT;
+        void *GetBaseAddress() const noexcept;
 
-        bool Contains(void *addr) const NOEXCEPT;
+        bool Contains(void *addr) const noexcept;
 
-        bool IsFull() const NOEXCEPT;
+        bool IsFull() const noexcept;
 
-        bool IsEmpty() const NOEXCEPT;
+        bool IsEmpty() const noexcept;
 
-        void *GetFreeBlock() NOEXCEPT;
+        void *GetFreeBlock() noexcept;
 
         void ReturnBlock(void *addr);
     };
@@ -276,6 +278,91 @@ namespace utils
         void ReturnBlock(void *object);
 
         void Shrink();
+    };
+
+    ////////////////////////////////////////////////
+    // Type Manipulation
+    ////////////////////////////////////////////////
+
+    template <typename Type>
+    struct is_string_holder
+    {
+        typedef Type type;
+        typedef const typename std::remove_reference<Type>::type const_non_ref_type;
+
+        static constexpr bool value =
+            std::is_same<const_non_ref_type, const std::string>::value
+            || std::is_same<const_non_ref_type, const std::string>::value
+            || std::is_same<const_non_ref_type, char * const>::value
+            || std::is_same<const_non_ref_type, const char * const>::value;
+    };
+
+    ////////////////////////////////////////////////
+    // String Copy Avoidance
+    ////////////////////////////////////////////////
+    
+    /// <summary>
+    /// Holds a string (UTF-8) without taking ownership.
+    /// </summary>
+    struct CStringViewUtf8
+    {
+        const char * const data;
+        const uint32_t lenBytes;
+
+        CStringViewUtf8(const char *p_data, uint32_t p_lenBytes) noexcept
+            : data(p_data)
+            , lenBytes(p_lenBytes)
+        {
+            // cannot have non-zero length when no string is set!
+            _ASSERTE(data != nullptr || lenBytes == 0);
+        }
+
+        explicit CStringViewUtf8(const char *p_data) noexcept
+            : data(p_data)
+            , lenBytes(p_data != nullptr ? strlen(data) : 0)
+        {}
+
+        CStringViewUtf8(const char *beginIter, const char *endIter) noexcept
+            : data(beginIter)
+            , lenBytes(static_cast<uint32_t> (std::distance(beginIter, endIter)))
+        {}
+
+        constexpr bool null() const noexcept { return data == nullptr; }
+        
+        constexpr bool empty() const noexcept
+        {
+            _ASSERTE(data != nullptr);
+            return data[0] == 0;
+        }
+
+        constexpr const char *begin() const noexcept { return data; }
+        constexpr const char *cbegin() const noexcept { return begin(); }
+
+        constexpr const char *end() const noexcept { return data + lenBytes; }
+        constexpr const char *cend() const noexcept { return end(); }
+
+        constexpr char operator[](uint32_t index) const noexcept
+        {
+            _ASSERTE(data != nullptr && index < lenBytes);
+            return data[index];
+        }
+
+        std::string to_string() const
+        {
+            _ASSERTE(data != nullptr);
+            return std::string(data, data + lenBytes);
+        }
+    };
+    
+    /// <summary>
+    /// Functor "less" for C-style UTF-8 strings.
+    /// </summary>
+    struct CStringUtf8FunctorLess
+    {
+        bool operator()(const char *left, const char *right) const
+        {
+            return strcmp(left, right) < 0;
+        }
     };
 
 

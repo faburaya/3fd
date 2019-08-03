@@ -107,9 +107,9 @@ namespace _3fd
         /// Initializes a new instance of the <see cref="DbConnWrapper"/> class using move semantics.
         /// </summary>
         /// <param name="ob">The object whose resource will be stolen.</param>
-        DbConnWrapper::DbConnWrapper(DbConnWrapper &&ob) : 
-            pool(ob.pool), 
-            conn(ob.conn)
+        DbConnWrapper::DbConnWrapper(DbConnWrapper &&ob) noexcept
+            : pool(ob.pool)
+            , conn(ob.conn)
         {
             ob.conn = nullptr;
         }

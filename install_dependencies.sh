@@ -6,6 +6,31 @@ AMAZON=$(cat /etc/issue | grep -i "amazon linux ami release" | awk -F" " '{print
 
 USE_CLANG=$(echo $CXX | grep 'clang++$')
 
+if [ -n "$1" ];
+then
+  INSTALL_DIR=$1
+else
+  INSTALL_DIR="/opt/3fd"
+fi
+
+if [ ! -d $INSTALL_DIR ];
+then
+  printf "Installation directory does not exist! ${INSTALL_DIR}\n"
+  exit
+fi
+
+DEPS=$(pwd)/build
+{ ls $DEPS/include || mkdir -p $DEPS/include; } &> /dev/null
+
+if touch $DEPS/test &> /dev/null;
+then
+  cd $DEPS
+  rm test
+else
+  printf "Cannot write to installation directory! ${INSTALL_DIR}\n"
+  exit
+fi
+
 export SetColorToYELLOW='\033[0;33m';
 export SetNoColor='\033[0m';
 
@@ -121,9 +146,6 @@ fi
 # ./vcpkg install boost-lockfree boost-regex poco rapidxml sqlite3
 # cd ..
 
-{ ls build || mkdir build; } &> /dev/null
-cd build
-
 # # #
 # BUILD RAPIDXML
 #
@@ -143,19 +165,18 @@ function buildRapidxml()
 function buildSqlite3()
 {
     find . | grep 'sqlite' | xargs rm -rf
-    INSTALLDIR=$(pwd)
-    SQLITE='sqlite-autoconf-3240000'
-    download "http://sqlite.org/2018/${SQLITE}.tar.gz"
-    tar -xf "${SQLITE}.tar.gz"
+    local SQLITE='sqlite-autoconf-3270200'
+    download "http://sqlite.org/2019/sqlite-autoconf-3270200.tar.gz"
+    tar -xf $SQLITE".tar.gz"
     cd $SQLITE
     printf "${SetColorToYELLOW}Building SQLite3 as static library (release)...${SetNoColor}\n"
-    ./configure --enable-shared=no --prefix=$INSTALLDIR
+    ./configure --enable-shared=no --prefix=$DEPS
     make -j $numCpuCores && make install
     cd ..
     rm -rf $SQLITE*
 }
 
-if [ -d include ]; then
+if [ -d $INSTALL_DIR/include ]; then
     printf "${SetColorToYELLOW}Do you wish to download and (re)build RAPIDXML and SQLITE3 from source?${SetNoColor}"
     while true; do
         read -p " [yes/no] " yn
@@ -182,31 +203,31 @@ function buildBoost()
     find ./lib | grep boost | xargs rm
     { ls include/boost && rm -rf include/boost; } &> /dev/null
     printf "${SetColorToYELLOW}Downloading Boost source...${SetNoColor}\n"
-    boostVersion='1.67.0'
-    boostLabel="boost_1_67_0"
+    local boostVersion='1.67.0'
+    local boostLabel="boost_1_67_0"
     download "https://dl.bintray.com/boostorg/release/${boostVersion}/source/${boostLabel}.tar.gz"
     printf "${SetColorToYELLOW}Unpacking Boost source...${SetNoColor}\n"
     tar -xf "${boostLabel}.tar.gz"
     printf "${SetColorToYELLOW}Building Boost...${SetNoColor}\n"
     cd $boostLabel/tools/build
     ./bootstrap.sh
-    cd ../../
+    cd $DEPS/$boostLabel
 
-    toolset=''
-    if [ -n $USE_CLANG ];
+    local toolset='toolset=gcc'
+    if [ -n "$USE_CLANG" ];
     then
         toolset='toolset=clang'
     fi
 
-    prefixDir=$(cd ../; pwd)
-    ./tools/build/b2 -j $numCpuCores $toolset variant=debug   link=static threading=multi runtime-link=shared --layout=tagged --prefix=$prefixDir --with=system,thread,regex install
-    ./tools/build/b2 -j $numCpuCores $toolset variant=release link=static threading=multi runtime-link=shared --layout=tagged --prefix=$prefixDir --with=system,thread,regex install
+    ./tools/build/b2 -j $numCpuCores $toolset variant=debug   link=static threading=multi runtime-link=shared --layout=tagged --prefix=$DEPS --with=system,thread,regex install
+    ./tools/build/b2 -j $numCpuCores $toolset variant=release link=static threading=multi runtime-link=shared --layout=tagged --prefix=$DEPS --with=system,thread,regex install
     cd ..
     rm -rf $boostLabel
     rm "${boostLabel}.tar.gz"
 }
 
-if [ -d include/boost ]; then
+if [ -d $INSTALL_DIR/include/boost ];
+then
     printf "${SetColorToYELLOW}Do you wish to download and (re)build Boost library dependencies from source?${SetNoColor}"
     while true; do
         read -p " [yes/no] " yn
@@ -229,22 +250,22 @@ function buildPoco()
     find ./lib | grep Poco | xargs rm
     { ls include/Poco && rm -rf include/Poco; } &> /dev/null
     printf "${SetColorToYELLOW}Downloading POCO C++ libs source...${SetNoColor}\n"
-    pocoLabel='poco-1.9.0'
-    pocoTarFile=$pocoLabel"-all.tar.gz"
-    pocoXDir=$pocoLabel"-all"
+    local pocoLabel='poco-1.9.0'
+    local pocoXDir=$pocoLabel"-all"
+    local pocoTarFile=$pocoXDir".tar.gz"
     download "https://pocoproject.org/releases/${pocoLabel}/${pocoTarFile}"
     printf "${SetColorToYELLOW}Unpacking POCO C++ libs source...${SetNoColor}\n"
     tar -xf $pocoTarFile
     cd $pocoXDir
     printf "${SetColorToYELLOW}Building POCO C++ libs...${SetNoColor}\n"
 
-    toolset=''
-    if [ -n $USE_CLANG ];
+    local toolset='--config=Linux'
+    if [ -n "$USE_CLANG" ];
     then
         toolset='--config=Linux-clang'
     fi
 
-    ./configure --omit=Data/MySQL,Data/SQLite,Dynamic,JSON,MongoDB,PageCompiler,Redis $toolset --static --no-tests --no-samples --prefix=$(cd ..; pwd)
+    ./configure --omit=Data/MySQL,Data/SQLite,Dynamic,JSON,MongoDB,PageCompiler,Redis $toolset --static --no-tests --no-samples --prefix=$DEPS
     make -s -j $numCpuCores || exit
     make install
     cd ..
@@ -252,7 +273,8 @@ function buildPoco()
     rm $pocoTarFile
 }
 
-if [ -d include/Poco ]; then
+if [ -d $INSTALL_DIR/include/Poco ];
+then
     printf "${SetColorToYELLOW}Do you wish to download and (re)build POCO C++ library dependencies from source?${SetNoColor}"
     while true; do
         read -p " [yes/no] " yn
@@ -273,28 +295,28 @@ fi
 function buildGTestFramework()
 {
     find . | grep 'googletest' | xargs rm -rf
-    INSTALLDIR=$(pwd)
-    gtestVersion='release-1.8.0'
-    gtestPackage="${gtestVersion}.tar.gz"
+    local gtestVersion='release-1.8.0'
+    local gtestPackage="${gtestVersion}.tar.gz"
     download "https://github.com/google/googletest/archive/${gtestPackage}"
     tar -xf $gtestPackage
-    gtestRootDir="googletest-${gtestVersion}"
+    local gtestRootDir="googletest-${gtestVersion}"
     cd "${gtestRootDir}/googletest"
     printf "${SetColorToYELLOW}Building Google Test Framework as static library (debug)...${SetNoColor}\n"
     cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_DEBUG_POSTFIX=d
-    make -j $numCpuCores && mv libgtest* $INSTALLDIR/lib/
+    make -j $numCpuCores && mv libgtest* $DEPS/lib/
     make clean
     printf "${SetColorToYELLOW}Building Google Test Framework as static library (release)...${SetNoColor}\n"
     cmake -DCMAKE_BUILD_TYPE=Release
-    make -j $numCpuCores && mv libgtest* $INSTALLDIR/lib/
+    make -j $numCpuCores && mv libgtest* $DEPS/lib/
     make clean
-    mv include/gtest $INSTALLDIR/include/
-    cd $INSTALLDIR
+    mv include/gtest $DEPS/include/
+    cd $DEPS
     rm -rf $gtestRootDir
     rm -rf $gtestPackage
 }
 
-if [ -d include ]; then
+if [ -d $INSTALL_DIR/include/gtest ];
+then
     printf "${SetColorToYELLOW}Do you wish to download and (re)build Google Test Framework from source?${SetNoColor}"
     while true; do
         read -p " [yes/no] " yn
@@ -308,3 +330,6 @@ if [ -d include ]; then
 else
     buildGTestFramework
 fi
+
+printf "${SetColorToYELLO}Moving build of dependencies to installation directory...${SetNoColor}\n"
+sudo mv $DEPS/* $INSTALL_DIR

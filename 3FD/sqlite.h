@@ -35,7 +35,7 @@ namespace sqlite
 
         DatabaseConn(const string &dbFilePath, bool fullMutex = true);
 
-        DatabaseConn(DatabaseConn &&ob);
+        DatabaseConn(DatabaseConn &&ob) noexcept;
 
         ~DatabaseConn();
 
@@ -77,7 +77,7 @@ namespace sqlite
                         const char *query, 
                         size_t qlen = 0);
 
-        PrepStatement(PrepStatement &&ob);
+        PrepStatement(PrepStatement &&ob) noexcept;
 
         ~PrepStatement();
 
@@ -173,7 +173,7 @@ namespace sqlite
 
         DbConnWrapper(DbConnPool &p_pool, DatabaseConn *p_conn);
 
-        DbConnWrapper(DbConnWrapper &&ob);
+        DbConnWrapper(DbConnWrapper &&ob) noexcept;
 
         ~DbConnWrapper();
     };

@@ -122,10 +122,10 @@ namespace rpc
 
         VectorOfUuids() {}
 
-        VectorOfUuids(VectorOfUuids &&ob)
+        VectorOfUuids(VectorOfUuids &&ob) noexcept
             : m_ptrs2Uuids(std::move(ob.m_ptrs2Uuids)) {}
 
-        VectorOfUuids &operator =(VectorOfUuids &&ob)
+        VectorOfUuids &operator =(VectorOfUuids &&ob) noexcept
         {
             if (&ob != this)
                 m_ptrs2Uuids = std::move(ob.m_ptrs2Uuids);
@@ -139,7 +139,7 @@ namespace rpc
 
         void Add(const UUID &uuid);
 
-        UUID_VECTOR *CopyTo(UuidVectorFix &vec) NOEXCEPT;
+        UUID_VECTOR *CopyTo(UuidVectorFix &vec) noexcept;
     };
 
 

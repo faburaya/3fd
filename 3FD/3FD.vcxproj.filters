@@ -196,6 +196,9 @@
     <ClInclude Include="utils_io.h">
       <Filter>Header Files\utilities</Filter>
     </ClInclude>
+    <ClInclude Include="xml.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dependencies.cpp">
@@ -366,6 +369,9 @@
     <ClCompile Include="utils_io.cpp">
       <Filter>Source Files\utilities</Filter>
     </ClCompile>
+    <ClCompile Include="xml.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="wsdl-example.wsdl">
@@ -376,5 +382,8 @@
     <Xml Include="3fd-config-template.xml">
       <Filter>Resource Files</Filter>
     </Xml>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="cpp.hint" />
   </ItemGroup>
 </Project>

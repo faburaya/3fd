@@ -15,6 +15,44 @@ namespace XamlTypeInfo
     {
         ref class XamlTypeInfoProvider sealed
         {
+            struct CriticalSection
+            {
+                CriticalSection()
+                {
+                    InitializeCriticalSection(&criticalSection);
+                }
+
+                ~CriticalSection()
+                {
+                    DeleteCriticalSection(&criticalSection);
+                }
+
+                struct AutoLock
+                {
+                    AutoLock(LPCRITICAL_SECTION criticalSection)
+                        : pCriticalSection(criticalSection)
+                    {
+                        EnterCriticalSection(criticalSection);
+                    }
+
+                    ~AutoLock()
+                    {
+                        LeaveCriticalSection(pCriticalSection);
+                    }
+
+                private:
+                    LPCRITICAL_SECTION pCriticalSection{ nullptr };
+                };
+
+                AutoLock Lock()
+                {
+                    return AutoLock(&criticalSection);
+                }
+
+            private:
+                CRITICAL_SECTION criticalSection;
+            };
+
         public:
             ::Windows::UI::Xaml::Markup::IXamlType^ GetXamlTypeByName(::Platform::String^ typeName);
             ::Windows::UI::Xaml::Markup::IXamlType^ GetXamlTypeByType(::Windows::UI::Xaml::Interop::TypeName t);
@@ -22,7 +60,9 @@ namespace XamlTypeInfo
             void AddOtherProvider(::Windows::UI::Xaml::Markup::IXamlMetadataProvider^ otherProvider);
 
         private:
+            CriticalSection _xamlTypesCriticalSection;
             std::map<::Platform::String^, ::Platform::WeakReference> _xamlTypes;
+            CriticalSection _xamlMembersCriticalSection;
             std::map<::Platform::String^, ::Windows::UI::Xaml::Markup::IXamlMember^> _xamlMembers;
             ::Windows::UI::Xaml::Markup::IXamlType^ CreateXamlType(::Platform::String^ typeName);
             ::Windows::UI::Xaml::Markup::IXamlMember^ CreateXamlMember(::Platform::String^ longMemberName);
@@ -129,7 +169,7 @@ namespace XamlTypeInfo
             ::Platform::String^ _fullName;
         };
 
-        ref class XamlUserType sealed : public [::Platform::Metadata::RuntimeClassName] ::Windows::UI::Xaml::Markup::IXamlType
+        ref class XamlUserType sealed : public [::Platform::Metadata::RuntimeClassName] ::Windows::UI::Xaml::Markup::IXamlType2
         {
         internal:
             XamlUserType(::XamlTypeInfo::InfoProvider::XamlTypeInfoProvider^ provider, ::Platform::String^ fullName, ::Windows::UI::Xaml::Markup::IXamlType^ baseType);            
@@ -215,6 +255,11 @@ namespace XamlTypeInfo
                 ::Windows::UI::Xaml::Markup::IXamlType^ get();
             }
 
+            virtual property ::Windows::UI::Xaml::Markup::IXamlType^ BoxedType
+            { 
+                ::Windows::UI::Xaml::Markup::IXamlType^ get();
+            }
+
             virtual ::Windows::UI::Xaml::Markup::IXamlMember^ GetMember(::Platform::String^ name);
             virtual ::Platform::Object^ ActivateInstance();
             virtual void AddToMap(::Platform::Object^ instance, ::Platform::Object^ key, ::Platform::Object^ value);
@@ -239,12 +284,13 @@ namespace XamlTypeInfo
             typedef ::Platform::Object^ (*ActivatorFn)();
             typedef void (*AddToCollectionFn)(::Platform::Object^ instance, ::Platform::Object^ item);
             typedef void (*AddToDictionaryFn)(::Platform::Object^ instance, ::Platform::Object^ key, ::Platform::Object^ item);
+            typedef ::Platform::Object^ (*CreateFromStringFn)(::Platform::String^);
             typedef ::Platform::Object^ (*StringConverterFn)(::XamlTypeInfo::InfoProvider::XamlUserType^ userType, ::Platform::String^ input);
 
             property ActivatorFn Activator;
             property AddToCollectionFn CollectionAdd;
             property AddToDictionaryFn DictionaryAdd;
-            property std::function<::Platform::Object^(::Platform::String^)>* CreateFromStringMethod;
+            property CreateFromStringFn CreateFromStringMethod;
             property ::Windows::UI::Xaml::Interop::TypeKind KindOfType;
             property StringConverterFn FromStringConverter;
 
@@ -263,6 +309,7 @@ namespace XamlTypeInfo
                 void set(::Platform::String^ value);
             }
 
+            void SetBoxedType(::Windows::UI::Xaml::Markup::IXamlType^ boxedType);
             void AddMemberName(::Platform::String^ shortName);
             void AddEnumValue(::Platform::String^ name, ::Platform::Object^ value);
             uint32 CreateEnumUIntFromString(::Platform::String^ input);
@@ -282,6 +329,7 @@ namespace XamlTypeInfo
             bool _isBindable = false;
             bool _isReturnTypeStub = false;
             bool _isLocalType = false;
+            ::Windows::UI::Xaml::Markup::IXamlType^ _boxedType;
         };
 
         ref class XamlMember sealed : public ::Windows::UI::Xaml::Markup::IXamlMember
@@ -349,4 +397,3 @@ namespace XamlTypeInfo
         };
     }
 }
-

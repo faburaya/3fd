@@ -21,9 +21,9 @@ namespace isam
     /// Initializes a new instance of the <see cref="TableWriterImpl"/> class.
     /// </summary>
     /// <param name="mode">The type of update.</param>
-    TableWriterImpl::TableWriterImpl(TableCursorImpl &pimplTableCursor, TableWriter::Mode mode) : 
-        m_pimplTableCursor(pimplTableCursor), 
-        m_saved(false) 
+    TableWriterImpl::TableWriterImpl(TableCursorImpl &pimplTableCursor, TableWriter::Mode mode)
+        : m_pimplTableCursor(pimplTableCursor)
+        , m_saved(false)
     {
         CALL_STACK_TRACE;
 
@@ -31,7 +31,10 @@ namespace isam
                                       m_pimplTableCursor.GetCursorHandle(),
                                       static_cast<unsigned long> (mode));
 
-        ErrorHelper::HandleError(NULL, m_pimplTableCursor.GetSessionHandle(), rcode, "Failed to prepare row update in ISAM database table");
+        ErrorHelper::HandleError(NULL,
+								 m_pimplTableCursor.GetSessionHandle(),
+								 rcode,
+								 "Failed to prepare row update in ISAM database table");
     }
 
     /// <summary>

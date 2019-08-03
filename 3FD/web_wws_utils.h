@@ -42,9 +42,9 @@ namespace wws
         /// Initializes a new instance of the <see cref="WSHeap"/> class using move semantics.
         /// </summary>
         /// <param name="ob">The object whose resources will be stolen from.</param>
-        WSHeap(WSHeap &&ob) :
-            m_wsHeapHandle(ob.m_wsHeapHandle),
-            m_allowRelease(ob.m_allowRelease)
+        WSHeap(WSHeap &&ob) noexcept
+            : m_wsHeapHandle(ob.m_wsHeapHandle)
+            , m_allowRelease(ob.m_allowRelease)
         {
             ob.m_wsHeapHandle = nullptr;
         }
@@ -104,9 +104,9 @@ namespace wws
         /// class using move semantics.
         /// </summary>
         /// <param name="ob">The objects whose resources will be stolen from.</param>
-        WSError(WSError &&ob) :
-            m_wsErrorHandle(ob.m_wsErrorHandle),
-            m_allowRelease(ob.m_allowRelease)
+        WSError(WSError &&ob) noexcept
+            : m_wsErrorHandle(ob.m_wsErrorHandle)
+            , m_allowRelease(ob.m_allowRelease)
         {
             ob.m_wsErrorHandle = nullptr;
         }

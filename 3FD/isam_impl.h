@@ -211,7 +211,7 @@ namespace isam
         {
             JET_COLUMNID    id;
             DataType        dataType;
-            string            name;
+            string          name;
             bool            notNull, 
                             escrow, 
                             multiValued;
@@ -228,7 +228,7 @@ namespace isam
             IndexMetadata(const string &p_name, std::unique_ptr<JET_INDEXID> &&p_idHint) 
                 : name(p_name), idHint(std::move(p_idHint)) {}
 
-            IndexMetadata(IndexMetadata &&ob)
+            IndexMetadata(IndexMetadata &&ob) noexcept
                 : name(std::move(ob.name)), idHint(std::move(ob.idHint)) {}
         };
 
@@ -426,7 +426,6 @@ namespace isam
     private:
 
         TableCursorImpl &m_pimplTableCursor;
-        JET_TABLEID m_jetTable;
         bool m_saved;
 
     public:

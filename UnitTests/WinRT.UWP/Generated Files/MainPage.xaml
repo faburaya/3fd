@@ -10,7 +10,7 @@
     <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
         <VisualStateManager.VisualStateGroups>
             <VisualStateGroup>
-                <VisualState x:ConnectionId='1' x:Name="wideState">
+                <VisualState x:ConnectionId='2' x:Name="wideState">
                     <VisualState.StateTriggers>
                         <AdaptiveTrigger MinWindowWidth="641" />
                     </VisualState.StateTriggers>
@@ -24,7 +24,7 @@
                         <Setter Target="ContentRoot.Margin" Value="30,0,30,15"/>
                     </VisualState.Setters>
                 </VisualState>
-                <VisualState x:ConnectionId='2' x:Name="narrowState">
+                <VisualState x:ConnectionId='3' x:Name="narrowState">
                     <VisualState.StateTriggers>
                         <AdaptiveTrigger MinWindowWidth="0" />
                     </VisualState.StateTriggers>
@@ -40,7 +40,7 @@
             </VisualStateGroup>
         </VisualStateManager.VisualStateGroups>
 
-        <Grid x:ConnectionId='3' x:Name="LayoutRoot">
+        <Grid x:ConnectionId='4' x:Name="LayoutRoot">
             <Grid.ChildrenTransitions>
                 <TransitionCollection>
                     <EntranceThemeTransition/>
@@ -54,26 +54,26 @@
 
 
             <!-- Title Panel -->
-            <StackPanel x:ConnectionId='4' Name="titlePanel" Grid.Row="0">
-                <TextBlock x:ConnectionId='9' Name="titleTxtBlock1" Text="3FD"/>
-                <TextBlock x:ConnectionId='10' Name="titleTxtBlock2" Text="unit tests" Style="{ThemeResource HeaderTextBlockStyle}" CharacterSpacing="{ThemeResource PivotHeaderItemCharacterSpacing}"/>
+            <StackPanel x:ConnectionId='5' Name="titlePanel" Grid.Row="0">
+                <TextBlock x:ConnectionId='10' Name="titleTxtBlock1" Text="3FD"/>
+                <TextBlock x:ConnectionId='11' Name="titleTxtBlock2" Text="unit tests" Style="{ThemeResource HeaderTextBlockStyle}" CharacterSpacing="{ThemeResource PivotHeaderItemCharacterSpacing}"/>
             </StackPanel>
 
             <!-- Content should be placed within the following grid-->
-            <Grid x:ConnectionId='5' Grid.Row="1" x:Name="ContentRoot">
+            <Grid x:ConnectionId='6' Grid.Row="1" x:Name="ContentRoot">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <ProgressRing x:ConnectionId='6' Name="waitingRing" Visibility="Collapsed"></ProgressRing>
+                <ProgressRing x:ConnectionId='7' Name="waitingRing" Visibility="Collapsed"></ProgressRing>
 
                 <ScrollViewer Grid.Row="0">
-                    <TextBlock x:ConnectionId='8' Name="mainTextBlock" FontSize="14"></TextBlock>
+                    <TextBlock x:ConnectionId='9' Name="mainTextBlock" FontSize="14"></TextBlock>
                 </ScrollViewer>
 
                 <StackPanel Orientation="Horizontal" Grid.Row="1" HorizontalAlignment="Right">
-                    <Button x:ConnectionId='7' Name="runButton"                         >Run</Button>
+                    <Button x:ConnectionId='8' Name="runButton"                         >Run</Button>
                 </StackPanel>
             </Grid>
         </Grid>

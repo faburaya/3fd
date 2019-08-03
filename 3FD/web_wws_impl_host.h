@@ -168,11 +168,11 @@ namespace wws
         /// using move semantics.
         /// </summary>
         /// <param name="ob">The object whose resources will be stolen.</param>
-        SvcEndpointInfo(SvcEndpointInfo &&ob) :
-            portName(std::move(ob.portName)),
-            bindingName(std::move(ob.bindingName)),
-            bindingNs(std::move(ob.bindingNs)),
-            address(std::move(ob.address))
+        SvcEndpointInfo(SvcEndpointInfo &&ob) noexcept
+            : portName(std::move(ob.portName))
+            , bindingName(std::move(ob.bindingName))
+            , bindingNs(std::move(ob.bindingNs))
+            , address(std::move(ob.address))
         {
             implementations.swap(ob.implementations);
         }
