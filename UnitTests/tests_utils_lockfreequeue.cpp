@@ -1,6 +1,11 @@
-#include "stdafx.h"
-#include "utils_lockfreequeue.h"
-#include "preprocessing.h"
+//
+// Copyright (c) 2020 Part of 3FD project (https://github.com/faburaya/3fd)
+// It is FREELY distributed by the author under the Microsoft Public License
+// and the observance that it should only be used for the benefit of mankind.
+//
+#include "pch.h"
+#include <3fd/core/preprocessing.h>
+#include <3fd/utils/utils_lockfreequeue.h>
 
 #include <vector>
 #include <thread>

@@ -1,10 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Header Files">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
-    </Filter>
     <Filter Include="Resource Files">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
@@ -15,11 +11,11 @@
     <Filter Include="Shared">
       <UniqueIdentifier>{969f7b54-2428-4044-982d-0f24584eb4c3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="pch">
+      <UniqueIdentifier>{e15ca296-1011-4b04-bbcf-dbded3874992}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\3FD\stdafx.cpp">
-      <Filter>Header Files</Filter>
-    </ClCompile>
     <ClCompile Include="AcmeTesting_w32_srv.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -27,9 +23,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="calculator.wsdl.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="IntegrationTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="tests_core.cpp">
@@ -59,30 +52,39 @@
     <ClCompile Include="tests_broker.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="pch.cpp">
+      <Filter>pch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\TestShared\error_handling.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\TestShared\main.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="application.config">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="CreateMsSqlSvcBrokerDB.sql">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\3FD\stdafx.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\3FD\targetver.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="calculator.wsdl.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="AcmeTesting_w32.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="AcmeTesting_x64.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\TestShared\rpc_test_shared.h">
       <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="calculator.wsdl.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AcmeTesting_w32.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AcmeTesting_x64.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h">
+      <Filter>pch</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

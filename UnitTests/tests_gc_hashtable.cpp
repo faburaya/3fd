@@ -1,7 +1,12 @@
-#include "stdafx.h"
-#include "runtime.h"
-#include "gc_addresseshashtable.h"
-#include "gc_vertex.h"
+//
+// Copyright (c) 2020 Part of 3FD project (https://github.com/faburaya/3fd)
+// It is FREELY distributed by the author under the Microsoft Public License
+// and the observance that it should only be used for the benefit of mankind.
+//
+#include "pch.h"
+#include <3fd/core/runtime.h>
+#include <3fd/core/gc_addresseshashtable.h>
+#include <3fd/core/gc_vertex.h>
 
 #include <vector>
 

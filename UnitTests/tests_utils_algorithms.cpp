@@ -1,6 +1,11 @@
-#include "stdafx.h"
-#include "preprocessing.h"
-#include "utils_algorithms.h"
+//
+// Copyright (c) 2020 Part of 3FD project (https://github.com/faburaya/3fd)
+// It is FREELY distributed by the author under the Microsoft Public License
+// and the observance that it should only be used for the benefit of mankind.
+//
+#include "pch.h"
+#include <3fd/core/preprocessing.h>
+#include <3fd/utils/utils_algorithms.h>
 
 #include <ctime>
 #include <cmath>
@@ -40,7 +45,7 @@ namespace unit_tests
             int key = abs(rand()) % numEntries;
 
             auto iter = utils::BinarySearch(list.cbegin(), list.cend(),
-                key, [](const Object &x) NOEXCEPT { return x.key; }, std::less<int>());
+                key, [](const Object &x) noexcept { return x.key; }, std::less<int>());
 
             EXPECT_NE(list.end(), iter);
 
@@ -56,7 +61,7 @@ namespace unit_tests
             int key = (abs(rand()) % 69) + numEntries;
 
             auto iter = utils::BinarySearch(list.cbegin(), list.cend(),
-                key, [](const Object &x) NOEXCEPT { return x.key; }, std::less<int>());
+                key, [](const Object &x) noexcept { return x.key; }, std::less<int>());
 
             EXPECT_EQ(list.end(), iter);
         }
@@ -96,7 +101,7 @@ namespace unit_tests
 
             EXPECT_TRUE(
                 utils::BinSearchSubRange(subRangeBegin, subRangeEnd,
-                    key, [](const Object &x) NOEXCEPT { return x.key; }, std::less<int>())
+                    key, [](const Object &x) noexcept { return x.key; }, std::less<int>())
             );
 
             EXPECT_NE(subRangeBegin, subRangeEnd) << "Could not find key " << key;
@@ -122,7 +127,7 @@ namespace unit_tests
 
             EXPECT_FALSE(
                 utils::BinSearchSubRange(subRangeBegin, subRangeEnd,
-                    key, [](const Object &x) NOEXCEPT { return x.key; }, std::less<int>())
+                    key, [](const Object &x) noexcept { return x.key; }, std::less<int>())
             );
 
             EXPECT_EQ(subRangeBegin, subRangeEnd) << "Not supposed to find key " << key;

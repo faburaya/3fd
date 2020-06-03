@@ -1,0 +1,61 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tga;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="pch">
+      <UniqueIdentifier>{22f307b0-cf3c-4cc8-97a1-6c62e59bacde}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="targetver.h">
+      <Filter>pch</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h">
+      <Filter>pch</Filter>
+    </ClInclude>
+    <ClInclude Include="callstacktracer.h" />
+    <ClInclude Include="configuration.h" />
+    <ClInclude Include="dependencies.h" />
+    <ClInclude Include="exceptions.h" />
+    <ClInclude Include="gc.h" />
+    <ClInclude Include="gc_addresseshashtable.h" />
+    <ClInclude Include="gc_arrayofedges.h" />
+    <ClInclude Include="gc_common.h" />
+    <ClInclude Include="gc_memaddress.h" />
+    <ClInclude Include="gc_memorydigraph.h" />
+    <ClInclude Include="gc_messages.h" />
+    <ClInclude Include="gc_vertex.h" />
+    <ClInclude Include="gc_vertexstore.h" />
+    <ClInclude Include="logger.h" />
+    <ClInclude Include="preprocessing.h" />
+    <ClInclude Include="runtime.h" />
+    <ClInclude Include="sptr.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="pch.cpp">
+      <Filter>pch</Filter>
+    </ClCompile>
+    <ClCompile Include="callstacktracer.cpp" />
+    <ClCompile Include="configuration.cpp" />
+    <ClCompile Include="dependencies.cpp" />
+    <ClCompile Include="exceptions.cpp" />
+    <ClCompile Include="gc_addresseshashtable.cpp" />
+    <ClCompile Include="gc_arrayofedges.cpp" />
+    <ClCompile Include="gc_garbagecollector.cpp" />
+    <ClCompile Include="gc_memorydigraph.cpp" />
+    <ClCompile Include="gc_messages.cpp" />
+    <ClCompile Include="gc_vertex.cpp" />
+    <ClCompile Include="gc_vertexstore.cpp" />
+    <ClCompile Include="logger.cpp" />
+    <ClCompile Include="logger_winrt.cpp" />
+    <ClCompile Include="runtime.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="3fd-config-template.xml">
+      <Filter>Resource Files</Filter>
+    </Xml>
+  </ItemGroup>
+</Project>

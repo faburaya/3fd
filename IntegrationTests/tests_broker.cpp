@@ -1,10 +1,38 @@
-#include "stdafx.h"
-#include "runtime.h"
-#include "broker.h"
-#include "configuration.h"
-#include <algorithm>
+//
+// Copyright (c) 2020 Part of 3FD project (https://github.com/faburaya/3fd)
+// It is FREELY distributed by the author under the Microsoft Public License
+// and the observance that it should only be used for the benefit of mankind.
+//
+#include "pch.h"
+#include <3fd/core/runtime.h>
+#include <3fd/core/configuration.h>
+#include <3fd/broker/broker.h>
+#include <3fd/utils/utils_string.h>
 
-#define UNDEF_BROKER_DB_CONNSTR "CONNECTION STRING FOR BROKER BACK-END IS NOT DEFINED IN XML CONFIGURATION"
+#ifdef _WIN32
+#   define NANODBC_ENABLE_UNICODE
+#endif
+
+#include <nanodbc/nanodbc.h>
+#include <algorithm>
+#include <array>
+#include <chrono>
+
+#define BROKER_DB_NAME      "SvcBrokerTest"
+#define BROKER_SVC_VERSION  "/v1_0_0"
+#define BROKER_SERVICE_URL  "//" BROKER_DB_NAME "/IntegrationTestService"
+#define BROKER_QUEUE_URL    BROKER_SERVICE_URL BROKER_SVC_VERSION "/Queue"
+
+#define UNDER_BROKER_DB_RESETCMD "<< command to reset broker database not found in test configuration! >>"
+#define UNDEF_BROKER_DB_CONNSTR  "<< connection string for the broker back-end not found in test configuration! >>"
+
+#ifdef _WIN32
+// nanodbc for Windows uses UCS-2
+#   define _U(TEXT) L ## TEXT
+#else
+// nanodbc for POSIX uses UTF-8
+#   define _U(TEXT) TEXT
+#endif
 
 namespace _3fd
 {
@@ -18,19 +46,108 @@ namespace integration_tests
        work with these integration tests. */
 
 #ifdef _WIN32
-    const char *keyForBrokerDbConnStr("testBrokerWindowsMsSqlDbConnString");
+    const char *keyForBrokerDbConnStr("testBrokerMsSqlDbConnStringForWindows");
+    const char *keyForBrokerDbResetCmd("testBrokerResetCommandForWindows");
 #else
-    const char *keyForBrokerDbConnStr("testBrokerLinuxMsSqlDbConnString");
+    const char *keyForBrokerDbConnStr("testBrokerMsSqlDbConnStringForLinux");
+    const char *keyForBrokerDbResetCmd("testBrokerResetCommandForLinux");
+    const char *keyForBrokerDbFixCmd("testBrokerFixDbCommandForLinux");
 #endif
-    
+
     /// <summary>
-    /// Tests the setup of a reader for the broker queue.
+    /// Test fixture for the broker module.
     /// </summary>
-    TEST(Framework_Broker_BasicTestCase, QueueReaderSetup_Test)
+    class BrokerQueueTestCase : public ::testing::Test
     {
+    private:
+
         // Ensures proper initialization/finalization of the framework
         _3fd::core::FrameworkInstance _framework;
 
+    public:
+
+        // provides a connection to the database
+        static nanodbc::connection GetDatabaseConnection()
+        {
+            return nanodbc::connection(
+                utils::to_unicode(core::AppConfig::GetSettings().application.GetString(keyForBrokerDbConnStr,
+                                                                                       UNDEF_BROKER_DB_CONNSTR))
+            );
+        }
+
+        // generates text messages to be stored in the broker queue
+        static std::vector<std::string> GenerateMessages(uint16_t count)
+        {
+            std::vector<std::string> messages;
+            messages.reserve(count);
+
+            // Generate messages to write into the queue:
+            for (uint16_t idx = 0; idx < count; ++idx)
+            {
+                std::array<char, 32> buffer;
+                snprintf(buffer.data(), buffer.size(), "foobar %3d", idx);
+                messages.push_back(buffer.data());
+            }
+
+            return messages;
+        }
+
+        // waits for broker queue operation with a timeout
+        static void WaitFor(_3fd::broker::IAsyncDatabaseOperation &op)
+        {
+            using std::chrono::seconds;
+            using std::chrono::milliseconds;
+
+            milliseconds elapsedTime(0);
+            milliseconds waitInterval(50);
+            
+            // Await for end of async read:
+            while (op.wait_for(waitInterval) != std::future_status::ready)
+            {
+                elapsedTime += waitInterval;
+
+                if (elapsedTime > seconds(5))
+                    throw core::AppException<std::runtime_error>("Timeout: broker queue operation took too long!");
+            }
+
+            op.get();
+        }
+
+        /// <summary>
+        /// Set up the test fixture:
+        /// Restore database backup to clean-up.
+        /// </summary>
+        virtual void SetUp() override
+        {
+            const std::string dbResetCommand =
+                core::AppConfig::GetSettings().application.GetString(keyForBrokerDbResetCmd,
+																	 UNDER_BROKER_DB_RESETCMD);
+			system(dbResetCommand.c_str());
+
+        // linux connects to SQL Server (rather than SQLLocalDB)
+        // which needs a fix post backup restore:
+#       ifndef _WIN32
+            const std::string dbFixCommand =
+                core::AppConfig::GetSettings().application.GetString(keyForBrokerDbFixCmd,
+																	 UNDER_BROKER_DB_RESETCMD);
+			system(dbFixCommand.c_str());
+#       endif
+        }
+
+        /// <summary>
+        /// Tear down the test fixture.
+        /// </summary>
+        virtual void TearDown() override
+        {
+        }
+
+    }; // end of class BrokerQueueTestCase
+
+    /// <summary>
+    /// Tests the setup of a reader for the broker queue.
+    /// </summary>
+    TEST_F(BrokerQueueTestCase, QueueReader_SetupTest)
+    {
         CALL_STACK_TRACE;
 
         try
@@ -40,29 +157,45 @@ namespace integration_tests
             QueueReader queueReader(
                 Backend::MsSqlServer,
                 core::AppConfig::GetSettings().application.GetString(keyForBrokerDbConnStr, UNDEF_BROKER_DB_CONNSTR),
-                "//SvcBrokerTest/IntegrationTestService",
+                BROKER_SERVICE_URL,
                 MessageTypeSpec { 128UL, MessageContentValidation::None }
+            );
+        }
+        catch (...)
+        {
+            HandleException();
+        }
+    }
+
+    /// <summary>
+    /// Tests reading an empty broker queue.
+    /// </summary>
+    TEST_F(BrokerQueueTestCase, QueueReader_ReadEmptyQueueTest)
+    {
+        CALL_STACK_TRACE;
+
+        try
+        {
+            using namespace _3fd::broker;
+
+            QueueReader queueReader(
+                Backend::MsSqlServer,
+                core::AppConfig::GetSettings().application.GetString(keyForBrokerDbConnStr, UNDEF_BROKER_DB_CONNSTR),
+                BROKER_SERVICE_URL,
+                MessageTypeSpec{ 128UL, MessageContentValidation::None }
             );
 
             // Read the empty queue
-            auto readOp = queueReader.ReadMessages(512, 0);
-            readOp->Step();
+            std::vector<std::string> retrievedMessages;
+            auto readOp = queueReader.ReadMessages(512, 0,
+                [&retrievedMessages](std::vector<std::string> &&messages)
+                {
+                    retrievedMessages = std::move(messages);
+                });
 
-            uint16_t elapsedTime(0);
-            uint16_t waitInterval(50);
+            WaitFor(*readOp);
 
-            // Await for end of async read:
-            while (!readOp->TryWait(waitInterval))
-            {
-                elapsedTime += waitInterval;
-
-                if (elapsedTime > 5000)
-                    throw core::AppException<std::runtime_error>("Timeout: reading from service broker queue took too long!");
-            }
-
-            EXPECT_EQ(0, readOp->GetStepMessageCount(0));
-
-            EXPECT_TRUE(readOp->Commit(0));
+            EXPECT_EQ(0, retrievedMessages.size());
         }
         catch (...)
         {
@@ -73,11 +206,8 @@ namespace integration_tests
     /// <summary>
     /// Tests the setup of a writer for the broker queue.
     /// </summary>
-    TEST(Framework_Broker_BasicTestCase, QueueWriterSetup_Test)
+    TEST_F(BrokerQueueTestCase, QueueWriter_SetupTest)
     {
-        // Ensures proper initialization/finalization of the framework
-        _3fd::core::FrameworkInstance _framework;
-
         CALL_STACK_TRACE;
 
         try
@@ -87,7 +217,7 @@ namespace integration_tests
             QueueWriter queueWriter(
                 Backend::MsSqlServer,
                 core::AppConfig::GetSettings().application.GetString(keyForBrokerDbConnStr, UNDEF_BROKER_DB_CONNSTR),
-                "//SvcBrokerTest/IntegrationTestService",
+                BROKER_SERVICE_URL,
                 MessageTypeSpec{ 128UL, MessageContentValidation::None }
             );
         }
@@ -98,258 +228,77 @@ namespace integration_tests
     }
 
     /// <summary>
-    /// Tests rollback of read/write operations in broker queue.
+    /// Tests writing nothing to broker queue.
     /// </summary>
-    TEST(Framework_Broker_BasicTestCase, QueueRollback_Test)
+    TEST_F(BrokerQueueTestCase, QueueWriter_WriteZeroMessagesTest)
     {
-        // Ensures proper initialization/finalization of the framework
-        _3fd::core::FrameworkInstance _framework;
-
         CALL_STACK_TRACE;
 
         try
         {
             using namespace _3fd::broker;
 
-            const uint16_t numMessages(256);
-            std::vector<string> insertedMessages;
-            insertedMessages.reserve(numMessages);
-
-            // Generate messages to write into the queue:
-            std::ostringstream oss;
-            for (int idx = 0; idx < numMessages; ++idx)
-            {
-                oss << "foobar" << std::setw(4) << idx;
-                insertedMessages.push_back(oss.str());
-                oss.str("");
-            }
-
             // Setup the writer:
             QueueWriter queueWriter(
                 Backend::MsSqlServer,
                 core::AppConfig::GetSettings().application.GetString(keyForBrokerDbConnStr, UNDEF_BROKER_DB_CONNSTR),
-                "//SvcBrokerTest/IntegrationTestService",
+                BROKER_SERVICE_URL,
                 MessageTypeSpec{ 128UL, MessageContentValidation::None }
             );
 
-            // Write asynchronously
-            auto writeOp = queueWriter.WriteMessages(insertedMessages);
+            // Write asynchronously:
+            auto writeOp = queueWriter.WriteMessages(std::vector<std::string>());
 
-            // Setup the reader:
-            QueueReader queueReader(
-                Backend::MsSqlServer,
-                core::AppConfig::GetSettings().application.GetString(keyForBrokerDbConnStr, UNDEF_BROKER_DB_CONNSTR),
-                "//SvcBrokerTest/IntegrationTestService",
-                MessageTypeSpec{ 128UL, MessageContentValidation::None }
-            );
+            WaitFor(*writeOp);
 
-            writeOp->Rethrow(); // wait for write op to finish...
+            ///////////////////////
+            // VERIFY DATABASE:
 
-            EXPECT_TRUE(writeOp->Rollback(0)); // rollback the insertions
-
-            // Read the queue that is supposed to be empty
-            auto readOp = queueReader.ReadMessages(numMessages, 0);
-            readOp->Step();
-
-            uint16_t elapsedTime(0);
-            uint16_t waitInterval(50);
-
-            // Await for end of async read:
-            while (!readOp->TryWait(waitInterval))
-            {
-                elapsedTime += waitInterval;
-
-                if (elapsedTime > 5000)
-                    throw core::AppException<std::runtime_error>("Timeout: reading from service broker queue took too long!");
-            }
-
-            EXPECT_EQ(0, readOp->GetStepMessageCount(0));
-
-            EXPECT_TRUE(readOp->Commit(0));
-
-            // Write again asynchronously
-            auto writeOp2 = queueWriter.WriteMessages(insertedMessages);
-
-            writeOp2->Rethrow(); // wait for write op to finish...
-
-            EXPECT_TRUE(writeOp2->Commit(0)); // commit the insertions
-
-            // Now read the messages for the first time:
-
-            std::vector<string> selectedMessages;
-
-            uint32_t msgCount;
-            auto readOp2 = queueReader.ReadMessages(numMessages, 0);
-
-            while (true)
-            {
-                readOp2->Step();
-
-                // Await for end of step:
-                uint16_t elapsedTime(0);
-                while (!readOp2->TryWait(waitInterval))
-                {
-                    elapsedTime += waitInterval;
-
-                    if (elapsedTime > 5000)
-                        throw core::AppException<std::runtime_error>("Timeout: reading from service broker queue took too long!");
-                }
-
-                msgCount = readOp2->GetStepMessageCount(0);
-
-                if (msgCount > 0)
-                {
-                    auto stepRes = readOp2->GetStepResult(0);
-                    selectedMessages.insert(selectedMessages.end(), stepRes.begin(), stepRes.end());
-                }
-                else
-                    break;
-            }
-
-            EXPECT_EQ(insertedMessages.size(), selectedMessages.size());
-
-            std::sort(selectedMessages.begin(), selectedMessages.end());
-
-            EXPECT_TRUE(std::equal(insertedMessages.begin(), insertedMessages.end(), selectedMessages.begin()));
-
-            EXPECT_TRUE(readOp2->Rollback(0)); // rollback to keep messages in the queue...
-
-            // ... and read the messages for the second time:
-
-            selectedMessages.clear();
-            auto readOp3 = queueReader.ReadMessages(numMessages, 0);
-
-            while (true)
-            {
-                readOp3->Step();
-
-                // Await for end of step:
-                uint16_t elapsedTime(0);
-                while (!readOp3->TryWait(waitInterval))
-                {
-                    elapsedTime += waitInterval;
-
-                    if (elapsedTime > 5000)
-                        throw core::AppException<std::runtime_error>("Timeout: reading from service broker queue took too long!");
-                }
-
-                msgCount = readOp3->GetStepMessageCount(0);
-
-                if (msgCount > 0)
-                {
-                    auto stepRes = readOp3->GetStepResult(0);
-                    selectedMessages.insert(selectedMessages.end(), stepRes.begin(), stepRes.end());
-                }
-                else
-                    break;
-            }
-
-            EXPECT_TRUE(readOp3->Commit(0)); // commit to remove the messages from the queue
-
-            EXPECT_EQ(insertedMessages.size(), selectedMessages.size());
-
-            std::sort(selectedMessages.begin(), selectedMessages.end());
-
-            EXPECT_TRUE(std::equal(insertedMessages.begin(), insertedMessages.end(), selectedMessages.begin()));
+            auto conn = GetDatabaseConnection();
+            auto result = nanodbc::execute(conn, _U("select count(1) from [" BROKER_QUEUE_URL "] WITH(NOLOCK);"));
+            ASSERT_TRUE(result.next());
+            EXPECT_EQ(0, result.get<int>(0));
         }
         catch (...)
         {
             HandleException();
         }
     }
-
-    class Framework_Broker_PerformanceTestCase : public ::testing::TestWithParam<size_t> { };
 
     /// <summary>
-    /// Tests writing into and reading from broker queue.
+    /// Tests writing some messages to broker queue.
     /// </summary>
-    TEST_P(Framework_Broker_PerformanceTestCase, QueueReadWrite_Test)
+    TEST_F(BrokerQueueTestCase, QueueWriter_WriteMessagesTest)
     {
-        // Ensures proper initialization/finalization of the framework
-        _3fd::core::FrameworkInstance _framework;
-
         CALL_STACK_TRACE;
 
         try
         {
             using namespace _3fd::broker;
 
-            std::ostringstream oss;
-            std::vector<string> insertedMessages;
-            insertedMessages.reserve(GetParam());
-
-            // Generate messages to write into the queue:
-            for (int idx = 0; idx < GetParam(); ++idx)
-            {
-                oss << "foobar" << std::setw(4) << idx;
-                insertedMessages.push_back(oss.str());
-                oss.str("");
-            }
+            const uint16_t numMessages(10);
+            std::vector<std::string> insertedMessages = GenerateMessages(numMessages);
 
             // Setup the writer:
             QueueWriter queueWriter(
                 Backend::MsSqlServer,
                 core::AppConfig::GetSettings().application.GetString(keyForBrokerDbConnStr, UNDEF_BROKER_DB_CONNSTR),
-                "//SvcBrokerTest/IntegrationTestService",
+                BROKER_SERVICE_URL,
                 MessageTypeSpec{ 128UL, MessageContentValidation::None }
             );
 
-            // Write asynchronously
+            // Write asynchronously:
             auto writeOp = queueWriter.WriteMessages(insertedMessages);
 
-            // Setup the reader:
-            QueueReader queueReader(
-                Backend::MsSqlServer,
-                core::AppConfig::GetSettings().application.GetString(keyForBrokerDbConnStr, UNDEF_BROKER_DB_CONNSTR),
-                "//SvcBrokerTest/IntegrationTestService",
-                MessageTypeSpec{ 128UL, MessageContentValidation::None }
-            );
+            WaitFor(*writeOp);
 
-            writeOp->Rethrow(); // wait for write op to finish...
-            
-            EXPECT_TRUE(writeOp->Commit(0));
+            ///////////////////////
+            // VERIFY DATABASE:
 
-            // Then read the messages back:
-            
-            std::vector<string> selectedMessages;
-
-            uint32_t msgCount;
-            const uint16_t waitInterval(50);
-            const uint16_t msgCountStepLimit(512);
-
-            auto readOp = queueReader.ReadMessages(msgCountStepLimit, 0);
-
-            do
-            {
-                readOp->Step();
-
-                // Await for end of step:
-                uint16_t elapsedTime(0);
-                while (!readOp->TryWait(waitInterval))
-                {
-                    elapsedTime += waitInterval;
-
-                    if (elapsedTime > 5000)
-                        throw core::AppException<std::runtime_error>("Timeout: reading from service broker queue took too long!");
-                }
-
-                msgCount = readOp->GetStepMessageCount(0);
-
-                if (msgCount > 0)
-                {
-                    auto stepRes = readOp->GetStepResult(0);
-                    selectedMessages.insert(selectedMessages.end(), stepRes.begin(), stepRes.end());
-                }
-                
-            } while (msgCount == msgCountStepLimit);
-
-            EXPECT_TRUE(readOp->Commit(0));
-
-            ASSERT_EQ(insertedMessages.size(), selectedMessages.size());
-
-            std::sort(selectedMessages.begin(), selectedMessages.end());
-
-            EXPECT_TRUE(std::equal(insertedMessages.begin(), insertedMessages.end(), selectedMessages.begin()));
+            auto conn = GetDatabaseConnection();
+            auto result = nanodbc::execute(conn, _U("select count(1) from [" BROKER_QUEUE_URL "] WITH(NOLOCK);"));
+            ASSERT_TRUE(result.next());
+            EXPECT_EQ(numMessages, result.get<int>(0));
         }
         catch (...)
         {
@@ -357,9 +306,217 @@ namespace integration_tests
         }
     }
 
-    INSTANTIATE_TEST_CASE_P(QueueReadWriteInProc_Test,
-        Framework_Broker_PerformanceTestCase,
-        ::testing::Values(256, 512, 1024, 2048));
+    /// <summary>
+    /// Tests writing messages in the broker queue and then reading them back from it.
+    /// </summary>
+    TEST_F(BrokerQueueTestCase, QueueReaderAndWriter_ConversationTest)
+    {
+        CALL_STACK_TRACE;
+
+        try
+        {
+            using namespace _3fd::broker;
+
+            const uint16_t numMessagesToWrite(64);
+            std::vector<std::string> insertedMessages = GenerateMessages(numMessagesToWrite);
+
+            // Setup the writer:
+            QueueWriter queueWriter(
+                Backend::MsSqlServer,
+                core::AppConfig::GetSettings().application.GetString(keyForBrokerDbConnStr, UNDEF_BROKER_DB_CONNSTR),
+                BROKER_SERVICE_URL,
+                MessageTypeSpec{ 128UL, MessageContentValidation::None }
+            );
+
+            // Write asynchronously:
+            auto writeOp = queueWriter.WriteMessages(insertedMessages);
+
+            // Setup the reader:
+            QueueReader queueReader(
+                Backend::MsSqlServer,
+                core::AppConfig::GetSettings().application.GetString(keyForBrokerDbConnStr, UNDEF_BROKER_DB_CONNSTR),
+                BROKER_SERVICE_URL,
+                MessageTypeSpec{ 128UL, MessageContentValidation::None }
+            );
+
+            WaitFor(*writeOp);
+
+            // Read the messages back from the queue:
+            const uint16_t maxNumMessagesToRead(2 * numMessagesToWrite);
+            std::vector<std::string> retrievedMessages;
+            auto readOp = queueReader.ReadMessages(maxNumMessagesToRead, 0,
+                [&retrievedMessages](std::vector<std::string> &&messages)
+                {
+                    retrievedMessages = std::move(messages);
+                });
+
+            WaitFor(*readOp);
+
+            EXPECT_EQ(insertedMessages.size(), retrievedMessages.size());
+
+            std::sort(retrievedMessages.begin(), retrievedMessages.end());
+
+            EXPECT_TRUE(std::equal(insertedMessages.begin(), insertedMessages.end(),
+                                   retrievedMessages.begin(), retrievedMessages.end()));
+        }
+        catch (...)
+        {
+            HandleException();
+        }
+    }
+
+    /// <summary>
+    /// Tests writing messages in the broker queue and then reading them back from it,
+    /// but in several consecutive steps.
+    /// </summary>
+    TEST_F(BrokerQueueTestCase, QueueReaderAndWriter_ConversationWithReadingStepsTest)
+    {
+        CALL_STACK_TRACE;
+
+        try
+        {
+            using namespace _3fd::broker;
+
+            const struct {
+                uint16_t toWrite = 64;
+                uint16_t toReadPerStep = 16;
+            } numMessages;
+
+            std::vector<std::string> insertedMessages = GenerateMessages(numMessages.toWrite);
+
+            // Setup the writer:
+            QueueWriter queueWriter(
+                Backend::MsSqlServer,
+                core::AppConfig::GetSettings().application.GetString(keyForBrokerDbConnStr, UNDEF_BROKER_DB_CONNSTR),
+                BROKER_SERVICE_URL,
+                MessageTypeSpec{ 128UL, MessageContentValidation::None }
+            );
+
+            // Write asynchronously:
+            auto writeOp = queueWriter.WriteMessages(insertedMessages);
+
+            // Setup the reader:
+            QueueReader queueReader(
+                Backend::MsSqlServer,
+                core::AppConfig::GetSettings().application.GetString(keyForBrokerDbConnStr, UNDEF_BROKER_DB_CONNSTR),
+                BROKER_SERVICE_URL,
+                MessageTypeSpec{ 128UL, MessageContentValidation::None }
+            );
+
+            WaitFor(*writeOp);
+
+            std::vector<std::unique_ptr<IAsyncDatabaseOperation>> steps;
+            std::vector<std::string> retrievedMessages;
+            retrievedMessages.reserve(numMessages.toWrite);
+
+            // Read the messages back from the queue in several steps:
+            for (int step = 0; step <= numMessages.toWrite / numMessages.toReadPerStep; ++step)
+            {
+                auto readOp = queueReader.ReadMessages(numMessages.toReadPerStep, 0,
+                    [&retrievedMessages](std::vector<std::string> &&messages)
+                    {
+                        // accumulate the received messages:
+                        for (auto &message : messages)
+                        {
+                            retrievedMessages.push_back(std::move(message));
+                        }
+                    });
+
+                WaitFor(*readOp); // wait for every step to finish
+            }
+
+            EXPECT_EQ(insertedMessages.size(), retrievedMessages.size());
+
+            std::sort(retrievedMessages.begin(), retrievedMessages.end());
+
+            EXPECT_TRUE(std::equal(insertedMessages.begin(), insertedMessages.end(),
+                                   retrievedMessages.begin(), retrievedMessages.end()));
+        }
+        catch (...)
+        {
+            HandleException();
+        }
+    }
+
+    /// <summary>
+    /// Tests writing messages in the broker queue and then reading them back from it,
+    /// but in CONCURRENT steps
+    /// </summary>
+    TEST_F(BrokerQueueTestCase, QueueReaderAndWriter_ConversationWithReadingStepsAndConcurrencyTest)
+    {
+        CALL_STACK_TRACE;
+
+        try
+        {
+            using namespace _3fd::broker;
+
+            const struct
+            {
+                uint16_t toWrite = 64;
+                uint16_t toReadPerStep = 16;
+            } numMessages;
+
+            std::vector<std::string> insertedMessages = GenerateMessages(numMessages.toWrite);
+
+            // Setup the writer:
+            QueueWriter queueWriter(
+                Backend::MsSqlServer,
+                core::AppConfig::GetSettings().application.GetString(keyForBrokerDbConnStr, UNDEF_BROKER_DB_CONNSTR),
+                BROKER_SERVICE_URL,
+                MessageTypeSpec{ 128UL, MessageContentValidation::None }
+            );
+
+            // Write asynchronously:
+            auto writeOp = queueWriter.WriteMessages(insertedMessages);
+
+            // Setup the reader:
+            QueueReader queueReader(
+                Backend::MsSqlServer,
+                core::AppConfig::GetSettings().application.GetString(keyForBrokerDbConnStr, UNDEF_BROKER_DB_CONNSTR),
+                BROKER_SERVICE_URL,
+                MessageTypeSpec{ 128UL, MessageContentValidation::None }
+            );
+
+            WaitFor(*writeOp);
+
+            std::vector<std::unique_ptr<IAsyncDatabaseOperation>> stepOps;
+            std::vector<std::string> retrievedMessages;
+            retrievedMessages.reserve(numMessages.toWrite);
+
+            // Read the messages back from the queue in several steps:
+            for (int step = 0; step <= numMessages.toWrite / numMessages.toReadPerStep; ++step)
+            {
+                auto readOp = queueReader.ReadMessages(numMessages.toReadPerStep, 0,
+                    [&retrievedMessages](std::vector<std::string> &&messages)
+                    {
+                        // accumulate the received messages:
+                        for (auto &message : messages)
+                        {
+                            retrievedMessages.push_back(std::move(message));
+                        }
+                    });
+
+                stepOps.push_back(std::move(readOp)); // do not wait, let the steps compete for resources
+            }
+
+            // wait for all steps to finish:
+            for (auto &operation : stepOps)
+            {
+                WaitFor(*operation);
+            }
+
+            EXPECT_EQ(insertedMessages.size(), retrievedMessages.size());
+
+            std::sort(retrievedMessages.begin(), retrievedMessages.end());
+
+            EXPECT_TRUE(std::equal(insertedMessages.begin(), insertedMessages.end(),
+                                   retrievedMessages.begin(), retrievedMessages.end()));
+        }
+        catch (...)
+        {
+            HandleException();
+        }
+    }
 
 }// end of namespace integration_tests
 }// end of namespace _3fd

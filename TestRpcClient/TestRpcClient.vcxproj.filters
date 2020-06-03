@@ -5,10 +5,6 @@
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
-    <Filter Include="Header Files">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
-    </Filter>
     <Filter Include="Resource Files">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
@@ -16,31 +12,28 @@
     <Filter Include="Shared">
       <UniqueIdentifier>{203ddbc4-2ceb-4046-8cfc-9302c90d71b3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="pch">
+      <UniqueIdentifier>{8ae87fe8-ade8-4886-be96-ac24f3c01336}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="stdafx.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="targetver.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="AcmeTesting_w32.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="AcmeTesting_x64.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\TestShared\rpc_test_shared.h">
       <Filter>Shared</Filter>
     </ClInclude>
+    <ClInclude Include="AcmeTesting_w32.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AcmeTesting_x64.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h">
+      <Filter>pch</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="stdafx.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="AcmeTesting_w32_cli.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -53,8 +46,14 @@
     <ClCompile Include="..\TestShared\rpc_test_shared.cpp">
       <Filter>Shared</Filter>
     </ClCompile>
-    <ClCompile Include="TestRpcClient.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="pch.cpp">
+      <Filter>pch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\TestShared\main.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\TestShared\error_handling.cpp">
+      <Filter>Shared</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -1,6 +1,12 @@
-#include "stdafx.h"
-#include "runtime.h"
-#include "isam.h"
+//
+// Copyright (c) 2020 Part of 3FD project (https://github.com/faburaya/3fd)
+// It is FREELY distributed by the author under the Microsoft Public License
+// and the observance that it should only be used for the benefit of mankind.
+//
+#include "pch.h"
+#include <3fd/core/runtime.h>
+#include <3fd/isam/isam.h>
+
 #include <map>
 #include <list>
 #include <array>
@@ -12,10 +18,12 @@
 #include <functional>
 
 #ifdef _3FD_PLATFORM_WINRT
-#    include "utils_winrt.h"
-#    define FILE_PATH(fileName)    _3fd::utils::WinRTExt::GetFilePathUtf8(fileName, _3fd::utils::WinRTExt::FileLocation::LocalFolder)
+#   include <3fd\utils\utils_winrt.h>
+#   include <winrt\Windows.System.h>
+
+#   define FILE_PATH(fileName)    _3fd::utils::WinRTExt::GetFilePathUtf8(fileName, _3fd::utils::WinRTExt::FileLocation::LocalFolder)
 #else
-#    define FILE_PATH(fileName)    fileName
+#   define FILE_PATH(fileName)    fileName
 #endif
 
 namespace _3fd
@@ -486,7 +494,7 @@ namespace integration_tests
 
                 uint32_t defAmount = 0;
                 columns.emplace_back("amount", DataType::UInt32, NotNull);
-                columns.back().default = AsInputParam(defAmount); // default value for amount
+                columns.back().defaultValue = AsInputParam(defAmount); // default value for amount
 
                 columns.emplace_back("description", DataType::LargeText, NotNull);
                 columns.back().codePage = CodePage::Unicode; // code page is 'english' unless specified
@@ -1342,7 +1350,7 @@ namespace integration_tests
                 auto transaction = conn.BeginTransaction();
 
                 // Go though all the records and remove each one of them:
-                auto numRecords = cursor.ScanAll(IdxBarCode, [this, &cursor] (RecordReader &rec)
+                auto numRecords = cursor.ScanAll(IdxBarCode, [this, &cursor] (RecordReader &)
                 {
                     cursor.DeleteCurrentRecord();
                     return true;
@@ -1404,7 +1412,7 @@ namespace integration_tests
                 columns.emplace_back("timestamp", DataType::DateTime, NotNull);
                 columns.emplace_back("value", DataType::Float64, NotNull);
                 columns.emplace_back("status", DataType::UByte, NotNull);
-                columns.back().default = AsInputParam((uint8_t)0); // default value for status
+                columns.back().defaultValue = AsInputParam((uint8_t)0); // default value for status
 
                 // Define the timestamp-index:
                 std::vector<ITable::IndexDefinition> indexes;
@@ -1434,7 +1442,7 @@ namespace integration_tests
 
 #   ifdef _3FD_PLATFORM_WINRT
                 const auto appMemUsageLimitInGB =
-                    Windows::System::MemoryManager::AppMemoryUsageLimit / pow(1024, 3);
+                    winrt::Windows::System::MemoryManager::AppMemoryUsageLimit() / pow(1024, 3);
 
                 int maxLoad = (appMemUsageLimitInGB < 4) ? 1e4 : 4e4;
 #   else

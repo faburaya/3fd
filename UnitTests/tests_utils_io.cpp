@@ -1,5 +1,10 @@
-#include "stdafx.h"
-#include "utils_io.h"
+//
+// Copyright (c) 2020 Part of 3FD project (https://github.com/faburaya/3fd)
+// It is FREELY distributed by the author under the Microsoft Public License
+// and the observance that it should only be used for the benefit of mankind.
+//
+#include "pch.h"
+#include <3fd/utils/utils_io.h>
 #include <iostream>
 #include <sstream>
 #include <codecvt>

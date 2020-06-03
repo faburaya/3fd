@@ -1,0 +1,19 @@
+
+        <?xml version="1.0" encoding="utf-8"?>
+        <einstellungen>
+            <sprache>Deutsch</sprache>
+            <version>6.96</version>
+            <tiere>
+                <eintrag schluessel="Hund" wert="Au Au" />
+                <eintrag schluessel="Katze" wert="Miau" />
+            </tiere>
+            <wagen>
+                <eintrag schluessel="Volkswagen" wert="17000" />
+                <eintrag schluessel="Hyundai" wert="20300" />
+            </wagen>
+            <lebensmittel quality="true">
+                <eintrag schluessel="Champignon" wert="3.50" />
+                <eintrag schluessel="Kohlrabi" wert="2.50" />
+            </lebensmittel>
+        </einstellungen>
+    

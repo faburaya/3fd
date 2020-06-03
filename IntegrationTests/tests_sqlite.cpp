@@ -1,19 +1,27 @@
-#include "stdafx.h"
-#include "runtime.h"
-#include "sqlite.h"
-#include "utils.h"
-#include <map>
-#include <list>
+//
+// Copyright (c) 2020 Part of 3FD project (https://github.com/faburaya/3fd)
+// It is FREELY distributed by the author under the Microsoft Public License
+// and the observance that it should only be used for the benefit of mankind.
+//
+#include "pch.h"
+#include <3fd/core/runtime.h>
+#include <3fd/sqlite/sqlite.h>
+
 #include <array>
 #include <chrono>
-#include <thread>
+#include <filesystem>
 #include <future>
+#include <list>
+#include <map>
 #include <random>
+#include <thread>
 
 #ifdef _3FD_PLATFORM_WINRT
-#    include "utils_winrt.h"
+#    include <3fd/utils/utils_winrt.h>
 #    include <codecvt>
 #endif
+
+#define DATABASE_FILE "testdb-basic.dat"
 
 namespace _3fd
 {
@@ -27,42 +35,80 @@ namespace integration_tests
     void HandleException();
 
     /// <summary>
-    /// Performs single thread tests on the SQLite module.
+    /// Test fixture for the SQLite module.
     /// </summary>
-    TEST(Framework_SQLite_TestCase, SingleThreadUsage_Test)
+    class SqliteTestCase : public ::testing::Test
     {
-        using namespace utils;
-        using namespace sqlite;
+    private:
 
         // Ensures proper initialization/finalization of the framework
-#   ifdef _3FD_PLATFORM_WINRT
-        core::FrameworkInstance _framework("IntegrationTestsApp.WinRT.UWP");
-#   else
         core::FrameworkInstance _framework;
-#   endif
 
+    public:
+
+    #ifdef _3FD_PLATFORM_WINRT
+        SqliteTestCase()
+            : _framework("IntegrationTestsApp")
+        {
+        }
+    #endif
+
+        std::string GetDatabaseFilePath()
+        {
+            using namespace utils;
+
+        #ifndef _3FD_PLATFORM_WINRT
+            return DATABASE_FILE;
+        #else
+            return utils::WinRTExt::GetFilePathUtf8(
+                DATABASE_FILE,
+                WinRTExt::FileLocation::LocalFolder
+            );
+        #endif
+        }
+
+        /// <summary>
+        /// Set up the test fixture.
+        /// </summary>
+        virtual void SetUp() override
+        {
+            std::filesystem::remove(GetDatabaseFilePath());
+        }
+
+        /// <summary>
+        /// Tear down the test fixture.
+        /// </summary>
+        virtual void TearDown() override
+        {
+        }
+
+    }; // end of class BrokerQueueTestCase
+
+    /// <summary>
+    /// Performs single thread tests on the SQLite module.
+    /// </summary>
+    TEST_F(SqliteTestCase, SingleThreadUsage_Test)
+    {
         CALL_STACK_TRACE;
-            
+
+        using namespace sqlite;
+
         try
         {
             // Open/Create database instance:
-#ifndef _3FD_PLATFORM_WINRT
-            DatabaseConn database("testdb-basic.dat");
-#else
-            DatabaseConn database = WinRTExt::GetFilePathUtf8(
-                "testdb-basic.dat",
-                WinRTExt::FileLocation::LocalFolder
-            );
-#endif
+            DatabaseConn database(GetDatabaseFilePath());
+
             // Change to WAL mode
             database.CreateStatement("PRAGMA journal_mode=WAL;").Step();
             database.CreateStatement("PRAGMA synchronous=NORMAL;").Step();
 
             // Create a table
-            database.CreateStatement("CREATE TABLE Products (Id INTEGER PRIMARY KEY, Name VARCHAR(25) NOT NULL, Price FLOAT NOT NULL, Description TEXT NULL);").Step();
+            database.CreateStatement(
+                "CREATE TABLE Products (Id INTEGER PRIMARY KEY, Name VARCHAR(25) NOT NULL, Price FLOAT NOT NULL, Description TEXT NULL);").Step();
 
             // Statement to insert data into the database
-            auto insert = database.CreateStatement("INSERT INTO Products (Id, Name, Price, Description) VALUES(@id, @name, @price, @desc);");
+            auto insert = database.CreateStatement(
+                "INSERT INTO Products (Id, Name, Price, Description) VALUES(@id, @name, @price, @desc);");
 
             // Bind parameters:
             insert.Bind("@id", 0LL);
@@ -84,7 +130,8 @@ namespace integration_tests
             insert.Step();
 
             // Update a row
-            database.CreateStatement("UPDATE Products SET Description = 'Flat head screwdriver' WHERE Id = 0;").Step();
+            database.CreateStatement(
+                "UPDATE Products SET Description = 'Flat head screwdriver' WHERE Id = 0;").Step();
 
             // Statement to select all rows
             auto select = database.CreateStatement("SELECT * FROM Products;");
@@ -131,30 +178,16 @@ namespace integration_tests
     /// <summary>
     /// Tests the SQLite connection pool, transactions and concurrent access.
     /// </summary>
-    TEST(Framework_SQLite_TestCase, PoolAndTransactions_Test)
+    TEST_F(SqliteTestCase, PoolAndTransactions_Test)
     {
-        using namespace utils;
-        using namespace sqlite;
-
-        // Ensures proper initialization/finalization of the framework
-#   ifdef _3FD_PLATFORM_WINRT
-        core::FrameworkInstance _framework("IntegrationTestsApp.WinRT.UWP");
-#   else
-        core::FrameworkInstance _framework;
-#   endif
-
         CALL_STACK_TRACE;
+
+        using namespace sqlite;
 
         try
         {
-#ifndef _3FD_PLATFORM_WINRT
-            string dbFilePath("testdb-basic.dat");
-#else
-            string dbFilePath = WinRTExt::GetFilePathUtf8(
-                "testdb-basic.dat",
-                WinRTExt::FileLocation::LocalFolder
-            );
-#endif
+            string dbFilePath = GetDatabaseFilePath();
+
             {// Use WAL mode:
                 DatabaseConn database(dbFilePath);
                 database.CreateStatement("PRAGMA journal_mode=WAL;").Step();

@@ -1,7 +1,12 @@
-#include "stdafx.h"
-#include "runtime.h"
-#include "opencl.h"
-#include "configuration.h"
+//
+// Copyright (c) 2020 Part of 3FD project (https://github.com/faburaya/3fd)
+// It is FREELY distributed by the author under the Microsoft Public License
+// and the observance that it should only be used for the benefit of mankind.
+//
+#include "pch.h"
+#include <3fd/core/configuration.h>
+#include <3fd/core/runtime.h>
+#include <3fd/opencl/opencl.h>
 
 #include <map>
 #include <list>
@@ -41,17 +46,20 @@ namespace integration_tests
     static auto currentDirectory = "./";
 #endif
 
-    class Framework_OpenCL_TestCase : public ::testing::TestWithParam<bool> {};
+    class OpenCL_TestCase : public ::testing::TestWithParam<bool>
+	{
+	private:
+
+		// Ensures proper initialization/finalization of the framework
+		_3fd::core::FrameworkInstance _framework;
+	};
 
     /// <summary>
     /// Test the basics of the OpenCL module, including device discovery.
     /// </summary>
-    TEST(Framework_OpenCL_TestCase, DeviceDiscovery_Test)
+    TEST_F(OpenCL_TestCase, DeviceDiscovery_Test)
     {
         using namespace opencl;
-            
-        // Ensures proper initialization/finalization of the framework
-        _3fd::core::FrameworkInstance _framework;
 
         CALL_STACK_TRACE;
 
@@ -69,11 +77,11 @@ namespace integration_tests
 
             opencl::GenericParam param;
             param.Set(&strValue[0], strValue.size());
-            platforms[0].GetPlatformInfo(CL_PLATFORM_NAME, param);
+            platforms.back().GetPlatformInfo(CL_PLATFORM_NAME, param);
             std::cout << "\tPlatform name: " << &strValue[0] << std::endl;
 
             // Platform::GetContext
-            auto context = platforms[0].CreateContextFromType(GetDeviceType());
+            auto context = platforms.back().CreateContextFromType(GetDeviceType());
             ASSERT_GT(context.GetNumDevices(), 0);
                 
             // Context::GetDevices
@@ -87,18 +95,20 @@ namespace integration_tests
             device->GetDeviceInfo(CL_DEVICE_VENDOR, param);
             std::cout << "\tDevice vendor: " << &strValue[0] << std::endl;
 
-            std::map<cl_device_info, string> deviceInfo;
-            deviceInfo.emplace(CL_DEVICE_MAX_COMPUTE_UNITS, "\tDevice compute units: ");
-            deviceInfo.emplace(CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS, "\tDevice max work item dimensions: ");
-            deviceInfo.emplace(CL_DEVICE_MAX_WORK_GROUP_SIZE, "\tDevice max workgroup size: ");
+			cl_uint maxComputeUnits;
+			param.Set(maxComputeUnits);
+			device->GetDeviceInfo(CL_DEVICE_MAX_COMPUTE_UNITS, param);
+			std::cout << "\tDevice compute units: " << maxComputeUnits << std::endl;
 
-            for_each(deviceInfo.begin(), deviceInfo.end(), [&] (decltype (*deviceInfo.begin()) entry)
-            {
-                long long value;
-                param.Set(value);
-                device->GetDeviceInfo(entry.first, param);
-                std::cout << entry.second << value << std::endl;
-            });
+			cl_uint maxWorkItemDimensions;
+			param.Set(maxWorkItemDimensions);
+			device->GetDeviceInfo(CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS, param);
+			std::cout << "\tDevice max work item dimensions: " << maxWorkItemDimensions << std::endl;
+
+			cl_ulong maxWorkGroupSize;
+			param.Set(maxWorkGroupSize);
+			device->GetDeviceInfo(CL_DEVICE_MAX_WORK_GROUP_SIZE, param);
+			std::cout << "\tDevice max workgroup size: " << maxWorkGroupSize << std::endl;
         }
         catch(...)
         {
@@ -109,12 +119,9 @@ namespace integration_tests
     /// <summary>
     /// Test the OpenCL module for program compilation.
     /// </summary>
-    TEST(Framework_OpenCL_TestCase, ProgramCompilation_Test)
+    TEST_F(OpenCL_TestCase, ProgramCompilation_Test)
     {
         using namespace opencl;
-            
-        // Ensures proper initialization/finalization of the framework
-        _3fd::core::FrameworkInstance _framework;
 
         CALL_STACK_TRACE;
 
@@ -124,7 +131,7 @@ namespace integration_tests
             Platform::CreatePlatformInstances(platforms);
             ASSERT_GT(platforms.size(), 0);
 
-            auto context = platforms[0].CreateContextFromType(GetDeviceType());
+            auto context = platforms.back().CreateContextFromType(GetDeviceType());
 
             try
             {
@@ -163,12 +170,9 @@ namespace integration_tests
     /// <summary>
     /// Tests the OpenCL module for synchronous read/write operations on buffers.
     /// </summary>
-    TEST_P(Framework_OpenCL_TestCase, BufferRW_SyncOps_Test)
+    TEST_P(OpenCL_TestCase, BufferRW_SyncOps_Test)
     {
         using namespace opencl;
-
-        // Ensures proper initialization/finalization of the framework
-        _3fd::core::FrameworkInstance _framework;
 
         CALL_STACK_TRACE;
 
@@ -178,7 +182,7 @@ namespace integration_tests
             Platform::CreatePlatformInstances(platforms);
             ASSERT_GT(platforms.size(), 0);
 
-            auto context = platforms[0].CreateContextFromType(GetDeviceType());
+            auto context = platforms.back().CreateContextFromType(GetDeviceType());
             ASSERT_GT(context.GetNumDevices(), 0);
 
             auto device = context.GetDevice(0, GetParam() ? CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE : 0);
@@ -222,12 +226,9 @@ namespace integration_tests
     /// <summary>
     /// Tests the OpenCL module for asynchronous read/write operations on buffers.
     /// </summary>
-    TEST_P(Framework_OpenCL_TestCase, BufferRW_AsyncOps_Test)
+    TEST_P(OpenCL_TestCase, BufferRW_AsyncOps_Test)
     {
         using namespace opencl;
-
-        // Ensures proper initialization/finalization of the framework
-        _3fd::core::FrameworkInstance _framework;
 
         CALL_STACK_TRACE;
 
@@ -237,7 +238,7 @@ namespace integration_tests
             Platform::CreatePlatformInstances(platforms);
             ASSERT_GT(platforms.size(), 0);
 
-            auto context = platforms[0].CreateContextFromType(GetDeviceType());
+            auto context = platforms.back().CreateContextFromType(GetDeviceType());
             ASSERT_GT(context.GetNumDevices(), 0);
 
             auto device = context.GetDevice(0, GetParam() ? CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE : 0);
@@ -300,12 +301,9 @@ namespace integration_tests
     /// <summary>
     /// Tests the OpenCL module for asynchronous read/write operations on buffers.
     /// </summary>
-    TEST_P(Framework_OpenCL_TestCase, BufferMap_SyncOps_Test)
+    TEST_P(OpenCL_TestCase, BufferMap_SyncOps_Test)
     {
         using namespace opencl;
-
-        // Ensures proper initialization/finalization of the framework
-        _3fd::core::FrameworkInstance _framework;
 
         CALL_STACK_TRACE;
 
@@ -315,7 +313,7 @@ namespace integration_tests
             Platform::CreatePlatformInstances(platforms);
             ASSERT_GT(platforms.size(), 0);
 
-            auto context = platforms[0].CreateContextFromType(GetDeviceType());
+            auto context = platforms.back().CreateContextFromType(GetDeviceType());
             ASSERT_GT(context.GetNumDevices(), 0);
 
             auto device = context.GetDevice(0, GetParam() ? CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE : 0);
@@ -367,12 +365,9 @@ namespace integration_tests
     /// <summary>
     /// Tests the OpenCL module for asynchronous read/write operations on buffers.
     /// </summary>
-    TEST_P(Framework_OpenCL_TestCase, BufferMap_AsyncOps_Test)
+    TEST_P(OpenCL_TestCase, BufferMap_AsyncOps_Test)
     {
         using namespace opencl;
-
-        // Ensures proper initialization/finalization of the framework
-        _3fd::core::FrameworkInstance _framework;
 
         CALL_STACK_TRACE;
 
@@ -382,7 +377,7 @@ namespace integration_tests
             Platform::CreatePlatformInstances(platforms);
             ASSERT_GT(platforms.size(), 0);
 
-            auto context = platforms[0].CreateContextFromType(GetDeviceType());
+            auto context = platforms.back().CreateContextFromType(GetDeviceType());
             ASSERT_GT(context.GetNumDevices(), 0);
 
             auto device = context.GetDevice(0, GetParam() ? CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE : 0);
@@ -438,12 +433,9 @@ namespace integration_tests
     /// <summary>
     /// Tests the OpenCL module for kernel execution and data transfer from and to the buffers.
     /// </summary>
-    TEST_P(Framework_OpenCL_TestCase, KernelExecution_Test)
+    TEST_P(OpenCL_TestCase, KernelExecution_Test)
     {
         using namespace opencl;
-            
-        // Ensures proper initialization/finalization of the framework
-        _3fd::core::FrameworkInstance _framework;
 
         CALL_STACK_TRACE;
 
@@ -453,7 +445,7 @@ namespace integration_tests
             Platform::CreatePlatformInstances(platforms);
             ASSERT_GT(platforms.size(), 0);
 
-            auto context = platforms[0].CreateContextFromType(GetDeviceType());
+            auto context = platforms.back().CreateContextFromType(GetDeviceType());
             ASSERT_GT(context.GetNumDevices(), 0);
 
             auto device = context.GetDevice(0, GetParam() ? CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE : 0);
@@ -564,7 +556,7 @@ namespace integration_tests
     }
 
     INSTANTIATE_TEST_CASE_P(Switch_InOrder_OutOfOrder, 
-                            Framework_OpenCL_TestCase, 
+							OpenCL_TestCase,
                             ::testing::Values(false, true));
 
 }// end of namespace integration_tests

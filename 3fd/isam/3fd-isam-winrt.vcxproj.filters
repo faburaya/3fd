@@ -1,0 +1,38 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tga;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="pch">
+      <UniqueIdentifier>{8080a303-a765-41d0-9fd3-7b130ad7bcb8}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="targetver.h">
+      <Filter>pch</Filter>
+    </ClInclude>
+    <ClInclude Include="isam.h" />
+    <ClInclude Include="isam_impl.h" />
+    <ClInclude Include="pch.h">
+      <Filter>pch</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="pch.cpp">
+      <Filter>pch</Filter>
+    </ClCompile>
+    <ClCompile Include="isam_impl.cpp" />
+    <ClCompile Include="isam_impl_cursor.cpp" />
+    <ClCompile Include="isam_impl_database.cpp" />
+    <ClCompile Include="isam_impl_databaseconn.cpp" />
+    <ClCompile Include="isam_impl_errorhelper.cpp" />
+    <ClCompile Include="isam_impl_instance.cpp" />
+    <ClCompile Include="isam_impl_recordreader.cpp" />
+    <ClCompile Include="isam_impl_session.cpp" />
+    <ClCompile Include="isam_impl_table.cpp" />
+    <ClCompile Include="isam_impl_tablewriter.cpp" />
+    <ClCompile Include="isam_impl_transaction.cpp" />
+  </ItemGroup>
+</Project>

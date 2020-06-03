@@ -1,6 +1,11 @@
-#include "stdafx.h"
-#include "gc_arrayofedges.h"
-#include "gc_vertex.h"
+//
+// Copyright (c) 2020 Part of 3FD project (https://github.com/faburaya/3fd)
+// It is FREELY distributed by the author under the Microsoft Public License
+// and the observance that it should only be used for the benefit of mankind.
+//
+#include "pch.h"
+#include <3fd/core/gc_arrayofedges.h>
+#include <3fd/core/gc_vertex.h>
 
 #include <vector>
 
@@ -71,7 +76,7 @@ namespace unit_tests
         ASSERT_FALSE(array.HasRootEdges());
 
         uint32_t count(0);
-        array.ForEachRegular([&count](Vertex *vtx){ ++count; return true; });
+        array.ForEachRegular([&count](Vertex *){ ++count; return true; });
         ASSERT_EQ(0, count);
 
         // Create dummy data:
@@ -98,7 +103,7 @@ namespace unit_tests
         ASSERT_FALSE(array.HasRootEdges());
 
         count = 0;
-        array.ForEachRegular([&count](Vertex *vtx){ ++count; return true; });
+        array.ForEachRegular([&count](Vertex *){ ++count; return true; });
         ASSERT_EQ(n, count);
 
         // Add edges with root vertices:
@@ -118,7 +123,7 @@ namespace unit_tests
         ASSERT_FALSE(array.HasRootEdges());
 
         count = 0;
-        array.ForEachRegular([&count](Vertex *vtx){ ++count; return true; });
+        array.ForEachRegular([&count](Vertex *){ ++count; return true; });
         ASSERT_EQ(0, count);
 
         // Once again, add regular edges:
@@ -129,7 +134,7 @@ namespace unit_tests
         ASSERT_FALSE(array.HasRootEdges());
 
         count = 0;
-        array.ForEachRegular([&count](Vertex *vtx){ ++count; return true; });
+        array.ForEachRegular([&count](Vertex *){ ++count; return true; });
         ASSERT_EQ(n, count);
 
         // Once again, add root edges:
@@ -147,7 +152,7 @@ namespace unit_tests
         ASSERT_FALSE(array.HasRootEdges());
 
         count = 0;
-        array.ForEachRegular([&count](Vertex *vtx){ ++count; return true; });
+        array.ForEachRegular([&count](Vertex *){ ++count; return true; });
         ASSERT_EQ(n, count);
 
         // Remove regular edges:
@@ -158,7 +163,7 @@ namespace unit_tests
         ASSERT_FALSE(array.HasRootEdges());
 
         count = 0;
-        array.ForEachRegular([&count](Vertex *vtx){ ++count; return true; });
+        array.ForEachRegular([&count](Vertex *){ ++count; return true; });
         ASSERT_EQ(0, count);
 
         // Return vertices to the pool:

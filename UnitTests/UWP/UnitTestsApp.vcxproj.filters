@@ -1,0 +1,96 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Common">
+      <UniqueIdentifier>b3f6666b-a557-4c4d-9e89-3d0faa275f52</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Assets">
+      <UniqueIdentifier>71ea196a-c224-4407-b3f8-c86b861a283e</UniqueIdentifier>
+      <Extensions>bmp;fbx;gif;jpg;jpeg;tga;tiff;tif;png</Extensions>
+    </Filter>
+    <Filter Include="Ported">
+      <UniqueIdentifier>{74acfff7-a67d-44a3-821f-d95fef17c21d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="pch">
+      <UniqueIdentifier>{1e284e85-cef3-4ec3-bcae-f91da6d65e08}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\tests_gc_arrayofedges.cpp">
+      <Filter>Ported</Filter>
+    </ClCompile>
+    <ClCompile Include="..\tests_gc_hashtable.cpp">
+      <Filter>Ported</Filter>
+    </ClCompile>
+    <ClCompile Include="..\tests_gc_vertex.cpp">
+      <Filter>Ported</Filter>
+    </ClCompile>
+    <ClCompile Include="..\tests_gc_vertexstore.cpp">
+      <Filter>Ported</Filter>
+    </ClCompile>
+    <ClCompile Include="..\tests_utils_algorithms.cpp">
+      <Filter>Ported</Filter>
+    </ClCompile>
+    <ClCompile Include="..\tests_utils_io.cpp">
+      <Filter>Ported</Filter>
+    </ClCompile>
+    <ClCompile Include="..\tests_utils_lockfreequeue.cpp">
+      <Filter>Ported</Filter>
+    </ClCompile>
+    <ClCompile Include="..\tests_utils_pool.cpp">
+      <Filter>Ported</Filter>
+    </ClCompile>
+    <ClCompile Include="..\tests_xml.cpp">
+      <Filter>Ported</Filter>
+    </ClCompile>
+    <ClCompile Include="..\pch.cpp">
+      <Filter>pch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\TestShared\main.cpp">
+      <Filter>Common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\tests_utils_string.cpp">
+      <Filter>Ported</Filter>
+    </ClCompile>
+    <ClCompile Include="..\tests_utils_cache.cpp">
+      <Filter>Ported</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Assets\LockScreenLogo.scale-200.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\SplashScreen.scale-200.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\Square150x150Logo.scale-200.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\Square44x44Logo.scale-200.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\StoreLogo.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\Wide310x150Logo.scale-200.png">
+      <Filter>Assets</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <AppxManifest Include="Package.appxmanifest" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="UnitTestsApp_TemporaryKey.pfx" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\pch.h">
+      <Filter>pch</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="a2e1e6a8-499e-45a2-b51c-c26d343dbae3.3fd.config" />
+  </ItemGroup>
+</Project>

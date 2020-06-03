@@ -1,10 +1,15 @@
-#include "stdafx.h"
-#include "xml.h"
+//
+// Copyright (c) 2020 Part of 3FD project (https://github.com/faburaya/3fd)
+// It is FREELY distributed by the author under the Microsoft Public License
+// and the observance that it should only be used for the benefit of mankind.
+//
+#include "pch.h"
+#include <3fd/utils/xml.h>
 #include <vector>
 #include <string>
 
 #ifdef _3FD_PLATFORM_WINRT
-#   include "utils_winrt.h"
+#   include <3fd/utils/utils_winrt.h>
 #endif
 
 namespace _3fd
@@ -1591,13 +1596,13 @@ namespace unit_tests
     }
 
     /// <summary>
-    /// Fixture for testing the XML queries.
+    /// Fixture for testing the XML queries with namespaces.
     /// </summary>
     class Framework_XmlQueryNS_TestCase : public ::testing::Test
     {
     private:
 
-        const char * const xmlContent3 = R"(
+        const char * const xmlContent = R"(
             <?xml version="1.0" encoding="utf-8"?>
             <einstellungen xmlns="http://3fd.de"
                            xmlns:a="http://3fd.de/a"
@@ -1637,7 +1642,7 @@ namespace unit_tests
         /// </summary>
         virtual void SetUp() override
         {
-            m_root = xml::ParseXmlFromBuffer(xmlContent3, m_dom, "einstellungen");
+            m_root = xml::ParseXmlFromBuffer(xmlContent, m_dom, "einstellungen");
 
             ASSERT_TRUE(m_root != nullptr);
             EXPECT_TRUE(GetXmlNameSubstring(m_root) == "einstellungen");
@@ -1708,6 +1713,97 @@ namespace unit_tests
         EXPECT_EQ("Au Au", strValue);
         EXPECT_EQ(20300, intValue);
         EXPECT_EQ(3.50F, floatValue);
+    }
+
+    /// <summary>
+    /// Another fixture for testing the XML queries with namespaces.
+    /// </summary>
+    class Framework_XmlQueryNS2_TestCase : public ::testing::Test
+    {
+    private:
+
+        const char * const xmlContent = R"(
+            <?xml version="1.0" encoding="utf-8"?>
+            <wsdl:definitions
+                xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+                xmlns:wsp="http://schemas.xmlsoap.org/ws/2004/09/policy"
+                xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd"
+                xmlns:wsaw="http://www.w3.org/2006/05/addressing/wsdl"
+                xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap12/"
+                xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+                xmlns:tns="http://calculator.example.org/"
+                xmlns:binp="http://schemas.microsoft.com/ws/06/2004/mspolicy/netbinary1"
+                xmlns:httpp="http://schemas.microsoft.com/ws/06/2004/policy/http"
+                targetNamespace="http://calculator.example.org/">
+
+                <!-- The service endpoints: -->
+                <wsdl:service name="CalculatorService">
+                    <wsdl:port name="CalculatorEndpointHeaderAuthSSL" binding="tns:CalcBindingHeaderAuthSSL">
+                        <soap:address location="https://hostname:8888/calculator"/>
+                    </wsdl:port>
+                    <wsdl:port name="CalculatorEndpointSSL" binding="tns:CalcBindingSSL">
+                        <soap:address location="https://hostname:8989/calculator"/>
+                    </wsdl:port>
+                    <wsdl:port name="CalculatorEndpointUnsecure" binding="tns:CalcBindingUnsecure">
+                        <soap:address location="http://hostname:81/calculator"/>
+                    </wsdl:port>
+                </wsdl:service>
+
+            </wsdl:definitions>
+        )";
+
+    protected:
+
+        rapidxml::xml_document<char> m_dom;
+        rapidxml::xml_node<char> *m_root;
+
+        std::unique_ptr<xml::NamespaceResolver> m_nsResolver;
+
+    public:
+
+        Framework_XmlQueryNS2_TestCase()
+            : m_root(nullptr) {}
+
+        /// <summary>
+        /// Set up the test fixture.
+        /// </summary>
+        virtual void SetUp() override
+        {
+            m_root = xml::ParseXmlFromBuffer(xmlContent, m_dom, "wsdl:definitions");
+
+            ASSERT_TRUE(m_root != nullptr);
+            EXPECT_TRUE(GetXmlNameSubstring(m_root) == "wsdl:definitions");
+
+            m_nsResolver.reset(new xml::NamespaceResolver());
+            m_nsResolver->AddAliasForNsPrefix("wsdl", "http://schemas.xmlsoap.org/wsdl/");
+        }
+    };
+
+    /// <summary>
+    /// Tests query for real application using WSDL.
+    /// </summary>
+    TEST_F(Framework_XmlQueryNS2_TestCase, WSDL_GrabServicePort_Test)
+    {
+        ASSERT_EQ(9, m_nsResolver->LoadNamespacesFrom(m_root));
+
+        const rapidxml::xml_node<char> *elementPort(nullptr);
+
+        std::string targetNamespace;
+        std::string serviceName;
+
+        auto query = xml::QueryElement("wsdl:definitions", xml::Required, {
+                xml::QueryAttribute("targetNamespace", xml::Required, xml::parse_into(targetNamespace)),
+                xml::QueryElement("wsdl:service", xml::Required, {
+                    xml::QueryAttribute("name", xml::Required, xml::parse_into(serviceName)),
+                    xml::QueryElement("wsdl:port", xml::Required, {}, &elementPort)
+                })
+            });
+
+        ASSERT_TRUE(query->Execute(m_root, xml::QueryStrategy::TestsOnlyGivenElement, m_nsResolver.get()));
+        ASSERT_TRUE(elementPort != nullptr);
+        EXPECT_TRUE(CheckName(elementPort, "wsdl:port"));
+        EXPECT_EQ("http://calculator.example.org/", targetNamespace);
+        EXPECT_EQ("CalculatorService", serviceName);
     }
 
 }// end of namespace unit_tests

@@ -42,7 +42,6 @@ local.properties
 *.sln.docstates
 
 # Build results
-
 [Dd]ebug/
 [Rr]elease/
 x64/
@@ -81,6 +80,7 @@ build/
 
 # Visual C++ cache files
 ipch/
+.vs/
 *.aps
 *.ncb
 *.opensdf
@@ -224,3 +224,22 @@ pip-log.txt
 .mr.developer.cfg
 NEXT COMMIT MESSAGE.txt
 .tfignore
+
+##################
+## CMake & Linux
+##################
+
+*.a
+*.cmake
+CMakeCache.txt
+CMakeFiles/
+Makefile
+
+#############
+## Tests generate data
+#############
+
+*.dat
+*.jfm
+*.mdf
+*.ldf

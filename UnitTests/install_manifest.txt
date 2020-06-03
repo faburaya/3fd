@@ -1,0 +1,2 @@
+/mnt/c/Users/felip/source/repos/3fd/build/bin/UnitTests
+/mnt/c/Users/felip/source/repos/3fd/build/lib/lib3FDd.a

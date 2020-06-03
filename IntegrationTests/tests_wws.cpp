@@ -1,7 +1,11 @@
-#include "stdafx.h"
-#include "runtime.h"
-#include "utils.h"
-#include "web_wws_webservicehost.h"
+//
+// Copyright (c) 2020 Part of 3FD project (https://github.com/faburaya/3fd)
+// It is FREELY distributed by the author under the Microsoft Public License
+// and the observance that it should only be used for the benefit of mankind.
+//
+#include "pch.h"
+#include <3fd/core/runtime.h>
+#include <3fd/wws/web_wws_webservicehost.h>
 #include "calculator.wsdl.h"
 
 #include <chrono>

@@ -1,5 +1,10 @@
-#include "stdafx.h"
-#include "utils.h"
+//
+// Copyright (c) 2020 Part of 3FD project (https://github.com/faburaya/3fd)
+// It is FREELY distributed by the author under the Microsoft Public License
+// and the observance that it should only be used for the benefit of mankind.
+//
+#include "pch.h"
+#include <3fd/utils/utils_memory.h>
 
 #include <vector>
 #include <deque>
@@ -26,7 +31,7 @@ namespace unit_tests
             dynMemPool = &ob;
         }
 
-        void *operator new(size_t size)
+        void *operator new(size_t)
         {
             return dynMemPool->GetFreeBlock();
         }

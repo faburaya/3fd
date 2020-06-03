@@ -6,30 +6,32 @@ AMAZON=$(cat /etc/issue | grep -i "amazon linux ami release" | awk -F" " '{print
 
 USE_CLANG=$(echo $CXX | grep 'clang++$')
 
-if [ -n "$1" ];
-then
-  INSTALL_DIR=$1
-else
-  INSTALL_DIR="/opt/3fd"
-fi
+numCpuCores=$(grep -c ^processor /proc/cpuinfo)
 
-if [ ! -d $INSTALL_DIR ];
-then
-  printf "Installation directory does not exist! ${INSTALL_DIR}\n"
-  exit
-fi
-
-DEPS=$(pwd)/build
-{ ls $DEPS/include || mkdir -p $DEPS/include; } &> /dev/null
-
-if touch $DEPS/test &> /dev/null;
-then
-  cd $DEPS
-  rm test
-else
-  printf "Cannot write to installation directory! ${INSTALL_DIR}\n"
-  exit
-fi
+# if [ -n "$1" ];
+# then
+#   INSTALL_DIR=$1
+# else
+#   INSTALL_DIR="/opt/3fd"
+# fi
+# 
+# if [ ! -d $INSTALL_DIR ];
+# then
+#   printf "Installation directory does not exist! ${INSTALL_DIR}\n"
+#   exit
+# fi
+# 
+# DEPS=$(pwd)/build
+# { ls $DEPS/include || mkdir -p $DEPS/include; } &> /dev/null
+# 
+# if touch $DEPS/test &> /dev/null;
+# then
+#   cd $DEPS
+#   rm test
+# else
+#   printf "Cannot write to installation directory! ${INSTALL_DIR}\n"
+#   exit
+# fi
 
 export SetColorToYELLOW='\033[0;33m';
 export SetNoColor='\033[0m';
@@ -64,18 +66,7 @@ function installMsSqlOdbc()
     sudo apt-get update
     ACCEPT_EULA=Y sudo apt install --assume-yes msodbcsql
     ACCEPT_EULA=Y sudo apt install --assume-yes mssql-tools
-
-    if [ -f $HOME/.bash_profile ] && [ -z "$(cat $HOME/.bash_profile | grep '$PATH:/opt/mssql-tools/bins')" ];
-    then
-        echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> $HOME/.bash_profile
-    fi
-
-    if [ -f $HOME/.profile ] && [ -z "$(cat $HOME/.profile | grep '$PATH:/opt/mssql-tools/bins')" ];
-    then
-        echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> $HOME/.profile
-    fi
-
-    export PATH="$PATH:/opt/mssql-tools/bin"
+    sudo sed -i 's|\"$|:/opt/mssql-tools/bin\"|g' /etc/environment
 }
 
 # # #
@@ -88,11 +79,11 @@ then
     if [ -z $CXX ] && [ -z "$(dpkg -l | grep 'g++')" ];
     then
         printf "${SetColorToYELLOW}Installing GNU C++ compiler...${SetNoColor}\n"
-        sudo apt install --assume-yes g++
+        sudo apt install --assume-yes g++-8
     fi
 
     printf "${SetColorToYELLOW}Checking dependencies...${SetNoColor}\n"
-    sudo apt install --assume-yes unzip cmake unixodbc unixodbc-dev openssl libssl-dev
+    sudo apt install --assume-yes cmake unixodbc unixodbc-dev
 
     HAS_MSSQL_TOOLS=$(dpkg -l | grep "mssql-tools")
 
@@ -151,11 +142,12 @@ fi
 #
 function buildRapidxml()
 {
-    find . | grep 'rapidxml' | xargs rm -rf
+    find . -type d | grep 'rapidxml' | xargs rm -rf
     RAPIDXML='rapidxml-1.13'
     download "https://netcologne.dl.sourceforge.net/project/rapidxml/rapidxml/rapidxml%201.13/${RAPIDXML}.zip"
     unzip "${RAPIDXML}.zip"
-    mv $RAPIDXML/*.hpp include/
+    { ls include/rapidxml || mkdir -p include/rapidxml; } &> /dev/null
+    mv $RAPIDXML/*.hpp include/rapidxml/
     rm -rf $RAPIDXML*
 }
 
@@ -176,24 +168,22 @@ function buildSqlite3()
     rm -rf $SQLITE*
 }
 
-if [ -d $INSTALL_DIR/include ]; then
-    printf "${SetColorToYELLOW}Do you wish to download and (re)build RAPIDXML and SQLITE3 from source?${SetNoColor}"
-    while true; do
-        read -p " [yes/no] " yn
-        case $yn in
-            [Yy]* ) buildRapidxml
-                    buildSqlite3
-                    break;;
-            [Nn]* ) break;;
-            * ) printf "Please answer yes or no.";;
-        esac
-    done
-else
-    buildRapidxml
-    buildSqlite3
-fi
-
-numCpuCores=$(grep -c ^processor /proc/cpuinfo)
+# if [ -d $INSTALL_DIR/include ]; then
+#     printf "${SetColorToYELLOW}Do you wish to download and (re)build RAPIDXML and SQLITE3 from source?${SetNoColor}"
+#     while true; do
+#         read -p " [yes/no] " yn
+#         case $yn in
+#             [Yy]* ) buildRapidxml
+#                     buildSqlite3
+#                     break;;
+#             [Nn]* ) break;;
+#             * ) printf "Please answer yes or no.";;
+#         esac
+#     done
+# else
+#     buildRapidxml
+#     buildSqlite3
+# fi
 
 # # #
 # BUILD BOOST
@@ -226,21 +216,21 @@ function buildBoost()
     rm "${boostLabel}.tar.gz"
 }
 
-if [ -d $INSTALL_DIR/include/boost ];
-then
-    printf "${SetColorToYELLOW}Do you wish to download and (re)build Boost library dependencies from source?${SetNoColor}"
-    while true; do
-        read -p " [yes/no] " yn
-        case $yn in
-            [Yy]* ) buildBoost
-                    break;;
-            [Nn]* ) break;;
-            * ) printf "Please answer yes or no.";;
-        esac
-    done
-else
-    buildBoost
-fi
+# if [ -d $INSTALL_DIR/include/boost ];
+# then
+#     printf "${SetColorToYELLOW}Do you wish to download and (re)build Boost library dependencies from source?${SetNoColor}"
+#     while true; do
+#         read -p " [yes/no] " yn
+#         case $yn in
+#             [Yy]* ) buildBoost
+#                     break;;
+#             [Nn]* ) break;;
+#             * ) printf "Please answer yes or no.";;
+#         esac
+#     done
+# else
+#     buildBoost
+# fi
 
 # # #
 # BUILD POCO
@@ -250,7 +240,7 @@ function buildPoco()
     find ./lib | grep Poco | xargs rm
     { ls include/Poco && rm -rf include/Poco; } &> /dev/null
     printf "${SetColorToYELLOW}Downloading POCO C++ libs source...${SetNoColor}\n"
-    local pocoLabel='poco-1.9.0'
+    local pocoLabel='poco-1.9.4'
     local pocoXDir=$pocoLabel"-all"
     local pocoTarFile=$pocoXDir".tar.gz"
     download "https://pocoproject.org/releases/${pocoLabel}/${pocoTarFile}"
@@ -273,21 +263,21 @@ function buildPoco()
     rm $pocoTarFile
 }
 
-if [ -d $INSTALL_DIR/include/Poco ];
-then
-    printf "${SetColorToYELLOW}Do you wish to download and (re)build POCO C++ library dependencies from source?${SetNoColor}"
-    while true; do
-        read -p " [yes/no] " yn
-        case $yn in
-            [Yy]* ) buildPoco
-                    break;;
-            [Nn]* ) break;;
-            * ) printf "Please answer yes or no.";;
-        esac
-    done
-else
-    buildPoco
-fi
+# if [ -d $INSTALL_DIR/include/Poco ];
+# then
+#     printf "${SetColorToYELLOW}Do you wish to download and (re)build POCO C++ library dependencies from source?${SetNoColor}"
+#     while true; do
+#         read -p " [yes/no] " yn
+#         case $yn in
+#             [Yy]* ) buildPoco
+#                     break;;
+#             [Nn]* ) break;;
+#             * ) printf "Please answer yes or no.";;
+#         esac
+#     done
+# else
+#     buildPoco
+# fi
 
 # # #
 # BUILD GTEST FRAMEWORK
@@ -315,21 +305,21 @@ function buildGTestFramework()
     rm -rf $gtestPackage
 }
 
-if [ -d $INSTALL_DIR/include/gtest ];
-then
-    printf "${SetColorToYELLOW}Do you wish to download and (re)build Google Test Framework from source?${SetNoColor}"
-    while true; do
-        read -p " [yes/no] " yn
-        case $yn in
-            [Yy]* ) buildGTestFramework
-                    break;;
-            [Nn]* ) break;;
-            * ) printf "Please answer yes or no.";;
-        esac
-    done
-else
-    buildGTestFramework
-fi
+# if [ -d $INSTALL_DIR/include/gtest ];
+# then
+#     printf "${SetColorToYELLOW}Do you wish to download and (re)build Google Test Framework from source?${SetNoColor}"
+#     while true; do
+#         read -p " [yes/no] " yn
+#         case $yn in
+#             [Yy]* ) buildGTestFramework
+#                     break;;
+#             [Nn]* ) break;;
+#             * ) printf "Please answer yes or no.";;
+#         esac
+#     done
+# else
+#     buildGTestFramework
+# fi
 
-printf "${SetColorToYELLO}Moving build of dependencies to installation directory...${SetNoColor}\n"
-sudo mv $DEPS/* $INSTALL_DIR
+# printf "${SetColorToYELLO}Moving build of dependencies to installation directory...${SetNoColor}\n"
+# sudo mv $DEPS/* $INSTALL_DIR

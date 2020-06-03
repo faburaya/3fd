@@ -1,7 +1,7 @@
 #ifndef RPC_TEST_SHARED_H // header guard
 #define RPC_TEST_SHARED_H
 
-#include "rpc_helpers.h"
+#include <3fd/rpc/rpc_helpers.h>
 #include <gtest/gtest-param-test.h>
 #include <array>
 

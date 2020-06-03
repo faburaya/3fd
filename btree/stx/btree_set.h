@@ -36,7 +36,7 @@
  * Contains the specialized B+ tree template class btree_set
  */
 
-#include <stx/btree.h>
+#include <btree/stx/btree.h>
 
 namespace stx {
 

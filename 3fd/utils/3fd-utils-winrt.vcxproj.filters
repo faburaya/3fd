@@ -1,0 +1,41 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tga;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="pch">
+      <UniqueIdentifier>{80b1e6f6-8c9a-48f2-83a3-faa2466963df}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h">
+      <Filter>pch</Filter>
+    </ClInclude>
+    <ClInclude Include="targetver.h">
+      <Filter>pch</Filter>
+    </ClInclude>
+    <ClInclude Include="utils_algorithms.h" />
+    <ClInclude Include="utils_io.h" />
+    <ClInclude Include="utils_lockfreequeue.h" />
+    <ClInclude Include="utils_winrt.h" />
+    <ClInclude Include="xml.h" />
+    <ClInclude Include="utils_memory.h" />
+    <ClInclude Include="utils_concurrency.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="pch.cpp">
+      <Filter>pch</Filter>
+    </ClCompile>
+    <ClCompile Include="utils_asynchronous.cpp" />
+    <ClCompile Include="utils_dynmempool.cpp" />
+    <ClCompile Include="utils_event.cpp" />
+    <ClCompile Include="utils_io.cpp" />
+    <ClCompile Include="utils_memorypool.cpp" />
+    <ClCompile Include="utils_sharedmutex.cpp" />
+    <ClCompile Include="utils_winrt.cpp" />
+    <ClCompile Include="xml.cpp" />
+    <ClCompile Include="utils_string.cpp" />
+  </ItemGroup>
+</Project>

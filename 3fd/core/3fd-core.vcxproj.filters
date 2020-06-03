@@ -1,0 +1,130 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Quelldateien">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Ressourcendateien">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="pch">
+      <UniqueIdentifier>{d924fe7b-bc42-43c1-baa0-54d9489ced5a}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="callstacktracer.h">
+      <Filter>Quelldateien</Filter>
+    </ClInclude>
+    <ClInclude Include="configuration.h">
+      <Filter>Quelldateien</Filter>
+    </ClInclude>
+    <ClInclude Include="dependencies.h">
+      <Filter>Quelldateien</Filter>
+    </ClInclude>
+    <ClInclude Include="exceptions.h">
+      <Filter>Quelldateien</Filter>
+    </ClInclude>
+    <ClInclude Include="logger.h">
+      <Filter>Quelldateien</Filter>
+    </ClInclude>
+    <ClInclude Include="preprocessing.h">
+      <Filter>Quelldateien</Filter>
+    </ClInclude>
+    <ClInclude Include="runtime.h">
+      <Filter>Quelldateien</Filter>
+    </ClInclude>
+    <ClInclude Include="targetver.h">
+      <Filter>pch</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h">
+      <Filter>pch</Filter>
+    </ClInclude>
+    <ClInclude Include="gc.h">
+      <Filter>Quelldateien</Filter>
+    </ClInclude>
+    <ClInclude Include="gc_addresseshashtable.h">
+      <Filter>Quelldateien</Filter>
+    </ClInclude>
+    <ClInclude Include="gc_arrayofedges.h">
+      <Filter>Quelldateien</Filter>
+    </ClInclude>
+    <ClInclude Include="gc_common.h">
+      <Filter>Quelldateien</Filter>
+    </ClInclude>
+    <ClInclude Include="gc_memaddress.h">
+      <Filter>Quelldateien</Filter>
+    </ClInclude>
+    <ClInclude Include="gc_memorydigraph.h">
+      <Filter>Quelldateien</Filter>
+    </ClInclude>
+    <ClInclude Include="gc_messages.h">
+      <Filter>Quelldateien</Filter>
+    </ClInclude>
+    <ClInclude Include="gc_vertex.h">
+      <Filter>Quelldateien</Filter>
+    </ClInclude>
+    <ClInclude Include="gc_vertexstore.h">
+      <Filter>Quelldateien</Filter>
+    </ClInclude>
+    <ClInclude Include="sptr.h">
+      <Filter>Quelldateien</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="callstacktracer.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="configuration.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="dependencies.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="exceptions.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="logger.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="logger_dsa.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="runtime.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="pch.cpp">
+      <Filter>pch</Filter>
+    </ClCompile>
+    <ClCompile Include="gc_addresseshashtable.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="gc_arrayofedges.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="gc_garbagecollector.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="gc_memorydigraph.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="gc_messages.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="gc_vertex.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="gc_vertexstore.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="logger_console.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="3fd-config-template.xml">
+      <Filter>Ressourcendateien</Filter>
+    </Xml>
+  </ItemGroup>
+</Project>

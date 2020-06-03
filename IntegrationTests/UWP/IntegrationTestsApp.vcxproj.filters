@@ -1,0 +1,78 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Common">
+      <UniqueIdentifier>76b6e741-768b-491e-9dbc-8f9c4b2e32c9</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Assets">
+      <UniqueIdentifier>6e71148d-0624-48cb-9e78-09a4b4df13d8</UniqueIdentifier>
+      <Extensions>bmp;fbx;gif;jpg;jpeg;tga;tiff;tif;png</Extensions>
+    </Filter>
+    <Filter Include="Ported">
+      <UniqueIdentifier>{d620ead1-de34-4340-a16d-1d7b4dea8175}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="pch">
+      <UniqueIdentifier>{ad7a0528-e0e6-4dce-a42d-e6c6fe72688d}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Assets\LockScreenLogo.scale-200.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\SplashScreen.scale-200.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\Square150x150Logo.scale-200.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\Square44x44Logo.scale-200.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\StoreLogo.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\Wide310x150Logo.scale-200.png">
+      <Filter>Assets</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <AppxManifest Include="Package.appxmanifest" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="IntegrationTestsApp_TemporaryKey.pfx" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\tests_core.cpp">
+      <Filter>Ported</Filter>
+    </ClCompile>
+    <ClCompile Include="..\tests_gc.cpp">
+      <Filter>Ported</Filter>
+    </ClCompile>
+    <ClCompile Include="..\tests_isam.cpp">
+      <Filter>Ported</Filter>
+    </ClCompile>
+    <ClCompile Include="..\tests_sqlite.cpp">
+      <Filter>Ported</Filter>
+    </ClCompile>
+    <ClCompile Include="..\pch.cpp">
+      <Filter>pch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\TestShared\error_handling.cpp">
+      <Filter>Common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\TestShared\main.cpp">
+      <Filter>Common</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\pch.h">
+      <Filter>pch</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="5f042ca4-a62c-4960-b997-b0ff543d7792.3fd.config" />
+  </ItemGroup>
+</Project>
