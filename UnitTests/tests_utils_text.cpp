@@ -4,10 +4,12 @@
 // and the observance that it should only be used for the benefit of mankind.
 //
 #include "pch.h"
-#include <3fd/utils/utils_string.h>
+#include <3fd/utils/text.h>
 
-namespace _3fd {
-namespace unit_tests {
+namespace _3fd
+{
+namespace unit_tests
+{
 
     /// <summary>
     /// Tests <see cref="utils::TextPlaceholderReplacementHelper::Replace"/>.

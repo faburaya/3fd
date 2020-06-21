@@ -6,7 +6,7 @@
 #ifndef SQLITE_H // header guard
 #define SQLITE_H
 
-#include <3fd/utils/utils_lockfreequeue.h>
+#include <3fd/utils/lockfreequeue.h>
 
 #include <atomic>
 #include <map>
@@ -53,7 +53,7 @@ namespace sqlite
         PrepStatement CreateStatement(const char *query);
 
         PrepStatement &CachedStatement(int queryId,
-                                        const string &queryCode);
+                                       const string &queryCode);
 
         PrepStatement &CachedStatement(int queryId,
                                         const char *queryCode = nullptr,

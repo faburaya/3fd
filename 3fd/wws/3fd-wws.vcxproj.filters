@@ -17,22 +17,22 @@
     <ClInclude Include="pch.h">
       <Filter>pch</Filter>
     </ClInclude>
-    <ClInclude Include="web_wws_impl_host.h">
+    <ClInclude Include="utils.h">
       <Filter>Quelldateien</Filter>
     </ClInclude>
-    <ClInclude Include="web_wws_impl_proxy.h">
+    <ClInclude Include="webservicehost.h">
       <Filter>Quelldateien</Filter>
     </ClInclude>
-    <ClInclude Include="web_wws_impl_utils.h">
+    <ClInclude Include="webserviceproxy.h">
       <Filter>Quelldateien</Filter>
     </ClInclude>
-    <ClInclude Include="web_wws_utils.h">
+    <ClInclude Include="host_impl.h">
       <Filter>Quelldateien</Filter>
     </ClInclude>
-    <ClInclude Include="web_wws_webservicehost.h">
+    <ClInclude Include="proxy_impl.h">
       <Filter>Quelldateien</Filter>
     </ClInclude>
-    <ClInclude Include="web_wws_webserviceproxy.h">
+    <ClInclude Include="utils_impl.h">
       <Filter>Quelldateien</Filter>
     </ClInclude>
   </ItemGroup>
@@ -40,19 +40,19 @@
     <ClCompile Include="pch.cpp">
       <Filter>pch</Filter>
     </ClCompile>
-    <ClCompile Include="web_wws_impl_host.cpp">
+    <ClCompile Include="host_impl.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
-    <ClCompile Include="web_wws_impl_proxy.cpp">
+    <ClCompile Include="proxy_impl.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
-    <ClCompile Include="web_wws_impl_utils.cpp">
+    <ClCompile Include="utils_impl.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
-    <ClCompile Include="web_wws_impl_utils_wserror.cpp">
+    <ClCompile Include="utils_wserror_impl.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
-    <ClCompile Include="web_wws_impl_utils_xml.cpp">
+    <ClCompile Include="utils_xml_impl.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
   </ItemGroup>

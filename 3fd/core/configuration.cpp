@@ -1,11 +1,11 @@
 #include "pch.h"
 #include <3fd/core/configuration.h>
 #include <3fd/core/exceptions.h>
-#include <3fd/utils/utils_io.h>
+#include <3fd/utils/serialization.h>
 #include <3fd/utils/xml.h>
 
 #ifdef _3FD_PLATFORM_WINRT
-#    include <3fd/utils/utils_winrt.h>
+#    include <3fd/utils/winrt.h>
 #    include <winrt\Windows.ApplicationModel.h>
 #endif
 

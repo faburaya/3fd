@@ -7,7 +7,7 @@
 #include "configuration.h"
 #include "logger.h"
 
-#include <3fd/utils/utils_memory.h>
+#include <3fd/utils/memory.h>
 #include <algorithm>
 #include <array>
 #include <condition_variable>

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-UBUNTU_VERSION=$(cat /etc/issue | grep -i ubuntu | awk -F" " '{print $2}' | sed 's/.[0-9]*$//g')
+UBUNTU_VERSION=$(cat /etc/issue | grep -i ubuntu | grep -o --color=never '[1-9][0-9]\.[0-9][0-9]')
 UBUNTU_MAJVER=$(echo $UBUNTU_VERSION | awk -F"." '{print $1}')
 AMAZON=$(cat /etc/issue | grep -i "amazon linux ami release" | awk -F" " '{print $5}' | awk -F"." '{print $1}')
 
@@ -14,16 +14,16 @@ numCpuCores=$(grep -c ^processor /proc/cpuinfo)
 # else
 #   INSTALL_DIR="/opt/3fd"
 # fi
-# 
+#
 # if [ ! -d $INSTALL_DIR ];
 # then
 #   printf "Installation directory does not exist! ${INSTALL_DIR}\n"
 #   exit
 # fi
-# 
+#
 # DEPS=$(pwd)/build
 # { ls $DEPS/include || mkdir -p $DEPS/include; } &> /dev/null
-# 
+#
 # if touch $DEPS/test &> /dev/null;
 # then
 #   cd $DEPS
@@ -64,6 +64,7 @@ function installMsSqlOdbc()
     curl "https://packages.microsoft.com/config/ubuntu/${UBUNTU_VERSION}/prod.list" > mssql-release.list
     sudo mv mssql-release.list /etc/apt/sources.list.d/
     sudo apt-get update
+    sudo apt install unixodbc-dev
     ACCEPT_EULA=Y sudo apt install --assume-yes msodbcsql
     ACCEPT_EULA=Y sudo apt install --assume-yes mssql-tools
     sudo sed -i 's|\"$|:/opt/mssql-tools/bin\"|g' /etc/environment
@@ -73,17 +74,17 @@ function installMsSqlOdbc()
 # INSTALL PACKAGES & TOOLCHAIN
 #
 
-if [ -n "$UBUNTU_MAJVER" ] && [ $UBUNTU_MAJVER -gt 14 ];
+if [ -n "$UBUNTU_MAJVER" ] && [ $UBUNTU_MAJVER -ge 20 ];
 then
 
     if [ -z $CXX ] && [ -z "$(dpkg -l | grep 'g++')" ];
     then
         printf "${SetColorToYELLOW}Installing GNU C++ compiler...${SetNoColor}\n"
-        sudo apt install --assume-yes g++-8
+        sudo apt install --assume-yes g++
     fi
 
     printf "${SetColorToYELLOW}Checking dependencies...${SetNoColor}\n"
-    sudo apt install --assume-yes cmake unixodbc unixodbc-dev
+    sudo apt install --assume-yes cmake
 
     HAS_MSSQL_TOOLS=$(dpkg -l | grep "mssql-tools")
 

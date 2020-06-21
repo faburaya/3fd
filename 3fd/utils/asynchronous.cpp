@@ -4,7 +4,7 @@
 // and the observance that it should only be used for the benefit of mankind.
 //
 #include "pch.h"
-#include "utils_concurrency.h"
+#include "concurrency.h"
 #include <3fd/core/exceptions.h>
 #include <3fd/core/logger.h>
 

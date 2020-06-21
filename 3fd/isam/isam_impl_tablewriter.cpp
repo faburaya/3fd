@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "isam_impl.h"
-#include <3fd/utils/utils_algorithms.h>
+#include <3fd/utils/algorithms.h>
 #include <cassert>
 #include <codecvt>
 #include <cstdlib>

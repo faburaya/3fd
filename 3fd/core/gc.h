@@ -2,8 +2,8 @@
 #define GC_H
 
 #include <3fd/core/gc_memorydigraph.h>
-#include <3fd/utils/utils_concurrency.h>
-#include <3fd/utils/utils_lockfreequeue.h>
+#include <3fd/utils/concurrency.h>
+#include <3fd/utils/lockfreequeue.h>
 
 #include <exception>
 #include <thread>

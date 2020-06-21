@@ -7,7 +7,7 @@
 #include "sqlite.h"
 #include <3fd/core/exceptions.h>
 #include <3fd/core/logger.h>
-#include <3fd/utils/utils_algorithms.h>
+#include <3fd/utils/algorithms.h>
 
 #include <sqlite3/sqlite3.h>
 #include <cassert>

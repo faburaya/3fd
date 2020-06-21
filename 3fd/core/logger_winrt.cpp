@@ -3,7 +3,7 @@
 #include "configuration.h"
 #include "callstacktracer.h"
 
-#include <3fd/utils/utils_winrt.h>
+#include <3fd/utils/winrt.h>
 #include <winrt\Windows.Storage.h>
 #include <winrt\Windows.Storage.FileProperties.h>
 #include <winrt\Windows.Storage.Compression.h>

@@ -5,7 +5,7 @@
 //
 #include "pch.h"
 #include <3fd/core/preprocessing.h>
-#include <3fd/utils/utils_lockfreequeue.h>
+#include <3fd/utils/lockfreequeue.h>
 
 #include <vector>
 #include <thread>

@@ -18,7 +18,7 @@
 #include <functional>
 
 #ifdef _3FD_PLATFORM_WINRT
-#   include <3fd\utils\utils_winrt.h>
+#   include <3fd\utils\winrt.h>
 #   include <winrt\Windows.System.h>
 
 #   define FILE_PATH(fileName)    _3fd::utils::WinRTExt::GetFilePathUtf8(fileName, _3fd::utils::WinRTExt::FileLocation::LocalFolder)

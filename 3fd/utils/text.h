@@ -3,10 +3,10 @@
 // It is FREELY distributed by the author under the Microsoft Public License
 // and the observance that it should only be used for the benefit of mankind.
 //
-#ifndef UTILS_STRING_H // header guard
-#define UTILS_STRING_H
+#ifndef UTILS_STRINGS_H // header guard
+#define UTILS_STRINGS_H
 
-#include <3fd/utils/utils_io.h>
+#include <3fd/utils/serialization.h>
 
 #include <algorithm>
 #include <array>
@@ -19,10 +19,18 @@
 #include <string>
 #include <string_view>
 
+#ifdef _WIN32
+#   define strtok_x strtok_s
+#else
+#   define strtok_x strtok_r
+#endif
+
 namespace _3fd
 {
 namespace utils
 {
+    std::string to_lower(std::string str);
+    std::string to_upper(std::string str);
 
     ////////////////////////////////////////////////
     // Type Manipulation
@@ -36,9 +44,9 @@ namespace utils
 
         static constexpr bool value =
             std::is_same<const_non_ref_type, const std::string>::value
-            || std::is_same<const_non_ref_type, const std::string>::value
-            || std::is_same<const_non_ref_type, char * const>::value
-            || std::is_same<const_non_ref_type, const char * const>::value;
+                || std::is_same<const_non_ref_type, const std::string>::value
+                || std::is_same<const_non_ref_type, char *const>::value
+                || std::is_same<const_non_ref_type, const char *const>::value;
     };
 
     ////////////////////////////////////////////////
@@ -69,7 +77,6 @@ namespace utils
     class TextPlaceholderReplacementHelper
     {
     private:
-
         // holds the pieces of string to form the final string
         std::vector<string_view_t> m_pieces;
 
@@ -119,9 +126,9 @@ namespace utils
                 {
                     placeholderLength =
                         std::find_if_not(placeholderIterBegin + 1,
-                                         text.end(),
-                                         [](char_t ch) { return IsCharAllowedInPlaceholderName(ch); })
-                        - placeholderIterBegin;
+                                            text.end(),
+                                            [](char_t ch) { return IsCharAllowedInPlaceholderName(ch); }) -
+                        placeholderIterBegin;
 
                     // store placeholder piece (with marker)
                     m_pieces.push_back(string_view_t(text.data() + tokenPos, placeholderLength));
@@ -133,10 +140,9 @@ namespace utils
         }
 
     public:
-
         // this template guarantees that only string literals can be used
         template <size_t SizeLiteral>
-        static TextPlaceholderReplacementHelper in(char_t placeholderMarker, const char_t(&text)[SizeLiteral])
+        static TextPlaceholderReplacementHelper in(char_t placeholderMarker, const char_t (&text)[SizeLiteral])
         {
             return TextPlaceholderReplacementHelper(placeholderMarker, string_view_t(text, SizeLiteral));
         }
@@ -208,26 +214,28 @@ namespace utils
     /// </summary>
     struct CStringViewUtf8
     {
-        const char * const data;
+        const char *const data;
         const uint32_t lenBytes;
 
         CStringViewUtf8(const char *p_data, uint32_t p_lenBytes) noexcept
-            : data(p_data)
-            , lenBytes(p_lenBytes)
+            : data(p_data), lenBytes(p_lenBytes)
         {
             // cannot have non-zero length when no string is set!
             _ASSERTE(data != nullptr || lenBytes == 0);
         }
 
         explicit CStringViewUtf8(const char *p_data) noexcept
-            : data(p_data)
-            , lenBytes(p_data != nullptr ? static_cast<uint32_t>(strlen(data)) : 0)
+            : data(p_data), lenBytes(p_data != nullptr ? static_cast<uint32_t>(strlen(data)) : 0)
+        {
+        }
+
+        explicit CStringViewUtf8(const std::string &str) noexcept
+            : data(str.data()), lenBytes(str.length())
         {
         }
 
         CStringViewUtf8(const char *beginIter, const char *endIter) noexcept
-            : data(beginIter)
-            , lenBytes(static_cast<uint32_t> (std::distance(beginIter, endIter)))
+            : data(beginIter), lenBytes(static_cast<uint32_t>(std::distance(beginIter, endIter)))
         {
         }
 
@@ -240,6 +248,11 @@ namespace utils
         {
             _ASSERTE(data != nullptr);
             return data[0] == 0;
+        }
+
+        constexpr bool null_or_empty() const noexcept
+        {
+            return null() || empty();
         }
 
         constexpr const char *begin() const noexcept

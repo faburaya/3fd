@@ -5,7 +5,9 @@
 //
 #include "pch.h"
 #include "cmdline.h"
+#include "text.h"
 #include <algorithm>
+#include <cstdio>
 #include <iostream>
 #include <iomanip>
 #include <vector>
@@ -19,79 +21,31 @@ namespace core
         return str == nullptr || str[0] == 0;
     }
 
+    static std::ostream &PrintShortDeclaration(const CommandLineArguments::ArgDeclaration &declaration,
+                                               std::ostream &out)
+    {
+        out << '\'' << declaration.optName << "' (" << declaration.optChar << ')';
+        return out;
+    }
+
     /// <summary>
     /// Initializes a new instance of the <see cref="CommandLineArguments" /> class.
     /// </summary>
-    /// <param name="appName">Name of the application executable.</param>
     /// <param name="minCmdLineWidth">Minimum width of the command line. Anything less than 80 columns is ignored.</param>
+    /// <param name="optionSign">What to use for denoting an option.</param>
     /// <param name="argValSeparator">The character separator to use between option label and value.</param>
-    /// <param name="useOptSignSlash">if set to <c>true</c>, use option sign slash (Windows prompt style) instead of dash.</param>
     /// <param name="optCaseSensitive">if set to <c>true</c>, make case sensitive the parsing of single character labels for options.</param>
     CommandLineArguments::CommandLineArguments(uint8_t minCmdLineWidth,
+                                               ArgOptionSign optionSign,
                                                ArgValSeparator argValSeparator,
-                                               bool useOptSignSlash,
                                                bool optCaseSensitive)
-    try :
-        m_minCmdLineWidth(minCmdLineWidth > 80 ? minCmdLineWidth : 80),
-        m_argValSeparator(argValSeparator),
-        m_useOptSignSlash(useOptSignSlash),
-        m_isOptCaseSensitive(optCaseSensitive),
-        m_largestNameLabel(0),
-        m_idValueTypeArg(-1)
+        : m_minCmdLineWidth(minCmdLineWidth > 80 ? minCmdLineWidth : 80)
+        , m_optionSign(optionSign)
+        , m_argValSeparator(argValSeparator)
+        , m_isOptCaseSensitive(optCaseSensitive)
+        , m_largestNameLabel(0)
+        , m_idValueTypeArg(-1)
     {
-        CALL_STACK_TRACE;
-
-        static const char *rgxOptCharLabelCStr[][3] =
-        {
-            { "/([a-zA-Z\\d])", "/([a-zA-Z\\d])(:(.+))?", "/([a-zA-Z\\d])(=(.+))?" }, // windows notation
-            { "-([a-zA-Z\\d])", "-([a-zA-Z\\d])(:(.+))?", "-([a-zA-Z\\d])(=(.+))?" } // posix notation
-        };
-
-        uint16_t idxSeparator;
-        switch (m_argValSeparator)
-        {
-        case ArgValSeparator::Space:
-            idxSeparator = 0;
-            break;
-        case ArgValSeparator::Colon:
-            idxSeparator = 1;
-            break;
-        case ArgValSeparator::EqualSign:
-            idxSeparator = 2;
-            break;
-        default:
-            _ASSERTE(false); // unexpected separator char
-            break;
-        }
-        
-        const uint16_t idxNotation(m_useOptSignSlash ? 0 : 1);
-
-        // regex for option single char label (might be case sensitive)
-        m_rgxOptCharLabel = std::regex(rgxOptCharLabelCStr[idxNotation][idxSeparator],
-            std::regex_constants::ECMAScript | (m_isOptCaseSensitive ? 0 : std::regex_constants::icase)
-        );
-
-        static const char *rgxOptNameLabelCStr[][3] =
-        {
-            {  "/([a-z\\d_]{2,})",  "/([a-z\\d_]{2,})(:(.+))?",  "/([a-z\\d_]{2,})(=(.+))?" }, // windows notation
-            { "--([a-z\\d-]{2,})", "--([a-z\\d-]{2,})(:(.+))?", "--([a-z\\d-]{2,})(=(.+))?" } // posix notation
-        };
-
-        // regex for option name label
-        m_rgxOptNameLabel = std::regex(rgxOptNameLabelCStr[idxNotation][idxSeparator],
-            std::regex_constants::ECMAScript | std::regex_constants::icase
-        );
-    }
-    catch (IAppException &)
-    {
-        throw; // just forward exceptions from errors known to have been already handled
-    }
-    catch (std::exception &ex)
-    {
-        CALL_STACK_TRACE;
-        std::ostringstream oss;
-        oss << "Generic error when instantiating command line arguments parser: " << ex.what();
-        throw AppException<std::runtime_error>(oss.str());
     }
 
     // Looks for inconsistencies that are common to declarations of all types of arguments
@@ -201,7 +155,13 @@ namespace core
 
             // collides with another single char label?
             if (m_argsByCharLabel.end() == iter)
-                m_argsByCharLabel[argDecl.optChar] = argDecl.id;
+            {
+                char optChar = (m_isOptCaseSensitive
+                                ? argDecl.optChar
+                                : tolower(argDecl.optChar));
+
+                m_argsByCharLabel[optChar] = argDecl.id;
+            }
             else
             {
                 std::ostringstream oss;
@@ -221,7 +181,13 @@ namespace core
 
         // colides with another name label?
         if (m_argsByNameLabel.end() == iter)
-            m_argsByNameLabel[argDecl.optName] = argDecl.id;
+        {
+            std::string optName = (m_isOptCaseSensitive
+                                   ? std::string(argDecl.optName)
+                                   : utils::to_lower(argDecl.optName));
+
+            m_argsByNameLabel[optName] = argDecl.id;
+        }
         else
         {
             std::ostringstream oss;
@@ -238,7 +204,7 @@ namespace core
            POSIX notation, in the other hand, chooses a dash for the same purpose,
            like in '--no-warnings'. Those practices are enforced as rules here, so
            the application is made compliant with these standards. */
-        const char dash = (m_useOptSignSlash) ? '_' : '-';
+        const char dash = (m_optionSign == ArgOptionSign::Slash) ? '_' : '-';
         
         // Compute length of name label while checking for disallowed chars:
         charCount = 0;
@@ -856,11 +822,11 @@ namespace core
 
         const char *stdExMsg("Could not print usage of command line arguments");
 
-        const char optCharSign(m_useOptSignSlash ? '/' : '-'); // sign for option with single char label
+        const char optCharSign = static_cast<char>(m_optionSign); // sign for option with single char label
 
         const char *spaceAdvLeftBorder(" "), // space advanced by left border of table column 1
                    *commaBetweenLabels(", "), // comma placed between single char and name labels
-                   *optNameSign(m_useOptSignSlash ? "/" : "--"), // sign for option with name label
+                   *optNameSign(m_optionSign == ArgOptionSign::Slash ? "/" : "--"), // sign for option with name label
                    *spaceBetweenCols("   "); // space between tables columns 1 & 2
 
         uint16_t widthTableCol1;
@@ -987,16 +953,16 @@ namespace core
     }
 
     // Parses the string of a regex submatch into an integer value
-    static bool ParseInteger(const std::csub_match &matchVal, long long &value)
+    static bool ParseInteger(utils::CStringViewUtf8 matchVal, long long &value)
     {
         char *strEnd;
-        value = strtoll(matchVal.first, &strEnd, 0);
+        value = strtoll(matchVal.begin(), &strEnd, 0);
 
-        if (strEnd == matchVal.second)
+        if (strEnd == matchVal.end())
             return STATUS_OKAY;
         else
         {
-            std::cerr << "Parser error: '" << matchVal.first
+            std::cerr << "Parser error: '" << matchVal.to_string()
                       << "' is not a valid integer value" << std::endl;
 
             return STATUS_FAIL;
@@ -1004,16 +970,16 @@ namespace core
     }
 
     // Parses the string of a regex submatch into a floating point value
-    static bool ParseFloat(const std::csub_match &matchVal, double &value)
+    static bool ParseFloat(utils::CStringViewUtf8 matchVal, double &value)
     {
         char *strEnd;
-        value = strtod(matchVal.first, &strEnd);
+        value = strtod(matchVal.begin(), &strEnd);
 
-        if (strEnd == matchVal.second)
+        if (strEnd == matchVal.end())
             return STATUS_OKAY;
         else
         {
-            std::cerr << "Parser error: '" << matchVal.first
+            std::cerr << "Parser error: '" << matchVal.to_string()
                       << "' is not a valid floating point value" << std::endl;
 
             return STATUS_FAIL;
@@ -1088,18 +1054,18 @@ namespace core
     // Helps parsing a value of given type, then validates it against configuration
     static bool ParseAndValidateValue(const CommandLineArguments::ArgDeclaration &argDecl,
                                       void *argValCfg,
-                                      const std::csub_match &matchVal,
+                                      utils::CStringViewUtf8 matchVal,
                                       CommandLineArguments::ParsedValue &parsedValue)
     {
         // this implementation should only be called to parse values of arguments that expect and matched one
-        _ASSERTE(argDecl.valueType != CommandLineArguments::ArgValType::None && matchVal.matched);
+        _ASSERTE(argDecl.valueType != CommandLineArguments::ArgValType::None);
 
         CALL_STACK_TRACE;
 
         switch (argDecl.valueType)
         {
             case CommandLineArguments::ArgValType::String:
-                parsedValue.asString = matchVal.first;
+                parsedValue.asString = matchVal.data;
                 return STATUS_OKAY;
 
             case CommandLineArguments::ArgValType::Integer:
@@ -1115,10 +1081,10 @@ namespace core
                 _ASSERTE(argValCfg != nullptr);
                 auto &typedArgValCfg = *static_cast<std::vector<const char *> *> (argValCfg);
                 
-                if (ValidateEnumValue(argDecl, typedArgValCfg, matchVal.first) == STATUS_FAIL)
+                if (ValidateEnumValue(argDecl, typedArgValCfg, matchVal.data) == STATUS_FAIL)
                     return STATUS_FAIL;
 
-                parsedValue.asString = matchVal.first;
+                parsedValue.asString = matchVal.data;
                 return STATUS_OKAY;
             }
 
@@ -1183,6 +1149,138 @@ namespace core
     }
 
     /// <summary>
+    /// Pre-parses an argument received from the command line.
+    /// (For options labeled with a single character, egz: "-o file.txt")
+    /// </summary>
+    /// <param name="argument">The argument received from the command line.</param>
+    /// <param name="optionSign">What option sign to use (Windows prompt uses slash, POSIX uses dash).</param>
+    /// <param name="valSeparator">The character separator to use between option label and value.</param>
+    /// <param name="ch">Receives the parsed character that labels the option.</param>
+    /// <param name="value">Receives the parsed value (as string) for the option.</param>
+    /// <returns>Whether the argument was successfully parsed.</returns>
+    static bool PreParseArgument(char *argument,
+                                 CommandLineArguments::ArgOptionSign optionSign,
+                                 CommandLineArguments::ArgValSeparator valSeparator,
+                                 char &ch,
+                                 const char **value)
+    {
+        ch = 0;
+        *value = nullptr;
+
+        int count(0);
+        const char *format(nullptr);
+
+        if (valSeparator == CommandLineArguments::ArgValSeparator::Space)
+        {
+            format = (optionSign == CommandLineArguments::ArgOptionSign::Dash ? "-%c%n" : "/%c%n");
+            return sscanf(argument, format, &ch, &count) > 0
+                && argument[count] == 0;
+        }
+
+        switch (valSeparator)
+        {
+            case CommandLineArguments::ArgValSeparator::Colon:
+                format = (optionSign == CommandLineArguments::ArgOptionSign::Dash ? "-%c:%*s%n" : "/%c:%*s%n");
+                break;
+            case CommandLineArguments::ArgValSeparator::EqualSign:
+                format = (optionSign == CommandLineArguments::ArgOptionSign::Dash ? "-%c=%*s%n" : "/%c=%*s%n");
+                break;
+            default:
+                _ASSERTE(false); // unexpected separator char
+                return false;;
+        }
+
+        if (sscanf(argument, format, &ch, &count) > 0 && argument[count] == 0)
+        {
+            char *ctx;
+            const char *token;
+            const char delimiter[2] = { static_cast<char>(valSeparator), '\0' };
+            token = strtok_x(argument, delimiter, &ctx);
+            _ASSERTE(token != nullptr);
+            token = strtok_x(nullptr, delimiter, &ctx);
+            _ASSERTE(token != nullptr);
+            *value = token;
+            return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Pre-parses an argument received from the command line.
+    /// (For options with a name label, egz: "--out file.txt")
+    /// </summary>
+    /// <param name="argument">The argument received from the command line.</param>
+    /// <param name="optionSign">What option sign to use (Windows prompt uses slash, POSIX uses dash).</param>
+    /// <param name="valSeparator">The character separator to use between option label and value.</param>
+    /// <param name="label">Receives the parsed name label for the option.</param>
+    /// <param name="value">Receives the parsed value (as string) for the option.</param>
+    /// <returns>Whether the argument was successfully parsed.</returns>
+    static bool PreParseArgument(char *argument,
+                                 CommandLineArguments::ArgOptionSign optionSign,
+                                 CommandLineArguments::ArgValSeparator valSeparator,
+                                 const char **label,
+                                 const char **value)
+    {
+        *label = nullptr;
+        *value = nullptr;
+
+        int count(0);
+        int skip;
+        const char *format(nullptr);
+
+        if (valSeparator == CommandLineArguments::ArgValSeparator::Space)
+        {
+            if (optionSign == CommandLineArguments::ArgOptionSign::Dash)
+            {
+                format = "--%*s%n";
+                skip = 2;
+            }
+            else
+            {
+                format = "/%*s%n";
+                skip = 1;
+            }
+
+            if (sscanf(argument, format, &count) == 0 && argument[count] == 0)
+            {
+                *label = argument + skip;
+                return true;
+            }
+
+            return false;
+        }
+
+        switch (optionSign)
+        {
+            case CommandLineArguments::ArgOptionSign::Dash:
+                format = (valSeparator == CommandLineArguments::ArgValSeparator::Colon ? "--%*[^:]:%*s%n" : "--%*[^=]=%*s%n");
+                skip = 2;
+                break;
+            case CommandLineArguments::ArgOptionSign::Slash:
+                format = (valSeparator == CommandLineArguments::ArgValSeparator::Colon ? "/%*[^:]:%*s%n" : "/%*[^=]=%*s%n");
+                skip = 1;
+                break;
+            default:
+                _ASSERTE(false); // unexpected separator char
+                return false;
+        }
+
+        if (sscanf(argument, format, &count) == 0 && argument[count] == 0)
+        {
+            char *ctx;
+            const char delimiter[2] = { static_cast<char>(valSeparator), '\0' };
+            *label = strtok_x(argument + skip, delimiter, &ctx);
+            _ASSERTE(*label != nullptr);
+            *value = strtok_x(nullptr, delimiter, &ctx);
+            _ASSERTE(*value != nullptr);
+            return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
     /// Parses the arguments received from command line.
     /// </summary>
     /// <param name="argCount">The count of arguments.</param>
@@ -1190,7 +1288,7 @@ namespace core
     /// <returns>
     /// <see cref="STATUS_OKAY"/> whenever successful, otherwise, <see cref="STATUS_FAIL"/>.
     /// </returns>
-    bool CommandLineArguments::Parse(int argCount, const char *arguments[])
+    bool CommandLineArguments::Parse(int argCount, char *arguments[])
     {
         _ASSERTE(argCount > 0 && arguments != nullptr && arguments[argCount] == nullptr);
 
@@ -1200,8 +1298,6 @@ namespace core
         {
             std::vector<ParsedValue> parsedValArgs; // temporarily hold results for parsed value arguments
             std::map<uint16_t, ParsedValue> parsedOptVals; // temporarily hold results for parsed option arguments
-
-            std::csub_match matchVal; // regex sub-match for value
 
             // iterator for the only allowed argument to be a value or list of values (if declared at all)
             auto valArgIter = (m_idValueTypeArg >= 0) ? m_expectedArgs.find(m_idValueTypeArg) : m_expectedArgs.end();
@@ -1213,16 +1309,18 @@ namespace core
             uint16_t idx(1);
             while (idx < argCount)
             {
-                const char *arg = arguments[idx];
-
+                char *arg = arguments[idx];
                 uint16_t argId;
-                std::cmatch match;
+                const char *optValue;
+                const char *optName;
+                char optChar;
 
                 // does the argument looks like an option with single char label?
-                if (std::regex_match(arg, match, m_rgxOptCharLabel))
+                if (PreParseArgument(arg, m_optionSign, m_argValSeparator, optChar, &optValue))
                 {
-                    auto optChar = *(match[1].first);
-                    auto iter = m_argsByCharLabel.find(optChar);
+                    auto iter = m_argsByCharLabel.find(
+                        m_isOptCaseSensitive ? optChar : tolower(optChar)
+                    );
                     if (m_argsByCharLabel.end() == iter)
                     {
                         std::cerr << "Parser error: command line option '" << optChar << "' is unknown" << std::endl;
@@ -1232,10 +1330,11 @@ namespace core
                     argId = iter->second;
                 }
                 // does the argument looks like an option with name label?
-                else if (std::regex_match(arg, match, m_rgxOptNameLabel))
+                else if (PreParseArgument(arg, m_optionSign, m_argValSeparator, &optName, &optValue))
                 {
-                    string optName = match[1].str();
-                    auto iter = m_argsByNameLabel.find(optName);
+                    auto iter = m_argsByNameLabel.find(
+                        m_isOptCaseSensitive ? std::string(optName) : utils::to_lower(optName)
+                    );
                     if (m_argsByNameLabel.end() == iter)
                     {
                         std::cerr << "Parser error: command line option '" << optName << "' is unknown" << std::endl;
@@ -1258,13 +1357,9 @@ namespace core
                     }
 
                     ParsedValue parsedValue;
-                    matchVal.first = arg;
-                    matchVal.second = arg + strlen(arg);
-                    matchVal.matched = true;
-
                     if (ParseAndValidateValue(valArgIter->second.common,
                                               valArgIter->second.typedExtInfo,
-                                              matchVal,
+                                              utils::CStringViewUtf8(arg),
                                               parsedValue) == STATUS_FAIL)
                     {
                         return STATUS_FAIL;
@@ -1285,9 +1380,8 @@ namespace core
                 auto insertResult = parsedOptVals.insert(std::make_pair(argId, ParsedValue{ 0 }));
                 if (!insertResult.second)
                 {
-                    std::cerr << "Parser error: command line option '" << match[1].str()
-                              << "' appears more than once" << std::endl;
-
+                    std::cerr << "Parser error - command line option appears more than once: ";
+                    PrintShortDeclaration(argDecl, std::cerr) << std::endl;
                     return STATUS_FAIL;
                 }
 
@@ -1298,11 +1392,10 @@ namespace core
                 case ArgType::OptionSwitch:
 
                     // switch-type option does not expect an accompanying value, but regex matched one:
-                    if (optValueInSameArg && match[2].matched)
+                    if (optValueInSameArg && !isNullOrEmpty(optValue))
                     {
-                        std::cerr << "Parser error: command line option '" << match[1].str()
-                                  << "' does not expect an accompanying value" << std::endl;
-
+                        std::cerr << "Parser error - command line option does not expect an accompanying value: ";
+                        PrintShortDeclaration(argDecl, std::cerr) << std::endl;
                         return STATUS_FAIL;
                     }
 
@@ -1314,27 +1407,21 @@ namespace core
                     /* accompanying value should have appeared in this arg, but it didn't
                        OR
                        accompanying value should appear in the next arg, but there is none */
-                    if ((optValueInSameArg && !match[2].matched)
+                    if ((optValueInSameArg && isNullOrEmpty(optValue))
                         || (!optValueInSameArg && (arg = arguments[++idx]) == nullptr))
                     {
-                        std::cerr << "Parser error: command line option '" << match[1].str()
-                                  << "' requires an accompanying value, but none has been specified" << std::endl;
-
+                        std::cerr << "Parser error  command line option requires an accompanying value, but none has been specified: ";
+                        PrintShortDeclaration(argDecl, std::cerr) << std::endl;
                         return STATUS_FAIL;
                     }
-
-                    if (optValueInSameArg)
-                        matchVal = match[3];
-                    else
                     {
-                        matchVal.first = arg;
-                        matchVal.second = arg + strlen(arg);
-                        matchVal.matched = true;
+                        auto matchVal = (optValueInSameArg
+                                         ? utils::CStringViewUtf8(optValue)
+                                         : utils::CStringViewUtf8(arg));
+
+                        if (ParseAndValidateValue(argDecl, expArg.typedExtInfo, matchVal, parsedVal) == STATUS_FAIL)
+                            return STATUS_FAIL;
                     }
-
-                    if (ParseAndValidateValue(argDecl, expArg.typedExtInfo, matchVal, parsedVal) == STATUS_FAIL)
-                        return STATUS_FAIL;
-
                     break;
 
                 default:

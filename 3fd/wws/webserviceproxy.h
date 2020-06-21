@@ -1,7 +1,7 @@
 #ifndef WEB_WWS_WEBSERVICEPROXY_H // header guard
 #define WEB_WWS_WEBSERVICEPROXY_H
 
-#include <3fd/wws/web_wws_utils.h>
+#include <3fd/wws/utils.h>
 #include <functional>
 #include <future>
 

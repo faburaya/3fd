@@ -11,7 +11,6 @@
 
 #include <cinttypes>
 #include <initializer_list>
-#include <regex>
 #include <stdexcept>
 #include <sstream>
 #include <string>
@@ -87,6 +86,15 @@ namespace core
             Space = ' ',    // expected format: --option value
             Colon = ':',    // expected format: --option:value
             EqualSign = '=' // expected format: --option=value
+        };
+
+        /// <summary>
+        /// Enumerates possible characters for signalizing that an argument is an option.
+        /// </summary>
+        enum class ArgOptionSign : char
+        {
+            Slash = '/', // expected format: /option
+            Dash = '-'   // expected format: -o OR --option
         };
 
         /// <summary>
@@ -181,12 +189,9 @@ namespace core
         ArgValSeparator m_argValSeparator;
         uint8_t m_minCmdLineWidth;
         uint8_t m_largestNameLabel;
-        bool m_useOptSignSlash;
+        ArgOptionSign m_optionSign;
         bool m_isOptCaseSensitive;
         int m_idValueTypeArg;
-
-        std::regex m_rgxOptCharLabel;
-        std::regex m_rgxOptNameLabel;
 
         /// <summary>
         /// The parsed values for arguments that are options
@@ -201,8 +206,8 @@ namespace core
     public:
 
         CommandLineArguments(uint8_t minCmdLineWidth,
+                             ArgOptionSign optionSign,
                              ArgValSeparator argValSeparator,
-                             bool useOptSignSlash,
                              bool optCaseSensitive);
 
         ~CommandLineArguments();
@@ -219,7 +224,7 @@ namespace core
 
         void PrintArgsInfo() const;
 
-        bool Parse(int argCount, const char *arguments[]);
+        bool Parse(int argCount, char *arguments[]);
 
         bool GetArgSwitchOptionValue(uint16_t id) const;
         

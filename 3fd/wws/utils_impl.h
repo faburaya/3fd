@@ -1,7 +1,7 @@
 #ifndef WEB_WWS_UTILS_IMPL_H // header guard
 #define WEB_WWS_UTILS_IMPL_H
 
-#include "web_wws_utils.h"
+#include "utils.h"
 
 namespace _3fd
 {

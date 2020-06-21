@@ -5,7 +5,7 @@
 //
 #include "pch.h"
 #include <3fd/core/runtime.h>
-#include <3fd/wws/web_wws_webservicehost.h>
+#include <3fd/wws/webservicehost.h>
 #include "calculator.wsdl.h"
 
 #include <chrono>

@@ -18,7 +18,7 @@
 #include <unordered_map>
 
 #ifdef _3FD_PLATFORM_WINRT
-#   include <3fd/utils/utils_lockfreequeue.h>
+#   include <3fd/utils/lockfreequeue.h>
 #endif
 
 namespace _3fd

@@ -37,13 +37,13 @@ include_directories(
 
 # Static library source files:
 add_library(3fd-utils STATIC
+    asynchronous.cpp
     cmdline.cpp
-    utils_asynchronous.cpp
-    utils_dynmempool.cpp
-    utils_event.cpp
-    utils_io.cpp
-    utils_memorypool.cpp
-    utils_string.cpp
+    dynmempool.cpp
+    event.cpp
+    memorypool.cpp
+    serialization.cpp
+    text.cpp
     xml.cpp
 )
 

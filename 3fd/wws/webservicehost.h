@@ -2,7 +2,7 @@
 #define WEB_WWS_WEBSERVICEHOST_H
 
 #include <3fd/core/callstacktracer.h>
-#include <3fd/wws/web_wws_utils.h>
+#include <3fd/wws/utils.h>
 #include <codecvt>
 #include <map>
 #include <memory>

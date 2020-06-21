@@ -17,45 +17,36 @@
     <ClCompile Include="cmdline.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
-    <ClCompile Include="utils_asynchronous.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-    <ClCompile Include="utils_dynmempool.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-    <ClCompile Include="utils_event.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-    <ClCompile Include="utils_io.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-    <ClCompile Include="utils_memorypool.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-    <ClCompile Include="utils_sharedmutex.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
     <ClCompile Include="xml.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
     <ClCompile Include="pch.cpp">
       <Filter>pch</Filter>
     </ClCompile>
-    <ClCompile Include="utils_string.cpp">
+    <ClCompile Include="asynchronous.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="dynmempool.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="event.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="memorypool.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="sharedmutex.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="text.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="serialization.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cmdline.h">
-      <Filter>Quelldateien</Filter>
-    </ClInclude>
-    <ClInclude Include="utils_algorithms.h">
-      <Filter>Quelldateien</Filter>
-    </ClInclude>
-    <ClInclude Include="utils_io.h">
-      <Filter>Quelldateien</Filter>
-    </ClInclude>
-    <ClInclude Include="utils_lockfreequeue.h">
       <Filter>Quelldateien</Filter>
     </ClInclude>
     <ClInclude Include="xml.h">
@@ -64,13 +55,22 @@
     <ClInclude Include="pch.h">
       <Filter>pch</Filter>
     </ClInclude>
-    <ClInclude Include="utils_string.h">
+    <ClInclude Include="algorithms.h">
       <Filter>Quelldateien</Filter>
     </ClInclude>
-    <ClInclude Include="utils_concurrency.h">
+    <ClInclude Include="concurrency.h">
       <Filter>Quelldateien</Filter>
     </ClInclude>
-    <ClInclude Include="utils_memory.h">
+    <ClInclude Include="serialization.h">
+      <Filter>Quelldateien</Filter>
+    </ClInclude>
+    <ClInclude Include="lockfreequeue.h">
+      <Filter>Quelldateien</Filter>
+    </ClInclude>
+    <ClInclude Include="memory.h">
+      <Filter>Quelldateien</Filter>
+    </ClInclude>
+    <ClInclude Include="text.h">
       <Filter>Quelldateien</Filter>
     </ClInclude>
   </ItemGroup>

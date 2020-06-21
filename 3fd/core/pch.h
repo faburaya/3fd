@@ -14,9 +14,6 @@
 #           define _CRTDBG_MAP_ALLOC
 #           include <stdlib.h>
 #           include <crtdbg.h>
-#           define dbg_new new (_NORMAL_BLOCK , __FILE__ , __LINE__)
-#       else
-#           define dbg_new new
 #       endif
 
 // Windows Desktop App:

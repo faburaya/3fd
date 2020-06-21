@@ -1,7 +1,7 @@
 ﻿#include "pch.h"
 #include <3fd/core/runtime.h>
 #include <3fd/core/configuration.h>
-#include <3fd/wws/web_wws_webserviceproxy.h>
+#include <3fd/wws/webserviceproxy.h>
 
 #include "calculator.wsdl.h"
 

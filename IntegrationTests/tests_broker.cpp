@@ -7,7 +7,7 @@
 #include <3fd/core/runtime.h>
 #include <3fd/core/configuration.h>
 #include <3fd/broker/broker.h>
-#include <3fd/utils/utils_string.h>
+#include <3fd/utils/text.h>
 
 #ifdef _WIN32
 #   define NANODBC_ENABLE_UNICODE

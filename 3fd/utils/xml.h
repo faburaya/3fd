@@ -7,7 +7,7 @@
 #define _3FD_XML_H
 
 #include <3fd/core/exceptions.h>
-#include <3fd/utils/utils_string.h>
+#include <3fd/utils/text.h>
 #include <rapidxml/rapidxml.hpp>
 
 #include <array>

@@ -4,7 +4,7 @@
 #include <3fd/core/gc_common.h>
 #include <3fd/core/gc_memaddress.h>
 #include <3fd/core/gc_arrayofedges.h>
-#include <3fd/utils/utils_memory.h>
+#include <3fd/utils/memory.h>
 
 #include <cstdint>
 #include <cstdlib>

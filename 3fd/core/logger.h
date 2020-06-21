@@ -2,8 +2,8 @@
 #define _3FD_LOGGER_H
 
 #include <3fd/core/exceptions.h>
-#include <3fd/utils/utils_concurrency.h>
-#include <3fd/utils/utils_lockfreequeue.h>
+#include <3fd/utils/concurrency.h>
+#include <3fd/utils/lockfreequeue.h>
 
 #include <cinttypes>
 #include <iostream>

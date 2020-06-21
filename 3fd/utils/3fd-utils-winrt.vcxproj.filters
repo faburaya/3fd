@@ -16,26 +16,27 @@
     <ClInclude Include="targetver.h">
       <Filter>pch</Filter>
     </ClInclude>
-    <ClInclude Include="utils_algorithms.h" />
-    <ClInclude Include="utils_io.h" />
-    <ClInclude Include="utils_lockfreequeue.h" />
-    <ClInclude Include="utils_winrt.h" />
     <ClInclude Include="xml.h" />
-    <ClInclude Include="utils_memory.h" />
-    <ClInclude Include="utils_concurrency.h" />
+    <ClInclude Include="algorithms.h" />
+    <ClInclude Include="concurrency.h" />
+    <ClInclude Include="serialization.h" />
+    <ClInclude Include="lockfreequeue.h" />
+    <ClInclude Include="memory.h" />
+    <ClInclude Include="winrt.h" />
+    <ClInclude Include="text.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
       <Filter>pch</Filter>
     </ClCompile>
-    <ClCompile Include="utils_asynchronous.cpp" />
-    <ClCompile Include="utils_dynmempool.cpp" />
-    <ClCompile Include="utils_event.cpp" />
-    <ClCompile Include="utils_io.cpp" />
-    <ClCompile Include="utils_memorypool.cpp" />
-    <ClCompile Include="utils_sharedmutex.cpp" />
-    <ClCompile Include="utils_winrt.cpp" />
     <ClCompile Include="xml.cpp" />
-    <ClCompile Include="utils_string.cpp" />
+    <ClCompile Include="asynchronous.cpp" />
+    <ClCompile Include="dynmempool.cpp" />
+    <ClCompile Include="event.cpp" />
+    <ClCompile Include="memorypool.cpp" />
+    <ClCompile Include="sharedmutex.cpp" />
+    <ClCompile Include="winrt.cpp" />
+    <ClCompile Include="text.cpp" />
+    <ClCompile Include="serialization.cpp" />
   </ItemGroup>
 </Project>

@@ -38,9 +38,6 @@
     <ClCompile Include="tests_utils_algorithms.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="tests_utils_io.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="tests_xml.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -50,10 +47,16 @@
     <ClCompile Include="..\TestShared\main.cpp">
       <Filter>Shared</Filter>
     </ClCompile>
-    <ClCompile Include="tests_utils_string.cpp">
+    <ClCompile Include="tests_utils_cache.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="tests_utils_cache.cpp">
+    <ClCompile Include="tests_utils_cmdline.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="tests_utils_serialization.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="tests_utils_text.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

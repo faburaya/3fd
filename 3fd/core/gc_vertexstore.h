@@ -3,7 +3,7 @@
 
 #include <3fd/core/gc_common.h>
 #include <3fd/core/gc_vertex.h>
-#include <3fd/utils/utils_memory.h>
+#include <3fd/utils/memory.h>
 #include <btree/stx/btree_set.h>
 
 namespace _3fd

@@ -31,9 +31,6 @@
     <ClCompile Include="..\tests_utils_algorithms.cpp">
       <Filter>Ported</Filter>
     </ClCompile>
-    <ClCompile Include="..\tests_utils_io.cpp">
-      <Filter>Ported</Filter>
-    </ClCompile>
     <ClCompile Include="..\tests_utils_lockfreequeue.cpp">
       <Filter>Ported</Filter>
     </ClCompile>
@@ -49,10 +46,13 @@
     <ClCompile Include="..\..\TestShared\main.cpp">
       <Filter>Common</Filter>
     </ClCompile>
-    <ClCompile Include="..\tests_utils_string.cpp">
+    <ClCompile Include="..\tests_utils_cache.cpp">
       <Filter>Ported</Filter>
     </ClCompile>
-    <ClCompile Include="..\tests_utils_cache.cpp">
+    <ClCompile Include="..\tests_utils_serialization.cpp">
+      <Filter>Ported</Filter>
+    </ClCompile>
+    <ClCompile Include="..\tests_utils_text.cpp">
       <Filter>Ported</Filter>
     </ClCompile>
   </ItemGroup>

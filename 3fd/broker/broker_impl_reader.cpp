@@ -8,7 +8,7 @@
 #include <3fd/core/callstacktracer.h>
 #include <3fd/core/exceptions.h>
 #include <3fd/core/logger.h>
-#include <3fd/utils/utils_io.h>
+#include <3fd/utils/serialization.h>
 
 #include <chrono>
 #include <sstream>

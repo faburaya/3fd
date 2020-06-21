@@ -7,8 +7,8 @@
 #define BROKER_IMPL_H
 
 #include "broker.h"
-#include <3fd/utils/utils_concurrency.h>
-#include <3fd/utils/utils_string.h>
+#include <3fd/utils/concurrency.h>
+#include <3fd/utils/text.h>
 
 #ifdef _WIN32
 #   define NANODBC_ENABLE_UNICODE

@@ -1,8 +1,8 @@
 #ifndef WEB_WWS_PROXY_IMPL_H // header guard
 #define WEB_WWS_PROXY_IMPL_H
 
-#include "web_wws_webserviceproxy.h"
-#include "web_wws_impl_utils.h"
+#include "webserviceproxy.h"
+#include "utils_impl.h"
 
 #include <atomic>
 #include <mutex>
