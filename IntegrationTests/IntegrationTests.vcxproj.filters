@@ -69,6 +69,9 @@
     <None Include="CreateMsSqlSvcBrokerDB.sql">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="RestoreSvcBrokerDbForWin.sql">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\TestShared\rpc_test_shared.h">

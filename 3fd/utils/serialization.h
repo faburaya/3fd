@@ -32,24 +32,6 @@ namespace utils
     // Generic printf implementations
     ////////////////////////////////////
 
-    /* Depending on the output and whether format string is
-    of wide chars or not, the specialization of this template
-    functions will choose a suitable printf-like function */
-    template <typename OutType, typename CharType, typename ... Args>
-    int xprintf(OutType output, const CharType *format, Args ... args)
-    {
-    #ifdef _MSC_VER
-        /* this compile-time assertion is triggered when there
-        is no specific implementation of printf-like function
-        fitting the provided arguments */
-        static_assert(0, "this generic implementation must not compile");
-    #else
-        // NOT IMPLEMENTED:
-        assert(false);
-        throw core::AppException<std::runtime_error>("xprintf: overload not implemented!");
-    #endif
-    }
-
     template <typename ... Args>
     int xprintf(FILE *file, const char *format, Args ... args)
     {

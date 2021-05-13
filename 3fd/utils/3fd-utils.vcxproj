@@ -41,19 +41,19 @@
     <ProjectGuid>{1DFEEA48-8DC4-498B-8332-56CDD8A4780A}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>My3fdutils</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -97,15 +97,18 @@
       </AdditionalLibraryDirectories>
     </Lib>
     <PostBuildEvent>
-      <Command>copy $(ProjectDir)\cmdline.h $(SolutionDir)\install\include\3fd\utils\
+      <Command>mkdir $(SolutionDir)\install\include\3fd\utils\
+copy $(ProjectDir)\cmdline.h $(SolutionDir)\install\include\3fd\utils\
 copy $(ProjectDir)\algorithms.h $(SolutionDir)\install\include\3fd\utils\
 copy $(ProjectDir)\concurrency.h $(SolutionDir)\install\include\3fd\utils\
 copy $(ProjectDir)\serialization.h $(SolutionDir)\install\include\3fd\utils\
 copy $(ProjectDir)\lockfreequeue.h $(SolutionDir)\install\include\3fd\utils\
 copy $(ProjectDir)\memory.h $(SolutionDir)\install\include\3fd\utils\
 copy $(ProjectDir)\string.h $(SolutionDir)\install\include\3fd\utils\
+copy $(ProjectDir)\text.h $(SolutionDir)\install\include\3fd\utils\
 copy $(ProjectDir)\winrt.h $(SolutionDir)\install\include\3fd\utils\
 copy $(ProjectDir)\xml.h $(SolutionDir)\install\include\3fd\utils\
+mkdir $(SolutionDir)\install\lib\$(Platform)\$(Configuration)\
 copy $(TargetDir)\*utils.* $(SolutionDir)\install\lib\$(Platform)\$(Configuration)\</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -135,15 +138,18 @@ copy $(TargetDir)\*utils.* $(SolutionDir)\install\lib\$(Platform)\$(Configuratio
       </AdditionalLibraryDirectories>
     </Lib>
     <PostBuildEvent>
-      <Command>copy $(ProjectDir)\cmdline.h $(SolutionDir)\install\include\3fd\utils\
+      <Command>mkdir $(SolutionDir)\install\include\3fd\utils\
+copy $(ProjectDir)\cmdline.h $(SolutionDir)\install\include\3fd\utils\
 copy $(ProjectDir)\algorithms.h $(SolutionDir)\install\include\3fd\utils\
 copy $(ProjectDir)\concurrency.h $(SolutionDir)\install\include\3fd\utils\
 copy $(ProjectDir)\serialization.h $(SolutionDir)\install\include\3fd\utils\
 copy $(ProjectDir)\lockfreequeue.h $(SolutionDir)\install\include\3fd\utils\
 copy $(ProjectDir)\memory.h $(SolutionDir)\install\include\3fd\utils\
 copy $(ProjectDir)\string.h $(SolutionDir)\install\include\3fd\utils\
+copy $(ProjectDir)\text.h $(SolutionDir)\install\include\3fd\utils\
 copy $(ProjectDir)\winrt.h $(SolutionDir)\install\include\3fd\utils\
 copy $(ProjectDir)\xml.h $(SolutionDir)\install\include\3fd\utils\
+mkdir $(SolutionDir)\install\lib\$(Platform)\$(Configuration)\
 copy $(TargetDir)\*utils.* $(SolutionDir)\install\lib\$(Platform)\$(Configuration)\</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>

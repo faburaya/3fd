@@ -1168,14 +1168,11 @@ namespace core
         *value = nullptr;
 
         int count(0);
-        const char *format(nullptr);
+        const char *format = (optionSign == CommandLineArguments::ArgOptionSign::Dash ? "-%c%n" : "/%c%n");
+        const bool matchesSwitch = (sscanf(argument, format, &ch, &count) > 0 && argument[count] == 0);
 
         if (valSeparator == CommandLineArguments::ArgValSeparator::Space)
-        {
-            format = (optionSign == CommandLineArguments::ArgOptionSign::Dash ? "-%c%n" : "/%c%n");
-            return sscanf(argument, format, &ch, &count) > 0
-                && argument[count] == 0;
-        }
+            return matchesSwitch;
 
         switch (valSeparator)
         {
@@ -1203,7 +1200,7 @@ namespace core
             return true;
         }
 
-        return false;
+        return matchesSwitch;
     }
 
     /// <summary>
@@ -1227,29 +1224,32 @@ namespace core
 
         int count(0);
         int skip;
+        bool matchesSwitch;
         const char *format(nullptr);
 
-        if (valSeparator == CommandLineArguments::ArgValSeparator::Space)
+        if (optionSign == CommandLineArguments::ArgOptionSign::Dash)
         {
-            if (optionSign == CommandLineArguments::ArgOptionSign::Dash)
-            {
-                format = "--%*s%n";
-                skip = 2;
-            }
-            else
-            {
-                format = "/%*s%n";
-                skip = 1;
-            }
-
-            if (sscanf(argument, format, &count) == 0 && argument[count] == 0)
-            {
-                *label = argument + skip;
-                return true;
-            }
-
-            return false;
+            format = "--%*s%n";
+            skip = 2;
         }
+        else
+        {
+            format = "/%*s%n";
+            skip = 1;
+        }
+
+        if (sscanf(argument, format, &count) == 0 && argument[count] == 0)
+        {
+            *label = argument + skip;
+            matchesSwitch = true;
+        }
+        else
+        {
+            matchesSwitch = false;
+        }
+
+        if (valSeparator == CommandLineArguments::ArgValSeparator::Space)
+            return matchesSwitch;
 
         switch (optionSign)
         {
@@ -1277,7 +1277,7 @@ namespace core
             return true;
         }
 
-        return false;
+        return matchesSwitch;
     }
 
     /// <summary>
